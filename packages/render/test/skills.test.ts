@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -42,7 +43,8 @@ describe("installSkill", () => {
     expect(readFileSync(join(dir, "SKILL.md"), "utf8")).toBe("my own notes\n");
     installSkill({ cwd: project, force: true });
     expect(readFileSync(join(dir, "SKILL.md"), "utf8")).toMatch(/^---\nname: uberscene/);
-    expect(existsSync(join(dir, "extra.md"))).toBe(false);
+    // Forced, the skill's own files are replaced; a file added by hand is not the command's to delete.
+    expect(readFileSync(join(dir, "extra.md"), "utf8")).toBe("added by hand\n");
   });
 
   it("does not write over a folder it did not write, and takes another folder with dir", () => {
@@ -54,5 +56,55 @@ describe("installSkill", () => {
     );
     const fresh = installSkill({ cwd: other, dir: ".agents/skills/uberscene" });
     expect(fresh.dir).toBe(join(other, ".agents", "skills", "uberscene"));
+  });
+
+  describe("with force, deletes nothing it did not write", () => {
+    it("leaves the other skills beside it when --dir names the skills folder itself", () => {
+      const other = mkdtempSync(join(scratch, "s-"));
+      const skills = join(other, ".claude", "skills");
+      mkdirSync(join(skills, "mine", "references"), { recursive: true });
+      writeFileSync(join(skills, "mine", "SKILL.md"), "my skill\n");
+      writeFileSync(join(skills, "mine", "references", "notes.md"), "notes\n");
+      writeFileSync(join(skills, "README.md"), "my skills\n");
+      installSkill({ cwd: other, dir: ".claude/skills", force: true });
+      expect(readFileSync(join(skills, "mine", "SKILL.md"), "utf8")).toBe("my skill\n");
+      expect(readFileSync(join(skills, "mine", "references", "notes.md"), "utf8")).toBe("notes\n");
+      expect(readFileSync(join(skills, "README.md"), "utf8")).toBe("my skills\n");
+      expect(existsSync(join(skills, "SKILL.md"))).toBe(true);
+    });
+
+    it("leaves a project's files when --dir is the project", () => {
+      const other = mkdtempSync(join(scratch, "d-"));
+      writeFileSync(join(other, "package.json"), "{}\n");
+      mkdirSync(join(other, "src"));
+      writeFileSync(join(other, "src", "video.tsx"), "export default 1;\n");
+      installSkill({ cwd: other, dir: ".", force: true });
+      expect(readFileSync(join(other, "package.json"), "utf8")).toBe("{}\n");
+      expect(readFileSync(join(other, "src", "video.tsx"), "utf8")).toBe("export default 1;\n");
+    });
+
+    it("removes a file of the skill the new version no longer has, and the folder it leaves empty", () => {
+      const other = mkdtempSync(join(scratch, "r-"));
+      const { dir } = installSkill({ cwd: other });
+      const marker = JSON.parse(readFileSync(join(dir, ".uberscene-skill.json"), "utf8"));
+      mkdirSync(join(dir, "gone"), { recursive: true });
+      writeFileSync(join(dir, "gone", "old.md"), "from an older version\n");
+      marker.files["gone/old.md"] = createHash("sha256").update("from an older version\n").digest("hex");
+      writeFileSync(join(dir, ".uberscene-skill.json"), JSON.stringify(marker));
+      installSkill({ cwd: other });
+      expect(existsSync(join(dir, "gone"))).toBe(false);
+      expect(existsSync(join(dir, "SKILL.md"))).toBe(true);
+    });
+
+    it("does not follow a marker's path out of the skill's folder", () => {
+      const other = mkdtempSync(join(scratch, "m-"));
+      const { dir } = installSkill({ cwd: other });
+      writeFileSync(join(other, "keep.txt"), "mine\n");
+      const marker = JSON.parse(readFileSync(join(dir, ".uberscene-skill.json"), "utf8"));
+      marker.files["../../../keep.txt"] = "edited";
+      writeFileSync(join(dir, ".uberscene-skill.json"), JSON.stringify(marker));
+      installSkill({ cwd: other, force: true });
+      expect(readFileSync(join(other, "keep.txt"), "utf8")).toBe("mine\n");
+    });
   });
 });

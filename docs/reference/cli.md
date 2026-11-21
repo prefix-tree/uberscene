@@ -485,10 +485,11 @@ is added as a LUT (kind `lut`) after it is checked, for the [`lut` effect](/guid
 `uberscene skills install` writes the agent skill that ships with this version of the CLI into
 `.claude/skills/uberscene` in the current folder, where Claude Code reads a project's skills. The skill then teaches the
 commands and options of the CLI you have installed. It records what it wrote in `.uberscene-skill.json` in that folder;
-run it again after upgrading and it replaces the folder. A folder with files changed or added since then, or one it
-did not write, is left as it is, and the command says which files, unless `--force` is given.
+run it again after upgrading and it replaces the files it wrote. A folder with files changed or added since then, or one
+it did not write, is left as it is, and the command says which files, unless `--force` is given. It never deletes a file
+it did not write.
 
 | Option | |
 |---|---|
 | `--dir <folder>` | Where to write the skill, for an agent that reads skills from somewhere else. Default: `.claude/skills/uberscene`. |
-| `--force` | Replace the folder even when it has edits, or was not written by this command. |
+| `--force` | Write the skill even when its files have edits, or into a folder this command did not write. The skill's own files are replaced; anything else there is kept. |

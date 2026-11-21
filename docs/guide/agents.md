@@ -21,7 +21,8 @@ npx uberscene skills install --dir .agents/skills/uberscene
 ```
 
 This skill always matches the CLI you have, so it never teaches a command your version lacks. Run it again after
-upgrading UberScene: it replaces the folder it wrote, and keeps a folder you have edited unless you add `--force`.
+upgrading UberScene: it replaces the files it wrote, and keeps a folder you have edited unless you add `--force`. It never
+deletes a file it did not write.
 
 **In another agent**, or in Claude Code without the plugin, you can also copy the skill's folder,
 [`plugins/uberscene/skills/uberscene`](https://github.com/prefix-tree/uberscene/tree/main/plugins/uberscene/skills/uberscene),
