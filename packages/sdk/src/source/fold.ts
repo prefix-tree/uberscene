@@ -338,18 +338,22 @@ export function fold(
 }
 
 /**
- * Edits inside an element that is removed go with it: a keyframe a split moved to the second half, then the first half
- * deleted, is removed once, as part of its clip.
+ * Drops every edit inside text that another edit removes: a removal inside a removal, and any other edit there, such
+ * as a prop changed on an element whose track is then deleted. Written beside the removal, the two overlap and the fold
+ * fails. An insertion at either end of a removed range stays, as it lands outside it; moves are placed separately.
  */
 function withinRemovals(edits: SourceEdit[]): SourceEdit[] {
   const removed = edits.filter((e) => e.kind === "remove" && e.range[0] < e.range[1]);
-  if (removed.length < 2) return edits;
-  const inside = (e: SourceEdit, r: SourceEdit): boolean =>
-    r !== e &&
-    r.range[0] <= e.range[0] &&
-    e.range[1] <= r.range[1] &&
-    (r.range[0] < e.range[0] || e.range[1] < r.range[1]);
-  return edits.filter((e) => e.kind !== "remove" || !removed.some((r) => inside(e, r)));
+  if (removed.length === 0) return edits;
+  const inside = (e: SourceEdit, r: SourceEdit): boolean => {
+    if (r === e || e.kind === "move") return false;
+    const [from, to] = e.range;
+    const [start, end] = r.range;
+    if (from === to) return start < from && from < end;
+    // The same range removed twice is left as it is; anything else on that range goes with it.
+    return start <= from && to <= end && (start < from || to < end || e.kind !== "remove");
+  };
+  return edits.filter((e) => !removed.some((r) => inside(e, r)));
 }
 
 /** Catalogue families to declare (or whose declaration gains weights), by family. */

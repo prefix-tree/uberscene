@@ -91,7 +91,9 @@ export function printElement(spec: NodeSpec, indent = "", step = "  "): string {
   return `${open}>${text}\n${inner}\n${indent}</${name}>`;
 }
 
-/** Text as JSX children: as it is, or as a string expression (`{"50%}"}`) when it holds a brace or an angle bracket. */
+/** Text as JSX children: as it is, or as a string expression (`{"50%}"}`) when JSX would not read it back as typed. */
 export function escapeText(text: string): string {
-  return /[{}<>]/.test(text) ? `{${JSON.stringify(text)}}` : text;
+  // Braces for what JSX text would read otherwise: an expression or a tag, an entity (`&amp;` reads as `&`), a line
+  // break (joined into a space) and whitespace at either end (trimmed). The rule isPlainAttribute keeps for attributes.
+  return /[{}<>&\r\n]|^\s|\s$/.test(text) ? `{${JSON.stringify(text)}}` : text;
 }
