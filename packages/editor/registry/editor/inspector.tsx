@@ -3,7 +3,7 @@ import { useState } from "react";
 
 import { useEdit, useEditor, useSelection } from "@uberscene/editor";
 import { knobsOf, SCHEMAS_BY_KIND } from "@uberscene/kit/schema";
-import type { ActionInput } from "@uberscene/sdk";
+import { type ActionInput, trimValue } from "@uberscene/sdk";
 
 import { type Access, fail, Group, NumberField, Row, TextField } from "./fields";
 import { Typography } from "./typography";
@@ -113,9 +113,10 @@ export function Inspector({ className }: { className?: string }) {
                   step={0.1}
                   disabled={access("duration") !== "literal"}
                   onCommit={(v) =>
+                    // For footage the out edge is a time in the source file, at the clip's speed.
                     run({
                       type: "clip/trim",
-                      params: { id: item.id, edge: "out", value: round(item.start + Math.max(0.05, v)) },
+                      params: { id: item.id, edge: "out", value: trimValue(item, item.start + Math.max(0.05, v)) },
                     })
                   }
                 />
