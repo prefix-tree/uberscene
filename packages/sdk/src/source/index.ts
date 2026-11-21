@@ -277,8 +277,8 @@ export function buildSourceIndex(text: string): SourceIndex {
       const inSchemaFn = schemaFn !== null && path.getFunctionParent()?.node === schemaFn;
       const { props, locked, bound } = attributesOf(opening, inSchemaFn);
       const idSite = props.get("id");
-      let id = typeof idSite?.literal === "string" ? idSite.literal : null;
-      if (id === null && kind === "composition" && !idSite) id = "composition";
+      // The composition is indexed as "composition" whatever id it is written with, as collect names it.
+      const id = kind === "composition" ? "composition" : typeof idSite?.literal === "string" ? idSite.literal : null;
       if (id === null) {
         if (idSite?.isExpression && idSite.valueRange)
           dynamic.push({

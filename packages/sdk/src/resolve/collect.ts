@@ -352,10 +352,13 @@ function makeNode(
   opaqueInterior: boolean,
 ): CollectedNode {
   const { children: rawChildren, ...given } = element.props;
-  const at = typeof given.id === "string" ? given.id : (parent ?? "composition");
+  // The composition is always "composition", whatever id the file gives it: every composition action, the markers it
+  // holds and the fold address it by that name. The written id stays in its props, and in the file, untouched.
+  const at =
+    kind === "composition" ? "composition" : typeof given.id === "string" ? given.id : (parent ?? "composition");
   // A declared value in a prop (`type={glitch}`, `font={brand}`) is recorded and stands as its name from here on.
   const props = withNames(walker, given, at) as Record<string, unknown>;
-  const idValue = props.id ?? (kind === "composition" ? "composition" : undefined);
+  const idValue = kind === "composition" ? "composition" : props.id;
   const id = typeof idValue === "string" && idValue.length > 0 ? idValue : `${kind}-${walker.byId.size + 1}`;
   if (typeof idValue !== "string" || idValue.length === 0) {
     walker.errors.push({ code: "SCHEMA", id, prop: "id", message: `<${kind}> needs a literal id` });
