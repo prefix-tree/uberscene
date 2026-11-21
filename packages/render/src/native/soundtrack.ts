@@ -203,6 +203,9 @@ function startEncoder(binary: string, container: SoundContainer, sampleRate: num
     child.on("error", fail);
     child.on("close", ok);
   });
+  // Read when the encoder is finished; a start that fails before then is reported by the write it breaks, so the
+  // rejection must not go unhandled in the meantime.
+  closed.catch(() => undefined);
   const failure = (code: number | null): Error =>
     new Error(`the native audio encoder failed: ${Buffer.concat(err).toString().trim() || `exit ${code}`}`);
   return {

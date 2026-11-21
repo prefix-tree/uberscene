@@ -102,6 +102,11 @@ export function nativeRoutes(binary: string, modes: CodecModes, media: MediaReso
     running.add(child);
     const err: Buffer[] = [];
     child.stderr.on("data", (b: Buffer) => err.push(b));
+    // A process that cannot start (no binary, too many open files) reports it here; unheard, Node would exit.
+    let failedToStart: Error | null = null;
+    child.on("error", (error) => {
+      failedToStart = error;
+    });
     // The page stops reading when its clip moves on: the decoder stops with it.
     res.on("close", () => child.kill());
     child.on("exit", () => running.delete(child));
@@ -118,8 +123,10 @@ export function nativeRoutes(binary: string, modes: CodecModes, media: MediaReso
     });
     await new Promise<void>((ok) => {
       child.on("close", (code) => {
-        if (code !== 0 && code !== null) {
-          const message = Buffer.concat(err).toString().trim() || `uberscene-codec exited with ${code}`;
+        if (failedToStart || (code !== 0 && code !== null)) {
+          const message = failedToStart
+            ? `uberscene-codec could not start: ${(failedToStart as Error).message}`
+            : Buffer.concat(err).toString().trim() || `uberscene-codec exited with ${code}`;
           if (!started) {
             res.writeHead(500, { "content-type": "text/plain" });
             res.end(message);
@@ -159,12 +166,18 @@ export function nativeRoutes(binary: string, modes: CodecModes, media: MediaReso
     child.stdout.on("data", (b: Buffer) => out.push(b));
     child.stderr.on("data", (b: Buffer) => err.push(b));
     child.stdin.on("error", () => undefined);
-    const exited = new Promise<number | null>((ok) =>
+    const exited = new Promise<number | null>((ok) => {
       child.on("close", (code) => {
         running.delete(child);
         ok(code);
-      }),
-    );
+      });
+      // A process that cannot start fails its session when it is ended, rather than the whole export server.
+      child.on("error", (error) => {
+        running.delete(child);
+        err.push(Buffer.from(`uberscene-codec could not start: ${error.message}`));
+        ok(-1);
+      });
+    });
     const id = `e${++counter}`;
     sessions.set(id, {
       child,
