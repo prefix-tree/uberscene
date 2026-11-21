@@ -1,0 +1,62 @@
+{
+  "name": "@uberscene/codecs",
+  "version": "0.5.0",
+  "description": "UberScene's native codecs: the uberscene-codec binary for your platform, for exports with UBERSCENE_CODECS (experimental).",
+  "keywords": [
+    "video",
+    "video-editing",
+    "codec",
+    "h264",
+    "prores",
+    "hevc",
+    "encoder",
+    "decoder"
+  ],
+  "license": "MIT",
+  "homepage": "https://uberscene.prefixtree.xyz/",
+  "bugs": {
+    "url": "https://github.com/prefix-tree/uberscene/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/prefix-tree/uberscene.git",
+    "directory": "packages/codecs"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json",
+    "./targets.json": "./targets.json"
+  },
+  "files": [
+    "dist",
+    "targets.json"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": "./dist/index.mjs",
+      "./package.json": "./package.json",
+      "./targets.json": "./targets.json"
+    }
+  },
+  "scripts": {
+    "build": "tsdown src/index.ts --dts",
+    "prepack": "pnpm run build",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "optionalDependencies": {
+    "@uberscene/codecs-darwin-arm64": "workspace:*",
+    "@uberscene/codecs-darwin-x64": "workspace:*",
+    "@uberscene/codecs-linux-x64-gnu": "workspace:*",
+    "@uberscene/codecs-linux-arm64-gnu": "workspace:*",
+    "@uberscene/codecs-win32-x64": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

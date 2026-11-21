@@ -50,8 +50,13 @@ bit-exact against ffmpeg and need no FFmpeg, so they keep the licence and the "n
     with one warning. craft-audio's symphonia fallback (MPL-2.0) is left out.
 - **ProRes returns, only behind the flag:** `--codec prores` into `.mov` through Mediabunny's MOV writer. `--quality`
   picks the profile (Proxy, LT, 422, 422 HQ, 4444).
-- **Built from source for now:** `pnpm native:build`, or `UBERSCENE_CODEC_BIN`. Per-platform npm packages, as
-  Remotion ships its compositor, come once the flag earns a place.
+- **On npm as `@uberscene/codecs`** (added after the first version, which was built from source only). It is opt-in:
+  nothing installs it unless asked. It lists one package per platform as optional dependencies, each with `os`, `cpu`
+  and `libc`, so npm, pnpm and yarn install only the one that fits: macOS arm64 and x64, Linux x64 and arm64 (glibc),
+  Windows x64. The platform packages are sub-projects of the workspace (`packages/codecs/platforms/*`), versioned
+  with every other package, because the wire protocol has no version of its own. The release workflow builds each
+  binary on its own platform, reads a clip with it, and puts it in its package; a package without its binary refuses
+  to pack. `pnpm native:build` and `UBERSCENE_CODEC_BIN` stay for other platforms and for development.
 
 ## Consequences
 

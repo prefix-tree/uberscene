@@ -1,0 +1,44 @@
+[
+  {
+    "package": "@uberscene/codecs-darwin-arm64",
+    "dir": "darwin-arm64",
+    "rust": "aarch64-apple-darwin",
+    "os": "darwin",
+    "cpu": "arm64",
+    "binary": "uberscene-codec"
+  },
+  {
+    "package": "@uberscene/codecs-darwin-x64",
+    "dir": "darwin-x64",
+    "rust": "x86_64-apple-darwin",
+    "os": "darwin",
+    "cpu": "x64",
+    "binary": "uberscene-codec"
+  },
+  {
+    "package": "@uberscene/codecs-linux-x64-gnu",
+    "dir": "linux-x64-gnu",
+    "rust": "x86_64-unknown-linux-gnu",
+    "os": "linux",
+    "cpu": "x64",
+    "libc": "glibc",
+    "binary": "uberscene-codec"
+  },
+  {
+    "package": "@uberscene/codecs-linux-arm64-gnu",
+    "dir": "linux-arm64-gnu",
+    "rust": "aarch64-unknown-linux-gnu",
+    "os": "linux",
+    "cpu": "arm64",
+    "libc": "glibc",
+    "binary": "uberscene-codec"
+  },
+  {
+    "package": "@uberscene/codecs-win32-x64",
+    "dir": "win32-x64",
+    "rust": "x86_64-pc-windows-msvc",
+    "os": "win32",
+    "cpu": "x64",
+    "binary": "uberscene-codec.exe"
+  }
+]

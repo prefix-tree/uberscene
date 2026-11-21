@@ -64,6 +64,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@uberscene/codecs": "workspace:*",
     "@fontsource/jetbrains-mono": "catalog:",
     "@playwright/test": "catalog:",
     "@types/node": "catalog:",
@@ -76,5 +77,13 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "@uberscene/codecs": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@uberscene/codecs": {
+      "optional": true
+    }
   }
 }

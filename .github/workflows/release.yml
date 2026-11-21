@@ -15,7 +15,8 @@ name: Release
 # `npm stage publish`.
 #
 # A package new to npm (such as @uberscene/sdk) has no trusted publisher until it exists: a maintainer creates it on
-# npm and adds this workflow as its trusted publisher before the first release that includes it.
+# npm and adds this workflow as its trusted publisher before the first release that includes it. That goes for
+# @uberscene/codecs and each of its platform packages (packages/codecs/targets.json) too.
 #
 # It can also be run by hand from main (Actions → Release → Run workflow), to retry a release whose tag is already
 # pushed: it then stages the version main holds. A version that is staged and not yet approved cannot be staged
@@ -30,7 +31,43 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  codecs:
+    # The native codecs (native/), built once per platform @uberscene/codecs is published for. Each row is a row of
+    # packages/codecs/targets.json; each runner is that platform itself, so the binary is run before it is shipped.
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - { target: darwin-arm64, rust: aarch64-apple-darwin, runner: macos-15 }
+          - { target: darwin-x64, rust: x86_64-apple-darwin, runner: macos-15-intel }
+          # The oldest Ubuntu runners: the binary then runs on any glibc from 2.35 on.
+          - { target: linux-x64-gnu, rust: x86_64-unknown-linux-gnu, runner: ubuntu-22.04 }
+          - { target: linux-arm64-gnu, rust: aarch64-unknown-linux-gnu, runner: ubuntu-22.04-arm }
+          - { target: win32-x64, rust: x86_64-pc-windows-msvc, runner: windows-latest }
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust }}
+      - run: cargo build --release --locked --target ${{ matrix.rust }} --manifest-path native/Cargo.toml
+      - name: Read a clip with it
+        shell: bash
+        run: |
+          bin="native/target/${{ matrix.rust }}/release/uberscene-codec"
+          [ -f "$bin.exe" ] && bin="$bin.exe"
+          "$bin" probe docs/public/playground/coffee.webm | grep '"decodable":true'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: codec-${{ matrix.target }}
+          path: native/target/${{ matrix.rust }}/release/uberscene-codec*
+          if-no-files-found: error
+          retention-days: 7
+
   release:
+    needs: codecs
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -79,6 +116,18 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm build
       - run: pnpm check:packages
+      # Each platform package gets the binary its build job made; a package without one refuses to pack.
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: codec-*
+          path: codec-builds
+      - name: Put the codec binaries in their packages
+        run: |
+          for dir in codec-builds/codec-*; do
+            target="${dir#codec-builds/codec-}"
+            binary=$(find "$dir" -type f \( -name uberscene-codec -o -name uberscene-codec.exe \) | head -1)
+            node packages/codecs/scripts/place.mjs --target "$target" --from "$binary"
+          done
       # Packs each package whose version is not on npm (swapping workspace:* for versions) and runs
       # `npm stage publish` on the tarball. The version stays un-installable until a maintainer approves it
       # with 2FA. The pushed tag names the release, so this makes no git tags of its own.

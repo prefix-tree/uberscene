@@ -18,6 +18,8 @@ packages/render/scenarios-quality.json
 
 # The native codecs (native/), built by `pnpm native:build`
 native/target/
+# The binaries the platform packages carry, placed by packages/codecs/scripts/place.mjs
+packages/codecs/platforms/*/bin/
 
 # The impeccable design tool's live session state
 .impeccable/

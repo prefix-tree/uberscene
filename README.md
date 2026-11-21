@@ -52,7 +52,7 @@ captions, audio, transitions, effects, and any React, Motion or three.js on top.
 UberScene can also decode footage and encode the export with its own codecs, written in Rust on FilmCraft's
 [craft-video, craft-media and craft-audio](https://github.com/storytold/craft-libs). They decode H.264, HEVC, VP8,
 VP9, AV1, ProRes and DNxHR, and encode H.264, ProRes and the soundtrack, still with no FFmpeg and no C libraries. They
-are off unless `UBERSCENE_CODECS` turns them on, are built from source for now, and Chrome stays the default.
+are off unless `UBERSCENE_CODECS` turns them on, come with `npm install @uberscene/codecs`, and Chrome stays the default.
 [Native codecs](https://uberscene.prefixtree.xyz/guide/native-codecs) has the details.
 
 ## Aim

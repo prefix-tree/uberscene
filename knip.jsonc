@@ -30,7 +30,12 @@
       "ignoreDependencies": ["@fontsource/.+"]
     },
     "packages/render": {
-      "entry": ["bench/**/*.{ts,tsx}", "scripts/*.{ts,mjs}"]
+      "entry": ["bench/**/*.{ts,tsx}", "scripts/*.{ts,mjs}"],
+      // Looked up by name at run time (native/codecs.ts), since it is optional: the tests find its binary through it.
+      "ignoreDependencies": ["@uberscene/codecs"]
+    },
+    "packages/codecs": {
+      "entry": ["scripts/*.mjs"]
     },
     "packages/graphics": {
       "entry": ["test/**/*.{ts,tsx}"]
