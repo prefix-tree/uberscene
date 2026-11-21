@@ -2,6 +2,7 @@ import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 import {
+  type ActionInput,
   applyEdits,
   buildSourceIndex,
   collectModule,
@@ -282,10 +283,20 @@ describe("fold", () => {
     },
   );
 
-  it.each(["{50%}", "a } b", "x > y", "<b>", '"quoted" {x}'])(
-    "writes title text %s so the file reads it back unchanged",
-    (words) => {
-      const file = `import { Composition, Title, Track } from "@uberscene/kit";
+  it.each([
+    "{50%}",
+    "a } b",
+    "x > y",
+    "<b>",
+    '"quoted" {x}',
+    // JSX joins lines with a space, decodes entities and trims the ends of a line: all of these must come back as typed.
+    "line one\nline two",
+    "carriage\r\nreturn",
+    "Tom &amp; Jerry",
+    "salt & pepper",
+    "  padded  ",
+  ])("writes title text %s so the file reads it back unchanged", (words) => {
+    const file = `import { Composition, Title, Track } from "@uberscene/kit";
 
 export default function Video() {
   return (
@@ -298,25 +309,24 @@ export default function Video() {
   );
 }
 `;
-      const exec = new Executor({ tree: collectModule(loadModule(file) as never), manifest: { assets: {} } });
-      expect(exec.execute({ type: "text/setContent", params: { id: "full", text: words } }).ok).toBe(true);
-      expect(exec.execute({ type: "text/setContent", params: { id: "empty", text: words } }).ok).toBe(true);
-      const result = foldToSource(file, exec.log(), exec.state());
-      expect(result.skipped).toEqual([]);
-      expect(lint(result.text).filter((d) => d.severity === "error")).toEqual([]);
-      // Babel reads a bare `}` or `>` in JSX text; TypeScript, which compiles the file, does not.
-      const compiled = ts.transpileModule(result.text, {
-        fileName: "video.tsx",
-        reportDiagnostics: true,
-        compilerOptions: { jsx: ts.JsxEmit.Preserve },
-      });
-      expect(compiled.diagnostics?.map((d) => ts.flattenDiagnosticMessageText(d.messageText, "\n"))).toEqual([]);
-      const reloaded = resolve(collectModule(loadModule(result.text) as never), { assets: {} });
-      expect(reloaded.errors).toEqual([]);
-      expect(reloaded.tree.byId.get("full")?.text).toBe(words);
-      expect(reloaded.tree.byId.get("empty")?.text).toBe(words);
-    },
-  );
+    const exec = new Executor({ tree: collectModule(loadModule(file) as never), manifest: { assets: {} } });
+    expect(exec.execute({ type: "text/setContent", params: { id: "full", text: words } }).ok).toBe(true);
+    expect(exec.execute({ type: "text/setContent", params: { id: "empty", text: words } }).ok).toBe(true);
+    const result = foldToSource(file, exec.log(), exec.state());
+    expect(result.skipped).toEqual([]);
+    expect(lint(result.text).filter((d) => d.severity === "error")).toEqual([]);
+    // Babel reads a bare `}` or `>` in JSX text; TypeScript, which compiles the file, does not.
+    const compiled = ts.transpileModule(result.text, {
+      fileName: "video.tsx",
+      reportDiagnostics: true,
+      compilerOptions: { jsx: ts.JsxEmit.Preserve },
+    });
+    expect(compiled.diagnostics?.map((d) => ts.flattenDiagnosticMessageText(d.messageText, "\n"))).toEqual([]);
+    const reloaded = resolve(collectModule(loadModule(result.text) as never), { assets: {} });
+    expect(reloaded.errors).toEqual([]);
+    expect(reloaded.tree.byId.get("full")?.text).toBe(words);
+    expect(reloaded.tree.byId.get("empty")?.text).toBe(words);
+  });
 
   it("prints props and elements", () => {
     expect(printProp("src", "asset:a")).toBe('src="asset:a"');
@@ -419,3 +429,54 @@ async function evaluate(text: string): Promise<{
     rmSync(file, { force: true });
   }
 }
+
+describe("fold, an element edited and then its track removed", () => {
+  const file = `import { Composition, Title, Track } from "@uberscene/kit";
+
+export default function Video() {
+  return (
+    <Composition fps={30} width={640} height={360}>
+      <Track id="keep" layout="free">
+        <Title id="k" start={0} duration={1}>Kept</Title>
+      </Track>
+      <Track id="t" layout="free">
+        <Title id="a" start={0} duration={1}>A</Title>
+        <Title id="b" start={2} duration={1} style={{ size: 40 }} box={{ x: 10, y: 10 }}>B</Title>
+      </Track>
+    </Composition>
+  );
+}
+`;
+  const edits: ActionInput[] = [
+    { type: "source/setProp", params: { id: "a", prop: "duration", value: 2 } },
+    { type: "element/update", params: { id: "b", props: { style: { size: 64 } } } },
+    { type: "box/update", params: { id: "b", box: { x: 40 } } },
+    { type: "text/setContent", params: { id: "a", text: "Edited" } },
+  ];
+  const open = () => new Executor({ tree: collectModule(loadModule(file) as never), manifest: { assets: {} } });
+
+  it.each(edits.map((e) => [e.type, e] as const))("folds after %s, without the track", (_, edit) => {
+    const exec = open();
+    expect(exec.execute(edit).ok).toBe(true);
+    expect(exec.execute({ type: "track/remove", params: { trackId: "t" } }).ok).toBe(true);
+    const result = foldToSource(file, exec.log(), exec.state());
+    expect(result.text).not.toContain('id="t"');
+    expect(result.text).not.toContain('id="a"');
+    expect(result.text).toContain('<Title id="k" start={0} duration={1}>Kept</Title>');
+    const reloaded = resolve(collectModule(loadModule(result.text) as never), { assets: {} });
+    expect(reloaded.errors).toEqual([]);
+    expect([...reloaded.items.keys()].sort()).toEqual([...exec.state().items.keys()].sort());
+  });
+
+  it("folds after every edit at once, and after undoing the removal keeps them all", () => {
+    const exec = open();
+    for (const e of edits) expect(exec.execute(e).ok).toBe(true);
+    expect(exec.execute({ type: "track/remove", params: { trackId: "t" } }).ok).toBe(true);
+    expect(() => foldToSource(file, exec.log(), exec.state())).not.toThrow();
+    exec.undo();
+    const back = foldToSource(file, exec.log(), exec.state()).text;
+    expect(back).toContain('id="a" start={0} duration={2}');
+    expect(back).toContain("size: 64");
+    expect(back).toContain("x: 40");
+  });
+});
