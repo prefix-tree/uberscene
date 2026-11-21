@@ -56,11 +56,15 @@ export interface PreparedSvg {
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 const XLINK_NS = "http://www.w3.org/1999/xlink";
-/** Elements that run code, embed other documents or reach outside the file. */
+/**
+ * Elements that run code, embed other documents or reach outside the file, in lower case. A name is checked by its
+ * lower-cased local part: the page's HTML parser reads `<foreignobject>` or `<IFRAME>` as the real thing.
+ */
 const DROPPED = new Set([
   "script",
-  "foreignObject",
+  "foreignobject",
   "iframe",
+  "frame",
   "object",
   "embed",
   "audio",
@@ -69,6 +73,10 @@ const DROPPED = new Set([
   "handler",
   "listener",
 ]);
+/** Attributes that load or run something, in lower case, besides the `on…` handlers and links checked apart. */
+const DROPPED_ATTRS = new Set(["src", "srcdoc", "formaction", "action"]);
+/** A tag or attribute name as the page reads it: lower case, without a namespace prefix. */
+const localName = (name: string): string => name.slice(name.lastIndexOf(":") + 1).toLowerCase();
 const DEFAULT_SIZE = { width: 300, height: 150 };
 const PARSE_CACHE = 64;
 
@@ -213,7 +221,7 @@ const FILLED = new Set(["path", "line", "polyline", "polygon", "circle", "ellips
 
 function clean(node: SvgNode | string, ctx: Walk): SvgNode | string | null {
   if (typeof node === "string") return node;
-  if (DROPPED.has(node.name)) {
+  if (DROPPED.has(localName(node.name))) {
     ctx.warnings.push(`<${node.name}> is not drawn and was removed`);
     return null;
   }
@@ -224,16 +232,16 @@ function clean(node: SvgNode | string, ctx: Walk): SvgNode | string | null {
   }
   const inner: Walk = DEFINITIONS.has(node.name) && !ctx.inDefs ? { ...ctx, inDefs: true } : ctx;
   const children = node.children
-    .map((c) => (node.name === "style" && typeof c === "string" ? cleanStyleSheet(c, inner) : clean(c, inner)))
+    .map((c) =>
+      localName(node.name) === "style" && typeof c === "string" ? cleanStyleSheet(c, inner) : clean(c, inner),
+    )
     .filter((c): c is SvgNode | string => c !== null);
   if (ctx.draw !== null && !ctx.inDefs && FILLED.has(node.name)) drawProgress(node.name, attrs, ctx.draw);
   // A link cannot be followed in a video; keep what it draws.
-  if (node.name === "a")
+  if (localName(node.name) === "a")
     return {
       name: "g",
-      attrs: Object.fromEntries(
-        Object.entries(attrs).filter(([k]) => k !== "href" && k !== "xlink:href" && k !== "target"),
-      ),
+      attrs: Object.fromEntries(Object.entries(attrs).filter(([k]) => !["href", "target"].includes(localName(k)))),
       children,
     };
   return { name: node.name, attrs, children };
@@ -256,18 +264,19 @@ function drawProgress(name: string, attrs: Record<string, string>, draw: number)
 }
 
 function cleanAttr(name: string, value: string, ctx: Walk): string | null {
-  if (/^on/i.test(name)) return null;
-  if (name.startsWith("xmlns")) return null;
-  if (name === "href" || name === "xlink:href") {
+  const local = localName(name);
+  if (/^on/i.test(local) || DROPPED_ATTRS.has(local)) return null;
+  if (name.toLowerCase().startsWith("xmlns")) return null;
+  if (local === "href") {
     const v = value.trim();
     if (v.startsWith("#")) return `#${ctx.prefix}${v.slice(1)}`;
     if (/^data:image\/(png|jpe?g|gif|webp);/i.test(v)) return v;
     ctx.warnings.push(`a link to "${v.slice(0, 40)}" was removed: only #ids and embedded raster images are drawn`);
     return null;
   }
-  if (name === "id") return `${ctx.prefix}${value}`;
+  if (local === "id") return `${ctx.prefix}${value}`;
   let v = withTokens(value, ctx);
-  if (name === "style") v = cleanStyleSheet(v, ctx);
+  if (local === "style") v = cleanStyleSheet(v, ctx);
   else v = prefixUrls(v, ctx.prefix);
   return v;
 }

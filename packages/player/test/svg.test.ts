@@ -3,6 +3,40 @@ import { parseSvg, prepareSvg, svgIntrinsicSize } from "../src/overlays/svg";
 
 const box = { width: 100, height: 50 };
 
+describe("prepareSvg, given a hostile file", () => {
+  it("drops script and embedding elements however their names are spelled", () => {
+    const { markup, warnings } = prepareSvg(
+      '<svg viewBox="0 0 10 10"><foreignobject><IFRAME srcdoc="&lt;script&gt;alert(1)&lt;/script&gt;"/></foreignobject>' +
+        '<SCRIPT>alert(2)</SCRIPT><svg:script>alert(3)</svg:script><ForeignObject/><Iframe src="https://x"/>' +
+        '<rect width="10" height="10"/></svg>',
+      { box },
+    );
+    expect(markup.toLowerCase()).not.toMatch(/foreignobject|iframe|script|alert/);
+    expect(markup).toContain('<rect width="10" height="10"/>');
+    expect(warnings.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it("drops src, srcdoc, handlers and outside links however they are spelled", () => {
+    const { markup } = prepareSvg(
+      '<svg viewBox="0 0 10 10"><image SRC="https://x/a.png" srcdoc="x" ONLOAD="alert(1)" width="1" height="1"/>' +
+        '<A HREF="javascript:alert(2)"><rect XLINK:HREF="javascript:alert(3)" width="1" height="1"/></A></svg>',
+      { box },
+    );
+    expect(markup.toLowerCase()).not.toMatch(/src|onload|javascript|alert/);
+    expect(markup).toContain("<g>");
+  });
+
+  it("cleans a stylesheet however its tag is spelled", () => {
+    const { markup } = prepareSvg(
+      '<svg viewBox="0 0 10 10"><STYLE>@import url(https://x/a.css); rect { fill: url(https://x/p.svg#p) }</STYLE>' +
+        '<rect STYLE="fill: url(https://x/q.svg#q)" width="1" height="1"/></svg>',
+      { box },
+    );
+    expect(markup).not.toContain("https://x");
+    expect(markup).not.toContain("@import");
+  });
+});
+
 describe("prepareSvg", () => {
   it("sizes the root to the box, keeping the drawing's own coordinates", () => {
     const out = prepareSvg('<svg width="20" height="10"><rect width="20" height="10"/></svg>', { box }).markup;
