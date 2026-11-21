@@ -778,7 +778,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/sdk`
 
-202 exports.
+203 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -977,6 +977,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `TranscriptWord` | interface |  |
 | `TransformActions` | interface |  |
 | `TransitionActions` | interface |  |
+| `trimValue` | function | The value `clip/trim` takes for an edge moved to timeline time `at`. |
 | `ValidationResult` | interface |  |
 | `VideoModule` | interface |  |
 | `walk` | function |  |
