@@ -10,6 +10,8 @@ export interface SourceView {
   readonly changed: ReadonlySet<number>;
   /** Edits the fold could not write, with the reason (an element built by code, for one). */
   readonly skipped: readonly { readonly id: string; readonly reason: string }[];
+  /** Why the edits could not be written at all, when the fold failed; `text` is then the file as opened. */
+  readonly error?: string;
 }
 
 /** The file as the edits so far leave it: the executor's log folded into the opened text. */
@@ -17,8 +19,18 @@ export function useSource(original: string): SourceView {
   const { state, executor } = useEditor();
   return useMemo(() => {
     if (!executor || executor.log().net.size === 0) return { text: original, changed: new Set<number>(), skipped: [] };
-    const folded = foldToSource(original, executor.log(), state);
-    return { text: folded.text, changed: changedLines(original, folded.text), skipped: folded.skipped };
+    // A fold that fails shows its reason here, rather than taking the rest of the editor down with it.
+    try {
+      const folded = foldToSource(original, executor.log(), state);
+      return { text: folded.text, changed: changedLines(original, folded.text), skipped: folded.skipped };
+    } catch (error) {
+      return {
+        text: original,
+        changed: new Set<number>(),
+        skipped: [],
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
   }, [original, executor, state]);
 }
 

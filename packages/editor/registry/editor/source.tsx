@@ -19,7 +19,7 @@ export function Source({
   name?: string;
   className?: string;
 }) {
-  const { text, changed, skipped } = useSource(source);
+  const { text, changed, skipped, error } = useSource(source);
   const [copied, setCopied] = useState(false);
   const lines = text.split("\n");
   const view = useRef<HTMLPreElement>(null);
@@ -46,6 +46,11 @@ export function Source({
         <span className="font-mono">{name}</span>
         <span>{changed.size === 0 ? "unchanged" : `${changed.size} line${changed.size === 1 ? "" : "s"} changed`}</span>
         {skipped.length > 0 && <span className="text-destructive">{skipped.length} edit(s) not written</span>}
+        {error && (
+          <span className="truncate text-destructive" role="alert" title={error}>
+            The edits could not be written: {error}
+          </span>
+        )}
         <div className="ml-auto flex gap-1">
           <Button variant="ghost" size="sm" onClick={copy}>
             {copied ? <Check /> : <Copy />} Copy
