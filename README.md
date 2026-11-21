@@ -33,6 +33,11 @@
 UberScene is a React library for making videos and building editors around them. One TSX file is the video: clips,
 captions, audio, transitions, effects, and any React, Motion or three.js on top. Play it in the browser, adjust it on a timeline, export it to MP4.
 
+<p align="center">
+  <a href="https://uberscene.prefixtree.xyz/examples/coffee"><img src="docs/public/readme/coffee.gif" width="640" alt="The coffee film: an espresso pours under FAST SHOT, a Warm LUT badge comes in as the grade warms, then three glasses under EVERY GLASS, A LINE OF CODE"></a>
+  <br><sub><b>The coffee film</b>, four stock shots cut in one TSX file. <a href="https://uberscene.prefixtree.xyz/examples/coffee">Watch it with sound →</a></sub>
+</p>
+
 ## Why
 
 - **A video is a file.** Diff it, review it in a pull request, generate a hundred variants.
@@ -140,19 +145,7 @@ npx shadcn add https://uberscene.prefixtree.xyz/r/editor.json
 ```
 
 Drag a bar to move it, drag its end to trim it, or type in the inspector. Every edit can be undone, and each one lands
-in the file as the one value it changed:
-
-<p align="center">
-  <img src="docs/public/readme/editor-source.webp" width="820" alt="The editor's Source tab after lengthening the title by half a second: line 14 is marked and now reads duration={3}">
-</p>
-
-Titles and captions get a typography panel, laid out as a design tool's text section: preset, font, weight, size,
-line height, letter spacing, alignment, decoration, colour, stroke and shadow. Each field shows the value the text has
-now and writes only the key you change:
-
-<p align="center">
-  <img src="docs/public/readme/editor-typography.webp" width="360" alt="The typography panel: preset h1, Space Grotesk, Bold 700 at 96, line height 1.05, letter spacing 6, centred, italic, colour #ffcf5a">
-</p>
+in the file as the one value it changed.
 
 [Try it](https://uberscene.prefixtree.xyz/editor/) or read [the shadcn editor](https://uberscene.prefixtree.xyz/guide/editor).
 
