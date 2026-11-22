@@ -13,7 +13,9 @@
         "docs/.vitepress/config.mts",
         "docs/.vitepress/theme/index.ts",
         "docs/.vitepress/theme/playground/mount.tsx",
-        "docs/.vitepress/theme/playground/starters.ts"
+        "docs/.vitepress/theme/playground/starters.ts",
+        // A 3D shot in an edit: a video file and the shot module it imports, loaded by path like any cut file.
+        "examples/3d/*.tsx"
       ],
       // Run through its binary by scripts/check-packages.mjs.
       "ignoreDependencies": ["@arethetypeswrong/cli"]
