@@ -29,8 +29,11 @@ Coda-DaVinci (Ji, Wang, Shi et al., arXiv 2611.26595, November 2026). What it do
   Flash, with GPT-6-Astra and Seedance 2.5 fixed, both engines raise the overall mean over direct generation.
   Blender scores higher on all four dimensions (physics 3.45, instruction 3.76, consistency 3.88, aesthetics and
   fluency 3.76, mean 3.71, against direct generation's 3.508) and uses about 9.1 M agent tokens per case, "roughly
-  twice" Three.js. Three.js's bars carry no labels: read off the chart, its mean is about 3.6, and its aesthetics and
-  fluency sit at or slightly below direct generation's.
+  twice" Three.js. Three.js's bars carry no labels. Measured from the project page's figure, calibrated on the labelled
+  Blender bars and on direct generation's values from Table 5 (fit within 0.01): physics 3.37, instruction 3.66,
+  consistency 3.79, aesthetics and fluency 3.61, mean 3.61, at about 4.6 M tokens. Against direct generation (3.242,
+  3.364, 3.758, 3.667, 3.508), Three.js gains most in instruction following (+0.30) and is slightly worse in
+  aesthetics and fluency (-0.06); Blender gains in all four.
 - **A correct proxy is not enough.** "Even with correct proxy actions or camera movements, the video may deviate if
   the model does not follow the reference" (section 5.3).
 
