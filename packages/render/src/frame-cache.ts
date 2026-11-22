@@ -210,7 +210,7 @@ export class FrameKeys {
     );
     const body = stable(drawn, flags);
     const assets = new Set<string>();
-    for (const m of body.matchAll(/asset:([A-Za-z0-9_-]+)/g)) assets.add(m[1] as string);
+    for (const m of body.matchAll(/asset:([A-Za-z0-9_.-]+)/g)) assets.add(m[1] as string);
     for (const m of body.matchAll(/"asset":"([^"]+)"/g)) assets.add((m[1] as string).replace(/^asset:/, ""));
     const stats = await Promise.all([...assets].sort().map(async (id) => `${id}=${await this.stat(id)}`));
     const hash = createHash("sha256");

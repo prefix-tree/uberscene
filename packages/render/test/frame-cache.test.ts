@@ -13,13 +13,14 @@ let dir = "";
 beforeAll(() => {
   mkdirSync(scratch, { recursive: true });
   dir = mkdtempSync(join(scratch, "k-"));
-  for (const name of ["a.mp4", "b.mp4", "look.cube"]) writeFileSync(join(dir, name), name);
+  for (const name of ["a.mp4", "b.mp4", "look.cube", "look.v2.cube"]) writeFileSync(join(dir, name), name);
 });
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
 const MANIFEST = `export const manifest = { assets: {
   a: { id: "a", kind: "video", duration: 10, fps: 30, width: 640, height: 360 },
   b: { id: "b", kind: "video", duration: 10, fps: 30, width: 640, height: 360 },
+  "look.v2": { id: "look.v2", kind: "lut" },
 } };`;
 
 /** A two-clip cut: a title over the first clip, an effect on the second, and whatever `more` adds to the text track. */
@@ -121,6 +122,18 @@ describe("frame keys", () => {
     const before = await keysOf(video(), FRAMES);
     utimesSync(join(dir, "b.mp4"), new Date(), new Date(Date.now() + 5000));
     const after = await keysOf(video(), FRAMES);
+    expect(FRAMES.filter((_, i) => before[i] !== after[i])).toEqual([90]);
+  });
+
+  it("a replaced file whose asset id has a dot changes the frames that read it", async () => {
+    // An id may hold a dot (asset:look.v2): the key reads look.v2.cube, not a file named look.
+    const graded = video().replace(
+      'effects={[{ type: "exposure"',
+      'effects={[{ type: "lut", src: "asset:look.v2" }, { type: "exposure"',
+    );
+    const before = await keysOf(graded, FRAMES);
+    utimesSync(join(dir, "look.v2.cube"), new Date(), new Date(Date.now() + 9000));
+    const after = await keysOf(graded, FRAMES);
     expect(FRAMES.filter((_, i) => before[i] !== after[i])).toEqual([90]);
   });
 

@@ -7,6 +7,7 @@ export { type Affordances, actionTarget, affordances, type PropAccess } from "./
 export { type ActionResult, type CanResult, Executor, type ExecutorOptions } from "./actions/executor";
 export { ActionHistory, type HistoryEntry, type HistorySnapshot } from "./actions/history";
 export { type ActionHandler, listHandlers } from "./actions/registry";
+export { trimValue } from "./actions/trim-value";
 export * from "./actions/types";
 export * from "./inspect/index";
 export * from "./manifest/cube";

@@ -3,7 +3,7 @@
 // way to get the skill too; this one cannot drift from the CLI.
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { dirname, join, relative, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 /** Where an install records what it wrote, inside the skill's folder. */
@@ -75,9 +75,10 @@ function filesIn(dir: string): string[] {
 const sha256 = (bytes: Buffer | string): string => createHash("sha256").update(bytes).digest("hex");
 
 /**
- * Writes the skill into a project. A folder this command wrote before is replaced when its files are as it left them;
+ * Writes the skill into a project. A folder this command wrote before is updated when its files are as it left them;
  * one with edited files, or a folder it did not write, is left alone unless `force` is given, and the error names what
- * would be lost.
+ * would change. Nothing it did not write is ever deleted: with `force`, the skill's own earlier files (those its marker
+ * lists) are removed, and in a folder without a marker its files are written over the ones they share, beside the rest.
  */
 export function installSkill(options: SkillInstallOptions = {}): SkillInstallResult {
   const cwd = options.cwd ?? process.cwd();
@@ -96,12 +97,14 @@ export function installSkill(options: SkillInstallOptions = {}): SkillInstallRes
       const added = filesIn(dir).filter((f) => f !== MARKER && !(f in previous!.files));
       if ((edited.length > 0 || added.length > 0) && !options.force)
         throw new Error(
-          `${dir} has changes since the skill was installed (${[...edited, ...added].join(", ")}); keep them, or run again with --force to replace the folder`,
+          `${dir} has changes since the skill was installed (${[...edited, ...added].join(", ")}); keep them, or run again with --force to replace the skill's own files (files you added are kept)`,
         );
+      removeOwnFiles(dir, Object.keys(previous.files));
     } else if (!options.force) {
-      throw new Error(`${dir} already holds files this command did not write; run again with --force to replace it`);
+      throw new Error(
+        `${dir} already holds files this command did not write; run again with --force to write the skill's files beside them (nothing there is deleted, a file of the same name is replaced)`,
+      );
     }
-    rmSync(dir, { recursive: true, force: true });
   }
 
   const files = filesIn(source);
@@ -114,4 +117,26 @@ export function installSkill(options: SkillInstallOptions = {}): SkillInstallRes
   }
   writeFileSync(markerPath, `${JSON.stringify({ version, files: written } satisfies Marker, null, 2)}\n`);
   return { dir, version, ...(previous ? { previous: previous.version } : {}), files };
+}
+
+/**
+ * Deletes the files an earlier install wrote, as its marker lists them, and then any folder of theirs that is left
+ * empty. A listed path that would leave `dir` is skipped: the marker is a file anyone can edit.
+ */
+function removeOwnFiles(dir: string, files: readonly string[]): void {
+  const parents = new Set<string>();
+  for (const file of files) {
+    const path = resolve(dir, file);
+    if (relative(dir, path).startsWith("..") || isAbsolute(relative(dir, path))) continue;
+    rmSync(path, { force: true });
+    for (
+      let at = dirname(path);
+      at !== dir && relative(dir, at) && !relative(dir, at).startsWith("..");
+      at = dirname(at)
+    )
+      parents.add(at);
+  }
+  // Deepest first, so a folder emptied by its children's removal goes too.
+  for (const at of [...parents].sort((a, b) => b.length - a.length))
+    if (existsSync(at) && readdirSync(at).length === 0) rmSync(at, { recursive: true, force: true });
 }

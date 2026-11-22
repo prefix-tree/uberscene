@@ -3,7 +3,7 @@ import { type PointerEvent as ReactPointerEvent, useRef, useState } from "react"
 
 import { useEdit, useEditor, useSelection } from "@uberscene/editor";
 import { useCompositionTime, usePlayer } from "@uberscene/player";
-import { affordances, type ElementRow } from "@uberscene/sdk";
+import { affordances, type ElementRow, trimValue } from "@uberscene/sdk";
 
 import { useRows } from "./use-rows";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -66,27 +66,15 @@ export function Timeline({ className }: { className?: string }) {
     if (delta === 0) return;
     const r = (n: number) => Math.round(n * 1000) / 1000;
     const { start, duration } = placed(row, grab, delta, frame);
-    const speed = row.speed ?? 1;
+    const item = state.items.get(row.id);
+    // A trim takes the edge's new place as the sdk reads it: for footage, its time in the source file.
     const action =
       grab === "move"
         ? { type: "clip/move", params: { id: row.id, place: { start: r(start) } } }
-        : row.asset !== undefined && row.in !== undefined && row.out !== undefined
-          ? // A footage clip's edges are its source in and out, in the asset's own seconds.
-            {
-              type: "clip/trim",
-              params: {
-                id: row.id,
-                edge: grab,
-                value: r(
-                  grab === "in" ? row.in + (start - row.start) * speed : row.out + (duration - row.duration) * speed,
-                ),
-              },
-            }
-          : // Anything else: the timeline time of that edge.
-            {
-              type: "clip/trim",
-              params: { id: row.id, edge: grab, value: r(grab === "in" ? start : start + duration) },
-            };
+        : {
+            type: "clip/trim",
+            params: { id: row.id, edge: grab, value: trimValue(item ?? row, grab === "in" ? start : start + duration) },
+          };
     const result = edit.execute(action as Parameters<typeof edit.execute>[0]);
     setError(result.ok ? null : (result.errors?.map((e) => e.message).join("; ") ?? "Refused"));
   };
