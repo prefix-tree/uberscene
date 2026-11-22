@@ -257,15 +257,36 @@ export class BrowserEngine {
     try {
       return await work(page);
     } catch (error) {
-      // A file the resolver could not find reaches the page as a failed fetch; say what the resolver said.
-      const [missing] = this.server.mediaErrors;
-      throw missing ? new Error(missing) : error;
+      throw pageError(error, this.server.mediaErrors);
     } finally {
       const next = this.waiting.shift();
       if (next) next(page);
       else this.idle.push(page);
     }
   }
+}
+
+/**
+ * The error to report for work a page failed. A file the resolver could not find reaches the page as a failed fetch
+ * of `/media/<id>`: that one is told as the resolver's own message for the asset. Anything else (a frame that timed
+ * out, an error in the file's code) is kept as it is, with a media failure seen earlier attached as its cause, so a
+ * missing asset under --continue does not stand in for a bug elsewhere.
+ */
+export function pageError(error: unknown, mediaErrors: readonly string[]): unknown {
+  const message = error instanceof Error ? error.message : String(error);
+  const fetched = /fetching \/media\/([^\s:]+)/.exec(message)?.[1];
+  if (fetched !== undefined) {
+    let id = fetched;
+    try {
+      id = decodeURIComponent(fetched);
+    } catch {}
+    const said = mediaErrors.find((m) => m.includes(`"${id}"`)) ?? mediaErrors[0];
+    if (said) return new Error(said, { cause: error });
+    return error;
+  }
+  const [first] = mediaErrors;
+  if (first && error instanceof Error && error.cause === undefined) error.cause = new Error(first);
+  return error;
 }
 
 async function openPage(browser: Browser, url: string, warn: ((m: string) => void) | undefined): Promise<Page> {

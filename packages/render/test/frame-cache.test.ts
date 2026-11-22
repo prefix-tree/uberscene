@@ -1,10 +1,10 @@
-import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { directoryResolver, loadVideo } from "../src";
-import { FrameKeys, readCached, writeCached } from "../src/frame-cache";
+import { FrameKeys, readCached, trimCache, writeCached } from "../src/frame-cache";
 import { blankPicture, decodePng, encodePng, paste } from "../src/png";
 
 const scratch = join(import.meta.dirname, ".tmp", "frame-cache");
@@ -161,6 +161,30 @@ describe("the cache folder", () => {
     expect(readCached(cache, "a.png")).toBeNull();
     writeCached(cache, "a.png", Uint8Array.from([1, 2, 3]));
     expect([...(readCached(cache, "a.png") ?? [])]).toEqual([1, 2, 3]);
+  });
+
+  it("is trimmed to its cap, the files used longest ago going first", () => {
+    const cache = join(dir, "cache", "trimmed");
+    mkdirSync(cache, { recursive: true });
+    const kb = new Uint8Array(1024);
+    // Ten files of 1 KB, each a second older than the next; f2 is read, which counts as a use.
+    for (let i = 0; i < 10; i++) {
+      writeFileSync(join(cache, `f${i}.png`), kb);
+      const at = new Date(Date.now() - (10 - i) * 1000);
+      utimesSync(join(cache, `f${i}.png`), at, at);
+    }
+    expect(readCached(cache, "f2.png")).not.toBeNull();
+    trimCache(cache, 6 * 1024);
+    const left = readdirSync(cache).sort();
+    // A cap of 6 KB trims to 90% of it: five files stay, the newest four and the one just read.
+    expect(left).toEqual(["f2.png", "f6.png", "f7.png", "f8.png", "f9.png"]);
+  });
+
+  it("leaves a folder under its cap alone", () => {
+    const cache = join(dir, "cache", "small");
+    writeCached(cache, "a.png", Uint8Array.from([1]));
+    trimCache(cache, 1024);
+    expect(readdirSync(cache)).toEqual(["a.png"]);
   });
 
   it("a folder that cannot be written is not an error", () => {

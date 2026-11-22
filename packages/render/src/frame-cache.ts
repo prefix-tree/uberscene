@@ -3,7 +3,7 @@
 // the fonts, and the version of UberScene and of Chrome. A frame an edit did not touch keeps its key, so it is read
 // from disk instead of drawn again; a frame it did touch gets a new key, and the old file is simply never read.
 import { createHash } from "node:crypto";
-import { mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { frameStartSeconds, motionBlurOf, shutterTimes } from "@uberscene/kit/schema";
@@ -229,16 +229,31 @@ export async function wholeKey(keys: FrameKeys, extra: unknown): Promise<string>
   return keys.whole_(extra);
 }
 
-/** A file from the cache, or null. */
+/** The most the cache folder holds, in bytes; past it the files used longest ago are deleted. */
+export const CACHE_CAP_BYTES = 500 * 1024 * 1024;
+/** Bytes written to a folder between two trims of it: a trim lists the whole folder, so not on every frame. */
+const TRIM_EVERY_BYTES = 25 * 1024 * 1024;
+const writtenSinceTrim = new Map<string, number>();
+
+/** A file from the cache, or null. A hit counts as a use, so the trim keeps it over files not read since. */
 export function readCached(dir: string, name: string): Uint8Array | null {
   try {
-    return readFileSync(join(dir, name));
+    const bytes = readFileSync(join(dir, name));
+    try {
+      const now = new Date();
+      utimesSync(join(dir, name), now, now);
+    } catch {}
+    return bytes;
   } catch {
     return null;
   }
 }
 
-/** Keeps bytes in the cache. A cache that cannot be written is not an error: the frame is drawn again next time. */
+/**
+ * Keeps bytes in the cache. A cache that cannot be written is not an error: the frame is drawn again next time. Every
+ * edit makes new keys, so the folder is trimmed to CACHE_CAP_BYTES as it fills: on the first write of a process, then
+ * every TRIM_EVERY_BYTES.
+ */
 export function writeCached(dir: string, name: string, bytes: Uint8Array): void {
   try {
     mkdirSync(dir, { recursive: true });
@@ -246,7 +261,42 @@ export function writeCached(dir: string, name: string, bytes: Uint8Array): void 
     const partial = join(dir, `${name}.${process.pid}.tmp`);
     writeFileSync(partial, bytes);
     renameSync(partial, join(dir, name));
+    const since = writtenSinceTrim.get(dir);
+    if (since === undefined || since + bytes.length >= TRIM_EVERY_BYTES) {
+      trimCache(dir);
+      writtenSinceTrim.set(dir, 0);
+    } else writtenSinceTrim.set(dir, since + bytes.length);
   } catch {
     /* a read-only folder, a full disk: carry on without the cache */
+  }
+}
+
+/**
+ * Deletes the cache's files used longest ago (by modified time, which a read refreshes) until the folder holds no
+ * more than `cap` bytes, and a little under it, so the next writes do not trim again at once.
+ */
+export function trimCache(dir: string, cap = CACHE_CAP_BYTES): void {
+  let files: { path: string; size: number; used: number }[];
+  try {
+    files = readdirSync(dir).flatMap((name) => {
+      try {
+        const st = statSync(join(dir, name));
+        return st.isFile() ? [{ path: join(dir, name), size: st.size, used: st.mtimeMs }] : [];
+      } catch {
+        return [];
+      }
+    });
+  } catch {
+    return;
+  }
+  let total = files.reduce((sum, f) => sum + f.size, 0);
+  if (total <= cap) return;
+  const target = cap * 0.9;
+  for (const f of files.sort((a, b) => a.used - b.used)) {
+    if (total <= target) break;
+    try {
+      rmSync(f.path, { force: true });
+      total -= f.size;
+    } catch {}
   }
 }
