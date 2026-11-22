@@ -11,13 +11,7 @@
       "@uberscene/player",
       "@uberscene/editor",
       "@uberscene/render",
-      "uberscene",
-      "@uberscene/codecs",
-      "@uberscene/codecs-darwin-arm64",
-      "@uberscene/codecs-darwin-x64",
-      "@uberscene/codecs-linux-x64-gnu",
-      "@uberscene/codecs-linux-arm64-gnu",
-      "@uberscene/codecs-win32-x64"
+      "uberscene"
     ]
   ],
   "updateInternalDependencies": "patch",

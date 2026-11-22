@@ -50,13 +50,14 @@ bit-exact against ffmpeg and need no FFmpeg, so they keep the licence and the "n
     with one warning. craft-audio's symphonia fallback (MPL-2.0) is left out.
 - **ProRes returns, only behind the flag:** `--codec prores` into `.mov` through Mediabunny's MOV writer. `--quality`
   picks the profile (Proxy, LT, 422, 422 HQ, 4444).
-- **On npm as `@uberscene/codecs`** (added after the first version, which was built from source only). It is opt-in:
-  nothing installs it unless asked. It lists one package per platform as optional dependencies, each with `os`, `cpu`
-  and `libc`, so npm, pnpm and yarn install only the one that fits: macOS arm64 and x64, Linux x64 and arm64 (glibc),
-  Windows x64. The platform packages are sub-projects of the workspace (`packages/codecs/platforms/*`), versioned
-  with every other package, because the wire protocol has no version of its own. The release workflow builds each
-  binary on its own platform, reads a clip with it, and puts it in its package; a package without its binary refuses
-  to pack. `pnpm native:build` and `UBERSCENE_CODEC_BIN` stay for other platforms and for development.
+- **Downloaded from the GitHub release** (added after the first version, which was built from source only). The
+  release builds the binary on each platform it supports (macOS arm64 and x64, Linux x64 and arm64 with glibc,
+  Windows x64), reads a clip with it, attaches it to the version's GitHub release, and writes the binaries' SHA-256s
+  into the render package. The first export with `UBERSCENE_CODECS`, or `uberscene codecs install`, downloads the
+  machine's binary into a cache and checks it against that hash, the way Chrome is downloaded. One package per
+  platform on npm (optional dependencies, as esbuild ships) was built first and set aside: six more packages for one
+  experimental binary, against one download the export already does for Chrome. `pnpm native:build` and
+  `UBERSCENE_CODEC_BIN` stay for other platforms and for development.
 
 ## Consequences
 

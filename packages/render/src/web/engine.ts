@@ -6,7 +6,7 @@ import type { MediaResolver } from "@uberscene/player/engine";
 import type { AssetManifest } from "@uberscene/sdk";
 
 import type { FontFile } from "../fonts";
-import { BROWSER_CODECS, type CodecModes, codecBinary, usesNative } from "../native/codecs";
+import { BROWSER_CODECS, type CodecModes, ensureCodecBinary, usesNative } from "../native/codecs";
 import type { NativeEncoded } from "../native/wire";
 import { CHROME_MILESTONE, findChrome, wrongChrome } from "./chrome";
 import type {
@@ -107,7 +107,7 @@ export class BrowserEngine {
       ...(options.log ? { log: options.log } : {}),
     });
     const codecs = options.codecs ?? BROWSER_CODECS;
-    const native = usesNative(codecs) ? { binary: codecBinary(), modes: codecs } : undefined;
+    const native = usesNative(codecs) ? { binary: await ensureCodecBinary(options.log), modes: codecs } : undefined;
     const server = await servePage(
       {
         source: options.source,
