@@ -1,0 +1,48 @@
+name: Build the native codecs
+
+# The native codecs (native/), built once per platform @uberscene/codecs is published for, on that platform's own
+# runner, and run on a clip before they are handed on. Each row is a row of packages/codecs/targets.json. Uploads each
+# binary as the artifact codec-<target>. Called by the release (release.yml) and by the weekly codec check
+# (codecs-weekly.yml), so the two build them the same way.
+on:
+  workflow_call:
+    inputs:
+      fail-fast:
+        description: Stop every build when one fails. The release does; the weekly check reports every platform.
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: ${{ inputs.fail-fast }}
+      matrix:
+        include:
+          - { target: darwin-arm64, rust: aarch64-apple-darwin, runner: macos-15 }
+          - { target: darwin-x64, rust: x86_64-apple-darwin, runner: macos-15-intel }
+          # The oldest Ubuntu runners: the binary then runs on any glibc from 2.35 on.
+          - { target: linux-x64-gnu, rust: x86_64-unknown-linux-gnu, runner: ubuntu-22.04 }
+          - { target: linux-arm64-gnu, rust: aarch64-unknown-linux-gnu, runner: ubuntu-22.04-arm }
+          - { target: win32-x64, rust: x86_64-pc-windows-msvc, runner: windows-latest }
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust }}
+      - run: cargo build --release --locked --target ${{ matrix.rust }} --manifest-path native/Cargo.toml
+      - name: Read a clip with it
+        shell: bash
+        run: |
+          bin="native/target/${{ matrix.rust }}/release/uberscene-codec"
+          [ -f "$bin.exe" ] && bin="$bin.exe"
+          "$bin" probe docs/public/playground/coffee.webm | grep '"decodable":true'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: codec-${{ matrix.target }}
+          path: native/target/${{ matrix.rust }}/release/uberscene-codec*
+          if-no-files-found: error
+          retention-days: 7

@@ -1,0 +1,113 @@
+name: Codec check
+
+# The native codecs on every platform they are published for, end to end, once a week and by hand (Actions → Codec
+# check → Run workflow): not part of every pull request's CI. It builds the binaries the way the release does
+# (codecs-build.yml), puts each in its npm package, and on each platform exports one simple edit (a cut from an HEVC
+# file joined to a ProRes file with a crossfade, three effects) to MP4, MOV (ProRes), WebM, AV1, WAV, MP3 and PNG,
+# reading every output back with the binary (packages/render/scripts/export-matrix.ts). Each platform's results are
+# in the run's summary, and its files in an artifact.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 5 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codec-check
+  cancel-in-progress: true
+
+jobs:
+  media:
+    # The footage, made once with ffmpeg on Linux: an HEVC clip, a ProRes clip and a tone.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/ffmpeg
+      - run: pnpm --filter @uberscene/render exec tsx scripts/codec-media.ts "$GITHUB_WORKSPACE/codec-media"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: codec-media
+          path: codec-media
+          retention-days: 7
+
+  build:
+    uses: ./.github/workflows/codecs-build.yml
+    with:
+      fail-fast: false
+
+  export:
+    needs: [media, build]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: darwin-arm64, runner: macos-15 }
+          - { target: darwin-x64, runner: macos-15-intel }
+          - { target: linux-x64-gnu, runner: ubuntu-22.04 }
+          - { target: win32-x64, runner: windows-latest }
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v4
+        with:
+          name: codec-${{ matrix.target }}
+          path: codec-build
+      - uses: actions/download-artifact@v4
+        with:
+          name: codec-media
+          path: codec-media
+      # Where npm would put it: the export finds it through @uberscene/codecs, as it does for someone who installed it.
+      - name: Put the binary in its package
+        shell: bash
+        run: |
+          binary=$(find codec-build -type f \( -name uberscene-codec -o -name uberscene-codec.exe \) | head -1)
+          node packages/codecs/scripts/place.mjs --target ${{ matrix.target }} --from "$binary"
+      - run: pnpm --filter @uberscene/render exec tsx src/cli.ts browser install
+      - name: Export the edit to every format
+        shell: bash
+        run: pnpm --filter @uberscene/render exec tsx scripts/export-matrix.ts --media "$GITHUB_WORKSPACE/codec-media"
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: exports-${{ matrix.target }}
+          path: packages/render/test/.tmp/export-matrix
+          if-no-files-found: ignore
+          retention-days: 14
+
+  decode-arm64:
+    # Chrome for Testing has no Linux arm64 build, so the export cannot run there: the binary reads the footage alone.
+    needs: [media, build]
+    runs-on: ubuntu-22.04-arm
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: codec-linux-arm64-gnu
+          path: codec-build
+      - uses: actions/download-artifact@v4
+        with:
+          name: codec-media
+          path: codec-media
+      - name: Read the footage with the binary
+        run: |
+          chmod +x codec-build/uberscene-codec
+          echo "### Decode check on linux arm64" >> "$GITHUB_STEP_SUMMARY"
+          for clip in codec-media/phone.mp4 codec-media/master.mov; do
+            probe=$(codec-build/uberscene-codec probe "$clip")
+            echo "$probe"
+            echo "- \`$(basename "$clip")\`: \`$probe\`" >> "$GITHUB_STEP_SUMMARY"
+            echo "$probe" | grep -q '"decodable":true'
+          done
