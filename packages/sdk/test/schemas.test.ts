@@ -4,6 +4,7 @@ import {
   capabilitiesOf,
   defaultTransitionParams,
   ELEMENTS,
+  ENGINE_SCHEMAS,
   isKeyframeProperty,
   isVocabulary,
   SCHEMAS_BY_KIND,
@@ -27,7 +28,9 @@ describe("element schemas", () => {
 
   it("accepts every element in the sample file", () => {
     for (const node of fixtureTree().byId.values()) {
-      const schema = SCHEMAS_BY_KIND[node.kind];
+      // An engine layer (<Three>, <Motion>) is a layer with its engine's props, as the resolver reads it.
+      const engine = typeof node.props.engine === "string" ? node.props.engine : undefined;
+      const schema = engine ? ENGINE_SCHEMAS[engine] : SCHEMAS_BY_KIND[node.kind];
       if (!schema) continue;
       const result = schema.safeParse(node.props);
       expect(result.success, `${node.kind} ${node.id}: ${result.success ? "" : result.error.message}`).toBe(true);

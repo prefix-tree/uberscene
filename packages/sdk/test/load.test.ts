@@ -76,7 +76,7 @@ export const shout = (s: string): string => s.toUpperCase();`,
 
   it("says which file imports a module that is not there", () => {
     expect(() => gatherLocalFiles(video, (p) => (p === "blocks/badge.tsx" ? files[p] : undefined))).toThrow(
-      'blocks/badge.tsx imports "../lib/text", which is not there (looked for lib/text.tsx, lib/text.ts, lib/text/index.tsx, lib/text/index.ts)',
+      'blocks/badge.tsx imports "../lib/text", which is not there (looked for lib/text.tsx, lib/text.ts, lib/text.js, lib/text/index.tsx, lib/text/index.ts, lib/text/index.js)',
     );
     expect(() => loadModule(video)).toThrow(/The file imports “.\/blocks\/badge”, which the host did not pass/);
   });

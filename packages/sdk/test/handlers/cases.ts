@@ -312,6 +312,7 @@ export const CASES: Partial<Record<ActionType, ActionInput>> = {
 
   "layer/setTiming": { type: "layer/setTiming", params: { id: "l1", duration: 2, offset: 0.5 } },
   "layer/setProps": { type: "layer/setProps", params: { id: "l1", props: { to: 900 } } },
+  "shot/set": { type: "shot/set", params: { id: "room", path: "camera.fov", value: 28 } },
 
   "source/bake": { type: "source/bake", params: { id: "b1" } },
   "source/setProp": { type: "source/setProp", params: { id: "c2", prop: "fit", value: "none" } },

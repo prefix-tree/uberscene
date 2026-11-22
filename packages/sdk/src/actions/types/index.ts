@@ -181,7 +181,10 @@ export interface ClipActions {
   "clip/setAnchor": { id: Id; anchor?: Id | "start"; offset?: number };
 }
 
-/** One key as a file writes it: `value` at `at` seconds into the element; `easing` leaves it. */
+/**
+ * One key as a file writes it: `value` at `at` seconds into the element; `easing` leaves it. A shot's keys are in
+ * its own time; one the file ties to a marker (`at: "marker:reveal"`) is read and kept as written.
+ */
 export interface KeyJson {
   readonly at: number;
   readonly value: Json;
@@ -371,6 +374,14 @@ export interface MulticamActions {
   "multicam/flatten": { id: Id };
 }
 
+export interface ShotActions {
+  /**
+   * Sets a value of a `<Three shot>`: `objects.<id>.<position|rotation|scale>` as `[x, y, z]`, `camera.<position|lookAt|fov>`,
+   * or `inputs.<name>`. A path with keys is changed with `key/update` instead; a channel the shot computes is refused.
+   */
+  "shot/set": { id: Id; path: string; value?: Json };
+}
+
 export interface LayerActions {
   /**
    * Sets a <Layer>'s duration, anchor, offset or start; the escape hatch for timing a Layer. A new anchor drops a word
@@ -405,6 +416,7 @@ export type ActionMap = CompositionActions &
   MaskActions &
   MulticamActions &
   LayerActions &
+  ShotActions &
   SourceActions;
 
 export type ActionType = keyof ActionMap;
