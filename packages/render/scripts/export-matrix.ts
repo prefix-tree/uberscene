@@ -37,7 +37,7 @@ export const manifest = ${JSON.stringify({
 export default function Video() {
   return (
     <Composition fps={30} width={640} height={360}>
-      <Clip id="cut" src="asset:phone" in={0.5} out={2} effects={[{ type: "saturation", amount: 1.6 }]} />
+      <Clip id="cut" src="asset:phone" in={0.5} out={2} effects={[{ type: "saturation", amount: 0.6 }]} />
       <Transition id="join" type="crossfade" duration={0.5} />
       <Clip
         id="next"
