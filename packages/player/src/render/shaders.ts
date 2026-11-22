@@ -223,8 +223,8 @@ export class ShaderRunner {
   private canvas: AnyCanvas | null = null;
   private gl: Gl | null = null;
   private tried = false;
-  /** Programs by source, then by how the source's uniforms are declared. */
-  private readonly programs = new Map<string, Map<string, WebGLProgram>>();
+  /** Built programs by source and variant, or the error a build gave: a shader that does not compile fails once. */
+  private readonly programs = new Map<string, Map<string, WebGLProgram | Error>>();
   /** Uniform locations by program and name. */
   private readonly locations = new WeakMap<WebGLProgram, Map<string, WebGLUniformLocation | null>>();
   /** Textures the pictures are uploaded into, one per input name. */
@@ -242,6 +242,22 @@ export class ShaderRunner {
     private readonly height: number,
     private readonly createCanvas: CreateCanvas,
   ) {}
+
+  /**
+   * Gives the WebGL context back. A browser keeps only about 16 at once and drops the oldest past that, which may be
+   * the main player's, so a runner that is done with frees its own. The runner draws nothing after this.
+   */
+  dispose(): void {
+    const gl = this.gl;
+    this.tried = true;
+    this.gl = null;
+    this.canvas = null;
+    this.programs.clear();
+    this.uploads.clear();
+    this.targets.length = 0;
+    this.tables.clear();
+    gl?.getExtension("WEBGL_lose_context")?.loseContext();
+  }
 
   /** Whether WebGL 2 is there to run shaders. */
   get available(): boolean {
@@ -458,10 +474,17 @@ export class ShaderRunner {
       this.programs.set(source, bySource);
     }
     const cached = bySource.get(key);
+    if (cached instanceof Error) throw cached;
     if (cached) return cached;
-    const program = this.program(gl, fragmentSource(kind, source, declared, final, tables));
-    bySource.set(key, program);
-    return program;
+    try {
+      const program = this.program(gl, fragmentSource(kind, source, declared, final, tables));
+      bySource.set(key, program);
+      return program;
+    } catch (error) {
+      // Kept, so a typo in a shader is reported on each frame without compiling it again 60 times a second.
+      bySource.set(key, error instanceof Error ? error : new Error(String(error)));
+      throw error;
+    }
   }
 
   /** A uniform's location in a program, looked up once. */
@@ -475,23 +498,33 @@ export class ShaderRunner {
     return names.get(name) ?? null;
   }
 
+  /** Compiles and links a program. A build that fails deletes the shaders and program it made before it throws. */
   private program(gl: Gl, fragment: string): WebGLProgram {
+    const made: WebGLShader[] = [];
+    let program: WebGLProgram | null = null;
     const compile = (type: number, text: string): WebGLShader => {
       const shader = gl.createShader(type) as WebGLShader;
+      made.push(shader);
       gl.shaderSource(shader, text);
       gl.compileShader(shader);
       if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS))
         throw new Error(`the shader does not compile: ${asWritten(gl.getShaderInfoLog(shader))}`);
       return shader;
     };
-    const program = gl.createProgram() as WebGLProgram;
-    gl.attachShader(program, compile(gl.VERTEX_SHADER, VERTEX));
-    gl.attachShader(program, compile(gl.FRAGMENT_SHADER, fragment));
-    gl.bindAttribLocation(program, 0, "position");
-    gl.linkProgram(program);
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS))
-      throw new Error(`the shader does not link: ${asWritten(gl.getProgramInfoLog(program))}`);
-    return program;
+    try {
+      program = gl.createProgram() as WebGLProgram;
+      gl.attachShader(program, compile(gl.VERTEX_SHADER, VERTEX));
+      gl.attachShader(program, compile(gl.FRAGMENT_SHADER, fragment));
+      gl.bindAttribLocation(program, 0, "position");
+      gl.linkProgram(program);
+      if (!gl.getProgramParameter(program, gl.LINK_STATUS))
+        throw new Error(`the shader does not link: ${asWritten(gl.getProgramInfoLog(program))}`);
+      return program;
+    } catch (error) {
+      for (const shader of made) gl.deleteShader(shader);
+      if (program) gl.deleteProgram(program);
+      throw error;
+    }
   }
 
   /** One pass: `program` over the frame into `target` (a texture), or into the canvas when it is null. */

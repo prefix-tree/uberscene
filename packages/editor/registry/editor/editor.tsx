@@ -104,7 +104,13 @@ function Shortcuts() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
-      if (target?.closest("input, textarea, select, [contenteditable], [role=slider], [role=combobox]")) return;
+      // Keys a focused control uses itself are its own: arrows move between tabs, resize handles and toggles.
+      if (
+        target?.closest(
+          "input, textarea, select, [contenteditable], [role=slider], [role=combobox], [role=tab], [role=separator], [role=listbox], [role=option], [role=radio], [role=menuitem]",
+        )
+      )
+        return;
       const mod = e.metaKey || e.ctrlKey;
       const item = selected ? state.items.get(selected) : undefined;
       if (e.key === " " && !target?.closest("button")) {

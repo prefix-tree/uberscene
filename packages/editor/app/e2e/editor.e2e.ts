@@ -145,6 +145,19 @@ test("the arrow keys move the selection by a frame", async ({ page }) => {
   await agrees(page);
 });
 
+test("arrow and Delete keys on a focused resize handle or tab are left to it", async ({ page }) => {
+  await bar(page, "hint").click();
+  // Focused, not clicked: a click elsewhere would clear the selection, and the keys would have nothing to move.
+  await page.getByRole("separator").first().focus();
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("Delete");
+  await expect(bar(page, "hint")).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("tab", { name: "Timeline" }).focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(page.getByRole("tab", { name: "Source" })).toHaveAttribute("aria-selected", "true");
+  expect(await changed(page)).toEqual([]);
+});
+
 test("the Source tab shows the changed line and downloads the file", async ({ page }) => {
   await drag(page, "file", 1, 40);
   await page.getByRole("tab", { name: "Source" }).click();

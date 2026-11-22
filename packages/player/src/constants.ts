@@ -6,6 +6,8 @@ export const UNMOUNT_BEHIND_S = 0.5;
 export const INPUT_IDLE_CLOSE_S = 10;
 /** Hard cap on open Inputs; idle ones are evicted LRU first. */
 export const MAX_OPEN_INPUTS = 6;
+/** Audio sources the player keeps open at once; the one asked for longest ago is closed past this, and reopens on need. */
+export const MAX_OPEN_AUDIO = 8;
 /** Decoded frames a clip decoder keeps queued ahead of the play head. */
 export const QUEUE_TARGET = 8;
 export const QUEUE_MAX = 10;

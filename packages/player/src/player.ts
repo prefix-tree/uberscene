@@ -5,7 +5,7 @@ import { WebAudioOutput } from "./audio/web-audio-output";
 import { AudioContextClock } from "./clock/audio-clock";
 import { PerformanceClock } from "./clock/clock";
 import { Transport } from "./clock/transport";
-import { MAX_RATE, MIN_RATE, SETTLE_MS } from "./constants";
+import { MAX_OPEN_AUDIO, MAX_RATE, MIN_RATE, SETTLE_MS } from "./constants";
 import { AssetSources } from "./media/asset-sources";
 import { loadFileFonts } from "./media/fonts";
 import { defaultCreateCanvas } from "./media/frame-source";
@@ -466,28 +466,51 @@ export class PlayerCore {
     for (const fn of [...set]) (fn as Listener<K>)(event);
   }
 
+  /**
+   * The asset's audio source, opened once and shared. One that opens but cannot be decoded is closed; a failed open is
+   * forgotten, so the next request tries again (a network hiccup does not silence the asset until a remount); and past
+   * MAX_OPEN_AUDIO the source asked for longest ago is closed.
+   */
   private audioSource(assetId: string, factory: AudioSourceFactory): Promise<AudioSource> {
     let p = this.audioSources.get(assetId);
-    if (!p) {
-      p = this.media.resolve(assetId).then(async (handle) => {
-        const source = factory(
-          assetId,
-          handle,
-          this.audioContext ??
-            ({
-              createBuffer: () => {
-                throw new Error("no AudioContext");
-              },
-            } as unknown as BaseAudioContext),
-        );
-        const info = await source.open();
-        if (!info.decodable) throw new Error(`audio of "${assetId}" cannot be decoded`);
-        return source;
-      });
+    if (p) {
+      // Asked for again: last in the order the oldest is closed from.
+      this.audioSources.delete(assetId);
       this.audioSources.set(assetId, p);
-      p.catch(() => undefined);
+      return p;
     }
-    return p;
+    p = this.media.resolve(assetId).then(async (handle) => {
+      const source = factory(
+        assetId,
+        handle,
+        this.audioContext ??
+          ({
+            createBuffer: () => {
+              throw new Error("no AudioContext");
+            },
+          } as unknown as BaseAudioContext),
+      );
+      const info = await source.open().catch((error: unknown) => {
+        source.close();
+        throw error;
+      });
+      if (!info.decodable) {
+        source.close();
+        throw new Error(`audio of "${assetId}" cannot be decoded`);
+      }
+      return source;
+    });
+    const opening = p;
+    this.audioSources.set(assetId, opening);
+    opening.catch(() => {
+      if (this.audioSources.get(assetId) === opening) this.audioSources.delete(assetId);
+    });
+    while (this.audioSources.size > MAX_OPEN_AUDIO) {
+      const [oldest, closing] = this.audioSources.entries().next().value as [string, Promise<AudioSource>];
+      this.audioSources.delete(oldest);
+      void closing.then((s) => s.close()).catch(() => undefined);
+    }
+    return opening;
   }
 }
 

@@ -126,4 +126,13 @@ describe("timecode", () => {
   it("can be asked for non-drop at NTSC", () => {
     expect(timecode(1800, ntsc, { dropFrame: false })).toBe("00:01:00:00");
   });
+
+  it("keeps to real seconds at a fractional rate such as 12.5", () => {
+    const r = parseRate(12.5);
+    // Frame 125 is 10 s in: 13 frames to a second (12.5 rounded) would show 00:00:09:08.
+    expect(timecode(125, r)).toBe("00:00:10:00");
+    expect(timecode(12, r)).toBe("00:00:00:12");
+    expect(timecode(13, r)).toBe("00:00:01:00");
+    expect(timecode(12.5 * 3600, r)).toBe("01:00:00:00");
+  });
 });

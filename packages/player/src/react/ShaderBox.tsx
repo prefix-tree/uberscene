@@ -14,6 +14,8 @@ type DrawingContext = CanvasRenderingContext2D & { drawElementImage(element: Ele
 
 /** One WebGL runner per frame size for the whole page: a browser allows only a few WebGL contexts at once. */
 const runners = new Map<string, ShaderRunner>();
+/** The frame sizes kept at once; past this the size used longest ago gives its context back. */
+const MAX_RUNNERS = 4;
 /** Boxes whose draw is pending: each holds the frame, and they are not what a box waits for. */
 let boxesPending = 0;
 /** How many times a box looks again for an engine inside it to finish, a paint apart, before it draws anyway. */
@@ -22,9 +24,14 @@ const ENGINE_WAITS = 600;
 function runnerFor(width: number, height: number): ShaderRunner {
   const key = `${width}x${height}`;
   let runner = runners.get(key);
-  if (!runner) {
-    runner = new ShaderRunner(width, height, defaultCreateCanvas);
-    runners.set(key, runner);
+  if (runner) runners.delete(key);
+  else runner = new ShaderRunner(width, height, defaultCreateCanvas);
+  // Last used last: the first entry is the one to give back.
+  runners.set(key, runner);
+  while (runners.size > MAX_RUNNERS) {
+    const [oldest, old] = runners.entries().next().value as [string, ShaderRunner];
+    runners.delete(oldest);
+    old.dispose();
   }
   return runner;
 }

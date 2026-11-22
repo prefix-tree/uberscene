@@ -522,7 +522,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/kit/schema`
 
-249 exports.
+250 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -694,6 +694,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `sampleRateProblem` | function | Why a sample rate cannot be used, or null. |
 | `samplesUntil` | const | The first sample that starts at or after a time. |
 | `SCHEMAS_BY_KIND` | const |  |
+| `secondAndFrame` | function | The whole second a frame falls in and the frame's place within it, for a timecode. |
 | `secondsToTicks` | const | Seconds as the nearest tick. |
 | `SHADER_ONLY_EFFECTS` | const | Built-in shader effects with no CSS filter to fall back on. |
 | `shaderDefinition` | function | Checks a declaration and makes its definition; throws what is wrong with it. |

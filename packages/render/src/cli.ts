@@ -348,10 +348,10 @@ async function main(): Promise<number> {
       ...(values.around !== undefined ? { around: values.around } : {}),
       ...(values.motion !== undefined ? { motion: values.motion } : {}),
       ...(values.zones !== undefined ? { zones: readZone(values.zones) } : {}),
-      ...(values.step ? { step: Number(values.step) } : {}),
+      ...(values.step !== undefined ? { step: numberFlag("step", values.step) } : {}),
       ...(values.without !== undefined ? { without: values.without } : {}),
-      ...(values.cell ? { cell: Number(values.cell) } : {}),
-      ...(values.columns ? { columns: Number(values.columns) } : {}),
+      ...(values.cell !== undefined ? { cell: numberFlag("cell", values.cell) } : {}),
+      ...(values.columns !== undefined ? { columns: numberFlag("columns", values.columns) } : {}),
       ...(values.frames ? { frames: resolve(values.frames) } : {}),
       ...(values.listen !== undefined ? { listen: values.listen } : {}),
       ...(values["no-cache"] ? {} : { cacheDir: cacheDirOf(target) }),
@@ -407,8 +407,8 @@ async function main(): Promise<number> {
   ] as const) {
     if (!path) continue;
     const range = {
-      ...(values.from ? { from: Number(values.from) } : {}),
-      ...(values.to ? { to: Number(values.to) } : {}),
+      ...(values.from !== undefined ? { from: numberFlag("from", values.from) } : {}),
+      ...(values.to !== undefined ? { to: numberFlag("to", values.to) } : {}),
     };
     if (![...loaded.state.items.values()].some((p) => p.kind === "caption"))
       process.stderr.write(`warning: ${file} has no captions; ${path} holds none\n`);
@@ -435,9 +435,9 @@ async function main(): Promise<number> {
       source: { ...loaded.source, file },
       ...(values["safe-zone"] ? { safeZone: readZone(values["safe-zone"]) } : {}),
       ...(values.subject ? { subject: readSubject(values.subject) } : {}),
-      ...(values.step ? { step: Number(values.step) } : {}),
-      ...(values.from ? { from: Number(values.from) } : {}),
-      ...(values.to ? { to: Number(values.to) } : {}),
+      ...(values.step !== undefined ? { step: numberFlag("step", values.step) } : {}),
+      ...(values.from !== undefined ? { from: numberFlag("from", values.from) } : {}),
+      ...(values.to !== undefined ? { to: numberFlag("to", values.to) } : {}),
     });
     process.stdout.write(values.json ? `${JSON.stringify(result, null, 2)}\n` : formatLayout(result));
     return result.issues.length > 0 ? EXIT_LAYOUT_ISSUES : 0;
@@ -475,14 +475,14 @@ async function main(): Promise<number> {
     out: resolve(written),
     ...(values.draft ? { draft: true } : {}),
     tabs,
-    ...(values.from ? { from: Number(values.from) } : {}),
-    ...(values.to ? { to: Number(values.to) } : {}),
+    ...(values.from !== undefined ? { from: numberFlag("from", values.from) } : {}),
+    ...(values.to !== undefined ? { to: numberFlag("to", values.to) } : {}),
     ...(values.codec ? { videoCodec: values.codec as VideoCodec } : {}),
-    ...(values.bitrate ? { bitrate: Number(values.bitrate) } : {}),
+    ...(values.bitrate !== undefined ? { bitrate: numberFlag("bitrate", values.bitrate) } : {}),
     ...(values.quality ? { quality: values.quality as QualityName } : {}),
     ...(values.silent ? { silent: true } : {}),
     ...(values.copy ? { smartCopy: true } : {}),
-    ...(values.keyframe ? { keyFrameInterval: Number(values.keyframe) } : {}),
+    ...(values.keyframe !== undefined ? { keyFrameInterval: numberFlag("keyframe", values.keyframe) } : {}),
     ...(values.continue ? { onAssetError: "continue" as const } : {}),
     onProgress: tty ? (p) => process.stderr.write(`\rframe ${p.frame}/${p.frames}`) : () => undefined,
   });
@@ -493,6 +493,29 @@ async function main(): Promise<number> {
     `${written}: ${values.draft ? "a draft, every second frame at half size: " : ""}${result.frames} frames, ${result.width}x${result.height} at ${Number(result.fps.toFixed(3))} fps${result.audio ? ", with sound" : ""}, in ${seconds}s${result.tabs > 1 ? ` on ${result.tabs} tabs` : ""}${result.copiedFrames > 0 ? `, ${result.copiedFrames} frames copied` : ""}${nativeNote(result.codecs)} (${(result.frames / (result.wallMs / 1000)).toFixed(1)} fps)\n`,
   );
   return 0;
+}
+
+/** What each number flag takes, for its check and its message. */
+const NUMBER_FLAGS: Record<string, { readonly wants: string; readonly ok: (n: number) => boolean }> = {
+  from: { wants: "seconds", ok: (n) => n >= 0 },
+  to: { wants: "seconds above 0", ok: (n) => n > 0 },
+  step: { wants: "seconds above 0", ok: (n) => n > 0 },
+  cell: { wants: "pixels above 0", ok: (n) => n > 0 },
+  columns: { wants: "a whole number of columns", ok: (n) => Number.isInteger(n) && n >= 1 },
+  bitrate: { wants: "bits per second above 0", ok: (n) => n > 0 },
+  keyframe: { wants: "seconds above 0", ok: (n) => n > 0 },
+};
+
+/**
+ * A number flag's value. Anything but a finite number in its range is an error that names the flag: `--from 1:30`
+ * would otherwise reach the export as NaN and give an empty or broken file.
+ */
+function numberFlag(flag: keyof typeof NUMBER_FLAGS, value: string): number {
+  const rule = NUMBER_FLAGS[flag] as (typeof NUMBER_FLAGS)[string];
+  const n = Number(value);
+  if (value.trim() === "" || !Number.isFinite(n) || !rule.ok(n))
+    throw new Error(`--${flag} wants ${rule.wants}, got "${value}"`);
+  return n;
 }
 
 function numbers(spec: string, flag: string): number[] {

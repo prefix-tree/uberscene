@@ -4,6 +4,7 @@ import {
   frameStartSeconds,
   isDropFrame,
   type Rate,
+  secondAndFrame,
   timecode as smpteTimecode,
 } from "@uberscene/kit/schema";
 import { freezeHoldsOf, freezeShift, type Placement, rampAdvance, speedKeysOf } from "@uberscene/sdk/resolver";
@@ -25,9 +26,8 @@ export function frameTime(frame: number, rate: Rate): number {
 export function timecode(t: number, rate: Rate): string {
   const frame = frameIndex(Math.max(0, t), rate);
   if (isDropFrame(rate)) return smpteTimecode(frame, rate);
-  const nominal = Math.round(rate.num / rate.den);
-  const s = Math.floor(frame / nominal);
-  const f = frame % nominal;
+  // At a fractional rate such as 12.5, the second shown is the one the frame is in, not frames over a rounded rate.
+  const [s, f] = secondAndFrame(frame, rate);
   return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}.${String(f).padStart(2, "0")}`;
 }
 

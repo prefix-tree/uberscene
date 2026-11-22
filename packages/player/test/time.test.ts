@@ -1,3 +1,4 @@
+import { parseRate } from "@uberscene/kit/schema";
 import { rampAdvance, rampInverse, speedKeysOf } from "@uberscene/sdk";
 
 import { childrenOf, fixtureState, makeState } from "./helpers/state";
@@ -119,6 +120,11 @@ describe("frames", () => {
     expect(timecode(0, r30)).toBe("00:00.00");
     expect(timecode(0.5, r30)).toBe("00:00.15");
     expect(timecode(65.9, r30)).toBe("01:05.27");
+    // At 12.5 fps the second shown is the real one: not 00:09.08 from 13 frames to a second.
+    expect(timecode(10, parseRate(12.5))).toBe("00:10.00");
+    // t = 1 s is inside frame 12 (0.96 s to 1.04 s); the next second starts with frame 13.
+    expect(timecode(1, parseRate(12.5))).toBe("00:00.12");
+    expect(timecode(1.04, parseRate(12.5))).toBe("00:01.00");
     expect(timecode(-1, r30)).toBe("00:00.00");
   });
 

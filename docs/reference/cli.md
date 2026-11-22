@@ -332,7 +332,8 @@ no browser and answers in about a second. The legend's `cached` says how many ce
   them. Code brought in with `--import` is not seen: after changing such a module, pass `--no-cache`.
 - A frame drawn with a placeholder for media that could not be read is not kept.
 
-The folder is safe to delete, and belongs in `.gitignore`.
+The folder holds at most 500 MB: past that, the files used longest ago are deleted as new ones are written. It is safe
+to delete, and belongs in `.gitignore`.
 
 ## Fonts
 

@@ -60,4 +60,21 @@ describe("a codec process that cannot start", () => {
     expect(await end.text()).toMatch(/could not start/);
     expect((await fetch(`${base}/native/frames/clip?at=0`)).status).toBe(500);
   });
+
+  it("refuses a picture whose index is not a whole number just ahead of the next, instead of holding it forever", async () => {
+    const open = await fetch(`${base}/native/encode`, {
+      method: "POST",
+      body: JSON.stringify({ codec: "h264", width: 2, height: 2, fpsNum: 30, fpsDen: 1, keyint: 30 }),
+    });
+    const { session } = (await open.json()) as { session: string };
+    for (const n of ["abc", "-1", "1.5", "64", "100000"]) {
+      const res = await fetch(`${base}/native/encode/${session}?n=${n}`, {
+        method: "POST",
+        body: new Uint8Array(2 * 2 * 4),
+        signal: AbortSignal.timeout(5000),
+      });
+      expect(res.status).toBe(500);
+      expect(await res.text()).toMatch(/cannot be encoded now: the encoder takes 0 to 63/);
+    }
+  });
 });

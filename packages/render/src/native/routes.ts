@@ -51,6 +51,9 @@ export interface NativeRoutes {
   close(): void;
 }
 
+/** How far ahead of the next picture in order one may be sent: the page keeps two in flight. */
+const MAX_AHEAD = 64;
+
 export function nativeRoutes(binary: string, modes: CodecModes, media: MediaResolver): NativeRoutes {
   const running = new Set<Child>();
   const sessions = new Map<string, Session>();
@@ -212,6 +215,12 @@ export function nativeRoutes(binary: string, modes: CodecModes, media: MediaReso
   };
 
   const encodeFrame = async (req: IncomingMessage, res: ServerResponse, s: Session, n: number): Promise<void> => {
+    // A picture waits until the ones before it are written, so an index that is not a whole number just ahead of the
+    // next (repeated, skipped, or not a number) would wait forever with its picture held in memory.
+    if (!Number.isInteger(n) || n < s.next || n >= s.next + MAX_AHEAD || s.waiting.has(n))
+      throw new Error(
+        `picture ${n} cannot be encoded now: the encoder takes ${s.next} to ${s.next + MAX_AHEAD - 1}, once each`,
+      );
     const data = await body(req);
     if (data.length !== s.width * s.height * 4)
       throw new Error(`a picture of ${data.length} bytes was sent to an encoder of ${s.width}x${s.height}`);

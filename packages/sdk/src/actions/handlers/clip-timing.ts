@@ -451,8 +451,13 @@ define(carry(
         return invalid({ code: "DUPLICATE_ID", message: `"${a.params.newId}" exists` });
       if (!capabilitiesOf(item.kind).timed || item.kind === "transition" || item.kind === "gap")
         return invalid({ code: "INVALID_PARAMS", message: `<${item.kind}> cannot be split` });
-      if (a.params.at <= item.start + 1e-6 || a.params.at >= item.end - 1e-6)
-        return invalid({ code: "OUT_OF_BOUNDS", message: "split must fall strictly inside the element" });
+      // At least a frame on each side: a sliver shorter than a frame draws nothing and only clutters the file.
+      const frame = state.composition.rate.den / state.composition.rate.num;
+      if (a.params.at < item.start + frame - 1e-9 || a.params.at > item.end - frame + 1e-9)
+        return invalid({
+          code: "OUT_OF_BOUNDS",
+          message: "a split must leave at least one frame on each side of it",
+        });
       return ok;
     },
     apply: (a, log, ctx) => {
@@ -467,19 +472,20 @@ define(carry(
       const right = split.right;
       const rightProps: Record<string, Json | undefined> = { ...spec.props, ...split.rightProps, id: a.params.newId };
       const leftProps: Record<string, Json | undefined> = { ...split.leftProps };
+      // Each value written is tidied as a trim's are: a split at 11.3 writes out={22.56}, not 22.560000000000002.
       if (item.source) {
-        const boundary = item.source.in + atRel * item.source.speed;
+        const boundary = tidy(item.source.in + atRel * item.source.speed);
         leftProps.out = boundary;
         leftProps.duration = undefined;
         rightProps.in = boundary;
         rightProps.out = item.source.out;
         delete rightProps.duration;
       } else {
-        leftProps.duration = atRel;
-        rightProps.duration = item.duration - atRel;
+        leftProps.duration = tidy(atRel);
+        rightProps.duration = tidy(item.duration - atRel);
       }
-      if (layout === "free") rightProps.start = a.params.at;
-      if (layout === "anchored") rightProps.offset = Number(rawProp(state, item.id, "offset") ?? 0) + atRel;
+      if (layout === "free") rightProps.start = tidy(a.params.at);
+      if (layout === "anchored") rightProps.offset = tidy(Number(rawProp(state, item.id, "offset") ?? 0) + atRel);
       setProps(log, item.id, leftProps);
       const cleaned = Object.fromEntries(Object.entries(rightProps).filter(([, v]) => v !== undefined));
       insertNode(log, node.parent as string, item.id, { ...spec, id: a.params.newId, props: cleaned, children: right });

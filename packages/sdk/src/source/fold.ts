@@ -509,17 +509,22 @@ export function foldToSource(text: string, log: PatchLog, state: ResolvedState, 
   let current = text;
   const baked: string[] = [];
   let allEdits: SourceEdit[] = [];
+  let wrapped = false;
   for (let round = 0; round < maxRounds; round++) {
     let index = buildSourceIndex(current);
     if (needsMainTrackTag(log, index, state)) {
       current = wrapMainTrack(current, mainTrackCalls(index, state));
       index = buildSourceIndex(current);
+      wrapped = true;
     }
     const { edits, needsBake, skipped, fonts } = fold(log, index, state);
     if (needsBake.length === 0) {
       allEdits = [...allEdits, ...edits];
       const folded = applyEdits(current, edits);
-      const imports = elementImports(folded);
+      // Only a printed element can bring a tag the file does not import: an insert, a bake, or the main track wrapped
+      // around its clips. A drag that changes values skips this whole parse of the file, which the editor runs per step.
+      const printed = wrapped || baked.length > 0 || allEdits.some((e) => e.kind === "insert" || e.kind === "bake");
+      const imports = printed ? elementImports(folded) : [];
       const withImports = applyEdits(folded, imports);
       const declarations = fontDeclarations(withImports, fonts);
       return {
