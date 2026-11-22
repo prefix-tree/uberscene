@@ -4,9 +4,9 @@
   "title": "Inspector",
   "description": "The selected element's timing, text and props as fields, with a typography panel for titles and captions as a design tool shows it: font, weight, size, line height, letter spacing, alignment, decoration, colour, stroke and shadow. Props written as code show locked.",
   "dependencies": [
-    "@uberscene/editor@0.5.0",
-    "@uberscene/kit@0.5.0",
-    "@uberscene/sdk@0.5.0",
+    "@uberscene/editor@0.6.0",
+    "@uberscene/kit@0.6.0",
+    "@uberscene/sdk@0.6.0",
     "lucide-react@^1.77.0"
   ],
   "registryDependencies": [

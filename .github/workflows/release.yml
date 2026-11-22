@@ -99,8 +99,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           tag="v$(node -p "require('./packages/kit/package.json').version")"
-          gh release view "$tag" >/dev/null 2>&1 ||
-            gh release create "$tag" --verify-tag --title "$tag" --notes "See the packages' CHANGELOG.md files."
+          # The release's notes: .github/releases/<tag>.md when the version pull request wrote one.
+          notes=".github/releases/$tag.md"
+          if [ -f "$notes" ]; then set -- --notes-file "$notes"; else set -- --notes "See the packages' CHANGELOG.md files."; fi
+          if gh release view "$tag" >/dev/null 2>&1; then gh release edit "$tag" "$@"
+          else gh release create "$tag" --verify-tag --title "$tag" "$@"; fi
           gh release upload "$tag" codec-assets/* --clobber
       # Packs each package whose version is not on npm (swapping workspace:* for versions) and runs
       # `npm stage publish` on the tarball. The version stays un-installable until a maintainer approves it

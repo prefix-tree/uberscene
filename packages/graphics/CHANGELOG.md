@@ -1,5 +1,34 @@
 # @uberscene/graphics
 
+## 0.6.0
+
+### Patch Changes
+
+- Updated dependencies [28bdc58]
+- Updated dependencies [68c7b7c]
+- Updated dependencies [cf23cb8]
+- Updated dependencies [327d103]
+- Updated dependencies [0800d5e]
+- Updated dependencies [71e136e]
+- Updated dependencies [c8d956f]
+- Updated dependencies [fa69b88]
+- Updated dependencies [89e5b4b]
+- Updated dependencies [efb3f7f]
+- Updated dependencies [974c884]
+- Updated dependencies [261d5b6]
+- Updated dependencies [3e4e7c5]
+- Updated dependencies [3796367]
+- Updated dependencies [2ebd6a9]
+- Updated dependencies [2daa802]
+- Updated dependencies [f654ff7]
+- Updated dependencies [fd3e555]
+- Updated dependencies [23f68a7]
+- Updated dependencies [472246e]
+- Updated dependencies [f81b912]
+- Updated dependencies [45aabbd]
+- Updated dependencies [41f2ced]
+  - @uberscene/kit@0.6.0
+
 ## 0.5.0
 
 ### Minor Changes

@@ -1,5 +1,83 @@
 # uberscene
 
+## 0.6.0
+
+### Minor Changes
+
+- 28bdc58: `uberscene blocks add <name>` copies a block into the project and records it in the manifest; with `--into video.tsx --track <id> --at <moment>` it also writes the import and a `<Layer>` holding it, leaving the video as it was if that would give it errors. `uberscene blocks update` replaces copies nobody edited and prints what differs in edited ones. The kit gets `insertLayer` in `@uberscene/sdk`, an optional `blocks` record on `AssetManifest`, and a component imported from one of the file's own modules now gets the Layer's handles, as one declared in the file does.
+- 0ef018c: Six more blocks ship with the CLI: `ranked-list` (rows that slide to new places when their values change),
+  `bar-race` (bars that overtake each other period by period), `chat-reveal` (a question, then a reply that types in),
+  `terminal-typing` (commands typed after a prompt, their output line by line), `phone-tap` (a phone screen with
+  taps that ripple and select) and `quote-build` (a quote built word by word, key words stressed). `uberscene blocks`
+  lists nine.
+- 68c7b7c: Blocks: scene-sized pieces of motion design that ship with the CLI. `uberscene blocks` lists them by the job each does
+  (`--for`, `--aspect`, `--json`) and `--sheet` pastes their previews into one image. The first three are a grid of
+  cells that fills and counts, a wall of characters that changes on the beat, and a row of points lit in turn; the
+  example shorts are built on them. The kit gains `themeCss` (a theme token as a CSS value, for components that take
+  `$accent`) and `blockMetaSchema`.
+- 8155b03: The native codecs download on first use: the first export with `UBERSCENE_CODECS` fetches `uberscene-codec` for your machine (macOS arm64 and x64, Linux x64 and arm64 with glibc, Windows x64) from the version's GitHub release into `~/.cache/uberscene/codecs` (`UBERSCENE_CODEC_CACHE` moves it), and checks it against the SHA-256 the package carries. `npx uberscene codecs install` downloads it ahead, for a Dockerfile or a CI step. Before, the binary had to be built from the repository with Rust. `UBERSCENE_CODEC_BIN` still names a binary built elsewhere.
+- fa69b88: Everything about an element is a prop. A value is a constant, or a list of `{ at, value, easing? }` keys when it changes over time (`at` is seconds into the element; `easing` says how the value leaves that key, linear when left out). Effects are an ordered list on the element, a speed ramp is keys on `speed`, and held frames are a `freezes` list:
+  
+  ```tsx
+  <Clip id="pour" src="asset:coffee" in={8} out={14}
+    transform={{ scale: [{ at: 0, value: 1, easing: "easeInOut" }, { at: 3.5, value: 1.2 }] }}
+    effects={[{ type: "lut", src: "asset:warm" }, { type: "blur", radius: [{ at: 0, value: 8 }, { at: 1, value: 0 }] }]}
+    speed={[{ at: 0, value: 1, easing: "easeInOutQuad" }, { at: 1.6, value: 0.4 }]}
+    freezes={[{ start: 4.2, duration: 1.4, source: 12.4 }]}
+    volume={[{ at: 0, value: 0 }, { at: 0.5, value: 1 }]} pan={-0.3} />
+  ```
+  
+  - Keys animate `transform.scale` (one list moves both axes, `{ x, y }` each on its own), `rotation`, `opacity`, `anchor.x` and `anchor.y`, `borderRadius`, `crop.x`, `crop.y`, `crop.width` and `crop.height`, `box.x` and `box.y`, `volume`, `pan`, `speed` and every effect param.
+  - `effects` is on clips, titles, shapes, SVG, stickers, adjustments, nested sequences and layers: each entry `{ type, ...params, enabled? }`, `type` a built-in name or an `effect()` the file declares.
+  - `freezes` is on clips and audio: each hold `{ start, duration, source }`, from `start` seconds into the element, for `duration`, showing the source frame at `source`. `start` follows the naming rule: the second something starts at is `start`; keys keep `at`, a moment rather than a span.
+  - The `halftone` effect's `mode` param, `type` for a while on the way to 0.6, is `inks` (`"mono"` or `"cmyk"`): in an entry of `effects`, `type` names the effect.
+  - `pan` is a new prop; `volume` and `pan` keys replace `automation`.
+  - Masks, captions, angles, cuts and markers stay children.
+  
+  Errors on a key or an effect name the element and the prop path (`pour` at `effects.1.radius`). The edit actions address a key by element id, path and time (`key/add`, `key/update`, `key/move`, `key/remove`, `key/setAll`), an effect by its index (`effect/add`, `effect/remove`, `effect/update`, `effect/toggle`, `effect/setOrder`, `effect/setStack`), and the holds with `freeze/setAll`. The player and the export draw the same frames as before.
+  
+  Breaking: `<Keyframe>`, `<Effect>`, `<SpeedKey>`, `<Freeze>` and the `automation` prop are removed, with the `keyframe/*`, `speed/*` and `audio/setAutomation` actions. A file that still uses them fails with an error naming the fix. To move a file, run:
+  
+  ```sh
+  uberscene lint --fix video.tsx
+  ```
+  
+  The new `everything-is-a-prop` rule rewrites the children into props and their imports, gives the params and easings their 0.6 names on the way (a shadow's `radius` is `blur`, `"ease-in-out"` is `"easeInOut"`), and folds `automation` into `volume` keys with the same gain. The playground upgrades a shared link when it opens it.
+- efb3f7f: `uberscene lint <file.tsx>... [--fix] [--json]` runs the kit's static checks from the command line: one line per finding with its file, line and column, exit code 1 when an error is left. The file is read, never run. `--fix` writes the fixes the findings carry.
+  
+  A lint `Diagnostic` can now carry a `fix` (source edits), and `fixSource(text, options)` from `@uberscene/sdk` applies them round by round. A new rule, `deprecated-props`, reports props and values spelled the way an earlier version took them, from a `DEPRECATIONS` table (empty for now) and from `lint(text, { deprecations })`; where the new spelling is certain its fix renames the prop, respells the value or moves the prop into an object prop. The helpers it uses are exported for rules of your own: `renameProp`, `renameValue`, `movePropInto`, `movePropsInto`, `jsxTags`. The `free-code-clock` rule fixes `window.requestAnimationFrame` and the like to their bare names, and takes `willReadFrequently: true` out.
+- 974c884: Clips can be written straight in `<Composition>`, with no `<Track>`: they play in the order they are written, as the video's main track, the bottom one (id `main`). `<Transition>` and `<Gap>` go between them the same way. Tracks written beside them draw on top, so adding a b-roll or title track leaves the main cut as it is. Write `<Track id="main">` around the clips when the track needs a setting of its own; the editor does that when you mute, lock or move it. A clip written after a `<Track>` gets the lint warning `main-clips-first`. `uberscene add` now prints the element to paste (`<Clip id="talk" src="asset:talk" />`), `@uberscene/sdk` gets `wrapMainTrack`, and `ResolvedTrack.implicit` marks a main track with no element. `<Composition> cannot contain <title>` now says to put it in a `<Track>`.
+- 8ff4285: Experimental native codecs behind `UBERSCENE_CODECS`. `native-decode`, `native-encode` or `native` hands decoding the footage, encoding the export, or both to `uberscene-codec`, a Rust process on FilmCraft's craft-video (no FFmpeg), built from source with `pnpm native:build` or named by `UBERSCENE_CODEC_BIN`. It decodes HEVC (8 and 10 bit), ProRes and DNxHR, which Chrome cannot without hardware, alongside H.264, VP8, VP9 and AV1, falling back to the browser for an asset it cannot read. It encodes H.264 to MP4 and ProRes to `.mov` (`--codec prores`, the profile from `--quality`). The browser's codecs stay the default. `RenderResult.codecs` says which ran, and `codecModes` is exported.
+- 9cfd718: The native codecs make the soundtrack too. With `UBERSCENE_CODECS=native-encode` or `native`, `uberscene-codec` encodes the sound (AAC in MP4, 24-bit PCM in `.mov`, 16-bit WAV, on FilmCraft's craft-audio); with `native`, the mix is made outside the browser from sound it decodes (AAC, Opus, MP3, AC-3, ALAC, PCM). An asset whose sound it cannot read sends the mix back to the page with a warning, and MP3 keeps the page's encoder.
+- 8ff4285: The export runs on Chrome 157 only. A binary named by `UBERSCENE_CHROMIUM` (or `executablePath`) of any other version is refused when it starts, with its version and what to do instead; before, any Chrome 153 or later was taken and could draw text differently from the preview and the goldens. The downloaded Chrome for Testing is unchanged.
+
+### Patch Changes
+
+- Updated dependencies [9cfd718]
+- Updated dependencies [28bdc58]
+- Updated dependencies [0ef018c]
+- Updated dependencies [68c7b7c]
+- Updated dependencies [cf23cb8]
+- Updated dependencies [8155b03]
+- Updated dependencies [fa69b88]
+- Updated dependencies [e559ffa]
+- Updated dependencies [efb3f7f]
+- Updated dependencies [974c884]
+- Updated dependencies [3d2979b]
+- Updated dependencies [261d5b6]
+- Updated dependencies [8ff4285]
+- Updated dependencies [9cfd718]
+- Updated dependencies [8ff4285]
+- Updated dependencies [3796367]
+- Updated dependencies [23f68a7]
+- Updated dependencies [3e4e7c5]
+- Updated dependencies [e410297]
+- Updated dependencies [c8d956f]
+- Updated dependencies [472246e]
+- Updated dependencies [45aabbd]
+- Updated dependencies [41f2ced]
+  - @uberscene/render@0.6.0
+
 ## 0.5.0
 
 ### Minor Changes
