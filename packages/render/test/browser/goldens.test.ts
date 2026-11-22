@@ -85,6 +85,8 @@ const CASES: readonly Case[] = [
     effects: `{ type: "shadowsHighlights", shadows: 0.7, highlights: -0.5, radius: 8 }`,
   },
   { name: "duotone", effects: `{ type: "duotone", dark: "#102040", light: "#ffcc66" }` },
+  // The chart's red band turns green; its other hues, the grey band and the ramp's dark end stay.
+  { name: "recolor", effects: `{ type: "recolor", from: "#e02020", to: "#2f9e4f", tolerance: 0.08 }` },
   {
     name: "curves",
     effects: `{ type: "curves", rgb: [[0, 0.05], [0.3, 0.22], [0.7, 0.82], [1, 0.97]], blue: [[0, 0.1], [1, 0.9]] }`,
