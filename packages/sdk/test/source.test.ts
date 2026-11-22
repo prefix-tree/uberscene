@@ -30,12 +30,6 @@ describe("edits", () => {
     ).toThrow(/overlapping/);
   });
 
-  it("moves text", () => {
-    expect(applyEdits("one two three", [{ kind: "move", id: "a", from: [0, 4], range: [13, 13], text: " one" }])).toBe(
-      "two three one",
-    );
-  });
-
   it("widens a range to the whole line", () => {
     const text = "a\n    <X />\nb";
     expect(lineRange(text, [6, 11])).toEqual([2, 12]);

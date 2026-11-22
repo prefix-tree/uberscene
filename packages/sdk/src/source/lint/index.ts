@@ -66,7 +66,7 @@ export function fixSource(text: string, options: LintOptions = {}): FixResult {
       const fix = diagnostic.fix as readonly SourceEdit[];
       const key = JSON.stringify(fix);
       if (!chosen.has(key)) {
-        const ranges = fix.flatMap(rangesOf);
+        const ranges = fix.map((e) => e.range);
         if (ranges.some((r) => claimed.some((c) => touches(r, c)))) continue;
         claimed.push(...ranges);
         edits.push(...fix);
@@ -81,10 +81,6 @@ export function fixSource(text: string, options: LintOptions = {}): FixResult {
     current = next;
   }
   return { text: current, applied, remaining: lint(current, options) };
-}
-
-function rangesOf(edit: SourceEdit): Range[] {
-  return edit.kind === "move" ? [edit.range, edit.from] : [edit.range];
 }
 
 /** Two ranges that share text, or meet at a point: either way their order would matter. */

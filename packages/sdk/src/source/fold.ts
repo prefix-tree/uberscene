@@ -319,7 +319,7 @@ export function fold(
     const inner: SourceEdit[] = [];
     for (let i = edits.length - 1; i >= 0; i--) {
       const e = edits[i] as SourceEdit;
-      if (e.kind !== "move" && e.range[0] >= range[0] && e.range[1] <= range[1]) {
+      if (e.range[0] >= range[0] && e.range[1] <= range[1]) {
         inner.push({ ...e, range: [e.range[0] - range[0], e.range[1] - range[0]] } as SourceEdit);
         edits.splice(i, 1);
       }
@@ -340,13 +340,13 @@ export function fold(
 /**
  * Drops every edit inside text that another edit removes: a removal inside a removal, and any other edit there, such
  * as a prop changed on an element whose track is then deleted. Written beside the removal, the two overlap and the fold
- * fails. An insertion at either end of a removed range stays, as it lands outside it; moves are placed separately.
+ * fails. An insertion at either end of a removed range stays, as it lands outside it.
  */
 function withinRemovals(edits: SourceEdit[]): SourceEdit[] {
   const removed = edits.filter((e) => e.kind === "remove" && e.range[0] < e.range[1]);
   if (removed.length === 0) return edits;
   const inside = (e: SourceEdit, r: SourceEdit): boolean => {
-    if (r === e || e.kind === "move") return false;
+    if (r === e) return false;
     const [from, to] = e.range;
     const [start, end] = r.range;
     if (from === to) return start < from && from < end;

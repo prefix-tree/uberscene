@@ -2,6 +2,8 @@
 // titles anchored to it, transitions beside it, lengths that follow it. Left alone, those point at nothing or at a word
 // the clip no longer plays. A carried action repairs them with ordinary actions of its own, run before or after the
 // edit, so the patches, the write-back and the undo of the repairs are those of the actions they are.
+import { round3 } from "@uberscene/kit/schema";
+
 import { createPatchLog } from "../patches/log";
 import type { Json } from "../patches/types";
 import { type Dependent, dependentsOf } from "../resolve/dependents";
@@ -70,7 +72,6 @@ function runSub(sub: ActionInput, log: Parameters<ActionHandler["apply"]>[1], ct
   handler.apply(action, log, { ...ctx, before: state });
 }
 
-const round3 = (x: number): number => Math.round(x * 1000) / 1000;
 const setProps = (id: string, props: Record<string, Json | undefined>): ActionInput => ({
   type: "source/setProps",
   params: { id, props },

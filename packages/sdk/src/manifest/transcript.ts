@@ -2,6 +2,8 @@
 // that speech-to-text tools write (OpenAI, openai-whisper, faster-whisper, WhisperX, whisper.cpp, ElevenLabs). Pure:
 // runs in the browser and in Node.
 
+import { round3 } from "@uberscene/kit/schema";
+
 import type { TranscriptWord } from "./types";
 
 export type TranscriptFormat = "srt" | "vtt" | "json";
@@ -35,12 +37,12 @@ export function parseTranscript(text: string, format: TranscriptFormat = sniff(t
   for (const w of raw) {
     const t = w.text.trim();
     if (!t || !Number.isFinite(w.start) || !Number.isFinite(w.end)) continue;
-    const start = ms(Math.max(0, w.start));
+    const start = round3(Math.max(0, w.start));
     words.push({
       i: words.length,
       text: t,
       start,
-      end: Math.max(start, ms(w.end)),
+      end: Math.max(start, round3(w.end)),
       ...(w.speaker ? { speaker: w.speaker } : {}),
       ...(w.estimated ? { estimated: true } : {}),
     });
@@ -55,8 +57,6 @@ function sniff(text: string): TranscriptFormat {
   if (TIMING.test(text)) return "srt";
   throw new Error("not a transcript: expected SRT, WebVTT or JSON");
 }
-
-const ms = (s: number): number => Math.round(s * 1000) / 1000;
 
 // ---- SRT and WebVTT ----
 

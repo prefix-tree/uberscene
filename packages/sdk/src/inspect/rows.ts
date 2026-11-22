@@ -1,6 +1,6 @@
 // The resolved timeline as flat rows: one array per kind of thing, each row with its id, its seconds and its frames.
 // Flat rows are what jq, a short script or a SQL table take as they are.
-import { framesUntil, nearestFrame, type Rate } from "@uberscene/kit/schema";
+import { framesUntil, nearestFrame, type Rate, round3 } from "@uberscene/kit/schema";
 
 import type { ResolveError } from "../resolve/errors";
 import { derivedOrigin } from "../resolve/expand";
@@ -125,8 +125,6 @@ const NOT_ELEMENTS = new Set([
   "cut",
 ]);
 
-const ms = (x: number): number => Math.round(x * 1000) / 1000 + 0;
-
 /** The flat rows of a resolved timeline. */
 export function timelineRows(state: ResolvedState): TimelineRows {
   const { rate } = state.composition;
@@ -153,7 +151,7 @@ export function timelineRows(state: ResolvedState): TimelineRows {
         id: p.id,
         element: origin?.id ?? p.parent ?? "",
         property: origin ? origin.path.replace(/\.\d+$/, "") : String(p.props.property ?? ""),
-        at: ms(p.start),
+        at: round3(p.start),
         frame: frame(p.start),
         value: p.props.value,
         ...(typeof p.props.easing === "string" ? { easing: p.props.easing } : {}),
@@ -180,7 +178,7 @@ export function timelineRows(state: ResolvedState): TimelineRows {
       if (b.start > a.end + 1e-6) continue;
       const over = transitions.find((t) => t.between?.[0] === a.id && t.between[1] === b.id);
       cuts.push({
-        time: ms(b.start),
+        time: round3(b.start),
         frame: frame(b.start),
         track: track.id,
         from: a.id,
@@ -194,7 +192,7 @@ export function timelineRows(state: ResolvedState): TimelineRows {
   return {
     composition: {
       ...state.composition,
-      duration: ms(state.composition.duration),
+      duration: round3(state.composition.duration),
       frames: framesUntil(state.composition.duration, rate),
     },
     tracks: state.tracks.map((t) => ({
@@ -232,12 +230,14 @@ function elementRow(state: ResolvedState, p: Placement, frame: (t: number) => nu
     kind: p.kind,
     track: p.track,
     parent: p.parent,
-    start: ms(p.start),
-    end: ms(p.end),
-    duration: ms(p.end - p.start),
+    start: round3(p.start),
+    end: round3(p.end),
+    duration: round3(p.end - p.start),
     startFrame: frame(p.start),
     endFrame: frame(p.end),
-    ...(p.source ? { asset: p.source.asset, in: ms(p.source.in), out: ms(p.source.out), speed: p.source.speed } : {}),
+    ...(p.source
+      ? { asset: p.source.asset, in: round3(p.source.in), out: round3(p.source.out), speed: p.source.speed }
+      : {}),
     ...(typeof text === "string" && text.length > 0 ? { text } : {}),
     ...(typeof props.anchor === "string" ? { anchor: props.anchor } : {}),
     ...(typeof props.at === "string" || typeof props.at === "number" ? { at: props.at } : {}),

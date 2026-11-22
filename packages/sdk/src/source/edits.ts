@@ -5,21 +5,12 @@ export type SourceEdit =
   | { readonly kind: "text"; readonly id: string; readonly range: Range; readonly text: string }
   | { readonly kind: "insert"; readonly id: string; readonly range: Range; readonly text: string }
   | { readonly kind: "remove"; readonly id: string; readonly range: Range; readonly text: "" }
-  | { readonly kind: "move"; readonly id: string; readonly range: Range; readonly text: string; readonly from: Range }
   | { readonly kind: "bake"; readonly id: string; readonly range: Range; readonly text: string }
   | { readonly kind: "defaults"; readonly id: string; readonly range: Range; readonly text: string };
 
 /** Splice edits into the text, last range first, refusing overlaps. */
 export function applyEdits(text: string, edits: readonly SourceEdit[]): string {
-  const splices: { range: Range; text: string }[] = [];
-  for (const e of edits) {
-    if (e.kind === "move") {
-      splices.push({ range: e.from, text: "" });
-      splices.push({ range: e.range, text: e.text });
-    } else {
-      splices.push({ range: e.range, text: e.text });
-    }
-  }
+  const splices = edits.map((e) => ({ range: e.range, text: e.text }));
   splices.sort((a, b) => b.range[0] - a.range[0] || b.range[1] - a.range[1]);
   let out = text;
   let lastStart = Number.POSITIVE_INFINITY;

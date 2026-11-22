@@ -1,3 +1,5 @@
+import { round3 } from "@uberscene/kit/schema";
+
 import { type AssetEntry, assetIdOf, type TranscriptWord } from "../manifest/types";
 import { type FreezeHold, freezeHoldsOf, freezeUnshift, type RampKey, rampInverse, speedKeysOf } from "./speed";
 import type { CollectedNode } from "./tree";
@@ -73,7 +75,7 @@ export function assetPlay(p: {
 export function onTimeline(sec: number, plays: readonly AssetPlay[]): number | null {
   const EPS = 1e-6;
   for (const p of plays) {
-    if (sec >= p.in - EPS && sec <= p.out + EPS) return ms(playTime(p, sec));
+    if (sec >= p.in - EPS && sec <= p.out + EPS) return round3(playTime(p, sec));
   }
   return null;
 }
@@ -187,7 +189,7 @@ export function planCues(words: readonly TimelineWord[], options: CueOptions = D
       start: w.start,
       end: w.end,
     }));
-    return { start: first.start, end: ms(end), text: cueWords.map((w) => w.text).join(" "), words: cueWords };
+    return { start: first.start, end: round3(end), text: cueWords.map((w) => w.text).join(" "), words: cueWords };
   });
 }
 
@@ -324,14 +326,9 @@ export function sameAsset(a: string, b: string): boolean {
   return assetIdOf(a) === assetIdOf(b);
 }
 
-/** Composition times are written into the file, so they are kept to the millisecond. */
-function ms(x: number): number {
-  return Math.round(x * 1000) / 1000 + 0;
-}
-
 function wordOn(w: TranscriptWord, play: AssetPlay): TimelineWord {
-  const start = ms(playTime(play, Math.max(w.start, play.in)));
-  const end = ms(playTime(play, Math.min(w.end, play.out)));
+  const start = round3(playTime(play, Math.max(w.start, play.in)));
+  const end = round3(playTime(play, Math.min(w.end, play.out)));
   return {
     i: w.i,
     text: w.text,
