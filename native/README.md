@@ -29,13 +29,12 @@ pnpm native:check   # rustfmt and clippy, as CI runs them
 
 Rust 1.95 or later. `UBERSCENE_CODEC_BIN` names a binary built elsewhere.
 
-## On npm
+## Released binaries
 
-`@uberscene/codecs` ships this binary: `packages/codecs`, with one sub-project per platform under
-`packages/codecs/platforms/` (`packages/codecs/targets.json` lists them with their Rust targets). The release
-workflow builds each on its own runner and places it with `node packages/codecs/scripts/place.mjs --target <name>
---from <binary>`. With no arguments, the script places the binary `pnpm native:build` made into this machine's
-package, to try the packaging locally.
+The release builds this binary on each platform it supports (`.github/workflows/codecs-build.yml`), attaches each to
+the version's GitHub release as `uberscene-codec-<target>[.exe]`, and writes their SHA-256s into the render package
+(`scripts/codec-assets.mjs`). `uberscene codecs install`, or the first export with `UBERSCENE_CODECS`, downloads the
+one for the machine into `~/.cache/uberscene/codecs/<version>/` and checks it against that hash.
 
 **Decodes:**
 

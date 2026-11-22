@@ -2,7 +2,7 @@ name: Codec check
 
 # The native codecs on every platform they are published for, end to end, once a week and by hand (Actions → Codec
 # check → Run workflow): not part of every pull request's CI. It builds the binaries the way the release does
-# (codecs-build.yml), puts each in its npm package, and on each platform exports one simple edit (a cut from an HEVC
+# (codecs-build.yml), puts each where `uberscene codecs install` would, and on each platform exports one simple edit (a cut from an HEVC
 # file joined to a ProRes file with a crossfade, three effects) to MP4, MOV (ProRes), WebM, AV1, WAV, MP3 and PNG,
 # reading every output back with the binary (packages/render/scripts/export-matrix.ts). Each platform's results are
 # in the run's summary, and its files in an artifact.
@@ -70,12 +70,16 @@ jobs:
         with:
           name: codec-media
           path: codec-media
-      # Where npm would put it: the export finds it through @uberscene/codecs, as it does for someone who installed it.
-      - name: Put the binary in its package
+      # Where `uberscene codecs install` puts it: the cache, under this version. The export finds it there.
+      - name: Put the binary in the codec cache
         shell: bash
         run: |
           binary=$(find codec-build -type f \( -name uberscene-codec -o -name uberscene-codec.exe \) | head -1)
-          node packages/codecs/scripts/place.mjs --target ${{ matrix.target }} --from "$binary"
+          version=$(node -p "require('./packages/render/package.json').version")
+          mkdir -p "$RUNNER_TEMP/codecs/$version"
+          cp "$binary" "$RUNNER_TEMP/codecs/$version/"
+          chmod +x "$RUNNER_TEMP/codecs/$version/$(basename "$binary")"
+          echo "UBERSCENE_CODEC_CACHE=$RUNNER_TEMP/codecs" >> "$GITHUB_ENV"
       - run: pnpm --filter @uberscene/render exec tsx src/cli.ts browser install
       - name: Export the edit to every format
         shell: bash

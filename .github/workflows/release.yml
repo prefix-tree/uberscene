@@ -15,8 +15,10 @@ name: Release
 # `npm stage publish`.
 #
 # A package new to npm (such as @uberscene/sdk) has no trusted publisher until it exists: a maintainer creates it on
-# npm and adds this workflow as its trusted publisher before the first release that includes it. That goes for
-# @uberscene/codecs and each of its platform packages (packages/codecs/targets.json) too.
+# npm and adds this workflow as its trusted publisher before the first release that includes it.
+#
+# The native codecs are not on npm: the release attaches each platform's binary to its GitHub release, and writes their
+# hashes into the render package, which checks a download against them (`uberscene codecs install`).
 #
 # It can also be run by hand from main (Actions → Release → Run workflow), to retry a release whose tag is already
 # pushed: it then stages the version main holds. A version that is staged and not yet approved cannot be staged
@@ -38,7 +40,8 @@ jobs:
     needs: codecs
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      # Creates the GitHub release and attaches the codec binaries to it.
+      contents: write
       # The OIDC token npm exchanges for a short-lived publish token.
       id-token: write
     steps:
@@ -84,18 +87,21 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm build
       - run: pnpm check:packages
-      # Each platform package gets the binary its build job made; a package without one refuses to pack.
+      # The binaries the build jobs made, named as release assets, and their hashes written into the render package
+      # before it is packed, so the published package checks what it downloads.
       - uses: actions/download-artifact@v4
         with:
           pattern: codec-*
           path: codec-builds
-      - name: Put the codec binaries in their packages
+      - run: node scripts/codec-assets.mjs codec-builds codec-assets
+      - name: Attach the codec binaries to the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          for dir in codec-builds/codec-*; do
-            target="${dir#codec-builds/codec-}"
-            binary=$(find "$dir" -type f \( -name uberscene-codec -o -name uberscene-codec.exe \) | head -1)
-            node packages/codecs/scripts/place.mjs --target "$target" --from "$binary"
-          done
+          tag="v$(node -p "require('./packages/kit/package.json').version")"
+          gh release view "$tag" >/dev/null 2>&1 ||
+            gh release create "$tag" --verify-tag --title "$tag" --notes "See the packages' CHANGELOG.md files."
+          gh release upload "$tag" codec-assets/* --clobber
       # Packs each package whose version is not on npm (swapping workspace:* for versions) and runs
       # `npm stage publish` on the tarball. The version stays un-installable until a maintainer approves it
       # with 2FA. The pushed tag names the release, so this makes no git tags of its own.

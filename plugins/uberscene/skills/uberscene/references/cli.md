@@ -20,6 +20,7 @@ npx uberscene blocks add <name> [--into <video.tsx> --track <id> --at <moment> [
 npx uberscene blocks update [<name>...] [--dir <folder>] [--force]
 npx uberscene add <media file>... [--manifest <file>] [--id <id>] [--transcript <file>]
 npx uberscene browser install
+npx uberscene codecs install
 npx uberscene skills install [--dir <folder>] [--force]
 ```
 
@@ -30,6 +31,10 @@ Every export draws its frames in headless Chrome. The first one downloads Chrome
 time. `UBERSCENE_CHROMIUM` names a Chrome 157, the only version the export runs on, to use instead. `UBERSCENE_CODECS`
 (`native`, `native-decode` or `native-encode`) hands decoding and encoding to the experimental native codecs
 ([The browser it runs in](https://uberscene.prefixtree.xyz/guide/exporting#the-browser-it-runs-in)).
+
+`uberscene codecs install` downloads the native codecs for this machine ahead of the first export with
+`UBERSCENE_CODECS`, from this version's GitHub release into `~/.cache/uberscene/codecs` (`UBERSCENE_CODEC_CACHE`
+moves it), checked against the hash the package carries. See [Native codecs](https://uberscene.prefixtree.xyz/guide/native-codecs#getting-the-binary).
 
 ## Export
 
