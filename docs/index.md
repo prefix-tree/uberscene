@@ -34,14 +34,26 @@ import { withBase } from "vitepress";
 
 </div>
 <figure class="home-film">
-<video :src="withBase('/showcase/recolor.webm')" :poster="withBase('/showcase/recolor.jpg')" autoplay muted loop playsinline aria-label="A short of espresso into a red paper cup; an agent is asked to change red cup color to green and writes one line; the same short plays with the cup green"></video>
-<figcaption><a :href="withBase('/examples/recolor')"><strong>One prompt, one line</strong></a>: "change red cup color to green" adds a <code>recolor</code> effect, and the same short plays green</figcaption>
+<video :src="withBase('/showcase/coffee.webm')" :poster="withBase('/showcase/coffee.jpg')" autoplay muted loop playsinline aria-label="The coffee film: a pour-over and an espresso cut together with transitions, titles and a warm grade"></video>
+<figcaption><a :href="withBase('/examples/coffee')"><strong>The coffee film</strong></a>, four stock shots cut in one TSX file</figcaption>
 </figure>
 </div>
 <figure class="home-sheet">
 <a :href="withBase('/examples/coffee')"><img :src="withBase('/showcase/coffee-look.webp')" width="2600" height="972" loading="eager" alt="Eight frames of the coffee film in two rows: a pour-over titled SLOW POUR, a lower third over the bloom, a callout on a held frame, an espresso machine titled FAST SHOT, a Warm LUT badge, three glasses under EVERY GLASS, A LINE OF CODE, and a red cup as a quote builds word by word; under them, a strip of the film's sound with a peak on every cue" /></a>
 <figcaption><code>uberscene look coffee.tsx --at 2.5,7.2,9.9,16,19.5,24.5,30.5,34.5 --listen all</code><span>One command draws a whole cut and its sound on one sheet: this is how an agent reviews a video without watching it. <a :href="withBase('/reference/cli#look')">look →</a></span></figcaption>
 </figure>
+</section>
+
+<section class="home-chapter">
+
+## One prompt, one line
+
+<p class="home-chapter-lead">Ask your agent to "change red cup color to green": it adds one line to the file, a <code>recolor</code> effect, and the same short plays with the cup green. <a :href="withBase('/examples/recolor')">The file →</a></p>
+
+<figure class="home-film">
+<video :src="withBase('/showcase/recolor.webm')" :poster="withBase('/showcase/recolor.jpg')" autoplay muted loop playsinline aria-label="A short of espresso into a red paper cup; an agent is asked to change red cup color to green and writes one line; the same short plays with the cup green"></video>
+</figure>
+
 </section>
 
 <section class="home-chapter">
