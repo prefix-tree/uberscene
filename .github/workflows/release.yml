@@ -94,7 +94,10 @@ jobs:
           pattern: codec-*
           path: codec-builds
       - run: node scripts/codec-assets.mjs codec-builds codec-assets
-      - name: Attach the codec binaries to the GitHub release
+      # The repository's releases are immutable: once published, nothing can be attached. So the release is made as a
+      # draft, the binaries attached to it, and it is published only after the packages are staged (the last step).
+      # A re-run finds its own draft and replaces the binaries; a release already published is left as it is.
+      - name: Attach the codec binaries to a draft GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -102,10 +105,20 @@ jobs:
           # The release's notes: .github/releases/<tag>.md when the version pull request wrote one.
           notes=".github/releases/$tag.md"
           if [ -f "$notes" ]; then set -- --notes-file "$notes"; else set -- --notes "See the packages' CHANGELOG.md files."; fi
-          if gh release view "$tag" >/dev/null 2>&1; then gh release edit "$tag" "$@"
-          else gh release create "$tag" --verify-tag --title "$tag" "$@"; fi
+          draft=$(gh release view "$tag" --json isDraft --jq .isDraft 2>/dev/null || echo none)
+          if [ "$draft" = "false" ]; then
+            echo "::error::release $tag is already published, and published releases are immutable here: bump the version and tag again."
+            exit 1
+          fi
+          if [ "$draft" = "none" ]; then gh release create "$tag" --draft --verify-tag --title "$tag" "$@"
+          else gh release edit "$tag" "$@"; fi
           gh release upload "$tag" codec-assets/* --clobber
       # Packs each package whose version is not on npm (swapping workspace:* for versions) and runs
       # `npm stage publish` on the tarball. The version stays un-installable until a maintainer approves it
       # with 2FA. The pushed tag names the release, so this makes no git tags of its own.
       - run: pnpm release
+      # Last: the draft becomes the release, binaries and notes together, once the packages are staged.
+      - name: Publish the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release edit "v$(node -p "require('./packages/kit/package.json').version")" --draft=false

@@ -1,5 +1,13 @@
 # uberscene
 
+## 0.6.1
+
+### Patch Changes
+
+- The first 0.6 on npm. 0.6.0 was tagged but never published: its GitHub release was published before the native codecs were attached, and the repository's releases cannot be changed once published. 0.6.1 holds everything 0.6.0 lists, with its codecs attached; the release is now kept a draft until its packages are staged.
+- Updated dependencies
+  - @uberscene/render@0.6.1
+
 ## 0.6.0
 
 ### Minor Changes
