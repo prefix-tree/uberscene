@@ -9,8 +9,8 @@ import { withBase } from "vitepress";
 # One prompt, one line
 
 A short of espresso running into a red paper cup. An agent is asked to "change red cup color to green", writes one
-line, and the same short plays with the cup green. It opens the README and the landing page, because it is the point
-of UberScene in twelve seconds: the video is a file, so a change to it is a change to a line.
+line, and the same short plays with the cup green. It sits under the coffee film in the README and on the landing page:
+the point of UberScene in twelve seconds, the video is a file, so a change to it is a change to a line.
 
 <div class="cc-pair"><video :src="withBase('/showcase/recolor.webm')" :poster="withBase('/showcase/recolor.jpg')" controls muted loop playsinline></video></div>
 
