@@ -89,6 +89,22 @@ describe("the colour effects", () => {
     });
   });
 
+  it("recolour one colour into another, with keys on any param", () => {
+    const state = stateOf(`{ type: "recolor" },
+      { type: "recolor", from: "#d02030", to: [{ at: 0, value: "#d02030" }, { at: 1, value: "#2f9e4f" }], amount: [{ at: 0, value: 0 }, { at: 0.4, value: 1 }] },
+      { type: "recolor", tolerance: 0.7, to: "green" }`);
+    const params = (n: number) => state.items.get(`c.effects.${n}`)?.props.params;
+    expect(params(0)).toEqual({ from: "#c4202b", to: "#2f9e4f", tolerance: 0.06, softness: 0.05, amount: 1 });
+    expect(params(1)).toMatchObject({ from: "#d02030", tolerance: 0.06 });
+    expect([...state.items.keys()].filter((id) => id.startsWith("c.effects.1."))).toEqual([
+      "c.effects.1.to.0",
+      "c.effects.1.to.1",
+      "c.effects.1.amount.0",
+      "c.effects.1.amount.1",
+    ]);
+    expect(state.errors.map((e) => `${e.id}.${e.prop}`)).toEqual(["c.effects.2.to", "c.effects.2.tolerance"]);
+  });
+
   it("say what is out of range", () => {
     const state = stateOf(`{ type: "exposure", stops: 9 },
       { type: "duotone", dark: "navy" },

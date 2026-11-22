@@ -228,6 +228,10 @@
           "link": "/reference/effects/duotone"
         },
         {
+          "text": "recolor",
+          "link": "/reference/effects/recolor"
+        },
+        {
           "text": "curves",
           "link": "/reference/effects/curves"
         }

@@ -4,7 +4,7 @@
 import { z } from "zod";
 
 import type { ShaderDefinition } from "../jsx/shader-definition";
-import { curves, duotone, exposure, levels, lut, shadowsHighlights, vibrance, whiteBalance } from "./colour";
+import { curves, duotone, exposure, levels, lut, recolor, shadowsHighlights, vibrance, whiteBalance } from "./colour";
 import * as cssEffects from "./css";
 import { FALLBACKS } from "./css";
 import { chromaticAberration, colorKey, cornerPin, regionBlur, zoomBlur } from "./footage";
@@ -85,6 +85,7 @@ export const EFFECTS = {
   whiteBalance: shaderEntry(whiteBalance, FALLBACKS.whiteBalance),
   shadowsHighlights: shaderEntry(shadowsHighlights),
   duotone: shaderEntry(duotone),
+  recolor: shaderEntry(recolor),
   curves: shaderEntry(curves),
   colorKey: shaderEntry(colorKey),
   regionBlur: shaderEntry(regionBlur, undefined, { radius: 0 }),
@@ -197,7 +198,17 @@ export const EFFECT_FAMILIES: Readonly<Record<string, readonly VideoEffectType[]
     "shadow",
   ],
   "Vignette and grain": ["vignette", "grain"],
-  Colour: ["levels", "lut", "exposure", "vibrance", "whiteBalance", "shadowsHighlights", "duotone", "curves"],
+  Colour: [
+    "levels",
+    "lut",
+    "exposure",
+    "vibrance",
+    "whiteBalance",
+    "shadowsHighlights",
+    "duotone",
+    "recolor",
+    "curves",
+  ],
   Footage: ["colorKey", "regionBlur", "cornerPin", "zoomBlur", "chromaticAberration"],
   "Titles and shapes": ["glow", "outline", "longShadow", "bevel"],
   Stylize: ["halftone", "pixelate", "scanlines"],

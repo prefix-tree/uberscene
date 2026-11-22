@@ -16,6 +16,14 @@ export interface GalleryItem {
 // CSS columns fill top to bottom, one column after another: ordered so the four columns end at about the same height.
 const ITEMS: readonly (Omit<GalleryItem, "lines"> & { readonly file: string })[] = [
   {
+    title: "One prompt, one line",
+    kind: "Edit",
+    src: "showcase/recolor",
+    aspect: 16 / 9,
+    link: "/examples/recolor",
+    file: "showcase/recolor.tsx",
+  },
+  {
     title: "A coffee film",
     kind: "Edit",
     src: "showcase/coffee",

@@ -13,6 +13,8 @@ mkdirSync(to, { recursive: true });
  * it; footage that changes everywhere (the gradients) costs the most, so those get fewer frames and colours.
  */
 const GIFS: Record<string, { width: number; fps: number; colors: number }> = {
+  // The README's opening: the red cup and the green one need the colours.
+  recolor: { width: 640, fps: 12, colors: 96 },
   launch: { width: 480, fps: 10, colors: 64 },
   data: { width: 300, fps: 10, colors: 64 },
   logo: { width: 300, fps: 12, colors: 48 },

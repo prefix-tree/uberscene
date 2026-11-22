@@ -155,6 +155,13 @@ export const EFFECT_DEMOS: Readonly<Record<keyof typeof EFFECTS, EffectDemo>> = 
     shot: WIDE,
     animate: [{ param: "shadows", from: 0, to: 0.7 }],
   },
+  recolor: {
+    text: "Turns one colour into another and leaves the rest: a red cup made green.",
+    on: "shot",
+    shot: RED,
+    params: { from: "#c4202b", to: "#2f9e4f" },
+    animate: [{ param: "amount", from: 0, to: 1 }],
+  },
   duotone: {
     text: "Maps the picture's brightness onto two colours.",
     on: "shot",
