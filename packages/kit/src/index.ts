@@ -50,6 +50,18 @@ export { type Knob, type KnobKind, knob } from "./jsx/knobs";
 export * from "./jsx/narrate";
 export type { ThreeFrameArgs, ThreeSetupArgs, ThreeSetupFunction } from "./jsx/schemas/overlays";
 export { type EffectRef, effect, type TransitionRef, transition } from "./jsx/shaders";
+export {
+  defineShot,
+  isShot,
+  SHOT_CHANNELS,
+  type ShotBuildArgs,
+  type ShotBuilt,
+  type ShotChannel,
+  type ShotDefinition,
+  type ShotInputDefault,
+  type ShotObjectSpec,
+  type ShotSampleArgs,
+} from "./jsx/shot";
 export * from "./jsx/use-seekable";
 export { type LayerClock, useLayer, useT } from "./jsx/use-t";
 export { THEME_NAMES, THEMES, type ThemeName } from "./theme/builtins";
