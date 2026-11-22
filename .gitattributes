@@ -17,3 +17,6 @@ pnpm-lock.yaml linguist-generated
 *.mp3 binary
 *.woff binary
 *.woff2 binary
+
+# The showcase's stock footage, in Git LFS.
+examples/showcase/footage/*.mp4 filter=lfs diff=lfs merge=lfs -text

@@ -1,5 +1,5 @@
-// Footage for the showcase. Every moving picture comes from four stock coffee clips, which are not committed: each is
-// read from media/stock/ (fetched from its URL when one is known), checked against its hash, and trimmed. The
+// Footage for the showcase. Every moving picture comes from four stock coffee clips, committed in Git LFS under
+// footage/ (or kept in media/stock/): each is checked against its hash, and trimmed. The
 // stand-ins that carry words in the manifest (a founder, an analyst, a speaker on a phone) and the product b-roll are
 // cut from those clips, so their ids, lengths and transcripts stay as the demos expect. The green screen is a coffee
 // shot over studio green, for the colour key demo. Skips files that exist.
@@ -11,6 +11,11 @@ import { join } from "node:path";
 import { SOUNDS, wav } from "../shorts/media/sounds";
 
 const dir = join(import.meta.dirname, "media");
+/** The four stock clips, committed in Git LFS. */
+const footage = join(import.meta.dirname, "footage");
+/** A file Git LFS has not fetched: a few lines of text in place of the video. */
+const isLfsPointer = (path: string) =>
+  readFileSync(path).subarray(0, 64).toString("latin1").startsWith("version https://git-lfs.github.com/spec/");
 mkdirSync(dir, { recursive: true });
 
 /** Stock footage the demos use: where it comes from, who made it, and the part of it they show. */
@@ -18,7 +23,7 @@ const stock: readonly {
   readonly id: string;
   readonly file: string;
   readonly sha256: string;
-  /** A direct download, when known; otherwise the file is put in media/stock/ by hand. */
+  /** A direct download, when known, for a clip in neither footage/ nor media/stock/. */
   readonly url?: string;
   readonly page: string;
   readonly credit: string;
@@ -69,10 +74,16 @@ const stock: readonly {
 for (const clip of stock) {
   const out = join(dir, `${clip.id}.webm`);
   if (existsSync(out)) continue;
-  const raw = join(dir, "stock", clip.file);
+  // The clips are committed in Git LFS under footage/; media/stock/ still works for a copy kept out of the repository.
+  const committed = join(footage, clip.file);
+  const raw = existsSync(committed) && !isLfsPointer(committed) ? committed : join(dir, "stock", clip.file);
   if (!existsSync(raw)) {
+    if (existsSync(committed))
+      throw new Error(`${clip.id}: ${committed} is a Git LFS pointer; run \`git lfs pull\` to fetch the clip`);
     if (!clip.url)
-      throw new Error(`${clip.id}: put ${clip.file} in ${join(dir, "stock")} (from ${clip.page}); it is not committed`);
+      throw new Error(
+        `${clip.id}: ${clip.file} is in neither ${footage} nor ${join(dir, "stock")} (from ${clip.page})`,
+      );
     mkdirSync(join(dir, "stock"), { recursive: true });
     const response = await fetch(clip.url);
     if (!response.ok) throw new Error(`${clip.id}: ${clip.url} answered ${response.status}`);
