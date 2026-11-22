@@ -9,9 +9,9 @@
       "title": "Video editor",
       "description": "A whole video editor for an UberScene file: layers, the picture and its transport, an inspector, the timeline and the file with every edit written in.",
       "dependencies": [
-        "@uberscene/editor@0.6.0",
-        "@uberscene/player@0.6.0",
-        "@uberscene/sdk@0.6.0"
+        "@uberscene/editor@0.6.1",
+        "@uberscene/player@0.6.1",
+        "@uberscene/sdk@0.6.1"
       ],
       "registryDependencies": [
         "resizable",
@@ -36,9 +36,9 @@
       "title": "Timeline",
       "description": "A row per track and a bar per element: click to select, drag to move, drag an end to trim. Each drag is one undoable edit.",
       "dependencies": [
-        "@uberscene/editor@0.6.0",
-        "@uberscene/player@0.6.0",
-        "@uberscene/sdk@0.6.0",
+        "@uberscene/editor@0.6.1",
+        "@uberscene/player@0.6.1",
+        "@uberscene/sdk@0.6.1",
         "lucide-react@^1.77.0"
       ],
       "registryDependencies": [
@@ -64,8 +64,8 @@
       "title": "Layers",
       "description": "Every element, grouped by track. A click selects it.",
       "dependencies": [
-        "@uberscene/editor@0.6.0",
-        "@uberscene/sdk@0.6.0",
+        "@uberscene/editor@0.6.1",
+        "@uberscene/sdk@0.6.1",
         "lucide-react@^1.77.0"
       ],
       "registryDependencies": [
@@ -91,7 +91,7 @@
       "title": "Transport",
       "description": "Play and pause, back to the start, a scrubber, the time, the speed and mute.",
       "dependencies": [
-        "@uberscene/player@0.6.0",
+        "@uberscene/player@0.6.1",
         "lucide-react@^1.77.0"
       ],
       "registryDependencies": [
@@ -113,9 +113,9 @@
       "title": "Inspector",
       "description": "The selected element's timing, text and props as fields, with a typography panel for titles and captions as a design tool shows it: font, weight, size, line height, letter spacing, alignment, decoration, colour, stroke and shadow. Props written as code show locked.",
       "dependencies": [
-        "@uberscene/editor@0.6.0",
-        "@uberscene/kit@0.6.0",
-        "@uberscene/sdk@0.6.0",
+        "@uberscene/editor@0.6.1",
+        "@uberscene/kit@0.6.1",
+        "@uberscene/sdk@0.6.1",
         "lucide-react@^1.77.0"
       ],
       "registryDependencies": [
@@ -155,8 +155,8 @@
       "title": "Source",
       "description": "The file with every edit so far written into it, the changed lines marked, to copy or download.",
       "dependencies": [
-        "@uberscene/editor@0.6.0",
-        "@uberscene/sdk@0.6.0",
+        "@uberscene/editor@0.6.1",
+        "@uberscene/sdk@0.6.1",
         "lucide-react@^1.77.0"
       ],
       "registryDependencies": [

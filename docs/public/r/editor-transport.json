@@ -4,7 +4,7 @@
   "title": "Transport",
   "description": "Play and pause, back to the start, a scrubber, the time, the speed and mute.",
   "dependencies": [
-    "@uberscene/player@0.6.0",
+    "@uberscene/player@0.6.1",
     "lucide-react@^1.77.0"
   ],
   "registryDependencies": [

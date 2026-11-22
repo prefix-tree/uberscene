@@ -4,8 +4,8 @@
   "title": "Layers",
   "description": "Every element, grouped by track. A click selects it.",
   "dependencies": [
-    "@uberscene/editor@0.6.0",
-    "@uberscene/sdk@0.6.0",
+    "@uberscene/editor@0.6.1",
+    "@uberscene/sdk@0.6.1",
     "lucide-react@^1.77.0"
   ],
   "registryDependencies": [
