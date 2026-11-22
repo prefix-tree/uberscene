@@ -1,6 +1,7 @@
 // The easing curves every moving value uses, and the one function that reads a curve of keys. The player draws with
 // them, the editor splits curves with them, and speed ramps integrate them, so all three agree on every frame.
 import type { Easing } from "./jsx/enums";
+import { clamp01 } from "./math";
 
 type Fn = (x: number) => number;
 
@@ -205,8 +206,6 @@ export function easingCurve(name: string | undefined): Fn | undefined {
   }
   return EASING_FN[now];
 }
-
-const clamp01 = (x: number): number => (x < 0 ? 0 : x > 1 ? 1 : x);
 
 /** `name` applied to `x` clamped to 0..1; an unknown or missing name is linear. */
 export function ease(name: string | undefined, x: number): number {

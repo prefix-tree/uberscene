@@ -1,6 +1,7 @@
 import { EASING_FN, easingCurve, type OldEasing } from "../easing";
 import type { Easing } from "../jsx/enums";
 import { type LayerClock, useLayer } from "../jsx/use-t";
+import { clamp01 } from "../math";
 
 /**
  * When a part of a diagram happens. Give `start`, seconds of the video (what a narration's cue gives), or `after`,
@@ -20,8 +21,6 @@ export interface When {
   readonly progress?: number;
 }
 
-const clamp = (v: number): number => Math.min(1, Math.max(0, v));
-
 let warnedAt = false;
 /** `start`, or the `at` it was called before 0.6, which still works with one warning. */
 function startOf(when: When): number | undefined {
@@ -37,12 +36,12 @@ function startOf(when: When): number | undefined {
 
 /** How far along something is on a layer's clock: 0 before it starts, 1 once it is over, eased between. */
 export function progress(clock: Pick<LayerClock, "time" | "elapsed">, when: When = {}): number {
-  if (when.progress !== undefined) return clamp(when.progress);
+  if (when.progress !== undefined) return clamp01(when.progress);
   const start = startOf(when);
   const since = start !== undefined ? clock.time - start : clock.elapsed - (when.after ?? 0);
   const over = when.over ?? 0.4;
   if (over <= 0) return since >= 0 ? 1 : 0;
-  return (easingCurve(when.easing ?? "easeInOut") ?? EASING_FN.easeInOut)(clamp(since / over));
+  return (easingCurve(when.easing ?? "easeInOut") ?? EASING_FN.easeInOut)(clamp01(since / over));
 }
 
 /** `progress` on the clock of the layer this is drawn in. */
