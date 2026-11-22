@@ -19,6 +19,7 @@ import {
   rateValue,
   renamedParam,
   resolveTheme,
+  round3,
   SCHEMAS_BY_KIND,
   type ShaderDefinition,
   sampleRateProblem,
@@ -1449,8 +1450,6 @@ function settleMatches(pending: Map<string, Pending>): void {
     delete (p as Pending).durationDep;
   }
 }
-
-const round3 = (x: number): number => Math.round(x * 1000) / 1000;
 
 /**
  * Seconds after `target` starts at which it plays `at`, a word, shot or silence of its source:

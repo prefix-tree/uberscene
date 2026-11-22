@@ -1,3 +1,5 @@
+import { round3 } from "@uberscene/kit/schema";
+
 import type { SvgNode } from "./svg";
 
 /**
@@ -422,5 +424,5 @@ function strip(node: SvgNode): SvgNode {
 }
 
 function fmt(v: number): string {
-  return String(Math.round(v * 1000) / 1000);
+  return String(round3(v));
 }

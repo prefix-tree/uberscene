@@ -1,3 +1,5 @@
+import { round3 } from "@uberscene/kit/schema";
+
 import { type ElementProps, type OverlayLayout, overlayLayout } from "./layout";
 import { type PreparedSvg, prepareSvg } from "./svg";
 
@@ -281,5 +283,5 @@ function escapeXml(v: string): string {
 }
 
 function num(v: number): string {
-  return String(Math.round(v * 1000) / 1000);
+  return String(round3(v));
 }

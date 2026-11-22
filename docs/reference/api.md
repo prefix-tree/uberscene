@@ -522,7 +522,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/kit/schema`
 
-250 exports.
+252 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -551,6 +551,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `Captions` | const | The `<Captions>` element ([reference](/reference/elements/captions)). |
 | `CatalogFont` | interface | One family to choose from. |
 | `CheckedEffects` | type | Each entry of an `effects` list checked against its own type. |
+| `clamp01` | const | `x` held to 0..1. |
 | `Clip` | const | The `<Clip>` element ([reference](/reference/elements/clip)). |
 | `ColourFunction` | interface | A built-in colour transform's function, in parts a fused source can combine. |
 | `COMPONENT_NAMES` | const | The components' names. |
@@ -689,6 +690,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `ResolvedTheme` | interface | A file's theme with its base theme merged in. |
 | `resolveTheme` | function | The theme a composition's raw `theme` prop describes. |
 | `RESPELLED_VALUES` | const | Values spelled in kebab-case before 0.6 and in camelCase since, old to new. |
+| `round3` | const | `x` rounded to three decimals (milliseconds, for seconds), with -0 written as 0. |
 | `sampleAt` | const | The audio sample a tick falls in. |
 | `sampleAtSeconds` | const | The audio sample a time in seconds falls in. |
 | `sampleRateProblem` | function | Why a sample rate cannot be used, or null. |

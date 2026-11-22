@@ -42,5 +42,6 @@ export { BOX_ORIGIN_POINT, BOX_ORIGINS, type BoxOrigin, type ElementBox, type Tr
 export { defaultTransitionParams, isBuiltInTransition, TRANSITION_PARAMS } from "./jsx/schemas/transition";
 export * from "./jsx/shaders";
 export { installLayerClock } from "./jsx/use-t";
+export { clamp01, round3 } from "./math";
 export * from "./theme";
 export * from "./time";

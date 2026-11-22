@@ -1,6 +1,6 @@
 // Moments: the places on a timeline a person or an agent asks to look at, written the way the file is written (an
 // element's id, a word, a shot, a marker) or as plain time (seconds, a frame, a range).
-import { frameStartSeconds, framesUntil, nearestFrame } from "@uberscene/kit/schema";
+import { frameStartSeconds, framesUntil, nearestFrame, round3 } from "@uberscene/kit/schema";
 
 import { parseTimeRef } from "../manifest/timeref";
 import { type AssetEntry, lookupAsset } from "../manifest/types";
@@ -120,11 +120,11 @@ export function resolveMoments(
     t.seconds ?? frameStartSeconds(t.frame as number, rate);
   const add = (label: string, time: number, about: string): void => {
     if (time < -1e-9 || time > duration + 1e-9) {
-      errors.push(`${label}: ${round(time)} s is outside the video, which is ${round(duration)} s long`);
+      errors.push(`${label}: ${round3(time)} s is outside the video, which is ${round3(duration)} s long`);
       return;
     }
     const frame = Math.min(frames - 1, nearestFrame(time, rate));
-    moments.push({ label, time: round(Math.min(Math.max(0, time), duration)), frame, about });
+    moments.push({ label, time: round3(Math.min(Math.max(0, time), duration)), frame, about });
   };
 
   for (const m of parsed) {
@@ -146,7 +146,7 @@ export function resolveMoments(
         if (step <= 0) errors.push(`${m.text}: the step must be more than 0`);
         else if (count > MAX_RANGE_MOMENTS)
           errors.push(`${m.text}: that is ${count} moments; a range gives at most ${MAX_RANGE_MOMENTS}`);
-        else for (let i = 0; i < count; i++) add(String(round(from + i * step)), from + i * step, `in ${m.text}`);
+        else for (let i = 0; i < count; i++) add(String(round3(from + i * step)), from + i * step, `in ${m.text}`);
       }
     } else if (m.kind === "element") {
       const p = state.items.get(m.id);
@@ -230,11 +230,6 @@ function resolveRef(
   else errors.push(`${m.text}: no asset the timeline plays has it in the manifest`);
 }
 
-/** Times are reported to the millisecond. */
-function round(x: number): number {
-  return Math.round(x * 1000) / 1000 + 0;
-}
-
 /** Overlays an editor looks at once each: what is drawn over the footage, and what grades it. */
 const OVERLAYS = new Set(["title", "shape", "svg", "sticker", "layer", "motion", "three", "adjustment"]);
 
@@ -257,7 +252,7 @@ export function aroundMoments(
   const last = Math.max(p.start, p.end - f);
   const moment = (label: string, time: number, about: string): Moment => {
     const t = Math.min(Math.max(0, time), duration);
-    return { label, time: round(t), frame: Math.min(frames - 1, nearestFrame(t, rate)), about };
+    return { label, time: round3(t), frame: Math.min(frames - 1, nearestFrame(t, rate)), about };
   };
   if (p.kind === "transition") {
     const [a, b] = p.between ?? ["the clip before", "the clip after"];
@@ -303,7 +298,7 @@ export function skimMoments(state: ResolvedState): Moment[] {
   const found: Moment[] = [];
   const add = (label: string, time: number, about: string): void => {
     const t = Math.min(Math.max(0, time), duration);
-    found.push({ label, time: round(t), frame: Math.min(frames - 1, nearestFrame(t, rate)), about });
+    found.push({ label, time: round3(t), frame: Math.min(frames - 1, nearestFrame(t, rate)), about });
   };
   const overlayMids = new Set<string>();
   const transitions = [...state.items.values()].filter((p) => p.kind === "transition");
@@ -349,7 +344,7 @@ export function listenRange(
 ): { readonly from: number; readonly to: number } | { readonly error: string } {
   const { rate, duration } = state.composition;
   const input = text.trim();
-  if (input === "all") return { from: 0, to: round(duration) };
+  if (input === "all") return { from: 0, to: round3(duration) };
   const parsed = parseMoment(input);
   const seconds = (t: ParsedMoment & { kind: "time" }): number =>
     t.seconds ?? frameStartSeconds(t.frame as number, rate);
@@ -368,7 +363,7 @@ export function listenRange(
   if (!(to > from)) return { error: `${input}: a stretch runs forward and has a length` };
   if (from < -1e-9 || to > duration + 1e-9)
     return {
-      error: `${input}: ${round(from)}..${round(to)} s is outside the video, which is ${round(duration)} s long`,
+      error: `${input}: ${round3(from)}..${round3(to)} s is outside the video, which is ${round3(duration)} s long`,
     };
-  return { from: round(Math.max(0, from)), to: round(Math.min(duration, to)) };
+  return { from: round3(Math.max(0, from)), to: round3(Math.min(duration, to)) };
 }

@@ -1,7 +1,7 @@
 // `uberscene inspect video.tsx`: the timeline read back as an editor reads it, in text or as flat JSON rows, and what
 // is on screen and heard at chosen moments. It runs the resolver and the player's model only: no browser, no media.
 import type { Knob } from "@uberscene/kit";
-import { capabilitiesOf, type ElementBox, rateLabel } from "@uberscene/kit/schema";
+import { capabilitiesOf, type ElementBox, rateLabel, round3 } from "@uberscene/kit/schema";
 import {
   animatedBox,
   animatedTransform,
@@ -67,7 +67,6 @@ export interface MomentView extends Moment {
   readonly caption?: string;
 }
 
-const ms = (x: number): number => Math.round(x * 1000) / 1000 + 0;
 const typeName = (type: unknown): string =>
   typeof type === "string" ? type : String((type as { name?: unknown } | null)?.name ?? "custom");
 
@@ -86,8 +85,8 @@ export function describeAt(state: ResolvedState, moment: Moment): MomentView {
       id: p.id,
       kind: p.kind,
       track: track.id,
-      progress: ms(p.duration > 0 ? Math.min(1, Math.max(0, rel / p.duration)) : 0),
-      ...(p.source ? { sourceTime: ms(placementSourceTime(p, children, t)) } : {}),
+      progress: round3(p.duration > 0 ? Math.min(1, Math.max(0, rel / p.duration)) : 0),
+      ...(p.source ? { sourceTime: round3(placementSourceTime(p, children, t)) } : {}),
       ...(text ? { text } : {}),
       ...(box ? { box } : {}),
       ...(transform ? { transform } : {}),
@@ -95,7 +94,7 @@ export function describeAt(state: ResolvedState, moment: Moment): MomentView {
         .filter((c) => c.kind === "effect" && c.props.enabled !== false)
         .map((c) => ({ id: c.id, type: typeName(c.props.type), params: paramsAt(state.items, c, rel) })),
       ...(transition
-        ? { transition: { id: transition.placement.id, role: transition.role, progress: ms(transition.progress) } }
+        ? { transition: { id: transition.placement.id, role: transition.role, progress: round3(transition.progress) } }
         : {}),
     });
   }
@@ -134,8 +133,8 @@ export function describeAt(state: ResolvedState, moment: Moment): MomentView {
 function placed(box: ElementBox | undefined): Record<string, unknown> | undefined {
   if (!box) return undefined;
   const out: Record<string, unknown> = {};
-  if (typeof box.x === "number" && Number.isFinite(box.x)) out.x = ms(box.x);
-  if (typeof box.y === "number" && Number.isFinite(box.y)) out.y = ms(box.y);
+  if (typeof box.x === "number" && Number.isFinite(box.x)) out.x = round3(box.x);
+  if (typeof box.y === "number" && Number.isFinite(box.y)) out.y = round3(box.y);
   if (Object.keys(out).length === 0) return undefined;
   if (box.origin) out.origin = box.origin;
   return out;
@@ -147,14 +146,14 @@ function restless(t: Record<string, unknown>): Record<string, unknown> | undefin
   const pair = (v: unknown, rest: number): { x: number; y: number } | undefined => {
     const p = typeof v === "number" ? { x: v, y: v } : (v as { x?: number; y?: number } | undefined);
     if (!p) return undefined;
-    const x = ms(p.x ?? rest),
-      y = ms(p.y ?? rest);
+    const x = round3(p.x ?? rest),
+      y = round3(p.y ?? rest);
     return x === rest && y === rest ? undefined : { x, y };
   };
   const scale = pair(t.scale, 1);
   if (scale) out.scale = scale;
-  if (typeof t.rotation === "number" && ms(t.rotation) !== 0) out.rotation = ms(t.rotation);
-  if (typeof t.opacity === "number" && ms(t.opacity) !== 1) out.opacity = ms(t.opacity);
+  if (typeof t.rotation === "number" && round3(t.rotation) !== 0) out.rotation = round3(t.rotation);
+  if (typeof t.opacity === "number" && round3(t.opacity) !== 1) out.opacity = round3(t.opacity);
   return Object.keys(out).length > 0 ? out : undefined;
 }
 
@@ -162,7 +161,7 @@ const seconds = (x: number): string => x.toFixed(2);
 const quote = (text: string, max = 48): string =>
   `"${text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text}"`;
 const value = (v: unknown): string =>
-  typeof v === "number" ? String(Math.round(v * 1000) / 1000) : typeof v === "string" ? v : JSON.stringify(v);
+  typeof v === "number" ? String(round3(v)) : typeof v === "string" ? v : JSON.stringify(v);
 const paramList = (params: Readonly<Record<string, unknown>>): string =>
   Object.entries(params)
     .map(([name, v]) => `${name}=${value(v)}`)

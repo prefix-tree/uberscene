@@ -2,6 +2,7 @@
 // tangents limited as Fritsch and Carlson give ("Monotone Piecewise Cubic Interpolation", SIAM J. Numer. Anal., 1980),
 // so a curve whose points rise never dips or overshoots between them. Before the first point and after the last it is
 // flat.
+import { clamp01 } from "../math";
 
 /** A point of a curve: input and output, each 0..1. */
 export type CurvePoint = readonly [number, number];
@@ -54,5 +55,3 @@ export function monotoneCurve(points: readonly CurvePoint[]): (x: number) => num
     return clamp01(y);
   };
 }
-
-const clamp01 = (v: number) => Math.min(1, Math.max(0, v));

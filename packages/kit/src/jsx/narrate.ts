@@ -1,6 +1,7 @@
 // A narration: the script of a film that is led by its words, turned into times. Every word gets a start and an
 // end, the words are grouped into subtitle lines, and the words the picture listens for become cues by name. The
 // times are worked out from a speaking pace, or taken from the transcript of a recorded voice.
+import { round3 } from "../math";
 
 /** A word of the narration, with when it is said. */
 export interface NarratedWord {
@@ -72,7 +73,6 @@ type Token =
   | { readonly kind: "pause"; readonly seconds: number }
   | { readonly kind: "mark"; readonly name: string };
 
-const ms = (t: number): number => Math.round(t * 1000) / 1000;
 /**
  * The letters a word has, in any script: "Привет," has six, as "Hello," has five. Combining marks count, so a word
  * written with Devanagari vowel signs or a decomposed accent is not short-changed.
@@ -116,7 +116,7 @@ export function narrate(script: string, options: NarrateOptions = {}): Narration
   const cues: Record<string, number> = {};
   const cue = (name: string, time: number): void => {
     if (name in cues) throw new Error(`the script names the cue "${name}" twice; a cue is one moment`);
-    cues[name] = ms(time);
+    cues[name] = round3(time);
   };
 
   // When each word is said, in the order of the script, and when the narration ends.
@@ -132,11 +132,11 @@ export function narrate(script: string, options: NarrateOptions = {}): Narration
       else {
         if (token.cue) cue(token.cue, t);
         const end = t + say(token.text);
-        said.push({ text: token.text, start: ms(t), end: ms(end) });
+        said.push({ text: token.text, start: round3(t), end: round3(end) });
         t = end + breath(token.text);
       }
     }
-    duration = ms(t);
+    duration = round3(t);
   } else {
     const timed = fromTranscript(list, options.transcript.words, pace, first, warnings);
     said.push(...timed);
@@ -157,7 +157,7 @@ export function narrate(script: string, options: NarrateOptions = {}): Narration
         waited = 0;
       }
     }
-    duration = ms(Math.max(0, ...said.map((w) => w.end), ...Object.values(cues)));
+    duration = round3(Math.max(0, ...said.map((w) => w.end), ...Object.values(cues)));
   }
 
   // The subtitles: a line ends with its sentence, at a pause, at a comma once it has some length, or when it would
@@ -168,7 +168,12 @@ export function narrate(script: string, options: NarrateOptions = {}): Narration
     const head = open[0];
     const tail = open[open.length - 1];
     if (head && tail)
-      lines.push({ text: open.map((w) => w.text).join(" "), start: head.start, end: ms(tail.end + hold), words: open });
+      lines.push({
+        text: open.map((w) => w.text).join(" "),
+        start: head.start,
+        end: round3(tail.end + hold),
+        words: open,
+      });
     open = [];
   };
   let n = 0;
@@ -193,7 +198,7 @@ export function narrate(script: string, options: NarrateOptions = {}): Narration
     for (const each of [before, line]) {
       each.text = each.words.map((w) => w.text).join(" ");
       each.start = each.words[0]?.start ?? each.start;
-      each.end = ms((each.words[each.words.length - 1]?.end ?? each.end) + hold);
+      each.end = round3((each.words[each.words.length - 1]?.end ?? each.end) + hold);
     }
   });
   // A subtitle stays up for a moment after its last word, but never into the next one.
@@ -261,7 +266,7 @@ function fromTranscript(
   const out: (NarratedWord | null)[] = script.map((text, i) => {
     const j = match[i];
     const word = j === null || j === undefined ? null : heard[j];
-    return word ? { text, start: ms(word.start), end: ms(word.end) } : null;
+    return word ? { text, start: round3(word.start), end: round3(word.end) } : null;
   });
   // Each run of words the voice did not say as written, placed between the matched words either side.
   for (let i = 0; i < out.length; i++) {
@@ -282,7 +287,7 @@ function fromTranscript(
     let t = from;
     for (let k = i; k < end; k++) {
       const share = needs > 0 ? (say(script[k] as string) / needs) * span : 0;
-      out[k] = { text: script[k] as string, start: ms(t), end: ms(t + share) };
+      out[k] = { text: script[k] as string, start: round3(t), end: round3(t + share) };
       t += share;
     }
     i = end - 1;

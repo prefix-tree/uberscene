@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 
-import { BOX_ORIGIN_POINT, BOX_ORIGINS, type BoxOrigin } from "@uberscene/kit/schema";
+import { BOX_ORIGIN_POINT, BOX_ORIGINS, type BoxOrigin, round3 } from "@uberscene/kit/schema";
 
 import { placeAxis } from "../model/box";
 
@@ -65,15 +65,14 @@ export function captionPlacement(
     y = place.y ?? d.y,
     width = place.width ?? d.width;
   const o = BOX_ORIGIN_POINT[place.origin ?? d.origin];
-  const n = (v: number): number => Math.round(v * 1000) / 1000;
   const down: CSSProperties =
     place.height !== undefined
-      ? { top: n(placeAxis(comp.height, place.height, y, o.y)), height: place.height }
+      ? { top: round3(placeAxis(comp.height, place.height, y, o.y)), height: place.height }
       : o.y === 0
-        ? { top: n(y) }
+        ? { top: round3(y) }
         : o.y === 1
-          ? { bottom: n(comp.height - y) }
-          : { top: n(y), transform: `translate(0, ${n(-o.y * 100)}%)` };
+          ? { bottom: round3(comp.height - y) }
+          : { top: round3(y), transform: `translate(0, ${round3(-o.y * 100)}%)` };
   const align = place.align ?? "center";
   // Across: a block the width of the frame, padded in to the box, while the box is inside the frame. The text is then
   // laid out and drawn as it always was (a block at a fractional left draws its glyphs a little differently).
@@ -81,8 +80,8 @@ export function captionPlacement(
   const right = comp.width - left - width;
   const across: CSSProperties =
     left >= 0 && right >= 0
-      ? { left: 0, right: 0, paddingLeft: n(left), paddingRight: n(right) }
-      : { left: n(left), width: n(width) };
+      ? { left: 0, right: 0, paddingLeft: round3(left), paddingRight: round3(right) }
+      : { left: round3(left), width: round3(width) };
   return {
     position: "absolute",
     ...across,

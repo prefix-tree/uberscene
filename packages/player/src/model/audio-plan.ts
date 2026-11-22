@@ -338,7 +338,8 @@ function panEnvelope(p: Placement, children: readonly Placement[]): GainPoint[] 
   return undefined;
 }
 
-function interpolate(pts: readonly (readonly [number, number])[], t: number): number {
+/** The piecewise-linear value of `pts` (sorted by time) at `t`, held before the first point and after the last. */
+export function envelopeAt(pts: readonly (readonly [number, number])[], t: number): number {
   const first = pts[0]!,
     last = pts[pts.length - 1]!;
   if (t <= first[0]) return first[1];
@@ -356,7 +357,7 @@ function multiplyEnvelopes(envs: readonly (readonly GainPoint[])[], from: number
   for (const e of envs) for (const [t] of e) if (t >= from && t <= to) times.add(t);
   return [...times]
     .sort((a, b) => a - b)
-    .map((t) => [round(t), round(envs.reduce((acc, e) => acc * (e.length ? interpolate(e, t) : 1), 1))] as const);
+    .map((t) => [round(t), round(envs.reduce((acc, e) => acc * (e.length ? envelopeAt(e, t) : 1), 1))] as const);
 }
 
 function round(v: number): number {

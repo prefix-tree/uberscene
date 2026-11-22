@@ -1,4 +1,4 @@
-import { frameStartSeconds, framesUntil, nearestFrame } from "@uberscene/kit/schema";
+import { clamp01, frameStartSeconds, framesUntil, nearestFrame, round3 } from "@uberscene/kit/schema";
 import {
   boundsOf,
   buildFramePlan,
@@ -225,15 +225,14 @@ export async function checkLayout(options: LayoutCheckOptions): Promise<LayoutCh
     await engine.close();
     captureWarnings(null);
   }
-  const ms = (t: number): number => Math.round(t * 1000) / 1000;
   const index = options.source ? buildSourceIndex(options.source.text) : null;
   const result = issues.map(({ n: _n, worst: _w, ...issue }) => {
     const described = describe(
       {
         ...issue,
-        from: ms(issue.from),
-        to: ms(issue.to),
-        at: ms(issue.at),
+        from: round3(issue.from),
+        to: round3(issue.to),
+        at: round3(issue.at),
         box: rounded(issue.box),
         area: rounded(issue.area),
       },
@@ -582,11 +581,10 @@ function onScreen(
   H: number,
 ): DrawRect | null {
   const crop = op.crop ?? { x: 0, y: 0, w: ref.width, h: ref.height };
-  const clamp = (v: number): number => Math.max(0, Math.min(1, v));
-  const x0 = clamp((box.x * ref.width - crop.x) / crop.w) * op.rect.w,
-    x1 = clamp(((box.x + box.w) * ref.width - crop.x) / crop.w) * op.rect.w;
-  const y0 = clamp((box.y * ref.height - crop.y) / crop.h) * op.rect.h,
-    y1 = clamp(((box.y + box.h) * ref.height - crop.y) / crop.h) * op.rect.h;
+  const x0 = clamp01((box.x * ref.width - crop.x) / crop.w) * op.rect.w,
+    x1 = clamp01(((box.x + box.w) * ref.width - crop.x) / crop.w) * op.rect.w;
+  const y0 = clamp01((box.y * ref.height - crop.y) / crop.h) * op.rect.h,
+    y1 = clamp01(((box.y + box.h) * ref.height - crop.y) / crop.h) * op.rect.h;
   if (x1 <= x0 || y1 <= y0) return null;
   const r = boundsOf({ x: x0, y: y0, w: x1 - x0, h: y1 - y0 }, op.matrix);
   const left = Math.max(0, r.x),

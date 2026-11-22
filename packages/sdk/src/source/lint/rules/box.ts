@@ -2,7 +2,10 @@
 // became `box`, from the frame's top left; a title's `width` and `height`, its text box, became its box's size. A file written for the old spelling is reported here, and moved for certain
 // where the composition's size is written as numbers: the old offset from the centre becomes the same point from the
 // top left, with `origin: "center"` so the element's centre stays where it was.
+
 import * as t from "@babel/types";
+
+import { round3 } from "@uberscene/kit/schema";
 
 import type { SourceEdit } from "../../edits";
 import { attributeOf, idOf, jsxTags, tagName } from "../fixes";
@@ -213,13 +216,11 @@ function kept(text: string, node: t.Node): string {
 /** `half + value` as source: a number when the value is one, else the expression with the half added. */
 function shifted(text: string, node: t.Node, half: number): string {
   const n = numberOf(node);
-  if (n !== undefined) return String(round(half + n));
+  if (n !== undefined) return String(round3(half + n));
   const s = src(text, node);
   const simple = t.isIdentifier(node) || t.isMemberExpression(node) || t.isCallExpression(node);
   return `${half} + ${simple ? s : `(${s})`}`;
 }
-
-const round = (v: number): number => Math.round(v * 1000) / 1000;
 
 /** The `{ x, y }` object of a point or a position, as its two value nodes. */
 function xy(node: t.Node | null | undefined): { x?: t.Node; y?: t.Node } | undefined {
@@ -332,13 +333,13 @@ function moveCaptions(
     const v = position.value;
     const n = numberOf(v);
     if (n !== undefined) {
-      fields.push(`y: ${round(n * frame.height)}`);
+      fields.push(`y: ${round3(n * frame.height)}`);
       origin = "center";
     } else if (t.isStringLiteral(v) && v.value === "top") {
-      fields.push(`y: ${round(frame.height * 0.08)}`);
+      fields.push(`y: ${round3(frame.height * 0.08)}`);
       origin = "top";
     } else if (t.isStringLiteral(v) && v.value === "center") {
-      fields.push(`y: ${round(frame.height / 2)}`);
+      fields.push(`y: ${round3(frame.height / 2)}`);
       origin = "center";
     } else if (!(t.isStringLiteral(v) && v.value === "bottom")) return null;
   }
@@ -392,11 +393,11 @@ function moveComponent(
   const yn = value(ya);
   if (xn === null || yn === null) return null;
   // An axis left out keeps its old place: centred stays left out, an offset from the centre becomes its number.
-  const sx = xn ? shifted(text, xn, frame.width / 2) : defaults.x ? String(round(frame.width / 2 + defaults.x)) : null;
+  const sx = xn ? shifted(text, xn, frame.width / 2) : defaults.x ? String(round3(frame.width / 2 + defaults.x)) : null;
   const sy = yn
     ? shifted(text, yn, frame.height / 2)
     : defaults.y
-      ? String(round(frame.height / 2 + defaults.y))
+      ? String(round3(frame.height / 2 + defaults.y))
       : null;
   const box = `box={{ ${[sx !== null ? `x: ${sx}` : "", sy !== null ? `y: ${sy}` : ""].filter(Boolean).join(", ")} }}`;
   const flat = [xa, ya]

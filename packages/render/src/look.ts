@@ -3,7 +3,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
-import { framesUntil, nearestFrame } from "@uberscene/kit/schema";
+import { framesUntil, nearestFrame, round3 } from "@uberscene/kit/schema";
 import type { MediaResolver } from "@uberscene/player/engine";
 import {
   aroundMoments,
@@ -185,10 +185,10 @@ function motionMoments(
     const time = stretch.from + i * every;
     const frame = Math.min(frames - 1, nearestFrame(time, rate));
     if (moments.some((m) => m.frame === frame)) continue;
-    const at = Math.round(time * 1000) / 1000;
+    const at = round3(time);
     moments.push({ label: at.toFixed(2), time: at, frame, about: `in ${text}` });
   }
-  return { moments, motion: { ...stretch, step: Math.round(every * 1000) / 1000 } };
+  return { moments, motion: { ...stretch, step: round3(every) } };
 }
 
 /** Refuses options that do not go together, before anything is drawn. */

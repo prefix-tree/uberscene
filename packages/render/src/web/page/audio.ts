@@ -16,7 +16,7 @@ import {
   WebMOutputFormat,
 } from "mediabunny";
 
-import { sampleAtSeconds, samplesUntil } from "@uberscene/kit/schema";
+import { round3, sampleAtSeconds, samplesUntil } from "@uberscene/kit/schema";
 import { buildAudioPlan, type MediaResolver, makeNestedResolver } from "@uberscene/player/engine";
 import type { ResolvedState } from "@uberscene/sdk";
 
@@ -200,7 +200,7 @@ export async function measureSound(
     if (!quiet && start !== null) {
       const a = from + (start * windowFrames) / sampleRate;
       const b = Math.min(to, from + (w * windowFrames) / sampleRate);
-      if (b - a >= SILENCE_MIN_S) silences.push([Math.round(a * 1000) / 1000, Math.round(b * 1000) / 1000]);
+      if (b - a >= SILENCE_MIN_S) silences.push([round3(a), round3(b)]);
       start = null;
     }
   }
