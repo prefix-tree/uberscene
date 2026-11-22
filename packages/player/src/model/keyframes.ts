@@ -1,14 +1,13 @@
-import { type CurveKey, curveAt, EASING_FN, type Easing } from "@uberscene/kit/schema";
+import { type CurveKey, clamp01, curveAt, EASING_FN, easingCurve } from "@uberscene/kit/schema";
 import type { Placement } from "@uberscene/sdk/resolver";
 
 import { devWarn } from "../warn";
 
 export { EASING_FN };
 
-const clamp01 = (x: number): number => (x < 0 ? 0 : x > 1 ? 1 : x);
-
+/** The kit's easing (`easingCurve`), warning once on a name it does not know and drawing it linear. */
 export function ease(name: string | undefined, x: number): number {
-  const fn = EASING_FN[name as Easing];
+  const fn = easingCurve(name);
   if (!fn) {
     if (name !== undefined) devWarn(`easing:${name}`, `unknown easing "${name}", using linear`);
     return clamp01(x);
@@ -50,8 +49,4 @@ export function keyframedParam<T>(keys: readonly Placement[], param: string, rel
 /** The kit's curve (`curveAt`), with this player's easing, which warns once on a name it does not know. */
 function valueAt<T>(keys: readonly CurveKey[], rel: number, fallback: T): T {
   return keys.length === 0 ? fallback : (curveAt(keys, rel, ease) as T);
-}
-
-export function hasKeyframes(children: readonly Placement[], property: string): boolean {
-  return children.some((c) => c.kind === "keyframe" && c.props.property === property);
 }

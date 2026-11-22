@@ -1,3 +1,4 @@
+import { envelopeAt } from "../model/audio-plan";
 import type { AudioOutput, EnvelopePoint, ScheduledSource } from "../types";
 
 interface Live {
@@ -109,21 +110,12 @@ function automate(param: AudioParam, points: readonly EnvelopePoint[], when: num
     return;
   }
   const sorted = [...points].sort((a, b) => a.at - b.at);
-  param.setValueAtTime(valueAt(sorted, when, fallback), Math.max(0, when));
+  param.setValueAtTime(
+    envelopeAt(
+      sorted.map((p) => [p.at, p.value]),
+      when,
+    ),
+    Math.max(0, when),
+  );
   for (const p of sorted) if (p.at > when) param.linearRampToValueAtTime(p.value, p.at);
-}
-
-function valueAt(points: readonly EnvelopePoint[], at: number, fallback: number): number {
-  const first = points[0],
-    last = points[points.length - 1];
-  if (!first || !last) return fallback;
-  if (at <= first.at) return first.value;
-  if (at >= last.at) return last.value;
-  for (let i = 0; i < points.length - 1; i++) {
-    const a = points[i]!,
-      b = points[i + 1]!;
-    if (at >= a.at && at < b.at)
-      return b.at === a.at ? b.value : a.value + ((b.value - a.value) * (at - a.at)) / (b.at - a.at);
-  }
-  return last.value;
 }

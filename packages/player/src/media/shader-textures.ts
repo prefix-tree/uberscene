@@ -1,6 +1,7 @@
 // The pictures shaders read besides the element's own: an effect param that names an asset (`"asset:ID"`). A LUT
 // (`.cube`) becomes a 3D table of colours, an image a 2D picture. Each is fetched through the media resolver once and
 // kept; the compositor waits for the ones a frame needs before it paints.
+import { clamp01 } from "@uberscene/kit/schema";
 import { type AssetManifest, assetIdOf, type CubeLut, lookupAsset, parseCube } from "@uberscene/sdk/resolver";
 
 import type { ShaderPass } from "../model/shaders";
@@ -24,8 +25,6 @@ export function textureRefs(passes: readonly ShaderPass[] | undefined): string[]
       if (typeof value === "string" && value.startsWith("asset:")) out.push(value);
   return out;
 }
-
-const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 
 /** The table sampled at `rgb` (in its own domain) by trilinear interpolation. */
 function sample(lut: CubeLut, r: number, g: number, b: number, out: number[]): void {

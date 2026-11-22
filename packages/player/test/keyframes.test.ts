@@ -1,5 +1,5 @@
 import { childrenOf, makeState } from "./helpers/state";
-import { captureWarnings, EASING_FN, ease, keyframedValue } from "./internal";
+import { captureWarnings, EASING_FN, ease, envelopeAt, keyframedValue } from "./internal";
 
 const state = makeState({
   tracks: [
@@ -94,5 +94,30 @@ describe("easings", () => {
     expect(ease("nope", 0.6)).toBe(0.6);
     expect(warnings).toHaveLength(1);
     captureWarnings(null);
+  });
+
+  it("reads only easings, not what every object inherits", () => {
+    const warnings: string[] = [];
+    captureWarnings((m) => warnings.push(m));
+    expect(ease("valueOf", 0.5)).toBe(0.5);
+    expect(ease("constructor", 0.25)).toBe(0.25);
+    expect(warnings).toHaveLength(2);
+    captureWarnings(null);
+  });
+});
+
+describe("envelopeAt", () => {
+  const pts = [
+    [1, 0],
+    [3, 1],
+    [3, 0.5],
+    [4, 0.5],
+  ] as const;
+
+  it("holds before the first point and after the last, and is linear between", () => {
+    expect(envelopeAt(pts, 0)).toBe(0);
+    expect(envelopeAt(pts, 2)).toBe(0.5);
+    expect(envelopeAt(pts, 3)).toBe(0.5);
+    expect(envelopeAt(pts, 9)).toBe(0.5);
   });
 });

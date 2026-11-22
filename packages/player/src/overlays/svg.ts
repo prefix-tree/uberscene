@@ -1,5 +1,7 @@
 import { SaxesParser } from "saxes";
 
+import { round3 } from "@uberscene/kit/schema";
+
 import { cssColour } from "../model/css-passes";
 import { freezeSmil, hasSmil } from "./smil";
 import { shapeLength } from "./svg-length";
@@ -496,5 +498,5 @@ function escapeAttr(t: string): string {
 }
 
 function num(v: number): string {
-  return String(Math.round(v * 1000) / 1000);
+  return String(round3(v));
 }

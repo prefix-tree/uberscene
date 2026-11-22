@@ -4,11 +4,6 @@ import type { Placement } from "@uberscene/sdk/resolver";
 import { devWarn } from "../warn";
 import { keyframedParam } from "./keyframes";
 
-export interface FilterResult {
-  readonly filter: string;
-  readonly unsupported: readonly string[];
-}
-
 type Params = Readonly<Record<string, unknown>>;
 
 /** The placements of an element and its children, by id: where an effect's own keyframes are found. */
@@ -51,31 +46,6 @@ export function childFilter(
   }
   devWarn(`effect:${elementId}:${type}`, `effect "${type}" on "${elementId}" is not rendered by the browser player`);
   return "";
-}
-
-/** A single canvas/CSS `filter` string for an element's effect and colour-grade children at element-relative `rel`; unsupported types are listed. */
-export function filterString(
-  items: Items,
-  children: readonly Placement[],
-  elementId: string,
-  rel: number,
-  /** Effect types drawn as shaders rather than filters. */
-  declared: ReadonlySet<string> = new Set(),
-): FilterResult {
-  const parts: string[] = [];
-  const unsupported: string[] = [];
-  for (const c of children) {
-    const f = childFilter(items, c, elementId, rel, declared);
-    if (f) parts.push(f);
-    else if (
-      c.kind === "effect" &&
-      c.props.enabled !== false &&
-      !declared.has(String(c.props.type)) &&
-      !effectEntry(c.props.type)
-    )
-      unsupported.push(String(c.props.type));
-  }
-  return { filter: parts.join(" "), unsupported };
 }
 
 export type PostEffect =
