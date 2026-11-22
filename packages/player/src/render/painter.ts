@@ -155,6 +155,12 @@ export class CanvasPainter {
     };
   }
 
+  /** Frees the WebGL context its shaders ran in, if it opened one. */
+  dispose(): void {
+    this.shaders?.dispose();
+    this.shaders = null;
+  }
+
   private runner(): ShaderRunner {
     this.shaders ??= new ShaderRunner(this.width, this.height, this.createCanvas);
     return this.shaders;

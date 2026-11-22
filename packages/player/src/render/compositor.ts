@@ -84,6 +84,7 @@ export class Compositor {
   setState(state: ResolvedState): void {
     this.state = state;
     if (state.composition.width !== this.painter.width || state.composition.height !== this.painter.height) {
+      this.painter.dispose();
       this.painter = new CanvasPainter(state.composition.width, state.composition.height, this.deps.createCanvas);
     }
     this.lastFrame = -1;
@@ -170,6 +171,8 @@ export class Compositor {
   dispose(): void {
     this.disposed = true;
     this.pool.dispose();
+    // Its WebGL context goes back too: a nested compositor is made anew on every edit inside it.
+    this.painter.dispose();
     for (const n of this.nested.values()) n.compositor.dispose();
     this.nested.clear();
   }
