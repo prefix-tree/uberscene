@@ -230,7 +230,7 @@ export async function wholeKey(keys: FrameKeys, extra: unknown): Promise<string>
 }
 
 /** The most the cache folder holds, in bytes; past it the files used longest ago are deleted. */
-export const CACHE_CAP_BYTES = 500 * 1024 * 1024;
+const CACHE_CAP_BYTES = 500 * 1024 * 1024;
 /** Bytes written to a folder between two trims of it: a trim lists the whole folder, so not on every frame. */
 const TRIM_EVERY_BYTES = 25 * 1024 * 1024;
 const writtenSinceTrim = new Map<string, number>();
