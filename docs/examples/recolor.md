@@ -8,7 +8,8 @@ import { withBase } from "vitepress";
 
 # One prompt, one line
 
-A short of espresso running into a red paper cup. An agent is asked to "change red cup color to green", writes one
+The roastery's short: espresso running into a red paper cup, with the three.js bag of its Monday roast turning in the
+corner, as in the [launch film](/examples/launch). An agent is asked to "change red cup color to green", writes one
 line, and the same short plays with the cup green. It opens the README and the landing page, because it is the point
 of UberScene in twelve seconds: the video is a file, so a change to it is a change to a line.
 
@@ -21,7 +22,9 @@ of UberScene in twelve seconds: the video is a file, so a change to it is a chan
   seen happening. ([`recolor`](/reference/effects/recolor))
 - **The same short twice**: the same seconds of the same footage, as a 9:16 short in the frame (`box`, `fit="cover"`,
   rounded corners). Besides when they start, the only difference between them is that effects line.
-- **Keys on `box.x`** move the short aside for the prompt and back. ([Keys over time](/guide/animation#keys))
+- **A `<Three>` bag in the short**: the launch film's kraft bag with its printed label, in the short's own `box`, so it
+  moves with it. The same scene in both shorts, so the cup is the only difference. ([`<Three>`](/reference/elements/three))
+- **Keys on `box.x`** move the short and its bag aside for the prompt and back. ([Keys over time](/guide/animation#keys))
 - **The prompt in a `<Layer>`**: an agent's input box in React, typed letter by letter from `useLayer().elapsed`,
   then the diff it made. Every shape is a function of the time, so the preview and the export draw the same frame.
   ([Layers](/guide/anatomy#layers-a-blank-canvas-on-the-timeline))
