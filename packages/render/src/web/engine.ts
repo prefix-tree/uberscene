@@ -280,9 +280,11 @@ export function pageError(error: unknown, mediaErrors: readonly string[]): unkno
     try {
       id = decodeURIComponent(fetched);
     } catch {}
+    // Every missing asset is named, the one whose fetch failed first leading: which fetch fails first is a race.
     const said = mediaErrors.find((m) => m.includes(`"${id}"`)) ?? mediaErrors[0];
-    if (said) return new Error(said, { cause: error });
-    return error;
+    if (!said) return error;
+    const others = mediaErrors.filter((m) => m !== said);
+    return new Error(others.length ? `${said}; also ${others.join("; ")}` : said, { cause: error });
   }
   const [first] = mediaErrors;
   if (first && error instanceof Error && error.cause === undefined) error.cause = new Error(first);
