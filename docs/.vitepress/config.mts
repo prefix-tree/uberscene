@@ -109,6 +109,7 @@ export default defineConfig({
             link: "/examples/",
             collapsed: true,
             items: [
+              { text: "One prompt, one line", link: "/examples/recolor" },
               { text: "The logo film", link: "/examples/hero" },
               { text: "A coffee film", link: "/examples/coffee" },
               { text: "A product launch", link: "/examples/launch" },

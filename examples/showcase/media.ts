@@ -1,5 +1,5 @@
-// Footage for the showcase. Every moving picture comes from four stock coffee clips, which are not committed: each is
-// read from media/stock/ (fetched from its URL when one is known), checked against its hash, and trimmed. The
+// Footage for the showcase. Every moving picture comes from four stock coffee clips, committed under footage/ (or
+// kept in media/stock/): each is checked against its hash, and trimmed. The
 // stand-ins that carry words in the manifest (a founder, an analyst, a speaker on a phone) and the product b-roll are
 // cut from those clips, so their ids, lengths and transcripts stay as the demos expect. The green screen is a coffee
 // shot over studio green, for the colour key demo. Skips files that exist.
@@ -11,6 +11,8 @@ import { join } from "node:path";
 import { SOUNDS, wav } from "../shorts/media/sounds";
 
 const dir = join(import.meta.dirname, "media");
+/** The stock clips, committed. */
+const footage = join(import.meta.dirname, "footage");
 mkdirSync(dir, { recursive: true });
 
 /** Stock footage the demos use: where it comes from, who made it, and the part of it they show. */
@@ -18,7 +20,9 @@ const stock: readonly {
   readonly id: string;
   readonly file: string;
   readonly sha256: string;
-  /** A direct download, when known; otherwise the file is put in media/stock/ by hand. */
+  /** Other encodes of the same video that are accepted too, each with why. */
+  readonly alsoSha256?: readonly string[];
+  /** A direct download, when known, for a clip in neither footage/ nor media/stock/. */
   readonly url?: string;
   readonly page: string;
   readonly credit: string;
@@ -59,6 +63,9 @@ const stock: readonly {
     id: "redCup",
     file: "red-cup.mp4",
     sha256: "032a519f45df31d1a2339be8cb9796350826138555549755a678a29bd4d8df86",
+    // Pixabay's small encode of the same video (251-135872129_small.mp4, 640x360), the copy committed in footage/:
+    // scaled up to 960x540 like the others, so a little softer.
+    alsoSha256: ["7998af592642e757fa96f9b79776fa569c34df0f51064eccdc2444caa960dabe"],
     page: "https://pixabay.com/videos/id-251/",
     credit: "Espresso into a red paper cup, with steam, Pixabay video 251, Pixabay Content License",
     start: 0,
@@ -66,20 +73,30 @@ const stock: readonly {
   },
 ];
 
+/** Names given on the command line make only those clips and what is cut from them: `tsx media.ts redCup`. */
+const only = process.argv.slice(2);
+const wanted = (id: string) => only.length === 0 || only.includes(id);
+
 for (const clip of stock) {
+  if (!wanted(clip.id)) continue;
   const out = join(dir, `${clip.id}.webm`);
   if (existsSync(out)) continue;
-  const raw = join(dir, "stock", clip.file);
+  // The clips are committed under footage/; media/stock/ still works for a copy kept out of the repository.
+  const committed = join(footage, clip.file);
+  const raw = existsSync(committed) ? committed : join(dir, "stock", clip.file);
   if (!existsSync(raw)) {
     if (!clip.url)
-      throw new Error(`${clip.id}: put ${clip.file} in ${join(dir, "stock")} (from ${clip.page}); it is not committed`);
+      throw new Error(
+        `${clip.id}: ${clip.file} is in neither ${footage} nor ${join(dir, "stock")} (from ${clip.page})`,
+      );
     mkdirSync(join(dir, "stock"), { recursive: true });
     const response = await fetch(clip.url);
     if (!response.ok) throw new Error(`${clip.id}: ${clip.url} answered ${response.status}`);
     writeFileSync(raw, Buffer.from(await response.arrayBuffer()));
   }
   const hash = createHash("sha256").update(readFileSync(raw)).digest("hex");
-  if (hash !== clip.sha256) throw new Error(`${clip.id}: ${raw} is not the expected file (sha256 ${hash})`);
+  if (hash !== clip.sha256 && !clip.alsoSha256?.includes(hash))
+    throw new Error(`${clip.id}: ${raw} is not the expected file (sha256 ${hash})`);
   process.stdout.write(`${clip.id}.webm\n`);
   execFileSync(
     "ffmpeg",
@@ -134,6 +151,7 @@ const cuts: Record<
 };
 
 for (const [id, cut] of Object.entries(cuts)) {
+  if (!wanted(cut.from)) continue;
   const out = join(dir, `${id}.webm`);
   if (existsSync(out)) continue;
   process.stdout.write(`${id}.webm\n`);
@@ -172,7 +190,7 @@ for (const [id, cut] of Object.entries(cuts)) {
 
 /** A card of the close pour drifting over studio green, for the colour key demo. */
 const greenscreen = join(dir, "greenscreen.webm");
-if (!existsSync(greenscreen)) {
+if (wanted("coffee") && !existsSync(greenscreen)) {
   process.stdout.write("greenscreen.webm\n");
   execFileSync(
     "ffmpeg",

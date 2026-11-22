@@ -34,8 +34,8 @@ import { withBase } from "vitepress";
 
 </div>
 <figure class="home-film">
-<video :src="withBase('/showcase/coffee.webm')" :poster="withBase('/showcase/coffee.jpg')" autoplay muted loop playsinline aria-label="The coffee film: a pour-over and an espresso cut together with transitions, titles and a warm grade"></video>
-<figcaption><a :href="withBase('/examples/coffee')"><strong>The coffee film</strong></a>, four stock shots cut in one TSX file</figcaption>
+<video :src="withBase('/showcase/recolor.webm')" :poster="withBase('/showcase/recolor.jpg')" autoplay muted loop playsinline aria-label="A short of espresso into a red paper cup; an agent is asked to change red cup color to green and writes one line; the same short plays with the cup green"></video>
+<figcaption><a :href="withBase('/examples/recolor')"><strong>One prompt, one line</strong></a>: "change red cup color to green" adds a <code>recolor</code> effect, and the same short plays green</figcaption>
 </figure>
 </div>
 <figure class="home-sheet">

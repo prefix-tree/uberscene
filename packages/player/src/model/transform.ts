@@ -172,11 +172,9 @@ export function animatedBox(
   };
   const x = value("x"),
     y = value("y");
-  return {
-    ...(base?.origin ? { origin: base.origin } : {}),
-    ...(x !== undefined ? { x } : {}),
-    ...(y !== undefined ? { y } : {}),
-  };
+  // The rest of the box (its size, its origin) stays as written: only the keyed axes move.
+  const { x: _x, y: _y, ...rest } = base ?? {};
+  return { ...rest, ...(x !== undefined ? { x } : {}), ...(y !== undefined ? { y } : {}) };
 }
 
 /** CSS for a DOM element laid out like `layoutRect` does: it sits at the origin with `transform-origin: 0 0`. */

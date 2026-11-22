@@ -113,6 +113,17 @@ describe("animatedBox", () => {
     expect(animatedBox(undefined, children, 1)).toMatchObject({ x: 50 });
   });
 
+  it("keeps the box's size while an axis moves", () => {
+    // A 9:16 short sliding sideways: without its width and height it would fill the frame.
+    expect(animatedBox({ y: 380, width: 324, height: 576, origin: "center" }, children, 1)).toEqual({
+      x: 50,
+      y: 380,
+      width: 324,
+      height: 576,
+      origin: "center",
+    });
+  });
+
   it("returns the box untouched without keys", () => {
     const box = { x: 1, y: 2 };
     expect(animatedBox(box, [], 1)).toBe(box);

@@ -165,6 +165,54 @@ const duotone = colorTransform({
   neutral: { amount: 0 },
 });
 
+/**
+ * Recolour: turns one colour into another and leaves the rest. In HSV, a pixel whose hue lies within `tolerance` of
+ * `from`'s (on the colour circle, where half a turn is 0.5) turns by the hue between `from` and `to`, fading out over
+ * `softness` past it. Only clearly coloured pixels turn: greys, whites and blacks, and the faint tint a coloured object
+ * casts on metal or glass nearby, are left as they are. Saturation and value scale by `to`'s over `from`'s, so a pixel
+ * of exactly `from` becomes exactly `to`, and the rest of the object keeps its shading and highlights.
+ */
+const recolor = colorTransform({
+  name: "recolor",
+  params: z.object({
+    /** The colour to change: the object's colour as it was filmed. */
+    from: HEX.default("#c4202b"),
+    /** The colour it becomes. */
+    to: HEX.default("#2f9e4f"),
+    /** How far a hue may lie from `from`'s and still turn fully, as a part of the colour circle (0.5 is half a turn). */
+    tolerance: z.number().min(0).max(0.5).default(0.06),
+    /** How wide the fade is between turned and kept hues, past `tolerance`. */
+    softness: z.number().min(0).max(0.5).default(0.05),
+    /** How much of the effect to mix in: 0 leaves the picture as it was, 1 is the full effect. */
+    amount: z.number().min(0).max(1).default(1),
+  }),
+  prelude: `vec3 rc_hsv(vec3 c) {
+  vec4 k = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+  vec4 p = mix(vec4(c.bg, k.wz), vec4(c.gb, k.xy), step(c.b, c.g));
+  vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
+  float d = q.x - min(q.w, q.y);
+  return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + 1e-6)), d / (q.x + 1e-6), q.x);
+}
+vec3 rc_rgb(vec3 c) {
+  vec3 p = abs(fract(c.xxx + vec3(1.0, 2.0 / 3.0, 1.0 / 3.0)) * 6.0 - 3.0);
+  return c.z * mix(vec3(1.0), clamp(p - 1.0, 0.0, 1.0), c.y);
+}
+`,
+  rgb: `  vec3 hsv = rc_hsv(c);
+  vec3 a = rc_hsv(params.from);
+  vec3 b = rc_hsv(params.to);
+  float d = abs(fract(hsv.x - a.x + 0.5) - 0.5);
+  float w = 1.0 - smoothstep(params.tolerance, params.tolerance + params.softness + 1e-4, d);
+  w *= smoothstep(0.35, 0.55, hsv.y) * smoothstep(0.02, 0.08, hsv.z) * params.amount;
+  vec3 turned = rc_rgb(vec3(
+    fract(hsv.x + b.x - a.x),
+    clamp(hsv.y * b.y / max(a.y, 1e-3), 0.0, 1.0),
+    clamp(hsv.z * b.z / max(a.z, 1e-3), 0.0, 1.0)
+  ));
+  return mix(c, turned, w);`,
+  neutral: { amount: 0 },
+});
+
 const curvePoints = z
   .array(z.tuple([z.number().min(0).max(1), z.number().min(0).max(1)]))
   .min(2)
@@ -225,4 +273,4 @@ const curves = {
   },
 } satisfies ShaderDefinition;
 
-export { curves, duotone, exposure, levels, lut, shadowsHighlights, vibrance, whiteBalance };
+export { curves, duotone, exposure, levels, lut, recolor, shadowsHighlights, vibrance, whiteBalance };

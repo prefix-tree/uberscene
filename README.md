@@ -34,8 +34,8 @@ UberScene is a React library for making videos and building editors around them.
 captions, audio, transitions, effects, and any React, Motion or three.js on top. Play it in the browser, adjust it on a timeline, export it to MP4.
 
 <p align="center">
-  <a href="https://uberscene.prefixtree.xyz/examples/coffee"><img src="docs/public/readme/coffee.gif" width="640" alt="The coffee film: an espresso pours under FAST SHOT, a Warm LUT badge comes in as the grade warms, then three glasses under EVERY GLASS, A LINE OF CODE"></a>
-  <br><sub><b>The coffee film</b>, four stock shots cut in one TSX file. <a href="https://uberscene.prefixtree.xyz/examples/coffee">Watch it with sound →</a></sub>
+  <a href="https://uberscene.prefixtree.xyz/examples/recolor"><img src="docs/public/readme/recolor.gif" width="640" alt="A short of espresso into a red paper cup; an agent is asked to change red cup color to green and writes one line, a recolor effect; the same short plays with the cup green"></a>
+  <br><sub><b>One prompt, one line.</b> "change red cup color to green" adds a <code>recolor</code> effect to the file, and the same short plays green. <a href="https://uberscene.prefixtree.xyz/examples/recolor">The file →</a> · <a href="https://uberscene.prefixtree.xyz/examples/coffee">The coffee film →</a></sub>
 </p>
 
 ## Why

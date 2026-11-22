@@ -13,13 +13,19 @@ mkdirSync(to, { recursive: true });
  * it; footage that changes everywhere (the gradients) costs the most, so those get fewer frames and colours.
  */
 const GIFS: Record<string, { width: number; fps: number; colors: number }> = {
+  // The README's opening: the red cup and the green one need the colours.
+  recolor: { width: 640, fps: 12, colors: 96 },
   launch: { width: 480, fps: 10, colors: 64 },
   data: { width: 300, fps: 10, colors: 64 },
   logo: { width: 300, fps: 12, colors: 48 },
   kinetic: { width: 170, fps: 10, colors: 64 },
 };
 
+/** Names given on the command line make only those GIFs: `pnpm --filter @uberscene/example-showcase gif recolor`. */
+const only = process.argv.slice(2);
+
 for (const [name, { width, fps, colors }] of Object.entries(GIFS)) {
+  if (only.length > 0 && !only.includes(name)) continue;
   const filter = `fps=${fps},scale=${width}:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=${colors}:stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle`;
   execFileSync(
     "ffmpeg",
