@@ -9,8 +9,8 @@ This page covers how pictures and sound get to the process and back, and which f
 [Exporting](./exporting#native-codecs-experimental) has `UBERSCENE_CODECS` and the commands.
 
 ::: warning Experimental
-The native codecs run only when `UBERSCENE_CODECS` asks for them, and Chrome stays the default. They are built from
-source for now (`pnpm native:build`, Rust 1.95 or later), and on a CPU they are not faster than Chrome yet.
+The native codecs run only when `UBERSCENE_CODECS` asks for them, and Chrome stays the default. `npm install
+@uberscene/codecs` brings them, and on a CPU they are not faster than Chrome yet.
 :::
 
 ## How data flows
@@ -31,8 +31,31 @@ For each stream, Node starts one `uberscene-codec`, writes to its stdin and read
 with an error, Node reads the error from stderr. Numbers on the wire are little-endian. `native/PROTOCOL.md` in the
 repository lists every byte.
 
-The export looks for `native/target/release/uberscene-codec`. `UBERSCENE_CODEC_BIN` names a binary built somewhere
-else.
+## Getting the binary
+
+```sh
+npm install @uberscene/codecs
+```
+
+The package brings `uberscene-codec` for the machine it is installed on, as one of five platform packages, and the
+export finds it there:
+
+| Platform | Package |
+|---|---|
+| macOS on Apple silicon | `@uberscene/codecs-darwin-arm64` |
+| macOS on Intel | `@uberscene/codecs-darwin-x64` |
+| Linux x64 (glibc) | `@uberscene/codecs-linux-x64-gnu` |
+| Linux arm64 (glibc) | `@uberscene/codecs-linux-arm64-gnu` |
+| Windows x64 | `@uberscene/codecs-win32-x64` |
+
+Keep `@uberscene/codecs` at the same version as `uberscene`: the export and the binary are released together, and
+what they say to each other changes between releases.
+
+On another platform (Alpine, Windows on arm64), build it from the repository: `pnpm native:build` with Rust 1.95 or
+later writes `native/target/release/uberscene-codec`. Name it in `UBERSCENE_CODEC_BIN`.
+
+The export takes the first of: `UBERSCENE_CODEC_BIN`; in a checkout of the repository, the binary `pnpm
+native:build` made; the one `@uberscene/codecs` installed.
 
 ## Decoding
 

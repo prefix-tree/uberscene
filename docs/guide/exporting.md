@@ -182,7 +182,7 @@ native codec process instead. It is a small Rust program on [craft-video](https:
 FilmCraft's pure-Rust codecs, with no FFmpeg.
 
 ```sh
-pnpm native:build                                               # once, in the UberScene workspace
+npm install @uberscene/codecs                                   # once: the codecs for your platform
 UBERSCENE_CODECS=native-decode npx uberscene video.tsx --out video.mp4
 UBERSCENE_CODECS=native npx uberscene video.tsx --out master.mov --codec prores --quality high
 ```
@@ -202,7 +202,9 @@ What it is for:
 
 How it behaves:
 
-- It is built from source for now. `UBERSCENE_CODEC_BIN` names a binary built elsewhere.
+- `@uberscene/codecs` brings the binary for macOS, Linux (glibc) or Windows; keep it at the same version as
+  `uberscene`. On another platform, [build it from source](./native-codecs#getting-the-binary) and name it in
+  `UBERSCENE_CODEC_BIN`.
 - An asset the native decoder cannot read is decoded by Chrome, with a warning.
 - The native encoder writes H.264 and ProRes, not VP9 or AV1, and does not combine with `--copy`.
 - With a native encoder, the sound is encoded natively too: AAC in an MP4, PCM in a MOV or WAV (an MP3 is still

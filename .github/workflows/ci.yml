@@ -32,6 +32,7 @@ jobs:
           filters: |
             native:
               - 'native/**'
+              - 'packages/codecs/**'
               - 'packages/render/src/native/**'
               - 'packages/render/src/web/page/native-frames.ts'
               - 'packages/render/src/mixer.ts'
@@ -98,6 +99,12 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm native:build
+      - run: pnpm --filter @uberscene/render exec vitest run test/native.test.ts test/native-audio.test.ts
+      # The same tests with the binary where npm puts it: in @uberscene/codecs' package for this platform, found
+      # without UBERSCENE_CODEC_BIN and with the workspace's build moved away.
+      - run: node packages/codecs/scripts/place.mjs
+      - run: pnpm --filter @uberscene/codecs-linux-x64-gnu pack --pack-destination "$RUNNER_TEMP"
+      - run: mv native/target/release/uberscene-codec native/target/release/uberscene-codec.built
       - run: pnpm --filter @uberscene/render exec vitest run test/native.test.ts test/native-audio.test.ts
 
   changeset:

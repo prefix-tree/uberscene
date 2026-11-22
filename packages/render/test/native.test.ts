@@ -37,6 +37,16 @@ describe("UBERSCENE_CODECS", () => {
     expect(() => codecBinary({ UBERSCENE_CODEC_BIN: "/nonexistent/uberscene-codec" })).toThrow(/does not exist/);
   });
 
+  it("takes the workspace's build, then the binary @uberscene/codecs installed, and says how to get one", () => {
+    const binary = "/somewhere/node_modules/@uberscene/codecs-linux-x64-gnu/bin/uberscene-codec";
+    const none = "/nonexistent/native/uberscene-codec";
+    expect(codecBinary({}, () => ({ binary, supported: true }), none)).toBe(binary);
+    expect(codecBinary({}, () => ({ binary, supported: true }), import.meta.filename)).toBe(import.meta.filename);
+    expect(() => codecBinary({ UBERSCENE_CODEC_BIN: none }, () => ({ binary }), none)).toThrow(/does not exist/);
+    expect(() => codecBinary({}, () => ({}), none)).toThrow("npm install @uberscene/codecs");
+    expect(() => codecBinary({}, () => ({ supported: false }), none)).toThrow(/has no binary for .*pnpm native:build/);
+  });
+
   it("writes a .mov only when the native encoder is on", () => {
     expect(() => containerOf("out.mov")).toThrow(/UBERSCENE_CODECS=native-encode/);
     expect(containerOf("out.mov", { nativeEncode: true })).toBe("mov");

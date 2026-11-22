@@ -1,0 +1,33 @@
+{
+  "name": "@uberscene/codecs-darwin-x64",
+  "version": "0.5.0",
+  "description": "UberScene's native codecs for macOS on Intel: the uberscene-codec binary. Install @uberscene/codecs, which picks this package.",
+  "license": "MIT",
+  "homepage": "https://uberscene.prefixtree.xyz/",
+  "bugs": {
+    "url": "https://github.com/prefix-tree/uberscene/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/prefix-tree/uberscene.git",
+    "directory": "packages/codecs/platforms/darwin-x64"
+  },
+  "os": [
+    "darwin"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "bin": {
+    "uberscene-codec": "bin/uberscene-codec"
+  },
+  "files": [
+    "bin"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "prepack": "node ../../scripts/check-binary.mjs"
+  }
+}

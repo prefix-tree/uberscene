@@ -11,6 +11,12 @@ const root = new URL("..", import.meta.url).pathname;
 
 // Dependency order, so approving the stage ids from top to bottom publishes dependencies first.
 export const PACKAGE_DIRS = [
+  // The native codecs: a binary per platform, then the package that picks one. Each platform package refuses to pack
+  // without its binary (packages/codecs/scripts/check-binary.mjs), which the release workflow's build jobs make.
+  ...JSON.parse(readFileSync(join(root, "packages/codecs/targets.json"), "utf8")).map(
+    (target) => `packages/codecs/platforms/${target.dir}`,
+  ),
+  "packages/codecs",
   "packages/kit",
   "packages/sdk",
   "packages/player",

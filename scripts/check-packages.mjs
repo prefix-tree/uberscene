@@ -14,6 +14,8 @@ const PACKAGES = [
   // A stylesheet, not a module: attw would try to resolve it as one.
   { dir: "packages/player", attw: ["--exclude-entrypoints", "fonts.css"] },
   { dir: "packages/editor" },
+  // The platform packages it picks from are checked at release, when they have their binaries.
+  { dir: "packages/codecs" },
   { dir: "packages/render" },
   { dir: "packages/cli" },
 ];
