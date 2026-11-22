@@ -34,7 +34,7 @@ import { withBase } from "vitepress";
 
 </div>
 <figure class="home-film">
-<video :src="withBase('/showcase/recolor.webm')" :poster="withBase('/showcase/recolor.jpg')" autoplay muted loop playsinline aria-label="A roastery's short of espresso into a red paper cup, a 3D coffee bag turning beside it; an agent is asked to change red cup color to green and writes one line; the same short plays with the cup green"></video>
+<video :src="withBase('/showcase/recolor.webm')" :poster="withBase('/showcase/recolor.jpg')" autoplay muted loop playsinline aria-label="A short of espresso into a red paper cup; an agent is asked to change red cup color to green and writes one line; the same short plays with the cup green"></video>
 <figcaption><a :href="withBase('/examples/recolor')"><strong>One prompt, one line</strong></a>: "change red cup color to green" adds a <code>recolor</code> effect, and the same short plays green</figcaption>
 </figure>
 </div>

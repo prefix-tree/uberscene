@@ -1,14 +1,12 @@
-import { Clip, Composition, fontFamily, googleFont, Layer, Three, Title, Track, useLayer } from "@uberscene/kit";
+import { Clip, Composition, fontFamily, googleFont, Layer, Title, Track, useLayer } from "@uberscene/kit";
 
 /**
- * The README's opening: one prompt changes a video. The roastery's short (espresso running into a red paper cup, the
- * three.js bag of its Monday roast turning in the corner, as in the launch film); an agent is asked to "change red cup
- * color to green" and writes one line, a `recolor` effect; the same short plays with the cup green, and nothing else
- * in it changes. The two shorts play the same seconds of the same footage, each on its own track (one track playing a
- * stretch twice reads as a mistake to the lint). Besides when they start, the only difference between them is that
- * effects line, which is the line the prompt shows; here its `amount` is keyed from 0 to 1, so the change is seen
- * happening. Every shape in the prompt and the bag is a function of the time, so the preview and the export draw the
- * same frame.
+ * The README's opening: one prompt changes a video. A short of espresso running into a red paper cup; an agent is asked
+ * to "change red cup color to green" and writes one line, a `recolor` effect; the same short plays with the cup green.
+ * The two shorts play the same seconds of the same footage, each on its own track (one track playing a stretch twice
+ * reads as a mistake to the lint). Besides when they start, the only difference between them is that effects line,
+ * which is the line the prompt shows; here its `amount` is keyed from 0 to 1, so the change is seen happening. Every shape in the prompt is a function of the layer's elapsed time, so the preview and
+ * the export draw the same frame, and the last frame is the first, so it loops.
  */
 export const mono = googleFont("Geist Mono", { weights: [400, 600] });
 export const sans = googleFont("Inter", { weights: [500, 700] });
@@ -29,23 +27,6 @@ const SHORT = { y: 380, width: 324, height: 576, origin: "center" } as const;
 const LEFT = 300;
 const CENTRE = W / 2;
 const CORNERS = { borderRadius: 26 };
-/** The red short steps aside for the prompt; the green one comes back to the middle. Its bag moves with it. */
-const BEFORE = {
-  ...SHORT,
-  x: [
-    { at: 3.1, value: CENTRE, easing: "easeInOutCubic" as const },
-    { at: 3.7, value: LEFT },
-  ],
-};
-const AFTER = {
-  ...SHORT,
-  x: [
-    { at: 0.9, value: LEFT, easing: "easeInOutCubic" as const },
-    { at: 1.5, value: CENTRE },
-  ],
-};
-/** The camera on the bag, framed for the short's 9:16 box. */
-const BAG_CAMERA = { position: [0, 0, 6] as [number, number, number], fov: 35 };
 
 export default function Video() {
   return (
@@ -60,10 +41,15 @@ export default function Video() {
           out={25.5}
           fit="cover"
           volume={0}
-          box={BEFORE}
+          box={{
+            ...SHORT,
+            x: [
+              { at: 3.1, value: CENTRE, easing: "easeInOutCubic" },
+              { at: 3.7, value: LEFT },
+            ],
+          }}
           transform={CORNERS}
         />
-        <Three id="bag-red" start={0} duration={7.5} box={BEFORE} camera={BAG_CAMERA} setup={bagScene} />
       </Track>
       <Track id="green" layout="free">
         {/* 3. The same short, with the line the agent wrote; it comes back to the middle. */}
@@ -75,7 +61,13 @@ export default function Video() {
           out={22.5}
           fit="cover"
           volume={0}
-          box={AFTER}
+          box={{
+            ...SHORT,
+            x: [
+              { at: 0.9, value: LEFT, easing: "easeInOutCubic" },
+              { at: 1.5, value: CENTRE },
+            ],
+          }}
           transform={CORNERS}
           effects={[
             {
@@ -89,7 +81,6 @@ export default function Video() {
             },
           ]}
         />
-        <Three id="bag-green" start={7.5} duration={4.5} box={AFTER} camera={BAG_CAMERA} setup={bagScene} />
       </Track>
 
       <Track id="words" layout="free">
@@ -191,51 +182,4 @@ function Agent() {
       </div>
     </div>
   );
-}
-
-/**
- * The roastery's bag, as in the launch film: kraft paper with a printed label, turning slowly in the short's lower
- * right, clear of the cup. The same scene in both shorts, so they differ only in the cup.
- */
-// biome-ignore lint/suspicious/noExplicitAny: three.js comes from the element at run time; the kit does not type it.
-function bagScene({ scene, THREE }: { scene: any; THREE: any }) {
-  const bag = new THREE.Mesh(
-    new THREE.BoxGeometry(1.5, 2.3, 0.55),
-    new THREE.MeshStandardMaterial({ color: "#b0875c", metalness: 0, roughness: 0.92 }),
-  );
-  const art = document.createElement("canvas");
-  art.width = 300;
-  art.height = 420;
-  const g = art.getContext("2d") as CanvasRenderingContext2D;
-  g.fillStyle = "#f4efe6";
-  g.fillRect(0, 0, 300, 420);
-  g.fillStyle = "#e8a33d";
-  g.fillRect(0, 0, 300, 18);
-  g.fillStyle = "#101421";
-  g.textAlign = "center";
-  g.font = "700 52px Inter, sans-serif";
-  g.fillText("HALVARD", 150, 150);
-  g.font = "500 24px Inter, sans-serif";
-  g.fillText("Monday roast", 150, 200);
-  g.fillRect(110, 240, 80, 3);
-  g.font = "500 22px Inter, sans-serif";
-  g.fillText("Single origin", 150, 300);
-  g.fillText("250 g", 150, 340);
-  const texture = new THREE.CanvasTexture(art);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  const label = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.54), new THREE.MeshBasicMaterial({ map: texture }));
-  label.position.set(0, -0.1, 0.277);
-  const roast = new THREE.Group();
-  roast.add(bag, label);
-  roast.position.set(0.3, -0.72, 0);
-  scene.add(roast);
-  scene.add(new THREE.AmbientLight("#ffffff", 0.7));
-  const key = new THREE.DirectionalLight("#fff1dd", 2.4);
-  key.position.set(-3, 4, 5);
-  scene.add(key);
-  return ({ time }: { time: number }) => {
-    roast.scale.setScalar(0.36);
-    roast.rotation.y = -0.5 + Math.sin(time * 0.7) * 0.4;
-    roast.rotation.x = Math.sin(time * 0.5) * 0.06;
-  };
 }
