@@ -162,6 +162,23 @@ export const isDropFrame = (rate: Rate): boolean => rate.den === 1001 && (rate.n
 const pad = (n: number): string => String(n).padStart(2, "0");
 
 /**
+ * The whole second a frame falls in and the frame's place within it, for a timecode. A whole rate and the NTSC rates
+ * (29.97, 23.976…) count by their nominal rate, as editors do. Any other fractional rate (12.5) counts the frames that
+ * start in each real second, so the second shown is the second the frame is at: frame 125 at 12.5 fps is 10 s, 0 frames.
+ */
+export function secondAndFrame(frame: number, rate: Rate): readonly [second: number, frame: number] {
+  const n = Math.max(0, Math.floor(frame));
+  if (rate.num % rate.den === 0 || rate.den === 1001) {
+    const nominal = Math.round(rateValue(rate));
+    return [Math.floor(n / nominal), n % nominal];
+  }
+  const second = Math.floor((n * rate.den) / rate.num);
+  // The first frame that starts at or after that second.
+  const first = Math.ceil((second * rate.num) / rate.den);
+  return [second, n - first];
+}
+
+/**
  * SMPTE timecode of a frame, `HH:MM:SS:FF`. At 29.97 and 59.94 it is drop-frame, `HH:MM:SS;FF`: frame numbers 0 and 1
  * (0 to 3 at 59.94) are skipped at the start of every minute except each tenth, so the clock keeps to real time.
  */
@@ -177,7 +194,6 @@ export function timecode(frame: number, rate: Rate, options: { readonly dropFram
     const rest = n % perTen;
     n += dropped * 9 * tens + (rest > dropped ? dropped * Math.floor((rest - dropped) / perMinute) : 0);
   }
-  const ff = n % nominal;
-  const s = Math.floor(n / nominal);
+  const [s, ff] = drop ? [Math.floor(n / nominal), n % nominal] : secondAndFrame(n, rate);
   return `${pad(Math.floor(s / 3600))}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}${drop ? ";" : ":"}${pad(ff)}`;
 }
