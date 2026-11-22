@@ -13,8 +13,18 @@ describe("pageError", () => {
   it("tells a failed media fetch as the resolver's message for that asset", () => {
     const fetch = new Error("page.evaluate: Error: Error fetching /media/bars: 500 Internal Server Error");
     const told = pageError(fetch, media) as Error;
-    expect(told.message).toBe(media[1]);
+    expect(told.message).toBe(`${media[1]}; also ${media[0]}`);
     expect(told.cause).toBe(fetch);
+  });
+
+  it("names every missing asset whichever fetch fails first", () => {
+    const bars = pageError(new Error("Error fetching /media/bars: 500"), media) as Error;
+    const logo = pageError(new Error("Error fetching /media/logo: 500"), media) as Error;
+    for (const told of [bars, logo]) {
+      expect(told.message).toContain('asset "bars"');
+      expect(told.message).toContain('asset "logo"');
+    }
+    expect(logo.message.startsWith(media[0] as string)).toBe(true);
   });
 
   it("decodes the asset id from the URL", () => {
