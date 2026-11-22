@@ -1,6 +1,6 @@
 # Stock footage
 
-The four clips every moving picture in the showcase is cut from, kept in Git LFS (`git lfs pull` fetches them).
+The clips every moving picture in the showcase is cut from, committed as they are.
 `../media.ts` checks each against its sha256 and trims it into `../media/`.
 
 | File | Pixabay video | What it shows |

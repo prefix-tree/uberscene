@@ -19,7 +19,7 @@ const MUTED = "#8a919c";
 const GREEN = "#46c46a";
 const PROMPT = "change red cup color to green";
 /** The line the agent writes: the one difference between the two shorts. */
-const LINE = '+   effects={[{ type: "recolor", from: "#c4202b", to: "#2f9e4f" }]}';
+const LINE = '+   effects={[{ type: "recolor", from: "#c3292a", to: "#2f9e4f" }]}';
 
 /** The short: 9:16, as tall as the frame allows with room for its label. */
 const SHORT = { y: 380, width: 324, height: 576, origin: "center" } as const;
@@ -72,7 +72,7 @@ export default function Video() {
           effects={[
             {
               type: "recolor",
-              from: "#c4202b",
+              from: "#c3292a",
               to: "#2f9e4f",
               amount: [
                 { at: 0, value: 0, easing: "easeOutCubic" },

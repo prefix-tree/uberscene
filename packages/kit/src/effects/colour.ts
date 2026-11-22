@@ -168,8 +168,9 @@ const duotone = colorTransform({
 /**
  * Recolour: turns one colour into another and leaves the rest. In HSV, a pixel whose hue lies within `tolerance` of
  * `from`'s (on the colour circle, where half a turn is 0.5) turns by the hue between `from` and `to`, fading out over
- * `softness` past it; greys, whites and blacks, which have no hue to speak of, are left as they are. Its saturation
- * moves by the ratio of `to`'s to `from`'s and its value stays, so the object keeps its shading and highlights.
+ * `softness` past it. Only clearly coloured pixels turn: greys, whites and blacks, and the faint tint a coloured object
+ * casts on metal or glass nearby, are left as they are. Saturation and value scale by `to`'s over `from`'s, so a pixel
+ * of exactly `from` becomes exactly `to`, and the rest of the object keeps its shading and highlights.
  */
 const recolor = colorTransform({
   name: "recolor",
@@ -202,8 +203,12 @@ vec3 rc_rgb(vec3 c) {
   vec3 b = rc_hsv(params.to);
   float d = abs(fract(hsv.x - a.x + 0.5) - 0.5);
   float w = 1.0 - smoothstep(params.tolerance, params.tolerance + params.softness + 1e-4, d);
-  w *= smoothstep(0.08, 0.25, hsv.y) * smoothstep(0.02, 0.08, hsv.z) * params.amount;
-  vec3 turned = rc_rgb(vec3(fract(hsv.x + b.x - a.x), clamp(hsv.y * b.y / max(a.y, 1e-3), 0.0, 1.0), hsv.z));
+  w *= smoothstep(0.35, 0.55, hsv.y) * smoothstep(0.02, 0.08, hsv.z) * params.amount;
+  vec3 turned = rc_rgb(vec3(
+    fract(hsv.x + b.x - a.x),
+    clamp(hsv.y * b.y / max(a.y, 1e-3), 0.0, 1.0),
+    clamp(hsv.z * b.z / max(a.z, 1e-3), 0.0, 1.0)
+  ));
   return mix(c, turned, w);`,
   neutral: { amount: 0 },
 });

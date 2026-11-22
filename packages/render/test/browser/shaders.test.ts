@@ -327,15 +327,14 @@ describe("footage tools", () => {
   });
 
   it("recolor turns the one colour, and leaves greys and other hues", async () => {
-    // The default from (#c4202b) on the left, a grey on the right: the red becomes the default to (#2f9e4f) with the
-    // red's own value, and the grey stays.
+    // The default from (#c4202b) on the left, a grey on the right: the red becomes exactly the default to (#2f9e4f),
+    // and the grey stays.
     const red = [0xc4 / 255, 0x20 / 255, 0x2b / 255];
     const [turned, grey] = await at(`recolor`, `{ type: "recolor" }`, { left: red, right: [0.5, 0.5, 0.5] }, [
       [40, 90],
       [280, 90],
     ]);
-    // #2f9e4f's hue and saturation (0.381, 0.703), at the red's value (0.769): rgb(58, 196, 98).
-    expect(near(turned, [58, 196, 98], 8)).toBe(true);
+    expect(near(turned, [0x2f, 0x9e, 0x4f], 6)).toBe(true);
     expect(near(grey, [128, 128, 128])).toBe(true);
     // A blue, far from the red's hue, and a red at half the effect.
     const [blue, half] = await at(
@@ -348,7 +347,9 @@ describe("footage tools", () => {
       ],
     );
     expect(near(blue, [26, 51, 230])).toBe(true);
-    expect(near(half, [127, 114, 71], 8)).toBe(true);
+    expect(
+      near(half, [Math.round((0xc4 + 0x2f) / 2), Math.round((0x20 + 0x9e) / 2), Math.round((0x2b + 0x4f) / 2)]),
+    ).toBe(true);
   });
 
   it("regionBlur softens an edge inside the box and leaves it sharp outside", async () => {
