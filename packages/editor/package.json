@@ -1,6 +1,6 @@
 {
   "name": "@uberscene/editor",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Embeddable editor parts for the cut video DSL: preview, layers, timeline, selection and undoable edits around one player.",
   "keywords": [
     "video",

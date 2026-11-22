@@ -1,5 +1,203 @@
 # @uberscene/kit
 
+## 0.6.0
+
+### Minor Changes
+
+- 28bdc58: `uberscene blocks add <name>` copies a block into the project and records it in the manifest; with `--into video.tsx --track <id> --at <moment>` it also writes the import and a `<Layer>` holding it, leaving the video as it was if that would give it errors. `uberscene blocks update` replaces copies nobody edited and prints what differs in edited ones. The kit gets `insertLayer` in `@uberscene/sdk`, an optional `blocks` record on `AssetManifest`, and a component imported from one of the file's own modules now gets the Layer's handles, as one declared in the file does.
+- 68c7b7c: Blocks: scene-sized pieces of motion design that ship with the CLI. `uberscene blocks` lists them by the job each does
+  (`--for`, `--aspect`, `--json`) and `--sheet` pastes their previews into one image. The first three are a grid of
+  cells that fills and counts, a wall of characters that changes on the beat, and a row of points lit in turn; the
+  example shorts are built on them. The kit gains `themeCss` (a theme token as a CSS value, for components that take
+  `$accent`) and `blockMetaSchema`.
+- cf23cb8: One coordinate system: every element that draws is placed by `box`, the rectangle it occupies, in pixels from the
+  frame's top left as in CSS. `x` and `y` place the point `origin` names (`topLeft` by default, or `center`, `top`,
+  `bottomRight` and the rest of the nine), `width` and `height` size it, and `fit` fills it as CSS `object-fit` does;
+  `transform` (scale, rotation, opacity, crop, rounded corners) applies after. With no box an element fills the frame as
+  before, so nothing written without a position moves. Clips, nested sequences, titles, shapes, SVG, stickers and
+  layers all take `box`, and keys on `box.x` and `box.y` move it.
+  
+  `transform.position`, which measured from the frame's centre, is removed. Captions lose `style.position` and their
+  flat `x`, `y` and `width`: they sit in their default box, the lower safe area, unless their `box` changes a field of
+  it, and `style` on captions is look only. Components take `box`, with `x` and `y`, for their centre from the frame's
+  top left in place of their flat `x` and `y`. An axis left out is centred on the composition's frame, whatever its
+  size, as before; `LowerThird` and `Callout` keep defaults set for a 1920 by 1080 frame. A
+  component called as a function takes its frame from `withFrame(size, fn)`. A new `box/update`
+  action places an element or the captions, the layout check's fixes name the `box` values to write, and
+  `uberscene inspect --at` prints each element's box.
+  
+  To move a file, run `uberscene lint --fix video.tsx`. It turns `transform.position` into a box with
+  `origin: "center"` at the same point (each coordinate plus half the frame), keys on `transform.position.x` and
+  `.y` into keys on `box.x` and `box.y`, the captions' `style.position`, `x`, `y` and `width` into the box that draws them where
+  they were, and components' `x` and `y` into `box`. It also gives a box to a `LowerThird` or `Callout` placed by its
+  default on a frame that is not 1920 by 1080, where that default was an offset from the centre. It needs the composition's width and
+  height written as numbers or as top-level constants. Two things it cannot move: a
+  `Callout`'s `to` written without the callout's `x` and `y` (now a point from the top left; add half the frame to it),
+  and placements built in code (a transform object in a constant, a spread). The theme's `note` title preset no
+  longer carries a position: a title that used it alone now sits centred, so give it a box.
+- 327d103: `Executor.can(action)` answers whether `execute` would accept an action, with the same errors, and changes nothing. `affordances(state, id)` says what can be done to one element: how each prop can be written (`literal`, `bound`, `locked`) and which actions are about it and accept it. Handlers that act on one element gain an optional `targets` face, and `actionTarget(input)` names the element an action is about.
+- 0800d5e: Removing, splitting and trimming a clip carry along what is placed from it. Titles anchored to a removed clip move to
+  the clip before it, held inside it, or are removed with it when there is none; a transition left with one side is
+  removed; a length that followed the clip becomes seconds. A split moves titles at a word of its second half, end
+  anchors, `until` lengths and an out-edge transition to the new clip. A trim keeps a title whose word it takes away at
+  its time, as an offset inside the clip. Undo puts all of it back, and the write-back writes it into the file.
+  `dependentsOf(state, id)` lists what depends on an element. Fixes: undoing a removal puts an anchored element back on
+  its own line and a Layer back with its handles, and restoring an element anchored to an end (`a.end`) is accepted.
+- 71e136e: `LowerThird` and `Callout` take a `size`: the name's or the note's size in pixels, with the card, the bar and the box scaled to match. The defaults (44 and 30) draw them as before.
+- fa69b88: Everything about an element is a prop. A value is a constant, or a list of `{ at, value, easing? }` keys when it changes over time (`at` is seconds into the element; `easing` says how the value leaves that key, linear when left out). Effects are an ordered list on the element, a speed ramp is keys on `speed`, and held frames are a `freezes` list:
+  
+  ```tsx
+  <Clip id="pour" src="asset:coffee" in={8} out={14}
+    transform={{ scale: [{ at: 0, value: 1, easing: "easeInOut" }, { at: 3.5, value: 1.2 }] }}
+    effects={[{ type: "lut", src: "asset:warm" }, { type: "blur", radius: [{ at: 0, value: 8 }, { at: 1, value: 0 }] }]}
+    speed={[{ at: 0, value: 1, easing: "easeInOutQuad" }, { at: 1.6, value: 0.4 }]}
+    freezes={[{ start: 4.2, duration: 1.4, source: 12.4 }]}
+    volume={[{ at: 0, value: 0 }, { at: 0.5, value: 1 }]} pan={-0.3} />
+  ```
+  
+  - Keys animate `transform.scale` (one list moves both axes, `{ x, y }` each on its own), `rotation`, `opacity`, `anchor.x` and `anchor.y`, `borderRadius`, `crop.x`, `crop.y`, `crop.width` and `crop.height`, `box.x` and `box.y`, `volume`, `pan`, `speed` and every effect param.
+  - `effects` is on clips, titles, shapes, SVG, stickers, adjustments, nested sequences and layers: each entry `{ type, ...params, enabled? }`, `type` a built-in name or an `effect()` the file declares.
+  - `freezes` is on clips and audio: each hold `{ start, duration, source }`, from `start` seconds into the element, for `duration`, showing the source frame at `source`. `start` follows the naming rule: the second something starts at is `start`; keys keep `at`, a moment rather than a span.
+  - The `halftone` effect's `mode` param, `type` for a while on the way to 0.6, is `inks` (`"mono"` or `"cmyk"`): in an entry of `effects`, `type` names the effect.
+  - `pan` is a new prop; `volume` and `pan` keys replace `automation`.
+  - Masks, captions, angles, cuts and markers stay children.
+  
+  Errors on a key or an effect name the element and the prop path (`pour` at `effects.1.radius`). The edit actions address a key by element id, path and time (`key/add`, `key/update`, `key/move`, `key/remove`, `key/setAll`), an effect by its index (`effect/add`, `effect/remove`, `effect/update`, `effect/toggle`, `effect/setOrder`, `effect/setStack`), and the holds with `freeze/setAll`. The player and the export draw the same frames as before.
+  
+  Breaking: `<Keyframe>`, `<Effect>`, `<SpeedKey>`, `<Freeze>` and the `automation` prop are removed, with the `keyframe/*`, `speed/*` and `audio/setAutomation` actions. A file that still uses them fails with an error naming the fix. To move a file, run:
+  
+  ```sh
+  uberscene lint --fix video.tsx
+  ```
+  
+  The new `everything-is-a-prop` rule rewrites the children into props and their imports, gives the params and easings their 0.6 names on the way (a shadow's `radius` is `blur`, `"ease-in-out"` is `"easeInOut"`), and folds `automation` into `volume` keys with the same gain. The playground upgrades a shared link when it opens it.
+- 89e5b4b: Removed `Frame`, `Background`, `ProgressBar`, `Arrow`, `Highlight` and `QuoteCard`. Each was one element with defaults or a duplicate of a block: draw a border as a `<Shape>` with no fill and a `stroke`, a gradient backdrop as `<Composition background={{ mode: "gradient" }}>`, and the rest as free code in a `<Layer>` (a quote with marked phrases is the `quote-build` block).
+- efb3f7f: `uberscene lint <file.tsx>... [--fix] [--json]` runs the kit's static checks from the command line: one line per finding with its file, line and column, exit code 1 when an error is left. The file is read, never run. `--fix` writes the fixes the findings carry.
+  
+  A lint `Diagnostic` can now carry a `fix` (source edits), and `fixSource(text, options)` from `@uberscene/sdk` applies them round by round. A new rule, `deprecated-props`, reports props and values spelled the way an earlier version took them, from a `DEPRECATIONS` table (empty for now) and from `lint(text, { deprecations })`; where the new spelling is certain its fix renames the prop, respells the value or moves the prop into an object prop. The helpers it uses are exported for rules of your own: `renameProp`, `renameValue`, `movePropInto`, `movePropsInto`, `jsxTags`. The `free-code-clock` rule fixes `window.requestAnimationFrame` and the like to their bare names, and takes `willReadFrequently: true` out.
+- 974c884: Clips can be written straight in `<Composition>`, with no `<Track>`: they play in the order they are written, as the video's main track, the bottom one (id `main`). `<Transition>` and `<Gap>` go between them the same way. Tracks written beside them draw on top, so adding a b-roll or title track leaves the main cut as it is. Write `<Track id="main">` around the clips when the track needs a setting of its own; the editor does that when you mute, lock or move it. A clip written after a `<Track>` gets the lint warning `main-clips-first`. `uberscene add` now prints the element to paste (`<Clip id="talk" src="asset:talk" />`), `@uberscene/sdk` gets `wrapMainTrack`, and `ResolvedTrack.implicit` marks a main track with no element. `<Composition> cannot contain <title>` now says to put it in a `<Track>`.
+- 261d5b6: One name for one idea. A kind is always `type`: a shape's `shape`, a title's `animation.preset`, a lower third's
+  `variant`, the composition's `background.mode`, an svg's `color.mode` and the `halftone` effect's `mode` param are each
+  `type` now. A line's thickness is `thickness`: `stroke.width` on a shape, and in a title's and the captions' `style`, is
+  `stroke.thickness`, the `outline` effect's `width` param is `thickness`, and a diagram `Label`'s `lineWidth` is
+  `lineThickness`. The `shadow` effect's `radius` param is `blur`, the name a shadow's softness has everywhere else (the
+  blur effects keep `radius`, a Gaussian's standard deviation). The second something starts at is `start`: a `<Marker>`'s
+  `at`, the diagram parts' `at` (`DrawnLine`, `Label`, `CountUp`, `progress` and `useProgress`), and the `at` of the
+  hundred-cells and point-list blocks. The bar-race and quote-build blocks' `start`, seconds into their layer, is
+  `after`, as it is on every other block and diagram part.
+  
+  Values are camelCase: the blend modes `colorDodge`, `colorBurn`, `hardLight`, `softLight` and `linearDodge`; the
+  easings `easeIn`, `easeOut` and `easeInOut` (and a crossfade's `curve`); the entrances and exits `slideLeft`,
+  `slideRight`, `slideUp`, `slideDown`, `wipeLeft`, `wipeRight`, `wipeUp`, `wipeDown`, `revealCenter`, `revealEdges`,
+  `flipHorizontal` and `flipVertical`; a title's animations `slideUp`, `slideDown`, `slideLeft`, `slideRight` and
+  `wordByWord`; the captions' `wordHighlight` and `wordByWord`; and the decoration `lineThrough`. Every frame draws as it
+  did. A file written the old way is refused with an error that names the new spelling (`` `shape` is now `type` ``,
+  `"ease-in-out" is now "easeInOut"`). Free code keeps working: `interpolate`, `ease`, `progress` and `useProgress` still
+  take an old easing name, and `progress` an old `at`, each with one warning that names the new spelling. `style.preset`
+  stays: it names a theme preset. The kit's `TEXT_ANIMATION_PRESETS` and `SVG_COLOR_MODES` are `TEXT_ANIMATION_TYPES`
+  and `SVG_COLOR_TYPES`. The editor's actions follow: `marker/add` and `marker/update` take `start`, and
+  `composition/setBackground` takes `type`.
+  
+  To move a file, run `uberscene lint --fix video.tsx`. It renames each key and respells each value where the file
+  writes it on a tag, also inside object props (`animation={{ preset: "word-by-word" }}` becomes
+  `animation={{ type: "wordByWord" }}`), and the effect params only on an effect of that type: `params={{ radius: 3 }}`
+  on `<Effect type="shadow">` becomes `blur`, and so does a `<Keyframe param="radius">` inside it, while a blur effect's
+  `radius` is left alone. A lint rule can now depend on the element's literal `type` (a `Deprecation`'s `when`). The fix
+  cannot reach a value it cannot see on the tag: one in an array (a point-list block's `points`), a spread or a shared
+  constant (`<Shape {...RING} />`), a theme's own presets (a shape preset's `stroke.width`), or a call in free code
+  (`useProgress({ at: 2, easing: "ease-out" })`). Move those by hand; the resolver's errors and the free-code warnings
+  name what is left.
+- 2ebd6a9: The schemas no longer take props that were never drawn. Each of these was accepted and silently ignored; it is now an error that names the prop, so delete it from the file (the picture does not change):
+  
+  - `fit` on `<Title>`, `<Shape>` and `<Sticker>` (it still fits a `<Clip>`, a `<Nested>` and an `<Svg>`);
+  - `blendOpacity` on `<Title>`, `<Shape>`, `<Svg>` and `<Sticker>` (it still applies to a `<Clip>` and a `<Nested>`; elsewhere use `transform.opacity`);
+  - `transform` on `<Adjustment>`, which always filters the whole frame;
+  - `expansion` and `easing` on `<Mask>`, and keys on a mask;
+  - `unit` and `params` in a `<Title>`'s `animation`;
+  - `spread` and `inset` in the `shadow` of a `<Title>` and of a `<Captions>` style (a `<Shape>`'s shadow keeps `spread`).
+  
+  `MASK_EASINGS`, `ANIMATION_UNITS` and the object-shaped `vec3Schema` are gone with them. The `clip/setBlend` action sets an `opacity` only on a clip or a nested sequence, and `transform/update` no longer applies to an adjustment.
+  
+  The capability table matches what the resolver and the player do: a `<Multicam>` belongs on a track, not in the composition; an `<Adjustment>` has no source to trim; an `<Audio>` takes speed keys and freezes, which already worked.
+  
+  The reference now says what a key's `easing` does: it shapes the move from that key to the next one (on `speed` too), so the easing on the last key of a move is not used. The player has always worked this way; only the description was the other way round.
+- 2daa802: A param's name now always says its scale. The zoom transition's `blur`, a strength from 0 to 1, is now `smear`, and the scanlines effect's `thickness`, a share of the spacing from 0 to 1, is now `coverage`. So `blur` and `thickness` are pixels wherever they appear. An old name is an error that names the new one, and `uberscene lint --fix` renames it, as for the other 0.6 renames.
+- f654ff7: A `recolor` effect turns one colour into another and leaves the rest of the picture: `effects={[{ type: "recolor", from: "#c4202b", to: "#2f9e4f" }]}` makes a red cup green while the steam, the background and the cup's shading stay as they were. `tolerance` and `softness` say how close a hue must be to `from`, greys and whites are never touched, and `amount` mixes it in. Like every param, each can take keys.
+- fd3e555: The executor refuses an action that would leave the file with resolve errors it did not have, with the new error code `BREAKS_FILE` naming each one; nothing of it is kept. Errors the file already had do not count, a `batch/apply` is checked as a whole, and undo and redo are not checked.
+  
+  Edits that broke the file before and now work:
+  
+  - `font/use` and `composition/setProps` no longer leave a schema error on the composition for the values they hold until the fold (`$fonts`, `$defaults`).
+  - `multicam/create` and `multicam/restore` place a multicam by position on a free track, rather than writing a `start` it does not take.
+  - Removing a clip keeps a transition beside it only when the next element is a clip, not a gap.
+  
+  `mask/create` refuses a locked track, a model-only element and a generated element, as the other handlers do.
+- 23f68a7: The kit is split in two. `@uberscene/kit` keeps what a video file imports, and the new `@uberscene/sdk` holds what a tool is built with.
+  
+  - **`@uberscene/kit`** exports the elements, components, hooks, helpers, diagram parts, knobs and theme, 105 names where it had 450. Video files need no change.
+  - **`@uberscene/kit/schema`** is new: the vocabulary as data, for tools. It has the element schemas and capabilities, the effect and transition registries, enums, easings, fonts and themes.
+  - **`@uberscene/sdk`** is new: the resolver, the actions and executor, the patch log, the write-back to source, the lint, the inspection rows and the manifest types. Install it next to the kit and import `collectModule`, `resolve`, `Executor`, `foldToSource`, `lint`, `loadModule` and the rest from it. `@uberscene/sdk/resolver` has the resolver and the manifest types alone, without the parser, for an app that only plays files.
+  - **`@uberscene/kit/source` is removed.** Everything it exported is exported by `@uberscene/sdk`.
+  - Handler-authoring helpers (`define`, `makePropHandler`, `registerHandler` and the validators) are no longer exported.
+  
+  The actions are smaller too:
+  
+  - One `element/create`, `element/update` and `element/remove` serves every overlay kind (title, shape, svg, sticker, adjustment, nested, layer); `element/create` takes the kind as `kind`. The per-kind `text/*`, `shape/*`, `svg/*`, `sticker/*`, `adjustment/*` and `nested/*` create, update and remove are removed (`text/setContent` and `nested/extract` stay).
+  - `clip/remove` and `clip/restore` are now `element/remove` and `element/restore`. Every remove takes what depends on the element with it.
+  - `layer/setTransform` is removed; use `transform/update`.
+  
+  The theme's CSS variables are `--us-*` (`var(--us-accent)`) where they were `--cc-*`. A new lint rule, `old-theme-variables`, reports the old spelling in any string, and `uberscene lint --fix` respells it.
+- 45aabbd: One way to style text: a title's look is one `style`, as the captions' is. `style` is a theme preset's name
+  (`style="h1"`) or an object of the look's fields, `font`, `size`, `weight`, `italic`, `color`, `background`, `stroke`,
+  `shadow`, `align`, `valign`, `lineHeight`, `letterSpacing` and `decoration`, with the same defaults as before. In an
+  object, `preset` names the preset it starts from and every field written beside it wins:
+  `style={{ preset: "h1", size: 64, color: "$primary" }}`. Those thirteen props are no longer written flat on `<Title>`,
+  and a title's text box, its flat `width` and `height`, is now its box's size, `box.width` and `box.height`. A Title
+  takes `id`, its timing, `box`, `transform`, `blend`, `enter`, `exit`, `style`, `animation` and its text.
+  
+  The captions' `style` object takes `preset` too, where a preset's name used to replace the whole object, and their
+  flat `align` is now `style.align`. A theme preset for titles or captions is a look only: the built-in `note` preset no
+  longer carries a size, rounded corners or an entrance, and a field in a preset of your own that is not a look is
+  reported once, on the composition's `theme`, naming the preset and the field; it reaches no element and the rest of
+  the theme still applies. An unknown preset name is reported on `style.preset`.
+  
+  Editing keeps up: `font/use` writes `style.font` (and `style.weight`) on a title as on the captions, turning
+  `style="h1"` into `{ preset: "h1", font }`, and no longer refuses captions styled by a preset name; `caption/setStyle`
+  takes a preset's name or an object. A `style` object with a key that is an expression, such as a font the file
+  declares (`style={{ font: brand, size: 64 }}`), locks only that key (`style.font`): the rest stays editable, and a key
+  that reads one of the file's props (`color: accent`) is bound as a whole prop is. The layout check suggests a smaller
+  `style.size` or a narrower `box.width` for a title.
+  
+  To move a file, run `uberscene lint --fix video.tsx`. It folds a title's look props, and a `style` preset name beside
+  them, into one `style` object in the order the file wrote them (`style="h1" size={64}` becomes
+  `style={{ preset: "h1", size: 64 }}`), moves a title's `width` and `height` into its `box` (a new one, or the one it
+  has, before its `origin`), and moves the captions' `align` into their `style`. It cannot move a style built in code
+  (`style={LOOK}`, a spread) or a box that already sets its own size. A title that used the `note` preset now writes the
+  card's size, corners and entrance itself: `box={{ width: 840, height: 160 }}`, `transform={{ borderRadius: 28 }}` and
+  `animation={{ preset: "scale", in: 0.2, out: 0.15 }}` give what `note` drew before.
+- 41f2ced: Time in ticks. Every turn of a time into a frame, a frame into a time, or a time into an audio sample now counts in ticks (1/254,016,000,000 s), which divide every frame and sample rate in use, so frame boundaries are exact and `FRAME_EPS` is gone. The kit exports the `time` module from `@uberscene/kit/schema` (`parseRate`, `frameAtSeconds`, `frameStartSeconds`, `framesUntil`, `nearestFrame`, `sampleAtSeconds`, `samplesUntil`, `timecode`, `TICKS_PER_SECOND`, `MAX_SECONDS`).
+  
+  `<Composition fps>` takes a whole number, an NTSC string (`"23.976"`, `"29.97"`, `"47.952"`, `"59.94"`, `"119.88"`) or `{ num, den }`. The resolved composition carries the exact `rate` beside `fps`. The player shows drop-frame timecode at 29.97 and 59.94, and the export hands the encoder the exact fraction.
+  
+  Breaking: `fps={29.97}` as a number is 2997/100, not NTSC, and is now an error; run `uberscene lint --fix` to write `fps="29.97"`. A composition longer than 35,459 s (about 9.85 hours), or a `sampleRate` that does not divide into ticks, is an error. Code that builds a `ResolvedState` by hand adds `composition.rate`.
+
+### Patch Changes
+
+- c8d956f: An easing name inherited from `Object` (`toString`, `constructor`, `valueOf`) is no longer taken for an easing.
+  `ease()`, `interpolate()` and the diagram parts' `progress()` read it off every object and returned a string or
+  `null`, which broke the frame; they now ease linearly (`progress()` with its own `easeInOut`), as they already did for
+  any other unknown name.
+- 3e4e7c5: `narrate()` times and cues text in any script. A word's length counted only the letters a to z, so "Привет, друзья."
+  was timed at about half its length and the subtitles ran twice as fast as the speech; letters (and their combining
+  marks) in any alphabet count now. Cue names in `[brackets]` and `{braces}` take letters in any script too, so
+  `[світло]` makes a cue and `.at("світло")` finds it.
+- 3796367: `clamp01` and `round3` come from `@uberscene/kit/schema`, once, for the other packages; the kit's own copies use them.
+- 472246e: - A shader that fails to compile is compiled once: later frames report the same error instead of building and leaking a new program every frame. Shaders and programs of a failed build are deleted.
+  - WebGL contexts are given back: a painter or compositor that is disposed, or replaced on a size change, releases its context, and effect boxes keep at most four frame sizes at once.
+  - Audio sources that fail to open, or cannot be decoded, are closed and not remembered, so a later play tries again; at most eight stay open.
+  - Timecode at rates such as 12.5 fps counts frames within each second correctly (kit's new `secondAndFrame`).
+- f81b912: Splitting a clip that animates gives each half a key at the cut with the value the clip had there, for keys on its transform, on its effects' params and on its speed, so neither half jumps; keys on an effect's params are now split and shifted like the clip's own. Undoing the split puts the clip back whole. Removing a transition, alone or with the clip it joined, carries what is anchored to it (a sound on the cut) to the clip it led into. A word-by-word title wraps inside its width like any title, with the spaces between its words.
+
 ## 0.5.0
 
 ### Minor Changes
