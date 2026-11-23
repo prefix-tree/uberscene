@@ -1,7 +1,8 @@
 name: Build the native codecs
 
-# The native codecs (native/), built once per platform @uberscene/codecs is published for, on that platform's own
-# runner, and run on a clip before they are handed on. Each row is a row of packages/codecs/targets.json. Uploads each
+# The native codecs (native/), built once per platform the release publishes them for, on that platform's own runner,
+# and run on a clip before they are handed on. Each row is a target of `CODEC_TARGETS`
+# (packages/render/src/native/codecs.ts) and of scripts/codec-assets.mjs. Uploads each
 # binary as the artifact codec-<target>. Called by the release (release.yml) and by the weekly codec check
 # (codecs-weekly.yml), so the two build them the same way.
 on:

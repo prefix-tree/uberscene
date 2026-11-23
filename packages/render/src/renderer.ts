@@ -24,7 +24,7 @@ import {
 } from "./encoding";
 import { type FontFile, loadFonts } from "./fonts";
 import { AudioFeed, feedPackets, feedSegment, LONGEST_PIECE_SECONDS, planSegments } from "./join";
-import { type CodecModes, codecBinary, codecModes } from "./native/codecs";
+import { type CodecModes, codecModes, ensureCodecBinary } from "./native/codecs";
 import { encodePageMix, mixNatively, NativeSoundUnavailable, type SoundContainer } from "./native/soundtrack";
 import { avcCodecString } from "./native/wire";
 import { BrowserEngine } from "./web/engine";
@@ -390,7 +390,7 @@ async function nativeSoundtrack(o: {
   readonly bitrate: number;
   readonly missing?: "silence";
 }): Promise<{ readonly bytes: Uint8Array | null; readonly warnings: readonly string[] }> {
-  const binary = codecBinary();
+  const binary = await ensureCodecBinary();
   const warnings: string[] = [];
   if (o.decode === "native") {
     try {

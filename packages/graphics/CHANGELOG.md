@@ -1,5 +1,42 @@
 # @uberscene/graphics
 
+## 0.6.1
+
+### Patch Changes
+
+- The first 0.6 on npm. 0.6.0 was tagged but never published: its GitHub release was published before the native codecs were attached, and the repository's releases cannot be changed once published. 0.6.1 holds everything 0.6.0 lists, with its codecs attached; the release is now kept a draft until its packages are staged.
+- Updated dependencies
+  - @uberscene/kit@0.6.1
+
+## 0.6.0
+
+### Patch Changes
+
+- Updated dependencies [28bdc58]
+- Updated dependencies [68c7b7c]
+- Updated dependencies [cf23cb8]
+- Updated dependencies [327d103]
+- Updated dependencies [0800d5e]
+- Updated dependencies [71e136e]
+- Updated dependencies [c8d956f]
+- Updated dependencies [fa69b88]
+- Updated dependencies [89e5b4b]
+- Updated dependencies [efb3f7f]
+- Updated dependencies [974c884]
+- Updated dependencies [261d5b6]
+- Updated dependencies [3e4e7c5]
+- Updated dependencies [3796367]
+- Updated dependencies [2ebd6a9]
+- Updated dependencies [2daa802]
+- Updated dependencies [f654ff7]
+- Updated dependencies [fd3e555]
+- Updated dependencies [23f68a7]
+- Updated dependencies [472246e]
+- Updated dependencies [f81b912]
+- Updated dependencies [45aabbd]
+- Updated dependencies [41f2ced]
+  - @uberscene/kit@0.6.0
+
 ## 0.5.0
 
 ### Minor Changes

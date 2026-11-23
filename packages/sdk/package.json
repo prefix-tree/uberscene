@@ -1,6 +1,6 @@
 {
   "name": "@uberscene/sdk",
-  "version": "0.5.0",
+  "version": "0.6.1",
   "description": "Build tools on UberScene files: resolve a file to a timeline, edit it with undoable actions, write the edits back to its source, lint it and inspect it.",
   "keywords": [
     "video",

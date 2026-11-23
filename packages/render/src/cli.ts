@@ -17,6 +17,7 @@ import { loadVideo } from "./load";
 import { renderLook } from "./look";
 import { mediaFolders } from "./manifest-file";
 import { directoryResolver } from "./media";
+import { installCodec } from "./native/codecs";
 import { draftPath, renderVideo } from "./renderer";
 import { installSkill } from "./skills";
 import { renderStill } from "./still";
@@ -43,11 +44,14 @@ const USAGE = `Usage: uberscene <file.tsx> --out <video.mp4|.webm|.mp3|.wav> [--
        uberscene blocks update [<name>...] [--dir <folder>] [--force]
        uberscene add <media file>... [--manifest <file>] [--id <id>] [--transcript <file>]
        uberscene browser install
+       uberscene codecs install
        uberscene skills install [--dir <folder>] [--force]
 
   Every export draws its frames in Chrome. The first one downloads Chrome for Testing ${CHROME_MILESTONE} into
   ~/.cache/uberscene/browsers (or UBERSCENE_BROWSER_CACHE); UBERSCENE_CHROMIUM names a Chrome ${CHROME_MILESTONE} to use
-  instead. The export runs on Chrome ${CHROME_MILESTONE} only.
+  instead. The export runs on Chrome ${CHROME_MILESTONE} only. UBERSCENE_CODECS=native (experimental) decodes and
+  encodes with UberScene's own codecs instead; the first such export downloads them into ~/.cache/uberscene/codecs
+  (or UBERSCENE_CODEC_CACHE).
   UBERSCENE_CODECS=native (or native-decode, native-encode) decodes footage and encodes the export with UberScene's
   native codecs instead of the browser's (experimental; build them with \`pnpm native:build\` in the workspace).
 
@@ -115,6 +119,7 @@ const USAGE = `Usage: uberscene <file.tsx> --out <video.mp4|.webm|.mp3|.wav> [--
                         them; it exits 1 when an error is left. The file is read, never run
   --fix                 (lint) write each file with the fixes its findings carry, then report what is left
   browser install       download Chrome for Testing now, rather than on the first export
+  codecs install        download the native codecs for this machine now, rather than on the first native export
   --srt <file>          also write the captions the cut plays as SRT, timed like the export (alone: only that)
   --vtt <file>          the same as WebVTT
 
@@ -325,6 +330,16 @@ async function main(): Promise<number> {
     const cached = await cachedChrome();
     const path = cached ?? (await installChrome((m) => process.stderr.write(`${m}\n`)));
     process.stderr.write(`Chrome is at ${path}${cached ? " (already in the cache)" : ""}\n`);
+    return 0;
+  }
+  if (positionals[0] === "codecs") {
+    if (positionals[1] !== "install") {
+      process.stderr.write(USAGE);
+      return 2;
+    }
+    // The native codecs for UBERSCENE_CODECS, from this version's GitHub release; one already there is kept.
+    const path = await installCodec((m) => process.stderr.write(`${m}\n`));
+    process.stderr.write(`the native codecs are at ${path}\n`);
     return 0;
   }
   if (positionals[0] === "look") {

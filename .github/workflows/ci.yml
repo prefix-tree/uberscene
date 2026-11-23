@@ -32,7 +32,6 @@ jobs:
           filters: |
             native:
               - 'native/**'
-              - 'packages/codecs/**'
               - 'packages/render/src/native/**'
               - 'packages/render/src/web/page/native-frames.ts'
               - 'packages/render/src/mixer.ts'
@@ -100,12 +99,16 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm native:build
       - run: pnpm --filter @uberscene/render exec vitest run test/native.test.ts test/native-audio.test.ts
-      # The same tests with the binary where npm puts it: in @uberscene/codecs' package for this platform, found
-      # without UBERSCENE_CODEC_BIN and with the workspace's build moved away.
-      - run: node packages/codecs/scripts/place.mjs
-      - run: pnpm --filter @uberscene/codecs-linux-x64-gnu pack --pack-destination "$RUNNER_TEMP"
-      - run: mv native/target/release/uberscene-codec native/target/release/uberscene-codec.built
+      # The same tests with the binary where `uberscene codecs install` puts it: in the cache, under this version,
+      # found without UBERSCENE_CODEC_BIN and with the workspace's build moved away.
+      - name: Move the binary into the codec cache
+        run: |
+          version=$(node -p "require('./packages/render/package.json').version")
+          mkdir -p "$RUNNER_TEMP/codecs/$version"
+          mv native/target/release/uberscene-codec "$RUNNER_TEMP/codecs/$version/uberscene-codec"
       - run: pnpm --filter @uberscene/render exec vitest run test/native.test.ts test/native-audio.test.ts
+        env:
+          UBERSCENE_CODEC_CACHE: ${{ runner.temp }}/codecs
 
   changeset:
     # A pull request that changes a published package says how in a changeset (.changeset/README.md). The version pull

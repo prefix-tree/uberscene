@@ -4,9 +4,9 @@
   "title": "Timeline",
   "description": "A row per track and a bar per element: click to select, drag to move, drag an end to trim. Each drag is one undoable edit.",
   "dependencies": [
-    "@uberscene/editor@0.5.0",
-    "@uberscene/player@0.5.0",
-    "@uberscene/sdk@0.5.0",
+    "@uberscene/editor@0.6.1",
+    "@uberscene/player@0.6.1",
+    "@uberscene/sdk@0.6.1",
     "lucide-react@^1.77.0"
   ],
   "registryDependencies": [

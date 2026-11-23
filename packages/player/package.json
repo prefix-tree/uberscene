@@ -1,6 +1,6 @@
 {
   "name": "@uberscene/player",
-  "version": "0.5.0",
+  "version": "0.6.1",
   "description": "Browser player for the cut video DSL: WebCodecs decode through mediabunny, canvas compositing, DOM overlays, Web Audio clock.",
   "keywords": [
     "video",
