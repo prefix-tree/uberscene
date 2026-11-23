@@ -49,6 +49,7 @@ import {
 import type { ResolveError } from "./errors";
 import { derivedOrigin, expandKeys } from "./expand";
 import { overlay } from "./overlay";
+import { resolveShotProps } from "./shot";
 import { freezeHoldsOf, heldWithin, holdTotal, rampAdvance, rampInverse, reachedHolds, speedKeysOf } from "./speed";
 import type { CollectedNode, CollectedTree, Editable, LayerInterior } from "./tree";
 
@@ -404,7 +405,8 @@ function compute(
   for (const p of pending.values()) {
     const start = p.start as number;
     const length = p.duration as number;
-    const placement = place(p.node, p.track, p.parent, start, length, p.props, p.errors, p.source, p.between);
+    const props = p.node.kind === "layer" ? resolveShotProps(p.props, p.node.id, start, markers, p.errors) : p.props;
+    const placement = place(p.node, p.track, p.parent, start, length, props, p.errors, p.source, p.between);
     items.set(p.node.id, placement);
     if (p.errors.length > 0) errors.push(...p.errors);
     if (p.node.kind !== "transition" && placement.end > placement.start) duration = Math.max(duration, placement.end);

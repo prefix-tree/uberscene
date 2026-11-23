@@ -416,7 +416,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/kit`
 
-99 exports.
+109 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -444,6 +444,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `CountUp` | function | A number that counts from one value to another. |
 | `CountUpProps` | interface |  |
 | `Cut` | const | The `<Cut>` element ([reference](/reference/elements/cut)). |
+| `defineShot` | function | Defines a 3D shot for `<Three shot>`. |
 | `DrawnLine` | function | A line that draws itself from one point to another. |
 | `DrawnLineProps` | interface |  |
 | `effect` | function | Declares an effect drawn by a GLSL function, and returns it for an effect's `type`. |
@@ -463,6 +464,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `holdLayerFrame` | function | Hold the frame until the returned release is called (once; later calls do nothing). |
 | `interpolate` | function | Maps `input` from `inputRange` onto `outputRange`, piecewise. |
 | `InterpolateOptions` | interface |  |
+| `isShot` | function | Whether a value is a shot `defineShot` made. |
 | `Key` | interface | One key of a value that changes over time. |
 | `knob` | const | Schema helpers for values that are strings to zod but want their own control. |
 | `Knob` | interface | One value of a file's `schema`, as an editor or an agent needs it to offer a control. |
@@ -489,6 +491,14 @@ Every name each entry exports, read from the code. The sections above explain th
 | `random` | function | A number in [0, 1) fixed by its keys. |
 | `Seekable` | interface | Anything that can be set to a moment. |
 | `Shape` | const | The `<Shape>` element ([reference](/reference/elements/shape)). |
+| `SHOT_CHANNELS` | const | The transform channels a shot object has. |
+| `ShotBuildArgs` | interface | What `build` gets, once. |
+| `ShotBuilt` | interface | What `build` returns. |
+| `ShotChannel` | type |  |
+| `ShotDefinition` | interface |  |
+| `ShotInputDefault` | type | An input's default. |
+| `ShotObjectSpec` | interface | What a shot declares about one object. |
+| `ShotSampleArgs` | interface | What `sample` gets on every frame. |
 | `spring` | function | A physical spring from `from` (default 0) to `to` (default 1) at `time` seconds. |
 | `SpringOptions` | interface |  |
 | `stepAt` | function | Which step a moment has reached. |
@@ -781,7 +791,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/sdk`
 
-203 exports.
+204 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -955,6 +965,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `samePlacement` | function | Whether two placements would render and edit the same; used to hand back the previous object. |
 | `SceneFn` | type |  |
 | `Shot` | interface |  |
+| `ShotActions` | interface |  |
 | `Silence` | interface |  |
 | `skimMoments` | function | The moments an editor skims a cut by. |
 | `SourceActions` | interface |  |

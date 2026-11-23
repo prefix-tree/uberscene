@@ -4,7 +4,7 @@ editLink: false
 
 # Actions
 
-Generated from the registered handlers (95). Do not edit by hand; run `pnpm docs:gen`.
+Generated from the registered handlers (96). Do not edit by hand; run `pnpm docs:gen`.
 
 Every action has `validate`, `apply`, `invert` and `fold`; the inverse is never null. Each runs as `{ type, params }`; the params and notes here are read from `packages/sdk/src/actions/types/index.ts`.
 
@@ -161,6 +161,12 @@ Every action has `validate`, `apply`, `invert` and `fold`; the inverse is never 
 | action | params | what it does |
 |---|---|---|
 | `nested/extract` | `{ id }` | Replaces a &lt;Nested> scene by its contents: one free track per inner track, inserted below, every item at the time it played; on a sequence a &lt;Gap> keeps its slot. |
+
+## `shot/`
+
+| action | params | what it does |
+|---|---|---|
+| `shot/set` | `{ id, path, value? }` | Sets a value of a `<Three shot>`: `objects.<id>.<position\|rotation\|scale>` as `[x, y, z]`, `camera.<position\|lookAt\|fov>`, or `inputs.<name>`. A path with keys is changed with `key/update` instead; a channel the shot computes is refused. |
 
 ## `source/`
 

@@ -4,8 +4,8 @@
 // job, with the file's own text.
 import { transform } from "sucrase";
 
-/** The extensions a local module may have; an import may leave the extension out. */
-const EXTENSIONS = [".tsx", ".ts"] as const;
+/** The extensions a local module may have; an import may leave the extension out. Plain JavaScript runs as it is. */
+const EXTENSIONS = [".tsx", ".ts", ".js"] as const;
 
 /** Compiles a module's text as `loadModule` runs it. */
 export function compileModule(source: string): string {

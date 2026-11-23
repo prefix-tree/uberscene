@@ -1,3 +1,4 @@
+import { isShot } from "@uberscene/kit";
 import { type CurveKey, capabilitiesOf, curveAt } from "@uberscene/kit/schema";
 
 import { parseTimeRef } from "../../manifest/timeref";
@@ -124,7 +125,10 @@ define(carry(
         setProps(log, item.id, { duration: tidy(v - item.start) });
       } else {
         const delta = tidy(v - item.start);
-        const props: Record<string, Json | undefined> = { duration: tidy(item.duration - delta) };
+        const props: Record<string, Json | undefined> = {
+          duration: tidy(item.duration - delta),
+          ...shotIn(item, delta),
+        };
         if (layout === "free") props.start = v;
         if (layout === "anchored") props.offset = tidy(Number(rawProp(state, item.id, "offset") ?? 0) + delta);
         setProps(log, item.id, props);
@@ -168,7 +172,10 @@ define({
     } else if (a.params.edge === "out") {
       setProps(log, item.id, { duration: a.params.at - item.start });
     } else {
-      const props: Record<string, Json | undefined> = { duration: item.end - a.params.at };
+      const props: Record<string, Json | undefined> = {
+        duration: item.end - a.params.at,
+        ...shotIn(item, a.params.at - item.start),
+      };
       if (layout === "free") props.start = a.params.at;
       if (layout === "anchored")
         props.offset = Number(rawProp(state, item.id, "offset") ?? 0) + (a.params.at - item.start);
@@ -668,3 +675,12 @@ define({
 });
 
 export { restoreTiming };
+
+/**
+ * A 3D shot keeps its own time when its head is trimmed: `in` moves by what `start` moves, so every pose stays at the
+ * same moment of the edit, as a clip's picture does. Nothing for anything else.
+ */
+function shotIn(item: ResolvedPlacement, delta: number): { in?: number } {
+  if (!isShot(item.props.shot)) return {};
+  return { in: tidy((typeof item.props.in === "number" ? item.props.in : 0) + delta) };
+}
