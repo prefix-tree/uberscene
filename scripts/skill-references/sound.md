@@ -10,9 +10,12 @@ One thing decides where every cut lands. Pick it first:
 
 - **A voice** (an interview, a voice-over): cut on its words (`in="word:12"`), anchor titles to them
   (`anchor="talk" at="word:14"`), time a script with `narrate`. The music sits under it.
-- **Music** with no voice: cut on its beats. Find the hits with `look --listen all` (the level strip shows them) and
-  put cuts, punches and title entrances on them. Sections of the song are sections of the film: a new part of the
-  song, a new part of the story.
+- **Music** with no voice: the music is the clock. `uberscene add song.mp3` finds its beats and tempo (or
+  `--bpm 120 --first-beat 0.3` sets them), and every cut, punch, title and sound effect anchors to one:
+  `anchor="song" at="beat:16"`. Nothing is timed by hand, so picture and music can't drift, and they stay together
+  when the song is trimmed. Give shots whole beats (`60 / tempo` seconds each), and check the beats against the sound
+  with `look --at song@beat:16,song@beat:32 --listen all`. Sections of the song are sections of the film: a new part
+  of the song, a new part of the story.
 - **Neither**: the picture sets the pace, and the music only keeps it moving. Let a cut land on a strong beat where you
   can.
 

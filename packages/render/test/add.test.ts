@@ -178,3 +178,77 @@ export default function Video() {
     expect(result.manifest).toBe(join(media, "manifest.json"));
   });
 });
+
+/** A 16-bit mono WAV of clicks at `bpm` from `first` seconds: a short burst on each beat. */
+function clickWav(path: string, bpm: number, first: number, seconds: number): void {
+  const sr = 44100;
+  const n = Math.round(seconds * sr);
+  const data = Buffer.alloc(n * 2);
+  let seed = 7;
+  const rnd = () => {
+    seed = (seed * 1664525 + 1013904223) % 4294967296;
+    return seed / 4294967296 - 0.5;
+  };
+  for (let t = first; t < seconds; t += 60 / bpm) {
+    const at = Math.round(t * sr);
+    for (let i = 0; i < 0.03 * sr && at + i < n; i++)
+      data.writeInt16LE(Math.round(rnd() * 1.6 * Math.exp(-i / (0.006 * sr)) * 20000), (at + i) * 2);
+  }
+  const head = Buffer.alloc(44);
+  head.write("RIFF", 0);
+  head.writeUInt32LE(36 + data.length, 4);
+  head.write("WAVEfmt ", 8);
+  head.writeUInt32LE(16, 16);
+  head.writeUInt16LE(1, 20);
+  head.writeUInt16LE(1, 22);
+  head.writeUInt32LE(sr, 24);
+  head.writeUInt32LE(sr * 2, 28);
+  head.writeUInt16LE(2, 32);
+  head.writeUInt16LE(16, 34);
+  head.write("data", 36);
+  head.writeUInt32LE(data.length, 40);
+  writeFileSync(path, Buffer.concat([head, data]));
+}
+
+describe("addAsset: beats", () => {
+  it("finds the beats of a sound file with no transcript, and a clip cuts on beat:N", async () => {
+    clickWav(join(dir, "song.wav"), 120, 0.5, 10);
+    const result = await addAsset(join(dir, "song.wav"), { cwd: dir });
+    const entry = manifestAt(result.manifest).assets.song;
+    expect(entry.tempo).toBeGreaterThan(118);
+    expect(entry.tempo).toBeLessThan(122);
+    expect(entry.beats.length).toBeGreaterThanOrEqual(18);
+    expect(Math.abs(entry.beats[0].start - 0.5)).toBeLessThan(0.03);
+
+    const manifest = manifestAt(result.manifest);
+    const state = resolve(
+      collectModule(
+        loadModule(`import { Audio, Composition, Title, Track } from "@uberscene/kit";
+export default () => (
+  <Composition fps={30} width={640} height={360}>
+    <Track id="music" layout="free"><Audio id="song" src="asset:song" start={0} in="beat:0" out="beat:15.end" /></Track>
+    <Track id="text" layout="free"><Title id="hit" anchor="song" at="beat:4" duration={1}>Now</Title></Track>
+  </Composition>
+);`) as never,
+        {},
+      ),
+      manifest,
+    );
+    expect(state.errors).toEqual([]);
+    const beat = (i: number) => entry.beats[i].start as number;
+    // The title starts on beat 4, counted in what the song plays (it starts at beat 0).
+    expect(state.items.get("hit")?.start).toBeCloseTo(beat(4) - beat(0), 2);
+    expect(state.items.get("song")?.duration).toBeCloseTo(entry.beats[15].end - beat(0), 2);
+  });
+
+  it("sets a grid with a tempo and a first beat, and finds no beats when told not to", async () => {
+    clickWav(join(dir, "loop.wav"), 100, 0, 4);
+    const grid = await addAsset(join(dir, "loop.wav"), { cwd: dir, bpm: 90, firstBeat: 0.2 });
+    expect(grid.entry.tempo).toBe(90);
+    expect(grid.entry.beats?.slice(0, 3).map((b) => b.start)).toEqual([0.2, 0.867, 1.533]);
+
+    clickWav(join(dir, "fx.wav"), 100, 0, 4);
+    const none = await addAsset(join(dir, "fx.wav"), { cwd: dir, beats: false });
+    expect(none.entry.beats).toBeUndefined();
+  });
+});

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { zBlendMode, zEasing, zEntranceAnimation, zFitMode, zVideoEffectType } from "../enums";
 
 const ID_PATTERN = /^[A-Za-z_][A-Za-z0-9_-]*$/;
-const TIME_REF_PATTERN = /^(word|shot|silence):\d+(\.end)?$|^marker:[A-Za-z_][A-Za-z0-9_-]*$/;
+const TIME_REF_PATTERN = /^(word|shot|silence|beat):\d+(\.end)?$|^marker:[A-Za-z_][A-Za-z0-9_-]*$/;
 const ASSET_REF_PATTERN = /^asset:[A-Za-z0-9_.-]+$/;
 
 export const idSchema = z.string().regex(ID_PATTERN, "ids are identifiers: letters, digits, _ and -");
@@ -25,7 +25,12 @@ export const themedLengthSchema = z
 
 export const timeRefSchema = z.union([
   z.number().nonnegative(),
-  z.string().regex(TIME_REF_PATTERN, 'time references look like "word:12", "shot:4.end", "silence:2" or "marker:ID"'),
+  z
+    .string()
+    .regex(
+      TIME_REF_PATTERN,
+      'time references look like "word:12", "shot:4.end", "silence:2", "beat:16" or "marker:ID"',
+    ),
 ]);
 
 const durationSchema = z.union([
@@ -50,10 +55,13 @@ export const timedProps = {
       z.string().regex(/^[A-Za-z_][A-Za-z0-9_-]*(\.end)?$/, 'anchors look like "hook", "hook.end" or "start"'),
     ])
     .optional(),
-  /** With `anchor`: a word, shot or silence of the anchor's source (`word:14655`); the start is where the anchor plays it, plus `offset`. */
+  /** With `anchor`: a word, shot, silence or beat of the anchor's source (`word:14655`, `beat:16`); the start is where the anchor plays it, plus `offset`. */
   at: z
     .string()
-    .regex(/^(word|shot|silence):\d+(\.end)?$/, 'at looks like "word:12", "word:12.end", "shot:3" or "silence:1"')
+    .regex(
+      /^(word|shot|silence|beat):\d+(\.end)?$/,
+      'at looks like "word:12", "word:12.end", "shot:3", "silence:1" or "beat:16"',
+    )
     .optional(),
   /** Seconds added to the start that `anchor` and `at` give; negative starts earlier. */
   offset: z.number().optional(),

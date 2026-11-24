@@ -18,7 +18,7 @@ npx uberscene fonts [--for <role>] [--category <category>] [--sheet fonts.png [-
 npx uberscene blocks [--for <job>] [--aspect <shape>] [--sheet blocks.png] [--json]
 npx uberscene blocks add <name> [--into <video.tsx> --track <id> --at <moment> [--id <id>] [--duration <s>]] [--dir <folder>] [--force]
 npx uberscene blocks update [<name>...] [--dir <folder>] [--force]
-npx uberscene add <media file>... [--manifest <file>] [--id <id>] [--transcript <file>]
+npx uberscene add <media file>... [--manifest <file>] [--id <id>] [--transcript <file>] [--beats | --no-beats] [--bpm <n> [--first-beat <s>]]
 npx uberscene browser install
 npx uberscene codecs install
 npx uberscene skills install [--dir <folder>] [--force]
@@ -485,6 +485,16 @@ is added as a LUT (kind `lut`) after it is checked, for the [`lut` effect](https
 | `--manifest <file>` | The manifest to write, created when missing. Without it, the nearest `uberscene.json` from the current folder upward is updated. If there is none, a `manifest.json` already in the current folder or beside the media is updated, and otherwise `uberscene.json` is created in the current folder. |
 | `--id <id>` | The asset id. Default: the file name without its extension. One file only. |
 | `--transcript <file>` | A transcript other than the one beside the media. One file only. |
+| `--beats` | Find the beats of a video's sound too. A sound file with no transcript (most likely music) gets them anyway. |
+| `--no-beats` | Find no beats. |
+| `--bpm <n>` | Set the beats as an even grid at this tempo instead of finding them: for a song whose beats are found at half speed, or a click track you know. |
+| `--first-beat <s>` | With `--bpm`, the second of the first beat. Default 0. |
+
+A sound file with no transcript is taken to be music, and `add` finds its beats and its tempo
+(`song: audio, 92.4 s, 184 beats at 119.98 BPM`). A clip or an overlay then cuts on them as it cuts on words:
+`anchor="song" at="beat:16"` ([Cut on the beat](https://uberscene.prefixtree.xyz/guide/time#cut-on-the-beat)). Check them by looking: `look --at
+song@beat:16,song@beat:32 --listen all` draws those moments over the sound. A fast song may come out at half its
+tempo, every other beat; set it with `--bpm`.
 
 ## The agent skill
 

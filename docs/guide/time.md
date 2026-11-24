@@ -119,6 +119,7 @@ on its word when the clip is trimmed or moved.
 | `word:23.end` | Where word 23 ends. |
 | `shot:1`, `shot:1.end` | Where the source's second shot starts or ends (shots count from 0). |
 | `silence:3`, `silence:3.end` | Where the fourth pause starts or ends. |
+| `beat:16`, `beat:16.end` | Where beat 16 of music falls, or the beat after it (beats count from 0; see [below](#cut-on-the-beat)). |
 | `marker:intro` | The time of the `<Marker id="intro">`. |
 
 ```tsx
@@ -139,8 +140,29 @@ When a graphic belongs to a spoken word, anchor it to the clip that says the wor
 ```
 
 The title starts where the clip plays word 146, even after the clip is moved or trimmed in front of the word. `at`
-also takes `shot:N` and `silence:N`, each with `.end`. Lines that come in on their own words can still leave together
+also takes `shot:N`, `silence:N` and `beat:N`, each with `.end`. Lines that come in on their own words can still leave together
 with `until`, as `line-2` does with its card.
+
+### Cut on the beat {#cut-on-the-beat}
+
+Music has beats as speech has words. `uberscene add song.mp3` finds them (or `--bpm 120 --first-beat 0.3` sets them
+as a grid), and `beat:N` names one, so the music is the clock: anchor a cut, a title or a sound to a beat, and it stays
+on that beat when the music is trimmed or moved.
+
+```tsx
+<Track id="music" layout="free">
+  <Audio id="song" src="asset:song" start={0} in="beat:0" out="beat:63.end" fade={{ out: 1 }} />
+</Track>
+<Track id="shots" layout="free">
+  <Clip id="s1" src="asset:pour" anchor="song" at="beat:0" in={2} duration={2} fit="cover" />
+  <Clip id="s2" src="asset:steam" anchor="song" at="beat:4" in={0.5} duration={2} fit="cover" />
+</Track>
+<Title id="drop" anchor="song" at="beat:32" duration={1.5}>Now.</Title>
+```
+
+`in="beat:0"` starts the song on its first beat and `out="beat:63.end"` ends it on a whole bar of four. Each shot
+starts on its beat; give it a `duration` of whole beats (at 120 BPM a beat is 0.5 s, so four beats is 2 s). `inspect`
+and `look` take `song@beat:16` as a moment.
 
 ::: warning Limits of `at`
 If an edit cuts the word out of the clip, that is an error, and the title waits at the nearest part the clip still

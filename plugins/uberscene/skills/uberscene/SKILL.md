@@ -21,7 +21,7 @@ references.
 
 | To | Use |
 |---|---|
-| Cut on meaning | `in`/`out` as `word:12`, `word:23.end`, `shot:1`, `silence:2`; `at="marker:intro"` with `<Marker>`; `<Gap duration>` for a hole |
+| Cut on meaning | `in`/`out` as `word:12`, `word:23.end`, `shot:1`, `silence:2`, `beat:16` (music's beats, found by `uberscene add`; `anchor="song" at="beat:16"` cuts a shot or a title on one); `at="marker:intro"` with `<Marker>`; `<Gap duration>` for a hole |
 | Change speed | `speed`, `reverse`; keys on `speed` ramp it (`speed={[{ at: 0, value: 1, easing: "easeInOutQuad" }, { at: 1.6, value: 0.4 }]}`); `freezes={[{ start, duration, source }]}` holds the source frame at `source` from `start` seconds into the clip. Sound follows |
 | Several cameras | `<Multicam sync>` with `<Angle src offset>` per camera and `<Cut at angle>` to switch |
 | Reuse a sequence | `<Nested>`: a sequence written once as a component and placed like a clip |

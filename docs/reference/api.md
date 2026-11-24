@@ -791,7 +791,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/sdk`
 
-204 exports.
+206 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -820,6 +820,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `AudioActions` | interface |  |
 | `AUTO_GROUP_TYPES` | const | Rapid repeats of these on the same target collapse into one undo step (OpenReel's rule). |
 | `bake` | function | Replace the helper call that produced a generated element with the literal elements that call produced, so the editor can address them. |
+| `Beat` | interface | A beat of music. |
 | `buildSourceIndex` | function | Index every vocabulary JSX element with a literal id so patches can be written back as text edits. |
 | `CanResult` | interface | What `can()` answers. |
 | `CaptionActions` | interface |  |
@@ -851,6 +852,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `ElementRow` | interface |  |
 | `ElementSite` | interface |  |
 | `EMPTY_MANIFEST` | const |  |
+| `entriesOf` | function | An asset's list of words, shots, silences or beats. |
 | `Executor` | class | Runs actions against `{ tree, patches }`. |
 | `ExecutorOptions` | interface |  |
 | `findParentOf` | function |  |
@@ -1002,7 +1004,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/sdk/resolver`
 
-77 exports.
+79 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -1011,6 +1013,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `AssetManifest` | interface | What the ingest service knows about an asset. |
 | `assetPlay` | function | The play of one clip or audio placement. |
 | `AssetPlay` | interface | Where an asset plays on the timeline. |
+| `Beat` | interface | A beat of music. |
 | `collect` | function | Walk the element tree the file's default export returned and index every vocabulary element by id. |
 | `CollectedNode` | interface | One vocabulary element as collected from the React element tree, before schema parsing and before placement. |
 | `CollectedTree` | interface |  |
@@ -1025,6 +1028,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `dependentsOf` | function | The elements that depend on `id`, in timeline order of the file, each once per way it depends. |
 | `Editable` | type |  |
 | `EMPTY_MANIFEST` | const |  |
+| `entriesOf` | function | An asset's list of words, shots, silences or beats. |
 | `findParentOf` | function |  |
 | `FreezeHold` | interface | A hold. |
 | `freezeHoldsOf` | function | A clip's holds (from `freezes`), sorted by `start`. |
