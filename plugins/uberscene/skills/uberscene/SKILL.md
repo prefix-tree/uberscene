@@ -68,6 +68,11 @@ look, and fix before going on:
 
 For a small edit (a trim, a word, a colour), skip to the loop: make it, check it, look at that moment, report.
 
+**Done** means the full video renders, every check passes and you can say its number (the exit codes, the loudness,
+the sizes), and your report says what changed. Until then keep going: a failed render, a warning or a missing font is
+an ordinary obstacle, so fix it and go on rather than asking whether to continue. Stop only for what the person alone
+can give (footage, the brand, a decision on the story), and then say exactly what you need.
+
 | Making | Read first |
 |---|---|
 | Anything over 15 s, or anything from scratch | [story.md](references/story.md), then [kinds.md](references/kinds.md) for its kind |

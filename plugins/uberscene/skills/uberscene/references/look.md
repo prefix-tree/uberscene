@@ -39,7 +39,9 @@ Write the result as one look line in the plan ([story.md](story.md)): ground, ac
   `$mono`; corners as `$radius`. Then the person re-brands it by changing the theme, and nothing else.
 - **Two fonts at most**, and pick them by looking: `uberscene fonts --for headline --sheet fonts.png --text "THEIR
   WORDS"`.
-- **One hero per frame.** Give the main thing at least 40 % of the frame. Don't centre everything: a left-aligned
+- **One hero per frame.** Give the main thing at least 40 % of the frame, and never less than about 15 % of its width:
+  first drafts always frame too wide, and a small hero is a dot on a phone. Measure a graphic hero with `where --at` on each shot;
+  for a subject in footage, look at a `--still` of each shot. Don't centre everything: a left-aligned
   title with space on the right reads as designed; everything in the middle reads as a template.
 - **Room at the edges.** Keep text inside the title-safe area (`--check-layout` holds it there) and important pictures
   inside action-safe.
