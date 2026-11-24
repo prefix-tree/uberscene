@@ -1,6 +1,6 @@
 ---
 name: uberscene
-description: Make and edit videos with UberScene, where one TSX file is the video. Use when asked to cut footage on words or shots, add titles, captions, music, transitions, colour, effects or motion graphics, make variants of a video, or render a video, still or subtitles from a UberScene file.
+description: Make and edit videos with UberScene, where one TSX file is the video, from the brief and the story to the review. Use when asked to plan, write, cut footage on words or shots, add titles, captions, music, transitions, colour, effects or motion graphics, make variants of a video, or render a video, still or subtitles from a UberScene file.
 license: MIT
 ---
 
@@ -43,6 +43,39 @@ references.
 | Sound | `<Audio>` for music and voice; `volume` and `pan` (a value, or keys over time), `fade={{ in, out }}`, `duck={{ under, to }}` under a track or a role (`dialogue`) |
 | Anything else | `<Layer>` (any React), `<Three>` (three.js), `<Motion>` (Motion), all on the video's clock; see "Free code" under Look and graphics |
 | Variants | `schema` and `defaults`, then `--props '{"product":"Pixel"}'` at render |
+
+## Make it good
+
+A file that passes every check can still be a dull video. Work in this order. Each gate is a point where you stop,
+look, and fix before going on:
+
+1. **Brief.** Write down what it's for, who sees it, where it plays (a feed, a site, a talk), its length and shape
+   (16:9, 9:16, 1:1), and the one thing the viewer should leave with. Ask about what's missing that only the person
+   knows: the brand, the footage, the music, the rights.
+2. **Story.** For anything built from scratch over about 15 s, write three different storylines, recommend one, and
+   **stop until the person picks** ([story.md](references/story.md)). Skip the stop when they asked for the file
+   outright or said not to stop. A cut of footage has its story in the footage: find it in the transcript instead.
+3. **Plan.** Write the plan as a comment at the top of `video.tsx`: the one thing, the beats with their times, the look
+   as values ([look.md](references/look.md)), the cuts and what carries each ([motion.md](references/motion.md)),
+   the sound ([sound.md](references/sound.md)), and a banned line of defaults to avoid.
+4. **Build**, following the loop below: spine first, then pictures, overlays, sound, captions.
+5. **Check.** `lint` and `--check-layout` clean, `inspect` reads as planned. Fix every warning, or keep it and say why.
+6. **Review.** One sheet with a cell per beat, measured, then looked at as a stranger would. Rank what's wrong as P0,
+   P1 or P2, fix, look again at what changed, and add each default you removed to the banned line
+   ([review.md](references/review.md)).
+7. **Render** once the person has seen the sheet, or straight away when they asked for the file. Then report: what you
+   made, the calls they might not expect, what was measured and what was only looked at, and the weakest moment.
+
+For a small edit (a trim, a word, a colour), skip to the loop: make it, check it, look at that moment, report.
+
+| Making | Read first |
+|---|---|
+| Anything over 15 s, or anything from scratch | [story.md](references/story.md), then [kinds.md](references/kinds.md) for its kind |
+| A new look, a theme, brand colours, fonts | [look.md](references/look.md) |
+| More than one scene, transitions, any animation | [motion.md](references/motion.md), then [motion-catalog.md](references/motion-catalog.md) for a technique by name |
+| Titles, labels, captions | [text.md](references/text.md) |
+| Music, a voice-over, sound effects | [sound.md](references/sound.md) |
+| The pass before you hand it over | [review.md](references/review.md) |
 
 ## The loop
 
@@ -294,8 +327,8 @@ What each element and prop actually draws, and the few it does not:
 
 ## Editing a cut
 
-1. Write the brief down first, as a short note: the length, the story order, and what must be tweakable. Check every
-   revision against it.
+1. Write the brief down first, in the plan comment at the top of the file: the length, the story order, and what must
+   be tweakable. Check every revision against it.
 2. Lay down the spine: the interview or voice clips on the first track, cut on words.
 3. Then b-roll and screen recordings, then overlays and music, then captions last.
 4. With no target length, make no editorial cuts: keep every good take, drop silences and retakes, and keep the last
@@ -313,6 +346,8 @@ What each element and prop actually draws, and the few it does not:
   the manifest.
 - Each clip has `in`/`out` or `duration`, not both. Every `$token` and `style` exists in the theme.
 - You looked at stills of every graphic and every cut you made.
+- You did the review pass ([review.md](references/review.md)): every P0 fixed, the sound measured, and the sheet sent
+  with your report.
 
 ## References
 
@@ -321,6 +356,14 @@ What each element and prop actually draws, and the few it does not:
 - [references/components.md](references/components.md): the ready-made components.
 - [references/blocks.md](references/blocks.md): the blocks, what each is for, and their props.
 - [references/rendering.md](references/rendering.md): what renders.
+- [references/story.md](references/story.md): the one thing, three storylines, the shape, words, the plan comment.
+- [references/kinds.md](references/kinds.md): what a launch, an explainer, an interview, a vertical short, numbers,
+  a music cut and a logo sting each need.
+- [references/look.md](references/look.md): where the look comes from, adjectives turned into values, and defaults to
+  avoid.
+- [references/text.md](references/text.md): sizes, read times, placement and captions.
+- [references/sound.md](references/sound.md): what sets the clock, the layers, effects on actions, and levels.
+- [references/review.md](references/review.md): the pass before you hand it over, and the report.
 - [references/motion.md](references/motion.md): how scenes hand over at a cut and keep moving; read it before
   animating a video of more than one scene.
 - [references/motion-catalog.md](references/motion-catalog.md): techniques of motion by name (easing, stagger,
