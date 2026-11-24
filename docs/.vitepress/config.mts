@@ -110,6 +110,7 @@ export default defineConfig({
             collapsed: true,
             items: [
               { text: "One prompt, one line", link: "/examples/recolor" },
+              { text: "A prompt becomes an edit", link: "/examples/pipeline" },
               { text: "The logo film", link: "/examples/hero" },
               { text: "A coffee film", link: "/examples/coffee" },
               { text: "A product launch", link: "/examples/launch" },

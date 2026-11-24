@@ -21,10 +21,11 @@ const FILES: Record<string, number> = {
   hero: 6.5,
   coffee: 34.6,
   recolor: 9.5,
+  pipeline: 7.9,
 };
 
 /** Files encoded at a set bitrate instead of the medium preset: these play on the landing page, so they stay small. */
-const BITRATE: Record<string, number> = { hero: 1_500_000, coffee: 1_200_000, recolor: 1_200_000 };
+const BITRATE: Record<string, number> = { hero: 1_500_000, coffee: 1_200_000, recolor: 1_200_000, pipeline: 1_200_000 };
 
 /** Files that keep their sound: the coffee film's cues. The rest are silent loops. */
 const SOUND = new Set(["coffee"]);
