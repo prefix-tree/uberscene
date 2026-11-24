@@ -4,7 +4,7 @@ editLink: false
 
 # Typewriter
 
-A sentence appears one character at a time at regular intervals while a cursor follows the insertion point.
+Text that appears one letter at a time, as if typed.
 
 <Example src="previews/motion/typewriter" alt="Typewriter">
 
@@ -12,12 +12,12 @@ A sentence appears one character at a time at regular intervals while a cursor f
 
 </Example>
 
-**What it conveys:** Communicates the process of writing and sequential text input.
+**What it conveys:** Someone writing it now: a prompt, a search, a message.
 
 ## Use it when
 
-- Show a short input sentence being composed.
-- Show a typing state in a conversational UI.
+- Showing a prompt or a search being entered.
+- A line that should feel live.
 
 ## Values
 
@@ -29,6 +29,6 @@ A sentence appears one character at a time at regular intervals while a cursor f
 
 > Type the prompt out letter by letter with animation=&#123;&#123; type: "typewriter", in: 1.6 }}.
 
-Adapted from Nº 093 of [awesome-ai-motion](https://github.com/gongnyang/awesome-ai-motion/tree/main/effects/typewriter) (MIT): its name, definition and uses. The file, its values and the prompt are UberScene's.
+**Goes with:** [Word by word](/reference/motion/word-rise-fade)
 
 [All techniques](/reference/motion/) · [Motion across cuts](/guide/animation)

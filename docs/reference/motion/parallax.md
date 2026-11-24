@@ -4,7 +4,7 @@ editLink: false
 
 # Parallax
 
-A motion effect that creates depth by moving nearer layers faster and distant layers more slowly as the camera moves.
+Layers move the same way at different speeds: near ones fast, far ones slow.
 
 <Example src="previews/motion/parallax" alt="Parallax">
 
@@ -12,12 +12,12 @@ A motion effect that creates depth by moving nearer layers faster and distant la
 
 </Example>
 
-**What it conveys:** Creates a sense of distance and space between flat elements.
+**What it conveys:** Depth in a flat picture.
 
 ## Use it when
 
-- When showing the distance between foreground and background
-- When moving elements at multiple depths in a scrolling scene
+- Graphics or cut-out layers that look flat.
+- An opener or a title over layered art.
 
 ## Values
 
@@ -30,7 +30,5 @@ A motion effect that creates depth by moving nearer layers faster and distant la
 > Move three rows of shapes the same way over 3 s: the far row 60 px, the middle 160, the near 320.
 
 **Goes with:** [Pan](/reference/motion/pan)
-
-Adapted from Nº 220 of [awesome-ai-motion](https://github.com/gongnyang/awesome-ai-motion/tree/main/effects/parallax) (MIT): its name, definition and uses. The file, its values and the prompt are UberScene's.
 
 [All techniques](/reference/motion/) · [Motion across cuts](/guide/animation)

@@ -2,22 +2,22 @@
 editLink: false
 ---
 
-# Rack Focus
+# Rack focus
 
-A focus shift that swaps sharpness between foreground and background subjects without changing their positions.
+The sharp part of the picture moves from one thing to another while the first goes soft.
 
-<Example src="previews/motion/rack-focus" alt="Rack Focus">
+<Example src="previews/motion/rack-focus" alt="Rack focus">
 
 <<< @/../examples/showcase/motion/rack-focus.tsx
 
 </Example>
 
-**What it conveys:** Shifts visual priority from the foreground subject to the background subject.
+**What it conveys:** Where to look now: attention passes from one subject to the next.
 
 ## Use it when
 
-- When transferring attention between foreground and background
-- When changing the relative emphasis of two subjects without moving the scene
+- Bringing a title or a card in front of footage.
+- Two subjects at different depths.
 
 ## Values
 
@@ -30,6 +30,6 @@ A focus shift that swaps sharpness between foreground and background subjects wi
 
 > Move focus from the shot to the card: key the clip's blur from 0 to 8 while the card's goes from 10 to 0.
 
-Adapted from Nº 222 of [awesome-ai-motion](https://github.com/gongnyang/awesome-ai-motion/tree/main/effects/rack-focus) (MIT): its name, definition and uses. The file, its values and the prompt are UberScene's.
+**Goes with:** [Push in](/reference/motion/push-in)
 
 [All techniques](/reference/motion/) · [Motion across cuts](/guide/animation)

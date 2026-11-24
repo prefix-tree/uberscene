@@ -2,22 +2,22 @@
 editLink: false
 ---
 
-# Match Cut
+# Match cut
 
-Matching shapes at the same position and size connect two scenes across a cut.
+A shape at the end of one scene becomes the same shape, same size and place, in the next.
 
-<Example src="previews/motion/match-cut" alt="Match Cut">
+<Example src="previews/motion/match-cut" alt="Match cut">
 
 <<< @/../examples/showcase/motion/match-cut.tsx
 
 </Example>
 
-**What it conveys:** Connects a sentence to data by matching its final period to a chart dot.
+**What it conveys:** A link between two ideas: this is like that.
 
 ## Use it when
 
-- Connect different scenes through objects with matching shapes.
-- Keep the viewer's gaze in place when moving from explanation to data.
+- Two scenes with a shared form: a circle, a line, a logo.
+- Joining ideas without a transition.
 
 ## Values
 
@@ -29,6 +29,6 @@ Matching shapes at the same position and size connect two scenes across a cut.
 
 > End the first scene on a circle and start the next on a circle of the same size in the same place.
 
-Adapted from Nº 124 of [awesome-ai-motion](https://github.com/gongnyang/awesome-ai-motion/tree/main/effects/match-cut) (MIT): its name, definition and uses. The file, its values and the prompt are UberScene's.
+**Goes with:** [Match on action](/reference/motion/match-on-action)
 
 [All techniques](/reference/motion/) · [Motion across cuts](/guide/animation)

@@ -4,7 +4,7 @@ editLink: false
 
 # Follow-through
 
-An attached extremity continues moving through inertia after the main body stops, then settles later.
+Parts of a thing keep going after the lead stops, and arrive a little later.
 
 <Example src="previews/motion/follow-through" alt="Follow-through">
 
@@ -12,12 +12,12 @@ An attached extremity continues moving through inertia after the main body stops
 
 </Example>
 
-**What it conveys:** Conveys flexibility and inertia, showing that force remains after the main body stops.
+**What it conveys:** That the pieces are loose and attached, not one rigid block.
 
 ## Use it when
 
-- Show inertia in a flag or tail attached to a body.
-- Add weight and flexibility to an abrupt stop.
+- A group that moves together: dots, a tail, a row of tags.
+- A stop that looks too abrupt.
 
 ## Values
 
@@ -30,8 +30,6 @@ An attached extremity continues moving through inertia after the main body stops
 
 > Move the three dots right together; end each follower 0.18 s after the one before, with easeOutBack.
 
-**Goes with:** [Anticipation](/reference/motion/anticipation) · [Spring & Overshoot](/reference/motion/spring-overshoot)
-
-Adapted from Nº 008 of [awesome-ai-motion](https://github.com/gongnyang/awesome-ai-motion/tree/main/effects/follow-through) (MIT): its name, definition and uses. The file, its values and the prompt are UberScene's.
+**Goes with:** [Stagger](/reference/motion/stagger) · [Easing](/reference/motion/easing-curves)
 
 [All techniques](/reference/motion/) · [Motion across cuts](/guide/animation)

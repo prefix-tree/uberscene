@@ -387,11 +387,11 @@
           "link": "/reference/motion/anticipation"
         },
         {
-          "text": "Spring & Overshoot",
+          "text": "Overshoot",
           "link": "/reference/motion/spring-overshoot"
         },
         {
-          "text": "Squash & Stretch",
+          "text": "Squash and stretch",
           "link": "/reference/motion/squash-stretch"
         },
         {
@@ -403,34 +403,16 @@
           "link": "/reference/motion/stagger"
         },
         {
-          "text": "Pause Before the Payoff",
+          "text": "Pause before the payoff",
           "link": "/reference/motion/pause-before-payoff"
         }
       ]
     },
     {
-      "text": "Entrance & exit",
+      "text": "Type",
       "items": [
         {
-          "text": "Clip Reveal",
-          "link": "/reference/motion/clip-reveal"
-        }
-      ]
-    },
-    {
-      "text": "Emphasis",
-      "items": [
-        {
-          "text": "Recolour Reveal",
-          "link": "/reference/motion/recolor-reveal"
-        }
-      ]
-    },
-    {
-      "text": "Typography",
-      "items": [
-        {
-          "text": "Word Rise Fade",
+          "text": "Word by word",
           "link": "/reference/motion/word-rise-fade"
         },
         {
@@ -438,45 +420,12 @@
           "link": "/reference/motion/typewriter"
         },
         {
-          "text": "Kinetic Beats",
+          "text": "Hits on the beat",
           "link": "/reference/motion/kinetic-beats"
-        }
-      ]
-    },
-    {
-      "text": "Transitions",
-      "items": [
-        {
-          "text": "Whip Pan",
-          "link": "/reference/motion/whip-pan"
         },
         {
-          "text": "Matched Push",
-          "link": "/reference/motion/matched-push"
-        },
-        {
-          "text": "Match on Action",
-          "link": "/reference/motion/match-on-action"
-        },
-        {
-          "text": "Shape Mask Transition",
-          "link": "/reference/motion/iris-mask"
-        },
-        {
-          "text": "Match Cut",
-          "link": "/reference/motion/match-cut"
-        },
-        {
-          "text": "Dip to Color",
-          "link": "/reference/motion/dip-to-color"
-        },
-        {
-          "text": "Speed Ramp",
-          "link": "/reference/motion/speed-ramp"
-        },
-        {
-          "text": "Freeze Frame Dressing",
-          "link": "/reference/motion/freeze-frame-dressing"
+          "text": "Count up",
+          "link": "/reference/motion/count-up"
         }
       ]
     },
@@ -484,7 +433,7 @@
       "text": "Camera",
       "items": [
         {
-          "text": "Push-in",
+          "text": "Push in",
           "link": "/reference/motion/push-in"
         },
         {
@@ -496,30 +445,66 @@
           "link": "/reference/motion/parallax"
         },
         {
-          "text": "Rack Focus",
+          "text": "Rack focus",
           "link": "/reference/motion/rack-focus"
         },
         {
-          "text": "Picture in Picture",
+          "text": "Picture in picture",
           "link": "/reference/motion/picture-in-picture"
         }
       ]
     },
     {
-      "text": "Data",
+      "text": "Cuts",
       "items": [
         {
-          "text": "Count-up",
-          "link": "/reference/motion/count-up"
+          "text": "Whip pan",
+          "link": "/reference/motion/whip-pan"
+        },
+        {
+          "text": "Matched push",
+          "link": "/reference/motion/matched-push"
+        },
+        {
+          "text": "Match on action",
+          "link": "/reference/motion/match-on-action"
+        },
+        {
+          "text": "Iris",
+          "link": "/reference/motion/iris-mask"
+        },
+        {
+          "text": "Match cut",
+          "link": "/reference/motion/match-cut"
+        },
+        {
+          "text": "Dip to black",
+          "link": "/reference/motion/dip-to-color"
         }
       ]
     },
     {
-      "text": "Explainer",
+      "text": "Footage",
       "items": [
         {
-          "text": "Split Compare",
+          "text": "Recolour reveal",
+          "link": "/reference/motion/recolor-reveal"
+        },
+        {
+          "text": "Speed ramp",
+          "link": "/reference/motion/speed-ramp"
+        },
+        {
+          "text": "Freeze with a label",
+          "link": "/reference/motion/freeze-frame-dressing"
+        },
+        {
+          "text": "Before and after split",
           "link": "/reference/motion/split-compare"
+        },
+        {
+          "text": "Wipe reveal",
+          "link": "/reference/motion/clip-reveal"
         }
       ]
     }

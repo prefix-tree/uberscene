@@ -2,22 +2,22 @@
 editLink: false
 ---
 
-# Whip Pan
+# Whip pan
 
-A rapid horizontal sweep with horizontal blur and sharp deceleration settles into the next scene.
+A fast sideways move that blurs one shot into the next.
 
-<Example src="previews/motion/whip-pan" alt="Whip Pan">
+<Example src="previews/motion/whip-pan" alt="Whip pan">
 
 <<< @/../examples/showcase/motion/whip-pan.tsx
 
 </Example>
 
-**What it conveys:** Moves attention to the next information as if the camera rapidly pans.
+**What it conveys:** Energy and speed: we jump to the next place without losing momentum.
 
 ## Use it when
 
-- Move quickly from a question to a result.
-- Maintain speed and direction across consecutive scenes.
+- Fast cuts between places or products.
+- A cut that needs to feel quick, not soft.
 
 ## Values
 
@@ -30,8 +30,6 @@ A rapid horizontal sweep with horizontal blur and sharp deceleration settles int
 
 > Join the two shots with a 0.3 s push transition, direction "left".
 
-**Goes with:** [Pan](/reference/motion/pan) · [Anticipation](/reference/motion/anticipation)
-
-Adapted from Nº 126 of [awesome-ai-motion](https://github.com/gongnyang/awesome-ai-motion/tree/main/effects/whip-pan) (MIT): its name, definition and uses. The file, its values and the prompt are UberScene's.
+**Goes with:** [Matched push](/reference/motion/matched-push) · [Match on action](/reference/motion/match-on-action)
 
 [All techniques](/reference/motion/) · [Motion across cuts](/guide/animation)

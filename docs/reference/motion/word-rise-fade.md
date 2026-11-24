@@ -2,22 +2,22 @@
 editLink: false
 ---
 
-# Word Rise Fade
+# Word by word
 
-Words rise slightly while shedding blur, settling into place one after another.
+A line that comes in one word at a time, each rising a little as it fades in.
 
-<Example src="previews/motion/word-rise-fade" alt="Word Rise Fade">
+<Example src="previews/motion/word-rise-fade" alt="Word by word">
 
 <<< @/../examples/showcase/motion/word-rise-fade.tsx
 
 </Example>
 
-**What it conveys:** A calm, orderly sentence build where reading order is visible as word order.
+**What it conveys:** Pace: the line is read at the speed it is said.
 
 ## Use it when
 
-- When revealing a one or two line explainer caption or subtitle softly
-- For the calm brand-tone opening line of a video
+- A headline or a quote with time to land.
+- Captions that follow speech.
 
 ## Values
 
@@ -29,8 +29,6 @@ Words rise slightly while shedding blur, settling into place one after another.
 
 > Bring the line in word by word: animation=&#123;&#123; type: "wordByWord", in: 1.2, stagger: 0.14 }}.
 
-**Goes with:** [Stagger](/reference/motion/stagger)
-
-Adapted from Nº 118 of [awesome-ai-motion](https://github.com/gongnyang/awesome-ai-motion/tree/main/effects/word-rise-fade) (MIT): its name, definition and uses. The file, its values and the prompt are UberScene's.
+**Goes with:** [Typewriter](/reference/motion/typewriter) · [Hits on the beat](/reference/motion/kinetic-beats)
 
 [All techniques](/reference/motion/) · [Motion across cuts](/guide/animation)

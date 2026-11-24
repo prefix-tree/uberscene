@@ -2,22 +2,22 @@
 editLink: false
 ---
 
-# Kinetic Beats
+# Hits on the beat
 
-Words hit the center at a large scale on regular beats and quickly settle.
+A word that punches up on each hit of the music and settles back between them.
 
-<Example src="previews/motion/kinetic-beats" alt="Kinetic Beats">
+<Example src="previews/motion/kinetic-beats" alt="Hits on the beat">
 
 <<< @/../examples/showcase/motion/kinetic-beats.tsx
 
 </Example>
 
-**What it conveys:** Communicates a three-step rhythm and emphasizes the final action.
+**What it conveys:** Rhythm: the type and the sound feel like one thing.
 
 ## Use it when
 
-- Compress a sequence into short verbs.
-- Focus attention on the final key action.
+- A word or a title over music with clear hits.
+- Promos and openers cut to a track.
 
 ## Values
 
@@ -30,6 +30,6 @@ Words hit the center at a large scale on regular beats and quickly settle.
 
 > Punch the word to 1.35 scale on each beat and settle it back with easeOutQuart.
 
-Adapted from Nº 090 of [awesome-ai-motion](https://github.com/gongnyang/awesome-ai-motion/tree/main/effects/kinetic-beats) (MIT): its name, definition and uses. The file, its values and the prompt are UberScene's.
+**Goes with:** [Word by word](/reference/motion/word-rise-fade)
 
 [All techniques](/reference/motion/) · [Motion across cuts](/guide/animation)

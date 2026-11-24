@@ -4,7 +4,7 @@ editLink: false
 
 # Anticipation
 
-A brief movement in the opposite direction prepares the viewer for the main action.
+A small move the opposite way before the real one, like a hand drawn back before a throw.
 
 <Example src="previews/motion/anticipation" alt="Anticipation">
 
@@ -12,12 +12,12 @@ A brief movement in the opposite direction prepares the viewer for the main acti
 
 </Example>
 
-**What it conveys:** Signals the direction of travel and a buildup of force, making sudden motion easier to follow.
+**What it conveys:** That something is about to happen, and how much force it takes.
 
 ## Use it when
 
-- Signal the launch direction of a character or icon.
-- Prepare the viewer's attention before a large movement.
+- A big move that would otherwise start from nowhere.
+- A jump, a throw or a launch.
 
 ## Values
 
@@ -30,8 +30,6 @@ A brief movement in the opposite direction prepares the viewer for the main acti
 
 > Before the square moves right, pull it 40 px left for 0.4 s, then send it right with easeOutQuart.
 
-**Goes with:** [Squash & Stretch](/reference/motion/squash-stretch) · [Easing](/reference/motion/easing-curves) · [Follow-through](/reference/motion/follow-through)
-
-Adapted from Nº 002 of [awesome-ai-motion](https://github.com/gongnyang/awesome-ai-motion/tree/main/effects/anticipation) (MIT): its name, definition and uses. The file, its values and the prompt are UberScene's.
+**Goes with:** [Easing](/reference/motion/easing-curves) · [Follow-through](/reference/motion/follow-through)
 
 [All techniques](/reference/motion/) · [Motion across cuts](/guide/animation)

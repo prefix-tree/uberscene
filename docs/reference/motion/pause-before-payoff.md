@@ -2,11 +2,11 @@
 editLink: false
 ---
 
-# Pause Before the Payoff
+# Pause before the payoff
 
 The action happens, the frame holds still for half a second, then the result lands.
 
-<Example src="previews/motion/pause-before-payoff" alt="Pause Before the Payoff">
+<Example src="previews/motion/pause-before-payoff" alt="Pause before the payoff">
 
 <<< @/../examples/showcase/motion/pause-before-payoff.tsx
 
@@ -30,6 +30,6 @@ The action happens, the frame holds still for half a second, then the result lan
 
 > After the pointer presses the button, hold for 0.5 s, then pop the star in with easeOutBack.
 
-One of UberScene's own, from the agent skill's motion doctrine.
+**Goes with:** [Overshoot](/reference/motion/spring-overshoot)
 
 [All techniques](/reference/motion/) · [Motion across cuts](/guide/animation)

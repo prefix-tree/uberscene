@@ -2,22 +2,22 @@
 editLink: false
 ---
 
-# Speed Ramp
+# Speed ramp
 
-Vary playback speed to slow down the peak of an action and accelerate surrounding movement.
+The shot slows down around its key moment and speeds back up.
 
-<Example src="previews/motion/speed-ramp" alt="Speed Ramp">
+<Example src="previews/motion/speed-ramp" alt="Speed ramp">
 
 <<< @/../examples/showcase/motion/speed-ramp.tsx
 
 </Example>
 
-**What it conveys:** Concentrates attention on the action peak and changes rhythm.
+**What it conveys:** The moment that matters, stretched so it can be seen.
 
 ## Use it when
 
-- Spend more time on the peak of an action.
-- Accelerate repetitive parts of a product demonstration.
+- A pour, a jump, a splash: one instant worth watching.
+- Action footage that passes too fast.
 
 ## Values
 
@@ -29,6 +29,6 @@ Vary playback speed to slow down the peak of an action and accelerate surroundin
 
 > Slow the shot to 0.3 speed around its key moment and back to 1 with keys on speed.
 
-Adapted from Nº 199 of [awesome-ai-motion](https://github.com/gongnyang/awesome-ai-motion/tree/main/effects/speed-ramp) (MIT): its name, definition and uses. The file, its values and the prompt are UberScene's.
+**Goes with:** [Freeze with a label](/reference/motion/freeze-frame-dressing)
 
 [All techniques](/reference/motion/) · [Motion across cuts](/guide/animation)

@@ -1,14 +1,14 @@
 # Motion catalog
 
-Techniques of motion, each a short, complete file in one look, to copy and adapt: pick one by name when a scene needs it. 27 techniques, grouped by family; most are adapted from awesome-ai-motion (MIT), https://github.com/gongnyang/awesome-ai-motion. Read [motion.md](motion.md) first for how scenes hand over at a cut. Generated from the code by `scripts/gen-docs.ts`; do not edit.
+Techniques of motion, each a short, complete file in one look, to copy and adapt: pick one by name when a scene needs it. 27 techniques, grouped by family. Read [motion.md](motion.md) first for how scenes hand over at a cut. Generated from the code by `scripts/gen-docs.ts`; do not edit.
 
 # Principles
 
 ## Easing (`easing-curves`)
 
-Easing changes velocity over the course of an animation while keeping its distance and duration constant. Adds weight to starts and stops; ease-out responds quickly and then settles smoothly.
+How a move speeds up and slows down between its keys, instead of running at one speed. Weight and intent: a thing that eases into place looks placed, one at constant speed looks mechanical.
 
-Use it when: Compare the perceived speed of otherwise identical movements. Make UI motion respond quickly and stop smoothly.
+Use it when: Any move from one place to another. A move looks robotic and you can't say why.
 
 - easing: `"easeOutQuart"`, on the first key: fast off the mark, slow into place
 - duration: `1 s`, between the two keys on `box.x`
@@ -82,9 +82,9 @@ export default function Video() {
 ```
 ## Anticipation (`anticipation`)
 
-A brief movement in the opposite direction prepares the viewer for the main action. Signals the direction of travel and a buildup of force, making sudden motion easier to follow.
+A small move the opposite way before the real one, like a hand drawn back before a throw. That something is about to happen, and how much force it takes.
 
-Use it when: Signal the launch direction of a character or icon. Prepare the viewer's attention before a large movement.
+Use it when: A big move that would otherwise start from nowhere. A jump, a throw or a launch.
 
 - pull back: `40 px over 0.4 s`, the opposite way first, easeOutCubic
 - move: `340 px over 0.5 s`, then the real move, easeOutQuart
@@ -138,11 +138,11 @@ export default function Video() {
   );
 }
 ```
-## Spring & Overshoot (`spring-overshoot`)
+## Overshoot (`spring-overshoot`)
 
-An object briefly exceeds its target scale before returning and settling. Shows inertia and restoring force as the object settles.
+An entrance that goes a little past its place and settles back. Life and energy: the thing arrives with some spring in it.
 
-Use it when: Reveal a small object or settle it into a selected state. Explain overshoot and recovery with a graph.
+Use it when: Popping in a card, a badge or a button. A result that should land with a little bounce.
 
 - easing: `"easeOutBack"`, passes its size and settles back
 - scale: `0 to 1 over 0.6 s`, keys on `transform.scale`
@@ -194,11 +194,11 @@ export default function Video() {
   );
 }
 ```
-## Squash & Stretch (`squash-stretch`)
+## Squash and stretch (`squash-stretch`)
 
-An object stretches as it gains speed and squashes on impact while keeping the product of its axis scales constant. Conveys elasticity, weight, and the force of impact.
+A shape stretches while it moves fast and flattens when it hits, keeping its volume. That the thing is soft and has weight, and how hard it hit.
 
-Use it when: Show the impact of a ball or flexible character. Add elasticity to a small bounce.
+Use it when: A ball, a drop or anything that bounces. A small bounce that feels stiff.
 
 - stretch: `{ x: 0.86, y: 1.16 }`, just before impact
 - squash: `{ x: 1.35, y: 0.68 }`, on impact, about 0.1 s
@@ -278,9 +278,9 @@ export default function Video() {
 ```
 ## Follow-through (`follow-through`)
 
-An attached extremity continues moving through inertia after the main body stops, then settles later. Conveys flexibility and inertia, showing that force remains after the main body stops.
+Parts of a thing keep going after the lead stops, and arrive a little later. That the pieces are loose and attached, not one rigid block.
 
-Use it when: Show inertia in a flag or tail attached to a body. Add weight and flexibility to an abrupt stop.
+Use it when: A group that moves together: dots, a tail, a row of tags. A stop that looks too abrupt.
 
 - lead: `easeOutQuart, 0.8 s`, the first part
 - followers: `easeOutBack, +0.18 s each`, arrive later and settle past their place
@@ -368,9 +368,9 @@ export default function Video() {
 ```
 ## Stagger (`stagger`)
 
-Multiple elements appear in sequence with a consistent delay between them. Communicates element order and their relationship as a group.
+The same entrance on several things, each starting a beat after the one before. Order: the eye reads the items one by one instead of all at once.
 
-Use it when: Show the reading order of a grid or list. Spread out the entrance of multiple elements.
+Use it when: A list, a grid of cards, a row of logos. Several things would otherwise appear in one block.
 
 - step: `0.08 s`, between one card's start and the next
 - entrance: `rise 60 px and fade in, 0.6 s`, the same for every card, easeOutQuart
@@ -525,7 +525,7 @@ export default function Video() {
   );
 }
 ```
-## Pause Before the Payoff (`pause-before-payoff`)
+## Pause before the payoff (`pause-before-payoff`)
 
 The action happens, the frame holds still for half a second, then the result lands. A dramatic comma: the viewer has a moment to expect the result, so it lands harder.
 
@@ -619,125 +619,13 @@ export default function Video() {
 }
 ```
 
-# Entrance & exit
+# Type
 
-## Clip Reveal (`clip-reveal`)
+## Word by word (`word-rise-fade`)
 
-The visible region inside a boundary widens to reveal content from one side. Content opens along its edge and guides the reading direction.
+A line that comes in one word at a time, each rising a little as it fades in. Pace: the line is read at the speed it is said.
 
-Use it when: When a title or image opens upward like a shutter When bars or lines are revealed with a direction
-
-- crop.width: `0 to 1 over 1 s`, keys, easeInOutQuart: opens from the left
-
-Ask: Reveal the shot from the left with keys on its crop.width from 0 to 1.
-
-```tsx
-import { Clip, Composition } from "@uberscene/kit";
-
-// A crop reveal: the shot opens from a sliver to the full frame, as a clean wipe without a transition.
-const PAPER = "#f2eee6";
-const INK = "#151515";
-const ACCENT = "#d6336c";
-
-export default function Video() {
-  return (
-    <Composition
-      fps={30}
-      width={640}
-      height={360}
-      background={{ type: "color", color: PAPER }}
-      theme={{
-        extends: "paper",
-        motion: "none",
-        fonts: { heading: "Inter", body: "Inter" },
-        palette: { primary: ACCENT, accent: ACCENT, background: PAPER, text: INK },
-      }}
-    >
-      <Clip
-        id="shot"
-        src="asset:redCup"
-        in={18}
-        out={21}
-        fit="cover"
-        transform={{
-          crop: {
-            width: [
-              { at: 0.3, value: 0, easing: "easeInOutQuart" },
-              { at: 1.3, value: 1 },
-            ],
-          },
-        }}
-      />
-    </Composition>
-  );
-}
-```
-
-# Emphasis
-
-## Recolour Reveal (`recolor-reveal`)
-
-One colour of the picture turns into another while you watch. A before and after in one shot: this is what changed.
-
-Use it when: Showing a change of colour, brand or product option. A before and after on the same footage.
-
-- from, to: `"#c3292a", "#2f9e4f"`, the `recolor` effect
-- amount: `0 to 1 over 0.6 s`, keys, easeInOutCubic
-
-Ask: Turn the red cup green with a recolor effect whose amount keys from 0 to 1.
-
-```tsx
-import { Clip, Composition } from "@uberscene/kit";
-
-// A recolour reveal: one colour turns into another while you watch, for a before and after.
-const PAPER = "#f2eee6";
-const INK = "#151515";
-const ACCENT = "#d6336c";
-
-export default function Video() {
-  return (
-    <Composition
-      fps={30}
-      width={640}
-      height={360}
-      background={{ type: "color", color: PAPER }}
-      theme={{
-        extends: "paper",
-        motion: "none",
-        fonts: { heading: "Inter", body: "Inter" },
-        palette: { primary: ACCENT, accent: ACCENT, background: PAPER, text: INK },
-      }}
-    >
-      <Clip
-        id="shot"
-        src="asset:redCup"
-        in={18}
-        out={21}
-        fit="cover"
-        effects={[
-          {
-            type: "recolor",
-            from: "#c3292a",
-            to: "#2f9e4f",
-            amount: [
-              { at: 1, value: 0, easing: "easeInOutCubic" },
-              { at: 1.6, value: 1 },
-            ],
-          },
-        ]}
-      />
-    </Composition>
-  );
-}
-```
-
-# Typography
-
-## Word Rise Fade (`word-rise-fade`)
-
-Words rise slightly while shedding blur, settling into place one after another. A calm, orderly sentence build where reading order is visible as word order.
-
-Use it when: When revealing a one or two line explainer caption or subtitle softly For the calm brand-tone opening line of a video
+Use it when: A headline or a quote with time to land. Captions that follow speech.
 
 - animation: `{ type: "wordByWord", in: 1.2, stagger: 0.14 }`, on the `<Title>`
 
@@ -783,9 +671,9 @@ export default function Video() {
 ```
 ## Typewriter (`typewriter`)
 
-A sentence appears one character at a time at regular intervals while a cursor follows the insertion point. Communicates the process of writing and sequential text input.
+Text that appears one letter at a time, as if typed. Someone writing it now: a prompt, a search, a message.
 
-Use it when: Show a short input sentence being composed. Show a typing state in a conversational UI.
+Use it when: Showing a prompt or a search being entered. A line that should feel live.
 
 - animation: `{ type: "typewriter", in: 1.6 }`, letters appear one by one
 
@@ -829,11 +717,11 @@ export default function Video() {
   );
 }
 ```
-## Kinetic Beats (`kinetic-beats`)
+## Hits on the beat (`kinetic-beats`)
 
-Words hit the center at a large scale on regular beats and quickly settle. Communicates a three-step rhythm and emphasizes the final action.
+A word that punches up on each hit of the music and settles back between them. Rhythm: the type and the sound feel like one thing.
 
-Use it when: Compress a sequence into short verbs. Focus attention on the final key action.
+Use it when: A word or a title over music with clear hits. Promos and openers cut to a track.
 
 - punch: `1.35 for 0.05 s`, on each beat, then back to 1 with easeOutQuart
 - beats: `0.5, 1.3 and 2.1 s`, anchor them to the music's hits
@@ -890,24 +778,21 @@ export default function Video() {
   );
 }
 ```
+## Count up (`count-up`)
 
-# Transitions
+A number that runs up from zero to its value and holds. Size and growth: the viewer feels the number get big.
 
-## Whip Pan (`whip-pan`)
+Use it when: A statistic, a total or a milestone. A number that would otherwise sit flat on screen.
 
-A rapid horizontal sweep with horizontal blur and sharp deceleration settles into the next scene. Moves attention to the next information as if the camera rapidly pans.
+- to: `12400`, the value it counts to and holds
+- suffix, label: `"+", "cups poured"`, what sits beside and under it
 
-Use it when: Move quickly from a question to a result. Maintain speed and direction across consecutive scenes.
-
-- transition: `"push", 0.3 s`, short, so it reads as a whip
-- direction: `"left"`, the film's main direction
-
-Ask: Join the two shots with a 0.3 s push transition, direction "left".
+Ask: Show a Counter that counts to 12400 with suffix "+" and label "cups poured".
 
 ```tsx
-import { Clip, Composition, Transition } from "@uberscene/kit";
+import { Composition, Counter, Track } from "@uberscene/kit";
 
-// A whip pan: one shot is pushed out fast by the next, sideways, as a quick change of place.
+// A counter: a number that counts up to its value and holds, for a result.
 const PAPER = "#f2eee6";
 const INK = "#151515";
 const ACCENT = "#d6336c";
@@ -926,396 +811,8 @@ export default function Video() {
         palette: { primary: ACCENT, accent: ACCENT, background: PAPER, text: INK },
       }}
     >
-      <Clip id="a" src="asset:redCup" in={18} out={19.6} fit="cover" />
-      <Transition id="whip" type="push" duration={0.3} params={{ direction: "left" }} />
-      <Clip id="b" src="asset:redCup" in={32} out={33.7} fit="cover" />
-    </Composition>
-  );
-}
-```
-## Matched Push (`matched-push`)
-
-Both shots grow through a hard cut, so the camera seems to keep pushing forward. One continuous move across two shots: going deeper into the same thought.
-
-Use it when: Cutting between two shots of one idea. A transition would slow the piece down.
-
-- outgoing: `1 to 1.25 over the last 0.4 s`, easeInQuart: speeding up into the cut
-- incoming: `0.85 to 1 over the first 0.4 s`, easeOutQuart: still moving after it
-
-Ask: Cut from the first shot to the second while both grow: key the first's scale up with easeInQuart into the cut, and the second's from 0.85 with easeOutQuart.
-
-```tsx
-import { Clip, Composition } from "@uberscene/kit";
-
-// A matched push across a cut: both shots grow through the cut, so the camera seems to keep moving.
-const PAPER = "#f2eee6";
-const INK = "#151515";
-const ACCENT = "#d6336c";
-
-export default function Video() {
-  return (
-    <Composition
-      fps={30}
-      width={640}
-      height={360}
-      background={{ type: "color", color: PAPER }}
-      theme={{
-        extends: "paper",
-        motion: "none",
-        fonts: { heading: "Inter", body: "Inter" },
-        palette: { primary: ACCENT, accent: ACCENT, background: PAPER, text: INK },
-      }}
-    >
-      <Clip
-        id="a"
-        src="asset:redCup"
-        in={18}
-        out={19.5}
-        fit="cover"
-        transform={{
-          scale: [
-            { at: 1.1, value: 1, easing: "easeInQuart" },
-            { at: 1.5, value: 1.25 },
-          ],
-        }}
-      />
-      <Clip
-        id="b"
-        src="asset:redCup"
-        in={30}
-        out={31.5}
-        fit="cover"
-        transform={{
-          scale: [
-            { at: 0, value: 0.85, easing: "easeOutQuart" },
-            { at: 0.4, value: 1 },
-          ],
-        }}
-      />
-    </Composition>
-  );
-}
-```
-## Match on Action (`match-on-action`)
-
-Objects or camera before and after a cut move in the same screen direction and speed flow, so two scenes read as one action. The cut goes unnoticed and the action carries through, making the transition feel like natural flow.
-
-Use it when: A thrown object in scene A enters scene B from the same side. Build continuity of action across different screens.
-
-- leaving: `320 to 40 px, easeInQuart`, fast at the cut
-- arriving: `600 to 320 px, easeOutQuart`, already moving the same way
-
-Ask: Cut while the subject moves left: it speeds out of the first scene, and the next scene's subject arrives moving left.
-
-```tsx
-import { Composition, Shape, Track } from "@uberscene/kit";
-
-// A cut on motion: the subject leaves fast one way and the next one arrives already moving the same way.
-const PAPER = "#f2eee6";
-const INK = "#151515";
-const ACCENT = "#d6336c";
-
-export default function Video() {
-  return (
-    <Composition
-      fps={30}
-      width={640}
-      height={360}
-      background={{ type: "color", color: PAPER }}
-      theme={{
-        extends: "paper",
-        motion: "none",
-        fonts: { heading: "Inter", body: "Inter" },
-        palette: { primary: ACCENT, accent: ACCENT, background: PAPER, text: INK },
-      }}
-    >
-      <Track id="main">
-        <Shape
-          id="leaving"
-          type="circle"
-          duration={1.5}
-          width={90}
-          height={90}
-          fill={INK}
-          box={{
-            y: 180,
-            origin: "center",
-            x: [
-              { at: 0.6, value: 320, easing: "easeInQuart" },
-              { at: 1.5, value: 40 },
-            ],
-          }}
-        />
-        <Shape
-          id="arriving"
-          type="rectangle"
-          duration={1.5}
-          width={90}
-          height={90}
-          cornerRadius={12}
-          fill={ACCENT}
-          box={{
-            y: 180,
-            origin: "center",
-            x: [
-              { at: 0, value: 600, easing: "easeOutQuart" },
-              { at: 0.6, value: 320 },
-            ],
-          }}
-        />
-      </Track>
-    </Composition>
-  );
-}
-```
-## Shape Mask Transition (`iris-mask`)
-
-A circular mask expands from a point to reveal the next scene. Shows new information spreading across the screen from a shared origin.
-
-Use it when: Transition from a question to its answer. Open a detail scene from a selected point.
-
-- transition: `"iris", 0.8 s`, the next shot opens from a circle
-
-Ask: Open the second shot from a circle with an 0.8 s iris transition.
-
-```tsx
-import { Clip, Composition, Transition } from "@uberscene/kit";
-
-// An iris: the next shot opens from a circle, for a chapter or a reveal.
-const PAPER = "#f2eee6";
-const INK = "#151515";
-const ACCENT = "#d6336c";
-
-export default function Video() {
-  return (
-    <Composition
-      fps={30}
-      width={640}
-      height={360}
-      background={{ type: "color", color: PAPER }}
-      theme={{
-        extends: "paper",
-        motion: "none",
-        fonts: { heading: "Inter", body: "Inter" },
-        palette: { primary: ACCENT, accent: ACCENT, background: PAPER, text: INK },
-      }}
-    >
-      <Clip id="a" src="asset:redCup" in={18} out={19.8} fit="cover" />
-      <Transition id="open" type="iris" duration={0.8} />
-      <Clip id="b" src="asset:redCup" in={32} out={33.8} fit="cover" />
-    </Composition>
-  );
-}
-```
-## Match Cut (`match-cut`)
-
-Matching shapes at the same position and size connect two scenes across a cut. Connects a sentence to data by matching its final period to a chart dot.
-
-Use it when: Connect different scenes through objects with matching shapes. Keep the viewer's gaze in place when moving from explanation to data.
-
-- shape: `same size, same place`, the first scene's circle becomes the next one's
-
-Ask: End the first scene on a circle and start the next on a circle of the same size in the same place.
-
-```tsx
-import { Composition, Shape, Track } from "@uberscene/kit";
-
-// A match cut: the next scene starts with the same shape in the same place, so the change reads as one move.
-const PAPER = "#f2eee6";
-const INK = "#151515";
-const ACCENT = "#d6336c";
-
-export default function Video() {
-  return (
-    <Composition
-      fps={30}
-      width={640}
-      height={360}
-      background={{ type: "color", color: PAPER }}
-      theme={{
-        extends: "paper",
-        motion: "none",
-        fonts: { heading: "Inter", body: "Inter" },
-        palette: { primary: ACCENT, accent: ACCENT, background: PAPER, text: INK },
-      }}
-    >
-      <Track id="main">
-        <Shape
-          id="before"
-          type="circle"
-          duration={1.5}
-          width={120}
-          height={120}
-          fill={ACCENT}
-          box={{ x: 320, y: 180, origin: "center" }}
-          transform={{
-            scale: [
-              { at: 0, value: 0.6, easing: "easeOutCubic" },
-              { at: 1.5, value: 1 },
-            ],
-          }}
-        />
-        <Shape
-          id="after"
-          type="circle"
-          duration={1.5}
-          width={120}
-          height={120}
-          fill={INK}
-          box={{ x: 320, y: 180, origin: "center" }}
-          transform={{
-            scale: [
-              { at: 0, value: 1, easing: "easeOutCubic" },
-              { at: 1.5, value: 1.4 },
-            ],
-          }}
-        />
-      </Track>
-    </Composition>
-  );
-}
-```
-## Dip to Color (`dip-to-color`)
-
-The outgoing scene fades into a flat color, then the next scene rises out of that same color. A section or chapter break: a pause before the next idea.
-
-Use it when: Mark clearly where a chapter or section changes. Cut between two mismatched scenes through a single color field.
-
-- transition: `"dipToBlack", 0.8 s`, or dipToWhite
-
-Ask: Join the shots with an 0.8 s dipToBlack transition, for time passing.
-
-```tsx
-import { Clip, Composition, Transition } from "@uberscene/kit";
-
-// A dip to black: the picture goes dark and comes back on the next shot, for time passing.
-const PAPER = "#f2eee6";
-const INK = "#151515";
-const ACCENT = "#d6336c";
-
-export default function Video() {
-  return (
-    <Composition
-      fps={30}
-      width={640}
-      height={360}
-      background={{ type: "color", color: PAPER }}
-      theme={{
-        extends: "paper",
-        motion: "none",
-        fonts: { heading: "Inter", body: "Inter" },
-        palette: { primary: ACCENT, accent: ACCENT, background: PAPER, text: INK },
-      }}
-    >
-      <Clip id="a" src="asset:redCup" in={18} out={19.8} fit="cover" />
-      <Transition id="night" type="dipToBlack" duration={0.8} />
-      <Clip id="b" src="asset:redCup" in={32} out={33.8} fit="cover" />
-    </Composition>
-  );
-}
-```
-## Speed Ramp (`speed-ramp`)
-
-Vary playback speed to slow down the peak of an action and accelerate surrounding movement. Concentrates attention on the action peak and changes rhythm.
-
-Use it when: Spend more time on the peak of an action. Accelerate repetitive parts of a product demonstration.
-
-- speed: `1, 0.3, 0.3, 1`, keys at 0, 0.7, 1.5 and 2.1 s, easeInOutQuad
-
-Ask: Slow the shot to 0.3 speed around its key moment and back to 1 with keys on speed.
-
-```tsx
-import { Clip, Composition } from "@uberscene/kit";
-
-// A speed ramp: the shot slows into a moment and speeds out of it, to dwell without a freeze.
-const PAPER = "#f2eee6";
-const INK = "#151515";
-const ACCENT = "#d6336c";
-
-export default function Video() {
-  return (
-    <Composition
-      fps={30}
-      width={640}
-      height={360}
-      background={{ type: "color", color: PAPER }}
-      theme={{
-        extends: "paper",
-        motion: "none",
-        fonts: { heading: "Inter", body: "Inter" },
-        palette: { primary: ACCENT, accent: ACCENT, background: PAPER, text: INK },
-      }}
-    >
-      <Clip
-        id="shot"
-        src="asset:redCup"
-        in={18}
-        out={20.4}
-        fit="cover"
-        speed={[
-          { at: 0, value: 1, easing: "easeInOutQuad" },
-          { at: 0.7, value: 0.3 },
-          { at: 1.5, value: 0.3, easing: "easeInOutQuad" },
-          { at: 2.1, value: 1 },
-        ]}
-      />
-    </Composition>
-  );
-}
-```
-## Freeze Frame Dressing (`freeze-frame-dressing`)
-
-Motion freezes on the beat and paper, tape, and labels stick around the frozen subject. A marker that says this moment matters: a magazine cover or documentary intro shot.
-
-Use it when: Introduce a person or product for the first time. Make a decisive moment memorable.
-
-- freezes: `{ start: 0.9, duration: 1.2, source: 18.9 }`, one held frame
-- label: `a `<Title>` for the hold`, starts and ends with the freeze
-
-Ask: Hold one frame for 1.2 s with freezes, and show a label for exactly that time.
-
-```tsx
-import { Clip, Composition, Title, Track } from "@uberscene/kit";
-
-// A freeze: one frame holds while a note points at it, then the shot plays on.
-const PAPER = "#f2eee6";
-const INK = "#151515";
-const ACCENT = "#d6336c";
-
-export default function Video() {
-  return (
-    <Composition
-      fps={30}
-      width={640}
-      height={360}
-      background={{ type: "color", color: PAPER }}
-      theme={{
-        extends: "paper",
-        motion: "none",
-        fonts: { heading: "Inter", body: "Inter" },
-        palette: { primary: ACCENT, accent: ACCENT, background: PAPER, text: INK },
-      }}
-    >
-      <Clip
-        id="shot"
-        src="asset:redCup"
-        in={18}
-        out={20}
-        fit="cover"
-        freezes={[{ start: 0.9, duration: 1.2, source: 18.9 }]}
-      />
       <Track id="text" layout="free">
-        <Title
-          id="note"
-          start={0.9}
-          duration={1.2}
-          style={{ size: 36, weight: 800, color: PAPER, background: ACCENT }}
-          box={{ x: 320, y: 300, width: 130, height: 56, origin: "center" }}
-          enter={{ type: "fade", duration: 0.2 }}
-          exit={{ type: "fade", duration: 0.2 }}
-        >
-          Hold
-        </Title>
+        <Counter id="cups" start={0.2} duration={2.8} to={12400} suffix="+" label="cups poured" size={110} />
       </Track>
     </Composition>
   );
@@ -1324,11 +821,11 @@ export default function Video() {
 
 # Camera
 
-## Push-in (`push-in`)
+## Push in (`push-in`)
 
-A camera move that slowly approaches a fixed focal point in a sentence or scene. Increases the emphasis on and attention to a key word.
+The shot grows slowly, as if the camera moves toward the subject. Focus and tension: this matters, look closer.
 
-Use it when: When focusing on a key word after showing the full sentence When showing an important part of a product or subject up close
+Use it when: A held shot that needs some life. Leading into a key line or a detail.
 
 - scale: `1 to 1.2 over 3 s`, keys on the clip's `transform.scale`, easeInOutSine
 
@@ -1375,9 +872,9 @@ export default function Video() {
 ```
 ## Pan (`pan`)
 
-A camera move that scans a wide scene in one direction while keeping the scale constant. Shows the sequence and flow of stages arranged across a space.
+The frame travels across a picture larger than itself. Space: there is more here than one frame shows.
 
-Use it when: When scanning a long process diagram in sequence When stopping on the final subject in a horizontal scene
+Use it when: A wide image, a landscape or a long screenshot. Revealing something at one side of the shot.
 
 - box: `960 × 540`, larger than the frame, so there is picture to travel over
 - box.x: `0 to -320 over 3 s`, easeInOutSine
@@ -1428,9 +925,9 @@ export default function Video() {
 ```
 ## Parallax (`parallax`)
 
-A motion effect that creates depth by moving nearer layers faster and distant layers more slowly as the camera moves. Creates a sense of distance and space between flat elements.
+Layers move the same way at different speeds: near ones fast, far ones slow. Depth in a flat picture.
 
-Use it when: When showing the distance between foreground and background When moving elements at multiple depths in a scrolling scene
+Use it when: Graphics or cut-out layers that look flat. An opener or a title over layered art.
 
 - distances: `60, 160 and 320 px`, far, middle and near layers, over the same 3 s
 
@@ -1618,11 +1115,11 @@ export default function Video() {
   );
 }
 ```
-## Rack Focus (`rack-focus`)
+## Rack focus (`rack-focus`)
 
-A focus shift that swaps sharpness between foreground and background subjects without changing their positions. Shifts visual priority from the foreground subject to the background subject.
+The sharp part of the picture moves from one thing to another while the first goes soft. Where to look now: attention passes from one subject to the next.
 
-Use it when: When transferring attention between foreground and background When changing the relative emphasis of two subjects without moving the scene
+Use it when: Bringing a title or a card in front of footage. Two subjects at different depths.
 
 - background blur: `0 to 8 px`, the clip's `blur` effect, keyed
 - card blur: `10 to 0 px`, over the same 0.7 s, easeInOutSine
@@ -1693,7 +1190,7 @@ export default function Video() {
   );
 }
 ```
-## Picture in Picture (`picture-in-picture`)
+## Picture in picture (`picture-in-picture`)
 
 A small shot pops into a corner over the main one. Two views at once: a detail or a reaction alongside the main action.
 
@@ -1750,23 +1247,23 @@ export default function Video() {
 }
 ```
 
-# Data
+# Cuts
 
-## Count-up (`count-up`)
+## Whip pan (`whip-pan`)
 
-An animation in which a number increases from 0 to its target value while decelerating. Communicates numerical accumulation and the final magnitude.
+A fast sideways move that blurs one shot into the next. Energy and speed: we jump to the next place without losing momentum.
 
-Use it when: When showing numerical accumulation and the final magnitude When counting tokens from 0 to 939 and then revealing the token unit
+Use it when: Fast cuts between places or products. A cut that needs to feel quick, not soft.
 
-- to: `12400`, the value it counts to and holds
-- suffix, label: `"+", "cups poured"`, what sits beside and under it
+- transition: `"push", 0.3 s`, short, so it reads as a whip
+- direction: `"left"`, the film's main direction
 
-Ask: Show a Counter that counts to 12400 with suffix "+" and label "cups poured".
+Ask: Join the two shots with a 0.3 s push transition, direction "left".
 
 ```tsx
-import { Composition, Counter, Track } from "@uberscene/kit";
+import { Clip, Composition, Transition } from "@uberscene/kit";
 
-// A counter: a number that counts up to its value and holds, for a result.
+// A whip pan: one shot is pushed out fast by the next, sideways, as a quick change of place.
 const PAPER = "#f2eee6";
 const INK = "#151515";
 const ACCENT = "#d6336c";
@@ -1785,21 +1282,464 @@ export default function Video() {
         palette: { primary: ACCENT, accent: ACCENT, background: PAPER, text: INK },
       }}
     >
-      <Track id="text" layout="free">
-        <Counter id="cups" start={0.2} duration={2.8} to={12400} suffix="+" label="cups poured" size={110} />
+      <Clip id="a" src="asset:redCup" in={18} out={19.6} fit="cover" />
+      <Transition id="whip" type="push" duration={0.3} params={{ direction: "left" }} />
+      <Clip id="b" src="asset:redCup" in={32} out={33.7} fit="cover" />
+    </Composition>
+  );
+}
+```
+## Matched push (`matched-push`)
+
+Both shots grow through a hard cut, so the camera seems to keep pushing forward. One continuous move across two shots: going deeper into the same thought.
+
+Use it when: Cutting between two shots of one idea. A transition would slow the piece down.
+
+- outgoing: `1 to 1.25 over the last 0.4 s`, easeInQuart: speeding up into the cut
+- incoming: `0.85 to 1 over the first 0.4 s`, easeOutQuart: still moving after it
+
+Ask: Cut from the first shot to the second while both grow: key the first's scale up with easeInQuart into the cut, and the second's from 0.85 with easeOutQuart.
+
+```tsx
+import { Clip, Composition } from "@uberscene/kit";
+
+// A matched push across a cut: both shots grow through the cut, so the camera seems to keep moving.
+const PAPER = "#f2eee6";
+const INK = "#151515";
+const ACCENT = "#d6336c";
+
+export default function Video() {
+  return (
+    <Composition
+      fps={30}
+      width={640}
+      height={360}
+      background={{ type: "color", color: PAPER }}
+      theme={{
+        extends: "paper",
+        motion: "none",
+        fonts: { heading: "Inter", body: "Inter" },
+        palette: { primary: ACCENT, accent: ACCENT, background: PAPER, text: INK },
+      }}
+    >
+      <Clip
+        id="a"
+        src="asset:redCup"
+        in={18}
+        out={19.5}
+        fit="cover"
+        transform={{
+          scale: [
+            { at: 1.1, value: 1, easing: "easeInQuart" },
+            { at: 1.5, value: 1.25 },
+          ],
+        }}
+      />
+      <Clip
+        id="b"
+        src="asset:redCup"
+        in={30}
+        out={31.5}
+        fit="cover"
+        transform={{
+          scale: [
+            { at: 0, value: 0.85, easing: "easeOutQuart" },
+            { at: 0.4, value: 1 },
+          ],
+        }}
+      />
+    </Composition>
+  );
+}
+```
+## Match on action (`match-on-action`)
+
+The cut lands mid-move, and the next shot picks up the same move in the same direction. Continuity: two shots read as one action.
+
+Use it when: Cutting between scenes that both move. A cut that should be felt, not seen.
+
+- leaving: `320 to 40 px, easeInQuart`, fast at the cut
+- arriving: `600 to 320 px, easeOutQuart`, already moving the same way
+
+Ask: Cut while the subject moves left: it speeds out of the first scene, and the next scene's subject arrives moving left.
+
+```tsx
+import { Composition, Shape, Track } from "@uberscene/kit";
+
+// A cut on motion: the subject leaves fast one way and the next one arrives already moving the same way.
+const PAPER = "#f2eee6";
+const INK = "#151515";
+const ACCENT = "#d6336c";
+
+export default function Video() {
+  return (
+    <Composition
+      fps={30}
+      width={640}
+      height={360}
+      background={{ type: "color", color: PAPER }}
+      theme={{
+        extends: "paper",
+        motion: "none",
+        fonts: { heading: "Inter", body: "Inter" },
+        palette: { primary: ACCENT, accent: ACCENT, background: PAPER, text: INK },
+      }}
+    >
+      <Track id="main">
+        <Shape
+          id="leaving"
+          type="circle"
+          duration={1.5}
+          width={90}
+          height={90}
+          fill={INK}
+          box={{
+            y: 180,
+            origin: "center",
+            x: [
+              { at: 0.6, value: 320, easing: "easeInQuart" },
+              { at: 1.5, value: 40 },
+            ],
+          }}
+        />
+        <Shape
+          id="arriving"
+          type="rectangle"
+          duration={1.5}
+          width={90}
+          height={90}
+          cornerRadius={12}
+          fill={ACCENT}
+          box={{
+            y: 180,
+            origin: "center",
+            x: [
+              { at: 0, value: 600, easing: "easeOutQuart" },
+              { at: 0.6, value: 320 },
+            ],
+          }}
+        />
       </Track>
     </Composition>
   );
 }
 ```
+## Iris (`iris-mask`)
 
-# Explainer
+The next shot opens out of a growing circle. A new chapter, or a playful jump to the next scene.
 
-## Split Compare (`split-compare`)
+Use it when: Chapter breaks and openers. A light, cartoon-like tone.
 
-An animation that overlays before and after states of the same subject and compares them with a moving vertical divider. Reveals changes in the same subject as the divider moves.
+- transition: `"iris", 0.8 s`, the next shot opens from a circle
 
-Use it when: When comparing a subject before and after processing When directly comparing the locations where changes occur
+Ask: Open the second shot from a circle with an 0.8 s iris transition.
+
+```tsx
+import { Clip, Composition, Transition } from "@uberscene/kit";
+
+// An iris: the next shot opens from a circle, for a chapter or a reveal.
+const PAPER = "#f2eee6";
+const INK = "#151515";
+const ACCENT = "#d6336c";
+
+export default function Video() {
+  return (
+    <Composition
+      fps={30}
+      width={640}
+      height={360}
+      background={{ type: "color", color: PAPER }}
+      theme={{
+        extends: "paper",
+        motion: "none",
+        fonts: { heading: "Inter", body: "Inter" },
+        palette: { primary: ACCENT, accent: ACCENT, background: PAPER, text: INK },
+      }}
+    >
+      <Clip id="a" src="asset:redCup" in={18} out={19.8} fit="cover" />
+      <Transition id="open" type="iris" duration={0.8} />
+      <Clip id="b" src="asset:redCup" in={32} out={33.8} fit="cover" />
+    </Composition>
+  );
+}
+```
+## Match cut (`match-cut`)
+
+A shape at the end of one scene becomes the same shape, same size and place, in the next. A link between two ideas: this is like that.
+
+Use it when: Two scenes with a shared form: a circle, a line, a logo. Joining ideas without a transition.
+
+- shape: `same size, same place`, the first scene's circle becomes the next one's
+
+Ask: End the first scene on a circle and start the next on a circle of the same size in the same place.
+
+```tsx
+import { Composition, Shape, Track } from "@uberscene/kit";
+
+// A match cut: the next scene starts with the same shape in the same place, so the change reads as one move.
+const PAPER = "#f2eee6";
+const INK = "#151515";
+const ACCENT = "#d6336c";
+
+export default function Video() {
+  return (
+    <Composition
+      fps={30}
+      width={640}
+      height={360}
+      background={{ type: "color", color: PAPER }}
+      theme={{
+        extends: "paper",
+        motion: "none",
+        fonts: { heading: "Inter", body: "Inter" },
+        palette: { primary: ACCENT, accent: ACCENT, background: PAPER, text: INK },
+      }}
+    >
+      <Track id="main">
+        <Shape
+          id="before"
+          type="circle"
+          duration={1.5}
+          width={120}
+          height={120}
+          fill={ACCENT}
+          box={{ x: 320, y: 180, origin: "center" }}
+          transform={{
+            scale: [
+              { at: 0, value: 0.6, easing: "easeOutCubic" },
+              { at: 1.5, value: 1 },
+            ],
+          }}
+        />
+        <Shape
+          id="after"
+          type="circle"
+          duration={1.5}
+          width={120}
+          height={120}
+          fill={INK}
+          box={{ x: 320, y: 180, origin: "center" }}
+          transform={{
+            scale: [
+              { at: 0, value: 1, easing: "easeOutCubic" },
+              { at: 1.5, value: 1.4 },
+            ],
+          }}
+        />
+      </Track>
+    </Composition>
+  );
+}
+```
+## Dip to black (`dip-to-color`)
+
+The picture fades to black, then the next shot fades up from it. Time passing, or the end of one part.
+
+Use it when: A jump in time or place. Closing a section before the next.
+
+- transition: `"dipToBlack", 0.8 s`, or dipToWhite
+
+Ask: Join the shots with an 0.8 s dipToBlack transition, for time passing.
+
+```tsx
+import { Clip, Composition, Transition } from "@uberscene/kit";
+
+// A dip to black: the picture goes dark and comes back on the next shot, for time passing.
+const PAPER = "#f2eee6";
+const INK = "#151515";
+const ACCENT = "#d6336c";
+
+export default function Video() {
+  return (
+    <Composition
+      fps={30}
+      width={640}
+      height={360}
+      background={{ type: "color", color: PAPER }}
+      theme={{
+        extends: "paper",
+        motion: "none",
+        fonts: { heading: "Inter", body: "Inter" },
+        palette: { primary: ACCENT, accent: ACCENT, background: PAPER, text: INK },
+      }}
+    >
+      <Clip id="a" src="asset:redCup" in={18} out={19.8} fit="cover" />
+      <Transition id="night" type="dipToBlack" duration={0.8} />
+      <Clip id="b" src="asset:redCup" in={32} out={33.8} fit="cover" />
+    </Composition>
+  );
+}
+```
+
+# Footage
+
+## Recolour reveal (`recolor-reveal`)
+
+One colour of the picture turns into another while you watch. A before and after in one shot: this is what changed.
+
+Use it when: Showing a change of colour, brand or product option. A before and after on the same footage.
+
+- from, to: `"#c3292a", "#2f9e4f"`, the `recolor` effect
+- amount: `0 to 1 over 0.6 s`, keys, easeInOutCubic
+
+Ask: Turn the red cup green with a recolor effect whose amount keys from 0 to 1.
+
+```tsx
+import { Clip, Composition } from "@uberscene/kit";
+
+// A recolour reveal: one colour turns into another while you watch, for a before and after.
+const PAPER = "#f2eee6";
+const INK = "#151515";
+const ACCENT = "#d6336c";
+
+export default function Video() {
+  return (
+    <Composition
+      fps={30}
+      width={640}
+      height={360}
+      background={{ type: "color", color: PAPER }}
+      theme={{
+        extends: "paper",
+        motion: "none",
+        fonts: { heading: "Inter", body: "Inter" },
+        palette: { primary: ACCENT, accent: ACCENT, background: PAPER, text: INK },
+      }}
+    >
+      <Clip
+        id="shot"
+        src="asset:redCup"
+        in={18}
+        out={21}
+        fit="cover"
+        effects={[
+          {
+            type: "recolor",
+            from: "#c3292a",
+            to: "#2f9e4f",
+            amount: [
+              { at: 1, value: 0, easing: "easeInOutCubic" },
+              { at: 1.6, value: 1 },
+            ],
+          },
+        ]}
+      />
+    </Composition>
+  );
+}
+```
+## Speed ramp (`speed-ramp`)
+
+The shot slows down around its key moment and speeds back up. The moment that matters, stretched so it can be seen.
+
+Use it when: A pour, a jump, a splash: one instant worth watching. Action footage that passes too fast.
+
+- speed: `1, 0.3, 0.3, 1`, keys at 0, 0.7, 1.5 and 2.1 s, easeInOutQuad
+
+Ask: Slow the shot to 0.3 speed around its key moment and back to 1 with keys on speed.
+
+```tsx
+import { Clip, Composition } from "@uberscene/kit";
+
+// A speed ramp: the shot slows into a moment and speeds out of it, to dwell without a freeze.
+const PAPER = "#f2eee6";
+const INK = "#151515";
+const ACCENT = "#d6336c";
+
+export default function Video() {
+  return (
+    <Composition
+      fps={30}
+      width={640}
+      height={360}
+      background={{ type: "color", color: PAPER }}
+      theme={{
+        extends: "paper",
+        motion: "none",
+        fonts: { heading: "Inter", body: "Inter" },
+        palette: { primary: ACCENT, accent: ACCENT, background: PAPER, text: INK },
+      }}
+    >
+      <Clip
+        id="shot"
+        src="asset:redCup"
+        in={18}
+        out={20.4}
+        fit="cover"
+        speed={[
+          { at: 0, value: 1, easing: "easeInOutQuad" },
+          { at: 0.7, value: 0.3 },
+          { at: 1.5, value: 0.3, easing: "easeInOutQuad" },
+          { at: 2.1, value: 1 },
+        ]}
+      />
+    </Composition>
+  );
+}
+```
+## Freeze with a label (`freeze-frame-dressing`)
+
+The picture holds on one frame while a label names what is in it. Stop and look: this is the thing.
+
+Use it when: Introducing a person or a product in action. Pointing at one detail of a moving shot.
+
+- freezes: `{ start: 0.9, duration: 1.2, source: 18.9 }`, one held frame
+- label: `<Title>`, for the hold: starts and ends with the freeze
+
+Ask: Hold one frame for 1.2 s with freezes, and show a label for exactly that time.
+
+```tsx
+import { Clip, Composition, Title, Track } from "@uberscene/kit";
+
+// A freeze: one frame holds while a note points at it, then the shot plays on.
+const PAPER = "#f2eee6";
+const INK = "#151515";
+const ACCENT = "#d6336c";
+
+export default function Video() {
+  return (
+    <Composition
+      fps={30}
+      width={640}
+      height={360}
+      background={{ type: "color", color: PAPER }}
+      theme={{
+        extends: "paper",
+        motion: "none",
+        fonts: { heading: "Inter", body: "Inter" },
+        palette: { primary: ACCENT, accent: ACCENT, background: PAPER, text: INK },
+      }}
+    >
+      <Clip
+        id="shot"
+        src="asset:redCup"
+        in={18}
+        out={20}
+        fit="cover"
+        freezes={[{ start: 0.9, duration: 1.2, source: 18.9 }]}
+      />
+      <Track id="text" layout="free">
+        <Title
+          id="note"
+          start={0.9}
+          duration={1.2}
+          style={{ size: 36, weight: 800, color: PAPER, background: ACCENT }}
+          box={{ x: 320, y: 300, width: 130, height: 56, origin: "center" }}
+          enter={{ type: "fade", duration: 0.2 }}
+          exit={{ type: "fade", duration: 0.2 }}
+        >
+          Hold
+        </Title>
+      </Track>
+    </Composition>
+  );
+}
+```
+## Before and after split (`split-compare`)
+
+Two versions of a shot side by side, with a divider that slides between them. The difference, shown directly rather than described.
+
+Use it when: A grade, a fix or a filter. Any edit whose result is best seen against the original.
 
 - after: `the same clip, recoloured`, on a track above the before
 - crop.width: `0.15, 0.85, 0.5`, keys; a divider shape's box.x follows the same keys
@@ -1867,6 +1807,57 @@ export default function Video() {
           }}
         />
       </Track>
+    </Composition>
+  );
+}
+```
+## Wipe reveal (`clip-reveal`)
+
+The shot is uncovered from one edge to the other. Arrival: here it is, revealed in one sweep.
+
+Use it when: Bringing in a shot or a product image. A cleaner entrance than a fade.
+
+- crop.width: `0 to 1 over 1 s`, keys, easeInOutQuart: opens from the left
+
+Ask: Reveal the shot from the left with keys on its crop.width from 0 to 1.
+
+```tsx
+import { Clip, Composition } from "@uberscene/kit";
+
+// A crop reveal: the shot opens from a sliver to the full frame, as a clean wipe without a transition.
+const PAPER = "#f2eee6";
+const INK = "#151515";
+const ACCENT = "#d6336c";
+
+export default function Video() {
+  return (
+    <Composition
+      fps={30}
+      width={640}
+      height={360}
+      background={{ type: "color", color: PAPER }}
+      theme={{
+        extends: "paper",
+        motion: "none",
+        fonts: { heading: "Inter", body: "Inter" },
+        palette: { primary: ACCENT, accent: ACCENT, background: PAPER, text: INK },
+      }}
+    >
+      <Clip
+        id="shot"
+        src="asset:redCup"
+        in={18}
+        out={21}
+        fit="cover"
+        transform={{
+          crop: {
+            width: [
+              { at: 0.3, value: 0, easing: "easeInOutQuart" },
+              { at: 1.3, value: 1 },
+            ],
+          },
+        }}
+      />
     </Composition>
   );
 }

@@ -3,4 +3,4 @@
 "uberscene": patch
 ---
 
-The agent skill gains `references/motion.md`: how scenes hand over at a cut (same axis, same direction, matched speed, cut mid-motion), one main direction per film, a seam plan, carriers, cause and effect, no idle wobble, timing, and how to check seams with `uberscene look --around` and `--motion`. Adapted from HyperFrames' `motion-doctrine` skill (Apache-2.0).
+The agent skill gains `references/motion.md`: how motion carries across a cut (same axis, same direction, same speed, cut while moving), one direction per film, planning cuts first, something for the eye to follow, cause and effect, no idling, timing, and how to check cuts with `uberscene look --around` and `--motion`.

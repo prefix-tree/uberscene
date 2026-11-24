@@ -2,11 +2,11 @@
 editLink: false
 ---
 
-# Matched Push
+# Matched push
 
 Both shots grow through a hard cut, so the camera seems to keep pushing forward.
 
-<Example src="previews/motion/matched-push" alt="Matched Push">
+<Example src="previews/motion/matched-push" alt="Matched push">
 
 <<< @/../examples/showcase/motion/matched-push.tsx
 
@@ -30,6 +30,6 @@ Both shots grow through a hard cut, so the camera seems to keep pushing forward.
 
 > Cut from the first shot to the second while both grow: key the first's scale up with easeInQuart into the cut, and the second's from 0.85 with easeOutQuart.
 
-One of UberScene's own, from the agent skill's motion doctrine.
+**Goes with:** [Match on action](/reference/motion/match-on-action) · [Whip pan](/reference/motion/whip-pan)
 
 [All techniques](/reference/motion/) · [Motion across cuts](/guide/animation)

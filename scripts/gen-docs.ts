@@ -751,7 +751,7 @@ write(join(out, "components", "index.md"), page(escapeTags(componentsIndex())));
 // The motion catalog: an index, a page per technique, and the agent's reference with every file.
 write(join(out, "motion", "index.md"), page(escapeTags(motionIndex(attr))));
 for (const entry of motionEntries())
-  write(join(out, "motion", `${entry.card.slug}.md`), page(escapeTags(motionPage(entry))));
+  write(join(out, "motion", `${entry.slug}.md`), page(escapeTags(motionPage(entry))));
 for (const name of Object.keys(COMPONENTS) as (keyof typeof COMPONENTS)[])
   write(join(out, "components", `${kebab(name)}.md`), page(escapeTags(componentPage(name))));
 for (const name of Object.keys(EFFECTS) as (keyof typeof EFFECTS)[]) {

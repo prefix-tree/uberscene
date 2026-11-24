@@ -2,22 +2,22 @@
 editLink: false
 ---
 
-# Push-in
+# Push in
 
-A camera move that slowly approaches a fixed focal point in a sentence or scene.
+The shot grows slowly, as if the camera moves toward the subject.
 
-<Example src="previews/motion/push-in" alt="Push-in">
+<Example src="previews/motion/push-in" alt="Push in">
 
 <<< @/../examples/showcase/motion/push-in.tsx
 
 </Example>
 
-**What it conveys:** Increases the emphasis on and attention to a key word.
+**What it conveys:** Focus and tension: this matters, look closer.
 
 ## Use it when
 
-- When focusing on a key word after showing the full sentence
-- When showing an important part of a product or subject up close
+- A held shot that needs some life.
+- Leading into a key line or a detail.
 
 ## Values
 
@@ -29,6 +29,6 @@ A camera move that slowly approaches a fixed focal point in a sentence or scene.
 
 > Push in slowly on the shot: scale it from 1 to 1.2 across the clip with easeInOutSine.
 
-Adapted from Nº 221 of [awesome-ai-motion](https://github.com/gongnyang/awesome-ai-motion/tree/main/effects/push-in) (MIT): its name, definition and uses. The file, its values and the prompt are UberScene's.
+**Goes with:** [Pan](/reference/motion/pan) · [Rack focus](/reference/motion/rack-focus)
 
 [All techniques](/reference/motion/) · [Motion across cuts](/guide/animation)

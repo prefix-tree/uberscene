@@ -4,7 +4,7 @@ editLink: false
 
 # Stagger
 
-Multiple elements appear in sequence with a consistent delay between them.
+The same entrance on several things, each starting a beat after the one before.
 
 <Example src="previews/motion/stagger" alt="Stagger">
 
@@ -12,12 +12,12 @@ Multiple elements appear in sequence with a consistent delay between them.
 
 </Example>
 
-**What it conveys:** Communicates element order and their relationship as a group.
+**What it conveys:** Order: the eye reads the items one by one instead of all at once.
 
 ## Use it when
 
-- Show the reading order of a grid or list.
-- Spread out the entrance of multiple elements.
+- A list, a grid of cards, a row of logos.
+- Several things would otherwise appear in one block.
 
 ## Values
 
@@ -30,6 +30,6 @@ Multiple elements appear in sequence with a consistent delay between them.
 
 > Bring the five cards in one after another, 0.08 s apart, each rising 60 px with easeOutQuart.
 
-Adapted from Nº 006 of [awesome-ai-motion](https://github.com/gongnyang/awesome-ai-motion/tree/main/effects/stagger) (MIT): its name, definition and uses. The file, its values and the prompt are UberScene's.
+**Goes with:** [Overshoot](/reference/motion/spring-overshoot) · [Follow-through](/reference/motion/follow-through)
 
 [All techniques](/reference/motion/) · [Motion across cuts](/guide/animation)

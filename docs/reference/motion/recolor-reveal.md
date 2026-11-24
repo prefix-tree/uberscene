@@ -2,11 +2,11 @@
 editLink: false
 ---
 
-# Recolour Reveal
+# Recolour reveal
 
 One colour of the picture turns into another while you watch.
 
-<Example src="previews/motion/recolor-reveal" alt="Recolour Reveal">
+<Example src="previews/motion/recolor-reveal" alt="Recolour reveal">
 
 <<< @/../examples/showcase/motion/recolor-reveal.tsx
 
@@ -30,6 +30,6 @@ One colour of the picture turns into another while you watch.
 
 > Turn the red cup green with a recolor effect whose amount keys from 0 to 1.
 
-One of UberScene's own, from the agent skill's motion doctrine.
+**Goes with:** [Before and after split](/reference/motion/split-compare)
 
 [All techniques](/reference/motion/) · [Motion across cuts](/guide/animation)

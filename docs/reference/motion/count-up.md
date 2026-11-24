@@ -2,22 +2,22 @@
 editLink: false
 ---
 
-# Count-up
+# Count up
 
-An animation in which a number increases from 0 to its target value while decelerating.
+A number that runs up from zero to its value and holds.
 
-<Example src="previews/motion/count-up" alt="Count-up">
+<Example src="previews/motion/count-up" alt="Count up">
 
 <<< @/../examples/showcase/motion/count-up.tsx
 
 </Example>
 
-**What it conveys:** Communicates numerical accumulation and the final magnitude.
+**What it conveys:** Size and growth: the viewer feels the number get big.
 
 ## Use it when
 
-- When showing numerical accumulation and the final magnitude
-- When counting tokens from 0 to 939 and then revealing the token unit
+- A statistic, a total or a milestone.
+- A number that would otherwise sit flat on screen.
 
 ## Values
 
@@ -30,8 +30,6 @@ An animation in which a number increases from 0 to its target value while decele
 
 > Show a Counter that counts to 12400 with suffix "+" and label "cups poured".
 
-**Goes with:** [Easing](/reference/motion/easing-curves)
-
-Adapted from Nº 242 of [awesome-ai-motion](https://github.com/gongnyang/awesome-ai-motion/tree/main/effects/count-up) (MIT): its name, definition and uses. The file, its values and the prompt are UberScene's.
+**Goes with:** [Stagger](/reference/motion/stagger)
 
 [All techniques](/reference/motion/) · [Motion across cuts](/guide/animation)

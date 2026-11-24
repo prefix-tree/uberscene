@@ -2,22 +2,22 @@
 editLink: false
 ---
 
-# Match on Action
+# Match on action
 
-Objects or camera before and after a cut move in the same screen direction and speed flow, so two scenes read as one action.
+The cut lands mid-move, and the next shot picks up the same move in the same direction.
 
-<Example src="previews/motion/match-on-action" alt="Match on Action">
+<Example src="previews/motion/match-on-action" alt="Match on action">
 
 <<< @/../examples/showcase/motion/match-on-action.tsx
 
 </Example>
 
-**What it conveys:** The cut goes unnoticed and the action carries through, making the transition feel like natural flow.
+**What it conveys:** Continuity: two shots read as one action.
 
 ## Use it when
 
-- A thrown object in scene A enters scene B from the same side.
-- Build continuity of action across different screens.
+- Cutting between scenes that both move.
+- A cut that should be felt, not seen.
 
 ## Values
 
@@ -30,8 +30,6 @@ Objects or camera before and after a cut move in the same screen direction and s
 
 > Cut while the subject moves left: it speeds out of the first scene, and the next scene's subject arrives moving left.
 
-**Goes with:** [Whip Pan](/reference/motion/whip-pan)
-
-Adapted from Nº 178 of [awesome-ai-motion](https://github.com/gongnyang/awesome-ai-motion/tree/main/effects/match-on-action) (MIT): its name, definition and uses. The file, its values and the prompt are UberScene's.
+**Goes with:** [Matched push](/reference/motion/matched-push) · [Match cut](/reference/motion/match-cut)
 
 [All techniques](/reference/motion/) · [Motion across cuts](/guide/animation)

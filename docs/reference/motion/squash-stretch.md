@@ -2,22 +2,22 @@
 editLink: false
 ---
 
-# Squash & Stretch
+# Squash and stretch
 
-An object stretches as it gains speed and squashes on impact while keeping the product of its axis scales constant.
+A shape stretches while it moves fast and flattens when it hits, keeping its volume.
 
-<Example src="previews/motion/squash-stretch" alt="Squash & Stretch">
+<Example src="previews/motion/squash-stretch" alt="Squash and stretch">
 
 <<< @/../examples/showcase/motion/squash-stretch.tsx
 
 </Example>
 
-**What it conveys:** Conveys elasticity, weight, and the force of impact.
+**What it conveys:** That the thing is soft and has weight, and how hard it hit.
 
 ## Use it when
 
-- Show the impact of a ball or flexible character.
-- Add elasticity to a small bounce.
+- A ball, a drop or anything that bounces.
+- A small bounce that feels stiff.
 
 ## Values
 
@@ -31,8 +31,6 @@ An object stretches as it gains speed and squashes on impact while keeping the p
 
 > Drop the ball with keys on box.y (easeInQuad down, easeOutQuad up), and key its scale per axis: stretch as it falls, squash on impact, from an anchor at its bottom.
 
-**Goes with:** [Anticipation](/reference/motion/anticipation) · [Spring & Overshoot](/reference/motion/spring-overshoot)
-
-Adapted from Nº 005 of [awesome-ai-motion](https://github.com/gongnyang/awesome-ai-motion/tree/main/effects/squash-stretch) (MIT): its name, definition and uses. The file, its values and the prompt are UberScene's.
+**Goes with:** [Anticipation](/reference/motion/anticipation) · [Overshoot](/reference/motion/spring-overshoot)
 
 [All techniques](/reference/motion/) · [Motion across cuts](/guide/animation)

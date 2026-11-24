@@ -2,11 +2,11 @@
 editLink: false
 ---
 
-# Picture in Picture
+# Picture in picture
 
 A small shot pops into a corner over the main one.
 
-<Example src="previews/motion/picture-in-picture" alt="Picture in Picture">
+<Example src="previews/motion/picture-in-picture" alt="Picture in picture">
 
 <<< @/../examples/showcase/motion/picture-in-picture.tsx
 
@@ -30,6 +30,6 @@ A small shot pops into a corner over the main one.
 
 > Pop a 200 × 112 inset into the bottom right corner with rounded corners and an easeOutBack scale.
 
-One of UberScene's own, from the agent skill's motion doctrine.
+**Goes with:** [Push in](/reference/motion/push-in)
 
 [All techniques](/reference/motion/) · [Motion across cuts](/guide/animation)

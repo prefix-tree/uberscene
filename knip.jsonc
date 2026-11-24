@@ -2,8 +2,6 @@
   "$schema": "https://unpkg.com/knip@5/schema-jsonc.json",
   // Binaries the tests and scripts run from the system, not from node_modules.
   "ignoreBinaries": ["ffmpeg", "ffprobe"],
-  // Other projects' files, kept as they are until adapted (vendor/hyperframes-skills/README.md).
-  "ignore": ["vendor/**"],
   "rules": { "exports": "error", "types": "error", "enumMembers": "error" },
   "workspaces": {
     ".": {

@@ -2,22 +2,22 @@
 editLink: false
 ---
 
-# Split Compare
+# Before and after split
 
-An animation that overlays before and after states of the same subject and compares them with a moving vertical divider.
+Two versions of a shot side by side, with a divider that slides between them.
 
-<Example src="previews/motion/split-compare" alt="Split Compare">
+<Example src="previews/motion/split-compare" alt="Before and after split">
 
 <<< @/../examples/showcase/motion/split-compare.tsx
 
 </Example>
 
-**What it conveys:** Reveals changes in the same subject as the divider moves.
+**What it conveys:** The difference, shown directly rather than described.
 
 ## Use it when
 
-- When comparing a subject before and after processing
-- When directly comparing the locations where changes occur
+- A grade, a fix or a filter.
+- Any edit whose result is best seen against the original.
 
 ## Values
 
@@ -30,8 +30,6 @@ An animation that overlays before and after states of the same subject and compa
 
 > Lay the after version over the before, crop it from the left with keys on crop.width, and move a divider with it.
 
-**Goes with:** [Rack Focus](/reference/motion/rack-focus)
-
-Adapted from Nº 366 of [awesome-ai-motion](https://github.com/gongnyang/awesome-ai-motion/tree/main/effects/split-compare) (MIT): its name, definition and uses. The file, its values and the prompt are UberScene's.
+**Goes with:** [Recolour reveal](/reference/motion/recolor-reveal) · [Wipe reveal](/reference/motion/clip-reveal)
 
 [All techniques](/reference/motion/) · [Motion across cuts](/guide/animation)

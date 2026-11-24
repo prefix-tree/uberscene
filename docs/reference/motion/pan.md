@@ -4,7 +4,7 @@ editLink: false
 
 # Pan
 
-A camera move that scans a wide scene in one direction while keeping the scale constant.
+The frame travels across a picture larger than itself.
 
 <Example src="previews/motion/pan" alt="Pan">
 
@@ -12,12 +12,12 @@ A camera move that scans a wide scene in one direction while keeping the scale c
 
 </Example>
 
-**What it conveys:** Shows the sequence and flow of stages arranged across a space.
+**What it conveys:** Space: there is more here than one frame shows.
 
 ## Use it when
 
-- When scanning a long process diagram in sequence
-- When stopping on the final subject in a horizontal scene
+- A wide image, a landscape or a long screenshot.
+- Revealing something at one side of the shot.
 
 ## Values
 
@@ -30,8 +30,6 @@ A camera move that scans a wide scene in one direction while keeping the scale c
 
 > Give the clip a box larger than the frame and pan across it with keys on box.x.
 
-**Goes with:** [Parallax](/reference/motion/parallax)
-
-Adapted from Nº 219 of [awesome-ai-motion](https://github.com/gongnyang/awesome-ai-motion/tree/main/effects/pan) (MIT): its name, definition and uses. The file, its values and the prompt are UberScene's.
+**Goes with:** [Push in](/reference/motion/push-in) · [Parallax](/reference/motion/parallax)
 
 [All techniques](/reference/motion/) · [Motion across cuts](/guide/animation)

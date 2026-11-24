@@ -2,22 +2,22 @@
 editLink: false
 ---
 
-# Spring & Overshoot
+# Overshoot
 
-An object briefly exceeds its target scale before returning and settling.
+An entrance that goes a little past its place and settles back.
 
-<Example src="previews/motion/spring-overshoot" alt="Spring & Overshoot">
+<Example src="previews/motion/spring-overshoot" alt="Overshoot">
 
 <<< @/../examples/showcase/motion/spring-overshoot.tsx
 
 </Example>
 
-**What it conveys:** Shows inertia and restoring force as the object settles.
+**What it conveys:** Life and energy: the thing arrives with some spring in it.
 
 ## Use it when
 
-- Reveal a small object or settle it into a selected state.
-- Explain overshoot and recovery with a graph.
+- Popping in a card, a badge or a button.
+- A result that should land with a little bounce.
 
 ## Values
 
@@ -30,8 +30,6 @@ An object briefly exceeds its target scale before returning and settling.
 
 > Pop the card in with a scale key from 0 to 1 and easing easeOutBack.
 
-**Goes with:** [Anticipation](/reference/motion/anticipation) · [Squash & Stretch](/reference/motion/squash-stretch) · [Easing](/reference/motion/easing-curves)
-
-Adapted from Nº 004 of [awesome-ai-motion](https://github.com/gongnyang/awesome-ai-motion/tree/main/effects/spring-overshoot) (MIT): its name, definition and uses. The file, its values and the prompt are UberScene's.
+**Goes with:** [Stagger](/reference/motion/stagger) · [Pause before the payoff](/reference/motion/pause-before-payoff)
 
 [All techniques](/reference/motion/) · [Motion across cuts](/guide/animation)

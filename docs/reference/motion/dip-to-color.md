@@ -2,22 +2,22 @@
 editLink: false
 ---
 
-# Dip to Color
+# Dip to black
 
-The outgoing scene fades into a flat color, then the next scene rises out of that same color.
+The picture fades to black, then the next shot fades up from it.
 
-<Example src="previews/motion/dip-to-color" alt="Dip to Color">
+<Example src="previews/motion/dip-to-color" alt="Dip to black">
 
 <<< @/../examples/showcase/motion/dip-to-color.tsx
 
 </Example>
 
-**What it conveys:** A section or chapter break: a pause before the next idea.
+**What it conveys:** Time passing, or the end of one part.
 
 ## Use it when
 
-- Mark clearly where a chapter or section changes.
-- Cut between two mismatched scenes through a single color field.
+- A jump in time or place.
+- Closing a section before the next.
 
 ## Values
 
@@ -29,6 +29,6 @@ The outgoing scene fades into a flat color, then the next scene rises out of tha
 
 > Join the shots with an 0.8 s dipToBlack transition, for time passing.
 
-Adapted from Nº 135 of [awesome-ai-motion](https://github.com/gongnyang/awesome-ai-motion/tree/main/effects/dip-to-color) (MIT): its name, definition and uses. The file, its values and the prompt are UberScene's.
+**Goes with:** [Iris](/reference/motion/iris-mask)
 
 [All techniques](/reference/motion/) · [Motion across cuts](/guide/animation)

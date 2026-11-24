@@ -15,9 +15,7 @@
       // Biome reads only a Vue file's script, so every import its template uses looks unused.
       "!**/*.vue",
       // pnpm rewrites this file in its own style whenever it adds a catalog entry.
-      "!pnpm-workspace.yaml",
-      // Other projects' files, kept as they are until adapted (vendor/hyperframes-skills/README.md).
-      "!vendor"
+      "!pnpm-workspace.yaml"
     ]
   },
   "formatter": {
