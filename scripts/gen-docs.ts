@@ -25,6 +25,7 @@ import { listHandlers } from "../packages/sdk/src/index";
 import { readApiExports } from "./api-exports";
 import { EFFECT_DEMOS, effectExample, TRANSITION_TEXT, transitionExample } from "./effect-example";
 import { syncGeneratedFiles } from "./generated-files";
+import { motionEntries, motionIndex, motionPage, motionReference, motionSidebar } from "./motion-catalog";
 import { readPropDocs, STYLED } from "./prop-docs";
 
 /**
@@ -741,11 +742,16 @@ const sidebar = {
     text: family,
     items: names.map((name) => ({ text: name, link: `/reference/transitions/${name}` })),
   })),
+  motion: motionSidebar(),
 };
 write(join(root, "docs", ".vitepress", "sidebar.generated.json"), `${JSON.stringify(sidebar, null, 2)}\n`);
 write(join(out, "rendering.md"), page(escapeTags(renderingPage())));
 write(join(out, "effects", "index.md"), page(`${escapeTags(effectsIndex())}\n${redirectScript()}`));
 write(join(out, "components", "index.md"), page(escapeTags(componentsIndex())));
+// The motion catalog: an index, a page per technique, and the agent's reference with every file.
+write(join(out, "motion", "index.md"), page(escapeTags(motionIndex(attr))));
+for (const entry of motionEntries())
+  write(join(out, "motion", `${entry.card.slug}.md`), page(escapeTags(motionPage(entry))));
 for (const name of Object.keys(COMPONENTS) as (keyof typeof COMPONENTS)[])
   write(join(out, "components", `${kebab(name)}.md`), page(escapeTags(componentPage(name))));
 for (const name of Object.keys(EFFECTS) as (keyof typeof EFFECTS)[]) {
@@ -799,6 +805,10 @@ write(
   ),
 );
 write(join(skillRefs, "rendering.md"), `${forAgent(renderingPage(), false)}\n`);
+write(join(skillRefs, "motion-catalog.md"), `${forAgent(motionReference(), false)}\n`);
+// Written by hand (scripts/skill-references/), and copied in: this folder holds only what this script writes.
+for (const name of readdirSync(join(root, "scripts", "skill-references")))
+  write(join(skillRefs, name), readFileSync(join(root, "scripts", "skill-references", name), "utf8"));
 // The CLI page's synopsis is the `--help` text's usage lines, so the two cannot differ; the rest of the page is
 // written by hand, and the check fails on a flag the help names that the page never mentions.
 const cliPage = join(out, "cli.md");
@@ -901,6 +911,7 @@ const problems: string[] = syncGeneratedFiles(root, generated, {
     "docs/reference/effects",
     "docs/reference/components",
     "docs/reference/transitions",
+    "docs/reference/motion",
     "examples/showcase/effects",
     "examples/showcase/transitions",
     "plugins/uberscene/skills/uberscene/references",

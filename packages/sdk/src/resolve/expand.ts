@@ -129,8 +129,17 @@ function expandNode(node: CollectedNode): Expansion | null {
       }
     }
     if (isKeyList(t.scale)) {
-      derived.push(...keyItems("transform.scale.x", t.scale, { property: "transform.scale.x" }));
-      derived.push(...keyItems("transform.scale.y", t.scale, { property: "transform.scale.y" }));
+      // One list moves both axes: a key's value is one number for both, or `{ x, y }` for each its own (squash and
+      // stretch), which each axis's key takes its half of.
+      const axis = (a: "x" | "y") =>
+        (t.scale as readonly Record<string, unknown>[]).map((k) => {
+          const v = k.value;
+          return v && typeof v === "object" && !Array.isArray(v)
+            ? { ...k, value: (v as Record<string, unknown>)[a] }
+            : k;
+        });
+      derived.push(...keyItems("transform.scale.x", axis("x"), { property: "transform.scale.x" }));
+      derived.push(...keyItems("transform.scale.y", axis("y"), { property: "transform.scale.y" }));
       delete t.scale;
       touched = true;
     }

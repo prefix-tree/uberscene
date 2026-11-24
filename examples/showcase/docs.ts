@@ -1,7 +1,8 @@
 // Renders the examples the documentation shows next to their code: the reference pages' element examples (docs/*.tsx)
 // into docs/public/previews/elements, the guide's feature examples (guide/*.tsx) into docs/public/previews/guide, and
 // the demo of each built-in effect and transition (effects/*.tsx, transitions/*.tsx, written by `pnpm docs:gen`) into
-// docs/public/previews/effects and transitions.
+// docs/public/previews/effects and transitions, and the motion catalog's techniques (motion/*.tsx) into
+// docs/public/previews/motion.
 // A looping WebM and a poster each, through the same loader and renderer as `uberscene`. A file that does not resolve cleanly stops the run; warnings are printed.
 // The export runs in headless Chrome, downloaded on the first run.
 //   pnpm --filter @uberscene/example-showcase docs [name…]
@@ -32,6 +33,8 @@ const files = [
     file: f,
     out: join(previews, "transitions"),
   })),
+  // The motion catalog's techniques (motion-cards.ts), one short clip each.
+  ...readdirSync(join(here, "motion")).map((f) => ({ dir: "motion", file: f, out: join(previews, "motion") })),
 ].filter((f) => f.file.endsWith(".tsx"));
 
 for (const { dir, file, out } of files.sort((a, b) => a.file.localeCompare(b.file))) {

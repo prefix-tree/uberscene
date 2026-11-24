@@ -173,6 +173,12 @@ export default defineConfig({
               })),
             ],
           },
+          {
+            text: "Motion catalog",
+            link: "/reference/motion/",
+            collapsed: true,
+            items: generated.motion.map((group) => ({ ...group, collapsed: true })),
+          },
           { text: "What renders", link: "/reference/rendering" },
           { text: "CLI", link: "/reference/cli" },
           { text: "API", link: "/reference/api" },

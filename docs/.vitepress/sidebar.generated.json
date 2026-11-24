@@ -373,5 +373,155 @@
         }
       ]
     }
+  ],
+  "motion": [
+    {
+      "text": "Principles",
+      "items": [
+        {
+          "text": "Easing",
+          "link": "/reference/motion/easing-curves"
+        },
+        {
+          "text": "Anticipation",
+          "link": "/reference/motion/anticipation"
+        },
+        {
+          "text": "Spring & Overshoot",
+          "link": "/reference/motion/spring-overshoot"
+        },
+        {
+          "text": "Squash & Stretch",
+          "link": "/reference/motion/squash-stretch"
+        },
+        {
+          "text": "Follow-through",
+          "link": "/reference/motion/follow-through"
+        },
+        {
+          "text": "Stagger",
+          "link": "/reference/motion/stagger"
+        },
+        {
+          "text": "Pause Before the Payoff",
+          "link": "/reference/motion/pause-before-payoff"
+        }
+      ]
+    },
+    {
+      "text": "Entrance & exit",
+      "items": [
+        {
+          "text": "Clip Reveal",
+          "link": "/reference/motion/clip-reveal"
+        }
+      ]
+    },
+    {
+      "text": "Emphasis",
+      "items": [
+        {
+          "text": "Recolour Reveal",
+          "link": "/reference/motion/recolor-reveal"
+        }
+      ]
+    },
+    {
+      "text": "Typography",
+      "items": [
+        {
+          "text": "Word Rise Fade",
+          "link": "/reference/motion/word-rise-fade"
+        },
+        {
+          "text": "Typewriter",
+          "link": "/reference/motion/typewriter"
+        },
+        {
+          "text": "Kinetic Beats",
+          "link": "/reference/motion/kinetic-beats"
+        }
+      ]
+    },
+    {
+      "text": "Transitions",
+      "items": [
+        {
+          "text": "Whip Pan",
+          "link": "/reference/motion/whip-pan"
+        },
+        {
+          "text": "Matched Push",
+          "link": "/reference/motion/matched-push"
+        },
+        {
+          "text": "Match on Action",
+          "link": "/reference/motion/match-on-action"
+        },
+        {
+          "text": "Shape Mask Transition",
+          "link": "/reference/motion/iris-mask"
+        },
+        {
+          "text": "Match Cut",
+          "link": "/reference/motion/match-cut"
+        },
+        {
+          "text": "Dip to Color",
+          "link": "/reference/motion/dip-to-color"
+        },
+        {
+          "text": "Speed Ramp",
+          "link": "/reference/motion/speed-ramp"
+        },
+        {
+          "text": "Freeze Frame Dressing",
+          "link": "/reference/motion/freeze-frame-dressing"
+        }
+      ]
+    },
+    {
+      "text": "Camera",
+      "items": [
+        {
+          "text": "Push-in",
+          "link": "/reference/motion/push-in"
+        },
+        {
+          "text": "Pan",
+          "link": "/reference/motion/pan"
+        },
+        {
+          "text": "Parallax",
+          "link": "/reference/motion/parallax"
+        },
+        {
+          "text": "Rack Focus",
+          "link": "/reference/motion/rack-focus"
+        },
+        {
+          "text": "Picture in Picture",
+          "link": "/reference/motion/picture-in-picture"
+        }
+      ]
+    },
+    {
+      "text": "Data",
+      "items": [
+        {
+          "text": "Count-up",
+          "link": "/reference/motion/count-up"
+        }
+      ]
+    },
+    {
+      "text": "Explainer",
+      "items": [
+        {
+          "text": "Split Compare",
+          "link": "/reference/motion/split-compare"
+        }
+      ]
+    }
   ]
 }

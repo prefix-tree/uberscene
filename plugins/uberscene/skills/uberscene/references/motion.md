@@ -1,5 +1,7 @@
 # Motion: one continuous move
 
+For single techniques by name (an overshoot, a stagger, a match cut), see [motion-catalog.md](motion-catalog.md).
+
 Read this before animating a video of more than one scene. It decides what happens at every cut, and what a scene
 does between coming in and going out. The failure it prevents: scenes written one at a time, so the eye's momentum
 dies at every cut and each scene sways in place between its entrance and its exit.
