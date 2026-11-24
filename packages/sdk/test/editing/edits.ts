@@ -76,6 +76,8 @@ export const EDITS: readonly Edit[] = [
     name: "fades a clip in with a keyframe",
     pick: (s) => {
       const c = clip(s);
+      // A clip whose opacity is keyed already may start from 0 at 0, and then the key changes nothing.
+      if (c && [...s.items.keys()].some((id) => id.startsWith(`${c.id}.transform.opacity.`))) return undefined;
       return (
         c && {
           type: "key/add",
