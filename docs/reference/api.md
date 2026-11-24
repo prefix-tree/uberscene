@@ -1192,7 +1192,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/render`
 
-85 exports.
+90 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -1205,6 +1205,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `BlockSheetResult` | interface |  |
 | `browserCacheDir` | function | Where downloaded browsers live. |
 | `checkLayout` | function | Samples the composition and reports every overlay (titles, shapes, SVG, stickers, layers, and captions), and every part a layer's code named with `data-name`, that leaves the frame, leaves the safe zone, covers captions (not captions themselves), or covers the subject, as runs of consecutive offending samples. |
+| `checkMotion` | function |  |
 | `CHROME_MILESTONE` | const | The Chrome milestone UberScene downloads. |
 | `codecModes` | function | The codecs `UBERSCENE_CODECS` asks for; unset or empty is the browser's. |
 | `CodecModes` | interface |  |
@@ -1227,6 +1228,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `formatFonts` | function | The catalogue as a table to read. |
 | `formatLayout` | function | The result as a compiler prints it. |
 | `formatLint` | function | One line per diagnostic, as a compiler prints them. |
+| `formatMotion` | function | The result as lines to read. |
 | `formatTimeline` | function | The timeline as text. |
 | `formatWhere` | function | The report as text. |
 | `FoundManifest` | interface |  |
@@ -1257,6 +1259,8 @@ Every name each entry exports, read from the code. The sections above explain th
 | `Loudness` | interface |  |
 | `MAX_LOOK_CELLS` | const | The most cells one sheet holds. |
 | `MomentView` | interface |  |
+| `MotionCheckOptions` | interface |  |
+| `MotionCheckResult` | interface |  |
 | `PlacedDiagnostic` | interface | A diagnostic with its place as an editor shows it. |
 | `QUALITIES` | const | Mediabunny's quality presets by name; the name travels to the export page. |
 | `QualityName` | type |  |
@@ -1274,6 +1278,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `SourceSpot` | interface | A place in the cut file, as a compiler reports it. |
 | `StillOptions` | interface |  |
 | `StillResult` | interface |  |
+| `StillStretch` | interface | A stretch where the picture does not change. |
 | `VideoCodec` | type | H.264 (MP4), VP9 (WebM) and AV1 (either). |
 | `WhereMoment` | interface |  |
 | `WhereOptions` | interface |  |

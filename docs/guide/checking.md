@@ -10,6 +10,7 @@ after every change.
 | What plays when, and which words each clip says | `uberscene inspect video.tsx` |
 | What it looks like | `uberscene look video.tsx` |
 | Whether anything leaves the frame, the safe zone, or covers the captions or the speaker | `uberscene video.tsx --check-layout` |
+| Whether anything stays still that shouldn't | `uberscene video.tsx --check-motion` ([Motion check](/reference/cli#motion-check)) |
 | Where each thing sits at a moment | `uberscene where video.tsx --at 2.6` |
 | Whether the exported file is sound | `ffprobe` and `ffmpeg` |
 

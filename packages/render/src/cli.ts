@@ -17,6 +17,7 @@ import { loadVideo } from "./load";
 import { renderLook } from "./look";
 import { mediaFolders } from "./manifest-file";
 import { directoryResolver } from "./media";
+import { checkMotion, formatMotion } from "./motion-check";
 import { installCodec } from "./native/codecs";
 import { draftPath, renderVideo } from "./renderer";
 import { installSkill } from "./skills";
@@ -24,12 +25,13 @@ import { renderStill } from "./still";
 import { CHROME_MILESTONE, cachedChrome, installChrome } from "./web/chrome";
 import { formatWhere, whereThings } from "./where";
 
-/** --check-layout found issues: apart from 1 (an error) and 2 (usage), so a script can tell them apart. */
+/** --check-layout or --check-motion found issues: apart from 1 (an error) and 2 (usage), so a script can tell them apart. */
 const EXIT_LAYOUT_ISSUES = 3;
 
 const USAGE = `Usage: uberscene <file.tsx> --out <video.mp4|.webm|.mp3|.wav> [--draft] [options]
        uberscene <file.tsx> --still <seconds> --out <image.png|.jpg> [options]
        uberscene <file.tsx> --check-layout [--safe-zone <zone>] [--subject <x,y,w,h>] [--json] [options]
+       uberscene <file.tsx> --check-motion [--min <s>] [--step <s>] [--from <s> --to <s>] [--json] [options]
        uberscene <file.tsx> --srt <captions.srt> | --vtt <captions.vtt> [--from <s> --to <s>]
        uberscene inspect <file.tsx> [--at <moments>] [--json] [--manifest <file>] [--props <json>]
        uberscene lint <file.tsx>... [--fix] [--json] [--manifest <file>]
@@ -134,7 +136,11 @@ const USAGE = `Usage: uberscene <file.tsx> --out <video.mp4|.webm|.mp3|.wav> [--
   --check-layout        print every overlay that leaves the frame or the safe zone, or covers captions or the
                         subject: where it is in the file, when, and how to fix it, as a compiler does; writes no
                         file, and exits 3 when it finds issues
-  --json                print the layout check as JSON instead
+  --check-motion        print every stretch where nothing on screen moves for --min seconds (default 1): small
+                        frames every --step seconds (default 0.2), each compared with the next, as the export draws
+                        them; writes no file, and exits 3 when it finds one
+  --min <s>             (check-motion) the shortest still stretch it reports
+  --json                print the layout or motion check as JSON instead
   where                 print where each thing on screen is at each moment of --at: its box in pixels, whether it
                         is in the frame and in each safe zone (tiktok, reels and shorts for a portrait video,
                         or the one --safe-zone names), and what it overlaps. A part a layer's code names with
@@ -185,6 +191,8 @@ async function main(): Promise<number> {
       media: { type: "string" },
       props: { type: "string" },
       from: { type: "string" },
+      min: { type: "string" },
+      "check-motion": { type: "boolean" },
       to: { type: "string" },
       codec: { type: "string" },
       bitrate: { type: "string" },
@@ -416,8 +424,9 @@ async function main(): Promise<number> {
     return result.errors.length > 0 ? 1 : 0;
   }
   const [file] = positionals;
-  const subtitlesOnly = !values.out && !values["check-layout"] && Boolean(values.srt || values.vtt);
-  if (values.help || !file || (!values.out && !values["check-layout"] && !subtitlesOnly)) {
+  const checking = Boolean(values["check-layout"] || values["check-motion"]);
+  const subtitlesOnly = !values.out && !checking && Boolean(values.srt || values.vtt);
+  if (values.help || !file || (!values.out && !checking && !subtitlesOnly)) {
     process.stderr.write(USAGE);
     return values.help ? 0 : 2;
   }
@@ -449,10 +458,25 @@ async function main(): Promise<number> {
     onLog: (m: string) => process.stderr.write(`${m}\n`),
     ...frameTimeout,
   };
-  if (values.draft && (values["check-layout"] || values.still !== undefined || values.copy))
+  if (values.draft && (checking || values.still !== undefined || values.copy))
     throw new Error(
-      `--draft is a render of the video for watching; leave out ${values["check-layout"] ? "--check-layout" : values.still !== undefined ? "--still" : "--copy"}`,
+      `--draft is a render of the video for watching; leave out ${values["check-layout"] ? "--check-layout" : values["check-motion"] ? "--check-motion" : values.still !== undefined ? "--still" : "--copy"}`,
     );
+  if (values["check-layout"] && values["check-motion"])
+    throw new Error("--check-layout and --check-motion are two checks; run them one at a time");
+  if (values.min !== undefined && !values["check-motion"]) throw new Error("--min goes with --check-motion");
+  if (values["check-motion"]) {
+    const result = await checkMotion({
+      ...common,
+      ...(values.min !== undefined ? { min: numberFlag("min", values.min) } : {}),
+      ...(values.step !== undefined ? { step: numberFlag("step", values.step) } : {}),
+      ...(values.from !== undefined ? { from: numberFlag("from", values.from) } : {}),
+      ...(values.to !== undefined ? { to: numberFlag("to", values.to) } : {}),
+      ...(values["no-cache"] ? {} : { cacheDir: cacheDirOf(file) }),
+    });
+    process.stdout.write(values.json ? `${JSON.stringify(result, null, 2)}\n` : formatMotion(result));
+    return result.still.length > 0 ? EXIT_LAYOUT_ISSUES : 0;
+  }
   if (values["check-layout"]) {
     const result = await checkLayout({
       ...common,
@@ -466,7 +490,7 @@ async function main(): Promise<number> {
     process.stdout.write(values.json ? `${JSON.stringify(result, null, 2)}\n` : formatLayout(result));
     return result.issues.length > 0 ? EXIT_LAYOUT_ISSUES : 0;
   }
-  const out = values.out as string; // the usage check above: only --check-layout runs without --out
+  const out = values.out as string; // the usage check above: only the checks run without --out
   if (values.still !== undefined) {
     const time = Number(values.still);
     if (!Number.isFinite(time)) throw new Error(`--still wants seconds, got "${values.still}"`);

@@ -59,7 +59,7 @@ look, and fix before going on:
    as values ([look.md](references/look.md)), the cuts and what carries each ([motion.md](references/motion.md)),
    the sound ([sound.md](references/sound.md)), and a banned line of defaults to avoid.
 4. **Build**, following the loop below: spine first, then pictures, overlays, sound, captions.
-5. **Check.** `lint` and `--check-layout` clean, `inspect` reads as planned. Fix every warning, or keep it and say why.
+5. **Check.** `lint`, `--check-layout` and `--check-motion` clean, `inspect` reads as planned. Fix every warning, or keep it and say why.
 6. **Review.** One sheet with a cell per beat, measured, then looked at as a stranger would. Rank what's wrong as P0,
    P1 or P2, fix, look again at what changed, and add each default you removed to the banned line
    ([review.md](references/review.md)).
@@ -117,6 +117,11 @@ Work in this order, and check after each stage.
    npx uberscene video.tsx --check-layout
    ```
    Exit code 0 is clean, 3 means it found layout issues (listed with their line), 1 is an error, 2 is a bad argument.
+   Stills can't show a frozen video, so check the motion too: `--check-motion` reports every stretch of a second or
+   more where nothing on screen moves, with what is on screen there. Keep a hold you meant; give the rest a move:
+   ```sh
+   npx uberscene video.tsx --check-motion
+   ```
    For a vertical video pass `--safe-zone tiktok`, `reels` or `shorts`.
    To the check a `<Layer>` is one box. Put `data-name="lamp-label"` on what its code draws (a label, a group) and
    each is checked on its own, as `<layer id>/lamp-label`. To read where everything is at a moment, in pixels,
@@ -345,8 +350,8 @@ What each element and prop actually draws, and the few it does not:
 
 ## Before you hand it over
 
-- Every command runs with no `warning:` lines, `lint` exits 0, and `--check-layout` exits 0, or 3 only for issues
-  you chose to keep and said so.
+- Every command runs with no `warning:` lines, `lint` exits 0, and `--check-layout` and `--check-motion` exit 0, or
+  3 only for issues and holds you chose to keep and said so.
 - Ids are literal and unique, no sequence track has `start`, there is at most one `<Captions>`, and every `src` is in
   the manifest.
 - Each clip has `in`/`out` or `duration`, not both. Every `$token` and `style` exists in the theme.

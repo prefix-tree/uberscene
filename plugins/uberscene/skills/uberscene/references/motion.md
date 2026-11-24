@@ -133,8 +133,8 @@ and such a spring lands somewhere else.
 - `uberscene look video.tsx --motion 2.6..3.4` draws a strip across a cut. What the eye follows should travel one way
   without stopping at the cut.
 - `uberscene inspect video.tsx` prints every cut's time, so the plan matches the file.
-- Stills can't show motion: a still of a frozen scene looks fine. Judge every planned move on a `--motion` strip, and
-  look for stretches where nothing moves that you didn't mean.
+- Stills can't show motion: a still of a frozen scene looks fine. `uberscene video.tsx --check-motion` lists every
+  stretch where nothing moves for a second or more; judge each planned move on a `--motion` strip.
 
 Any change to a scene's first or last second (a trim, a new word cut, a re-timed voice-over) means checking that cut
 again. And cut on the words (`in="word:5"`, `out="word:30.end"`); never squeeze a sentence to fit a slot.

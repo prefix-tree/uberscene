@@ -8,6 +8,7 @@ npm install uberscene
 npx uberscene <file.tsx> --out <video.mp4|.webm|.mp3|.wav> [--draft] [options]
 npx uberscene <file.tsx> --still <seconds> --out <image.png|.jpg> [options]
 npx uberscene <file.tsx> --check-layout [--safe-zone <zone>] [--subject <x,y,w,h>] [--json] [options]
+npx uberscene <file.tsx> --check-motion [--min <s>] [--step <s>] [--from <s> --to <s>] [--json] [options]
 npx uberscene <file.tsx> --srt <captions.srt> | --vtt <captions.vtt> [--from <s> --to <s>]
 npx uberscene inspect <file.tsx> [--at <moments>] [--json] [--manifest <file>] [--props <json>]
 npx uberscene lint <file.tsx>... [--fix] [--json] [--manifest <file>]
@@ -72,6 +73,30 @@ moves it), checked against the hash the package carries. See [Native codecs](htt
 | `--json` | Print the report as JSON. |
 
 [Checking the layout](https://uberscene.prefixtree.xyz/guide/checking#check-the-layout) explains the rules and the output.
+
+## Motion check
+
+A contact sheet of stills can't show a frozen video: a still of a frozen scene looks fine. `--check-motion` draws
+small frames at an even step, as the export draws them, compares each with the next, and reports every stretch where
+nothing on screen changes, with what is on screen in it:
+
+```sh
+npx uberscene video.tsx --check-motion
+# still 2.00-4.00 s (2.0 s): nothing on screen moves; on screen: sq, hold
+```
+
+A hold you meant (a title to read, a beat of rest) is fine: keep it. Anything else gets a move, or gets shorter. Look
+at a stretch with `look --motion 2..4`.
+
+| Option | |
+|---|---|
+| `--check-motion` | Report every stretch where nothing moves for `--min` seconds or more. Writes no file, and exits with code 3 when it finds one. |
+| `--min <s>` | The shortest still stretch it reports. Default 1. |
+| `--step <s>` | Seconds between the frames it compares. Default 0.2. |
+| `--from <s>`, `--to <s>` | Check only this stretch. |
+| `--json` | Print the stretches, and the change from each frame to the next (the share of pixels that changed, in percent), as JSON. |
+
+Its frames are kept in `.uberscene/cache` like `look`'s, so checking again after an edit only draws what changed.
 
 ## Where
 
@@ -442,7 +467,7 @@ what differs from this version's block is printed as a diff; the command then ex
 | 0 | Done. |
 | 1 | An error, such as a missing asset, a file that doesn't load, a moment `inspect` or `look` cannot find, or an error `lint` found. |
 | 2 | Wrong arguments; the usage text is printed. |
-| 3 | The layout check found issues. |
+| 3 | The layout check found issues, or the motion check found a still stretch. |
 
 ## Where the manifest and the media are found
 
