@@ -391,6 +391,10 @@
           "link": "/reference/motion/spring-overshoot"
         },
         {
+          "text": "Spring damping",
+          "link": "/reference/motion/spring-damping"
+        },
+        {
           "text": "Squash and stretch",
           "link": "/reference/motion/squash-stretch"
         },

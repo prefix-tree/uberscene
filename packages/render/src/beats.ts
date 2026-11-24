@@ -33,24 +33,41 @@ export function beatGrid(bpm: number, first: number, duration: number): BeatTrac
 
 /** Finds the beats of mono samples at `sampleRate`. Fewer than four beats' worth of sound gives none. */
 export function detectBeats(samples: Float32Array, sampleRate: number): BeatTrack {
-  const onset = onsetEnvelope(samples);
+  const onset = onsetEnvelope(samples, sampleRate);
   const fps = sampleRate / HOP;
   if (onset.length < 8) return { tempo: 0, beats: [] };
   const period = tempoPeriod(onset, fps);
   if (period === 0) return { tempo: 0, beats: [] };
   const frames = track(onset, period);
   // An onset frame's time is its centre: the window starts FRAME/2 earlier than the hop says.
-  const times = frames.map((f) => (f * HOP + FRAME / 2) / sampleRate);
+  const times = frames.map((f) => ((f + peakOffset(onset, f)) * HOP + FRAME / 2) / sampleRate);
   const step = period / fps;
   return { tempo: Math.round((60 / step) * 100) / 100, beats: toBeats(times, step) };
+}
+
+/** How far the onset's peak is from frame `f`, in hops (-0.5 to 0.5): the top of a parabola through it and its neighbours. */
+function peakOffset(onset: Float32Array, f: number): number {
+  const a = onset[f - 1];
+  const b = onset[f] as number;
+  const c = onset[f + 1];
+  if (a === undefined || c === undefined || b < a || b < c) return 0;
+  const d = a - 2 * b + c;
+  return d < 0 ? Math.max(-0.5, Math.min(0.5, (0.5 * (a - c)) / d)) : 0;
 }
 
 function toBeats(times: readonly number[], period: number): Beat[] {
   return times.map((t, i) => ({ i, start: round3(t), end: round3(times[i + 1] ?? t + period) }));
 }
 
-/** The spectral flux per hop: how much louder each frequency got since the last frame, summed, on a log scale. */
-function onsetEnvelope(samples: Float32Array): Float32Array {
+/** Below this, an onset is a kick or a bass note: what a listener taps a foot to. */
+const LOW_HZ = 200;
+
+/**
+ * The spectral flux per hop: how much louder each frequency got since the last frame, summed, on a log scale. The low
+ * end counts once more on its own, as much as all the rest: a hat between the beats is bright and wide, and without
+ * this it can outweigh the kick and pull the beats half a period off.
+ */
+function onsetEnvelope(samples: Float32Array, sampleRate: number): Float32Array {
   const count = Math.max(0, Math.floor((samples.length - FRAME) / HOP) + 1);
   const window = new Float32Array(FRAME);
   for (let i = 0; i < FRAME; i++) window[i] = 0.5 - 0.5 * Math.cos((2 * Math.PI * i) / FRAME);
@@ -59,7 +76,9 @@ function onsetEnvelope(samples: Float32Array): Float32Array {
   const half = FRAME / 2;
   let prev = new Float32Array(half);
   let next = new Float32Array(half);
-  const flux = new Float32Array(count);
+  const all = new Float32Array(count);
+  const low = new Float32Array(count);
+  const lowBins = Math.max(2, Math.ceil((LOW_HZ * FRAME) / sampleRate));
   for (let f = 0; f < count; f++) {
     const at = f * HOP;
     for (let i = 0; i < FRAME; i++) {
@@ -68,14 +87,23 @@ function onsetEnvelope(samples: Float32Array): Float32Array {
     }
     fft(re, im);
     let sum = 0;
+    let lowSum = 0;
     for (let k = 0; k < half; k++) {
       const mag = Math.log1p(1000 * Math.hypot(re[k] as number, im[k] as number));
       next[k] = mag;
-      if (f > 0) sum += Math.max(0, mag - (prev[k] as number));
+      if (f === 0) continue;
+      const up = Math.max(0, mag - (prev[k] as number));
+      sum += up;
+      if (k < lowBins) lowSum += up;
     }
-    flux[f] = sum;
+    all[f] = sum;
+    low[f] = lowSum;
     [prev, next] = [next, prev];
   }
+  const allPeak = all.reduce((m, v) => Math.max(m, v), 0) || 1;
+  const lowPeak = low.reduce((m, v) => Math.max(m, v), 0) || 1;
+  const flux = new Float32Array(count);
+  for (let f = 0; f < count; f++) flux[f] = (all[f] as number) / allPeak + (low[f] as number) / lowPeak;
   // Take away the local mean (about 0.5 s) so a loud passage doesn't count as onsets, keep what's above it.
   const span = 21;
   const out = new Float32Array(count);
@@ -180,7 +208,12 @@ function track(onset: Float32Array, period: number): number[] {
     if ((score[t] as number) > (score[end] as number)) end = t;
   const frames: number[] = [];
   for (let t = end; t >= 0; t = from[t] as number) frames.push(t);
-  return frames.reverse();
+  frames.reverse();
+  // A beat counted on into silence, before the music starts or after it stops, is not one: drop those at the ends.
+  const sounds = (f: number) => Math.max(onset[f - 1] ?? 0, onset[f] ?? 0, onset[f + 1] ?? 0) > 0.05;
+  while (frames.length > 0 && !sounds(frames.at(-1) as number)) frames.pop();
+  while (frames.length > 0 && !sounds(frames[0] as number)) frames.shift();
+  return frames;
 }
 
 /** An in-place radix-2 FFT; the length is a power of two. */

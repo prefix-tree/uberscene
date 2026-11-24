@@ -11,7 +11,7 @@ import { MOTION_CARDS } from "../motion-cards";
 
 const root = join(import.meta.dirname, "..");
 const manifest = JSON.parse(readFileSync(join(root, "uberscene.json"), "utf8")) as AssetManifest;
-const FILES = ["launch", "kinetic", "data", "logo", "edit", "captions", "hero", "coffee", "pipeline"];
+const FILES = ["launch", "kinetic", "data", "logo", "edit", "captions", "hero", "coffee", "pipeline", "beats"];
 /** The guide's examples (guide/*.tsx), rendered for the pages that explain each feature. */
 const GUIDE = [
   "fonts",

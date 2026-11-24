@@ -46,6 +46,31 @@ describe("detectBeats", () => {
     for (let i = 0; i + 1 < track.beats.length; i++) expect(track.beats[i]?.end).toBe(track.beats[i + 1]?.start);
   });
 
+  it("puts the beats on the kicks, not on a brighter hat between them, and none in the silence after", () => {
+    // A low kick on each beat from 0.25 s at 120 BPM, a bright hat half a beat later, then a second of silence.
+    const out = new Float32Array(SR * 9);
+    let s = 3;
+    const rnd = () => {
+      s = (s * 1664525 + 1013904223) % 4294967296;
+      return s / 4294967296 - 0.5;
+    };
+    for (let b = 0; b < 16; b++) {
+      const kick = Math.round((0.25 + b * 0.5) * SR);
+      for (let i = 0; i < 0.2 * SR; i++)
+        out[kick + i] = (out[kick + i] as number) + Math.sin((2 * Math.PI * 60 * i) / SR) * Math.exp(-i / (0.06 * SR));
+      const hat = Math.round((0.5 + b * 0.5) * SR);
+      let prev = 0;
+      for (let i = 0; i < 0.05 * SR; i++) {
+        const n = rnd();
+        out[hat + i] = (out[hat + i] as number) + 0.6 * (n - prev) * Math.exp(-i / (0.012 * SR));
+        prev = n;
+      }
+    }
+    const track = detectBeats(out, SR);
+    expect(track.beats).toHaveLength(16);
+    for (const [i, b] of track.beats.entries()) expect(Math.abs(b.start - (0.25 + i * 0.5))).toBeLessThan(0.03);
+  });
+
   it("gives no beats for silence or a sound too short to have a tempo", () => {
     expect(detectBeats(new Float32Array(SR * 4), SR).beats).toEqual([]);
     expect(detectBeats(new Float32Array(2000), SR).beats).toEqual([]);

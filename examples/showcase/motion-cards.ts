@@ -78,6 +78,22 @@ export const MOTION_CARDS: readonly MotionCard[] = [
     prompt: "Pop the card in with a scale key from 0 to 1 and easing easeOutBack.",
   },
   {
+    slug: "spring-damping",
+    name: "Spring damping",
+    family: "principles",
+    what: "A spring's feel is one number, its damping ratio: how much it bounces before it settles.",
+    conveys: "Character: a landing that stops dead reads as precise, one that bounces reads as alive.",
+    useWhen: ["Anything that lands, pops in or settles.", 'You would have written "bouncy": write the ratio instead.'],
+    pairs: ["spring-overshoot", "squash-stretch"],
+    params: [
+      { name: "ratio 1.0", value: "damping: 20", note: "no bounce: text, UI, anything read" },
+      { name: "ratio 0.8", value: "damping: 16", note: "one small bounce: cards, products, logos" },
+      { name: "ratio 0.5", value: "damping: 10", note: "two bounces: characters, comedy (the kit's default)" },
+    ],
+    prompt:
+      "Drop the ball on a spring with spring({ time, from, to, damping: 16 }) in a Layer: one small bounce, then still.",
+  },
+  {
     slug: "squash-stretch",
     name: "Squash and stretch",
     family: "principles",

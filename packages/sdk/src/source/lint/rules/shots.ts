@@ -18,6 +18,19 @@ function sourceTime(site: ElementSite, prop: "in" | "out", asset: AssetEntry): n
   return typeof t === "number" ? t : undefined;
 }
 
+/**
+ * Where in the source the clip stops: its `out`; without one, `in` plus a `duration` written as a number (at its
+ * `speed`, when that is a number too); and otherwise the end of the source.
+ */
+function sourceEnd(site: ElementSite, start: number, asset: AssetEntry): number {
+  const out = sourceTime(site, "out", asset);
+  if (out !== undefined) return out;
+  const duration = site.props.get("duration")?.literal;
+  if (typeof duration !== "number") return asset.duration;
+  const speed = site.props.get("speed")?.literal;
+  return Math.min(asset.duration, start + duration * (typeof speed === "number" && speed > 0 ? speed : 1));
+}
+
 /** Clips that draw a picture, with their asset's shot list. */
 function* cutClips(
   index: Parameters<Rule["check"]>[0],
@@ -82,7 +95,7 @@ export const shotChangeInsideCrop: Rule = {
       )
         continue;
       const start = sourceTime(site, "in", asset) ?? 0;
-      const end = sourceTime(site, "out", asset) ?? asset.duration;
+      const end = sourceEnd(site, start, asset);
       // A change within NEAR_S of either cut is cut-near-shot's to report.
       const inside = shots.filter((s) => s.start > start + NEAR_S && s.start < end - NEAR_S);
       if (inside.length === 0) continue;
@@ -109,7 +122,7 @@ export const repeatedSource: Rule = {
     const byTrack = new Map<string, { site: ElementSite; src: string; start: number; end: number }[]>();
     for (const { site, asset } of cutClips(index, options.manifest, false)) {
       const start = sourceTime(site, "in", asset) ?? 0;
-      const end = sourceTime(site, "out", asset) ?? asset.duration;
+      const end = sourceEnd(site, start, asset);
       const list = byTrack.get(site.parent ?? "") ?? [];
       list.push({ site, src: asset.id, start, end });
       byTrack.set(site.parent ?? "", list);

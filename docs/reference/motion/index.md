@@ -4,7 +4,7 @@ editLink: false
 
 # Motion catalog
 
-Techniques of motion, each one short UberScene file in one look (paper, ink and one accent), so what differs is the motion alone. Hover a card to play it; each page has the file, the values it turns on and a prompt to give your agent. 27 techniques so far. Generated from `examples/showcase/motion-cards.ts` by `pnpm docs:gen`.
+Techniques of motion, each one short UberScene file in one look (paper, ink and one accent), so what differs is the motion alone. Hover a card to play it; each page has the file, the values it turns on and a prompt to give your agent. 28 techniques so far. Generated from `examples/showcase/motion-cards.ts` by `pnpm docs:gen`.
 
 ## Principles
 
@@ -12,6 +12,7 @@ Techniques of motion, each one short UberScene file in one look (paper, ink and 
 <PreviewCard code hover title="Easing" link="/reference/motion/easing-curves" src="previews/motion/easing-curves" text="How a move speeds up and slows down between its keys, instead of running at one speed." />
 <PreviewCard code hover title="Anticipation" link="/reference/motion/anticipation" src="previews/motion/anticipation" text="A small move the opposite way before the real one, like a hand drawn back before a throw." />
 <PreviewCard code hover title="Overshoot" link="/reference/motion/spring-overshoot" src="previews/motion/spring-overshoot" text="An entrance that goes a little past its place and settles back." />
+<PreviewCard code hover title="Spring damping" link="/reference/motion/spring-damping" src="previews/motion/spring-damping" text="A spring's feel is one number, its damping ratio: how much it bounces before it settles." />
 <PreviewCard code hover title="Squash and stretch" link="/reference/motion/squash-stretch" src="previews/motion/squash-stretch" text="A shape stretches while it moves fast and flattens when it hits, keeping its volume." />
 <PreviewCard code hover title="Follow-through" link="/reference/motion/follow-through" src="previews/motion/follow-through" text="Parts of a thing keep going after the lead stops, and arrive a little later." />
 <PreviewCard code hover title="Stagger" link="/reference/motion/stagger" src="previews/motion/stagger" text="The same entrance on several things, each starting a beat after the one before." />

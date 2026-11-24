@@ -13,7 +13,8 @@ One thing decides where every cut lands. Pick it first:
 - **Music** with no voice: the music is the clock. `uberscene add song.mp3` finds its beats and tempo (or
   `--bpm 120 --first-beat 0.3` sets them), and every cut, punch, title and sound effect anchors to one:
   `anchor="song" at="beat:16"`. Nothing is timed by hand, so picture and music can't drift, and they stay together
-  when the song is trimmed. Give shots whole beats (`60 / tempo` seconds each), and check the beats against the sound
+  when the song is trimmed. Give each shot its beats (`60 / tempo` seconds each) plus 0.1 s, in order on one track, so
+  the next covers it and no frame is empty at a cut; and check the beats against the sound
   with `look --at song@beat:16,song@beat:32 --listen all`. Sections of the song are sections of the film: a new part
   of the song, a new part of the story.
 - **Neither**: the picture sets the pace, and the music only keeps it moving. Let a cut land on a strong beat where you
@@ -62,6 +63,7 @@ Measure, don't guess. `look --listen all` prints the mix's `lufs` (integrated lo
 | Loudness, for the web and social | -14 LUFS (-16 is fine for a site) |
 | True peak | at most -2 dBTP: AAC encoding raises peaks, so leave room |
 | Voice over music | the voice clearly on top: the music ducked to about 0.15 of its level under it |
+| A mono file | measures about 3 LU louder once it plays on two channels: measure the mix, not the file |
 | An effect over the bed | a few dB above it, never louder than the voice |
 
 If the mix is too quiet, raise the voice and music `volume` together; if the peak is over, lower the loudest element.
