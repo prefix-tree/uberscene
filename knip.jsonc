@@ -57,7 +57,8 @@
         "effects/*.tsx",
         "transitions/*.tsx",
         "components/*.tsx",
-        "blocks/*.tsx"
+        "blocks/*.tsx",
+        "motion/*.tsx"
       ]
     },
     "examples/shorts": {

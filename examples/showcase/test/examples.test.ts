@@ -7,9 +7,11 @@ import { describe, expect, it } from "vitest";
 
 import { type AssetManifest, collectModule, gatherLocalFiles, lint, loadModule, resolve } from "@uberscene/sdk";
 
+import { MOTION_CARDS } from "../motion-cards";
+
 const root = join(import.meta.dirname, "..");
 const manifest = JSON.parse(readFileSync(join(root, "uberscene.json"), "utf8")) as AssetManifest;
-const FILES = ["launch", "kinetic", "data", "logo", "edit", "captions", "hero", "coffee"];
+const FILES = ["launch", "kinetic", "data", "logo", "edit", "captions", "hero", "coffee", "pipeline"];
 /** The guide's examples (guide/*.tsx), rendered for the pages that explain each feature. */
 const GUIDE = [
   "fonts",
@@ -98,4 +100,24 @@ it("plays only the four reference coffee clips in the coffee film", () => {
   const state = resolve(collectModule(load(source) as never, {}), manifest);
   const footage = new Set([...state.items.values()].filter((p) => p.kind === "clip").map((p) => String(p.props.src)));
   expect([...footage].sort()).toEqual(["asset:coffee", "asset:coffeeWide", "asset:espresso", "asset:redCup"]);
+});
+
+/** The motion catalog's techniques (motion-cards.ts), one file each in motion/. */
+const MOTION = readdirSync(join(root, "motion"))
+  .filter((f) => f.endsWith(".tsx"))
+  .map((f) => f.replace(/\.tsx$/, ""));
+
+describe.each(MOTION)("motion/%s.tsx", (name) => {
+  it("resolves without errors, lints clean, and is a short clip", () => {
+    const source = readFileSync(join(root, "motion", `${name}.tsx`), "utf8");
+    const state = resolve(collectModule(loadModule(source) as never, {}), manifest);
+    expect(state.errors).toEqual([]);
+    expect(lint(source, { manifest }).map((d) => `${d.rule}: ${d.message}`)).toEqual([]);
+    expect(state.composition.duration).toBeGreaterThanOrEqual(2.5);
+    expect(state.composition.duration).toBeLessThanOrEqual(4);
+  });
+});
+
+it("has a card for every motion file and a file for every card", () => {
+  expect(MOTION_CARDS.map((c) => c.slug).sort()).toEqual([...MOTION].sort());
 });

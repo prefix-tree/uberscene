@@ -140,9 +140,16 @@ const scaleValue = z.number().min(0).max(10);
 const fraction = z.number().min(0).max(1);
 
 const transformSchema = z.strictObject({
-  /** A multiplier, the same on both axes or `{ x, y }`; keys on either animate it. */
+  /**
+   * A multiplier, the same on both axes or `{ x, y }`; keys on either animate it. One list of keys moves both axes,
+   * each key's value a number for both or `{ x, y }` for each its own (squash and stretch).
+   */
   scale: z
-    .union([animatable(scaleValue), z.strictObject({ x: animatable(scaleValue), y: animatable(scaleValue) })])
+    .union([
+      animatable(scaleValue),
+      keysSchema(z.strictObject({ x: scaleValue, y: scaleValue })).transform((v) => v as unknown as number),
+      z.strictObject({ x: animatable(scaleValue), y: animatable(scaleValue) }),
+    ])
     .optional(),
   /** Degrees, clockwise. */
   rotation: animatable(z.number().min(-360).max(360)).optional(),

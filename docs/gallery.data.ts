@@ -24,6 +24,14 @@ const ITEMS: readonly (Omit<GalleryItem, "lines"> & { readonly file: string })[]
     file: "showcase/recolor.tsx",
   },
   {
+    title: "A prompt becomes an edit",
+    kind: "Edit",
+    src: "showcase/pipeline",
+    aspect: 16 / 9,
+    link: "/examples/pipeline",
+    file: "showcase/pipeline.tsx",
+  },
+  {
     title: "A coffee film",
     kind: "Edit",
     src: "showcase/coffee",
