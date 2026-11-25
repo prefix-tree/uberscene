@@ -68,7 +68,7 @@ Made for a thumb that's about to scroll.
 ## A music video or a cut to a track
 
 - **The song's structure is the film's**: intro, verse, chorus, bridge. A new section, a new look or place.
-- **Cuts on beats**, punches on hits ([kinetic beats](motion-catalog.md)), the biggest change on the drop.
+- **Cuts on beats** (`anchor="song" at="beat:N"` after `uberscene add` finds them), punches on hits ([kinetic beats](motion-catalog.md)), the biggest change on the drop.
 - **Words**: when a lyric is on screen, it's on its word, and the picture shows what the words say only sometimes.
 - Autopilot signs: cuts at a fixed interval that ignores the music; the same effect on every beat.
 

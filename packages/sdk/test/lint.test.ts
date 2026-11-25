@@ -208,6 +208,17 @@ describe("lint", () => {
         '<Track id="t"><Clip id="a" src="asset:interview" in={0} out={9.5} /><Clip id="b" src="asset:interview" in={9.5} out={21} /><Clip id="c" src="asset:city" in={0} out={5} /></Track><Track id="u" layout="free"><Clip id="e" src="asset:interview" start={0} in={0} out={9.5} /></Track>',
       ),
     ).toEqual([]);
+    // A clip with `in` and a `duration` plays that long, not to the end of its source: shots from one long take.
+    expect(
+      repeated(
+        '<Track id="t" layout="free"><Clip id="a" src="asset:interview" start={0} in={2} duration={1} /><Clip id="b" src="asset:interview" start={1} in={10} duration={1} /><Clip id="c" src="asset:interview" start={2} in={2} duration={3} /></Track>',
+      ),
+    ).toEqual([]);
+    expect(
+      repeated(
+        '<Track id="t" layout="free"><Clip id="a" src="asset:interview" start={0} in={2} duration={4} /><Clip id="b" src="asset:interview" start={4} in={3} duration={4} /></Track>',
+      ),
+    ).toEqual(["b"]);
   });
 
   describe("not-rendered", () => {

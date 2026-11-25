@@ -17,6 +17,7 @@ import { loadVideo } from "./load";
 import { renderLook } from "./look";
 import { mediaFolders } from "./manifest-file";
 import { directoryResolver } from "./media";
+import { checkMotion, formatMotion } from "./motion-check";
 import { installCodec } from "./native/codecs";
 import { draftPath, renderVideo } from "./renderer";
 import { installSkill } from "./skills";
@@ -24,12 +25,13 @@ import { renderStill } from "./still";
 import { CHROME_MILESTONE, cachedChrome, installChrome } from "./web/chrome";
 import { formatWhere, whereThings } from "./where";
 
-/** --check-layout found issues: apart from 1 (an error) and 2 (usage), so a script can tell them apart. */
+/** --check-layout or --check-motion found issues: apart from 1 (an error) and 2 (usage), so a script can tell them apart. */
 const EXIT_LAYOUT_ISSUES = 3;
 
 const USAGE = `Usage: uberscene <file.tsx> --out <video.mp4|.webm|.mp3|.wav> [--draft] [options]
        uberscene <file.tsx> --still <seconds> --out <image.png|.jpg> [options]
        uberscene <file.tsx> --check-layout [--safe-zone <zone>] [--subject <x,y,w,h>] [--json] [options]
+       uberscene <file.tsx> --check-motion [--min <s>] [--step <s>] [--from <s> --to <s>] [--json] [options]
        uberscene <file.tsx> --srt <captions.srt> | --vtt <captions.vtt> [--from <s> --to <s>]
        uberscene inspect <file.tsx> [--at <moments>] [--json] [--manifest <file>] [--props <json>]
        uberscene lint <file.tsx>... [--fix] [--json] [--manifest <file>]
@@ -42,7 +44,7 @@ const USAGE = `Usage: uberscene <file.tsx> --out <video.mp4|.webm|.mp3|.wav> [--
        uberscene blocks add <name> [--into <video.tsx> --track <id> --at <moment> [--id <id>] [--duration <s>]]
                     [--dir <folder>] [--force]
        uberscene blocks update [<name>...] [--dir <folder>] [--force]
-       uberscene add <media file>... [--manifest <file>] [--id <id>] [--transcript <file>]
+       uberscene add <media file>... [--manifest <file>] [--id <id>] [--transcript <file>] [--beats | --no-beats] [--bpm <n> [--first-beat <s>]]
        uberscene browser install
        uberscene codecs install
        uberscene skills install [--dir <folder>] [--force]
@@ -113,6 +115,11 @@ const USAGE = `Usage: uberscene <file.tsx> --out <video.mp4|.webm|.mp3|.wav> [--
                         transcript beside it (talk.json from Whisper or ElevenLabs, talk.vtt or talk.srt)
   --id <id>             (add) the asset id; default the file name without its extension
   --transcript <file>   (add) a transcript other than the one beside the media
+  --beats               (add) find the beats of a video's sound too (a sound file with no transcript gets them anyway),
+                        so clips and overlays can be cut on beat:N
+  --no-beats            (add) find no beats
+  --bpm <n>             (add) set the beats as a grid at this tempo instead of finding them
+  --first-beat <s>      (add) with --bpm, the second of the first beat (default 0)
   lint                  check each file's text against the conventions that keep it editable: literal ids, timing
                         the timeline can show, free code on the video's clock, assets in the manifest, and props
                         spelled the way an earlier version took them. One line per finding, as a compiler prints
@@ -129,7 +136,11 @@ const USAGE = `Usage: uberscene <file.tsx> --out <video.mp4|.webm|.mp3|.wav> [--
   --check-layout        print every overlay that leaves the frame or the safe zone, or covers captions or the
                         subject: where it is in the file, when, and how to fix it, as a compiler does; writes no
                         file, and exits 3 when it finds issues
-  --json                print the layout check as JSON instead
+  --check-motion        print every stretch where nothing on screen moves for --min seconds (default 1): small
+                        frames every --step seconds (default 0.2), each compared with the next, as the export draws
+                        them; writes no file, and exits 3 when it finds one
+  --min <s>             (check-motion) the shortest still stretch it reports
+  --json                print the layout or motion check as JSON instead
   where                 print where each thing on screen is at each moment of --at: its box in pixels, whether it
                         is in the frame and in each safe zone (tiktok, reels and shorts for a portrait video,
                         or the one --safe-zone names), and what it overlaps. A part a layer's code names with
@@ -180,6 +191,8 @@ async function main(): Promise<number> {
       media: { type: "string" },
       props: { type: "string" },
       from: { type: "string" },
+      min: { type: "string" },
+      "check-motion": { type: "boolean" },
       to: { type: "string" },
       codec: { type: "string" },
       bitrate: { type: "string" },
@@ -200,6 +213,10 @@ async function main(): Promise<number> {
       help: { type: "boolean", short: "h" },
       id: { type: "string" },
       transcript: { type: "string" },
+      beats: { type: "boolean" },
+      "no-beats": { type: "boolean" },
+      bpm: { type: "string" },
+      "first-beat": { type: "string" },
       srt: { type: "string" },
       vtt: { type: "string" },
       at: { type: "string" },
@@ -407,8 +424,9 @@ async function main(): Promise<number> {
     return result.errors.length > 0 ? 1 : 0;
   }
   const [file] = positionals;
-  const subtitlesOnly = !values.out && !values["check-layout"] && Boolean(values.srt || values.vtt);
-  if (values.help || !file || (!values.out && !values["check-layout"] && !subtitlesOnly)) {
+  const checking = Boolean(values["check-layout"] || values["check-motion"]);
+  const subtitlesOnly = !values.out && !checking && Boolean(values.srt || values.vtt);
+  if (values.help || !file || (!values.out && !checking && !subtitlesOnly)) {
     process.stderr.write(USAGE);
     return values.help ? 0 : 2;
   }
@@ -440,10 +458,25 @@ async function main(): Promise<number> {
     onLog: (m: string) => process.stderr.write(`${m}\n`),
     ...frameTimeout,
   };
-  if (values.draft && (values["check-layout"] || values.still !== undefined || values.copy))
+  if (values.draft && (checking || values.still !== undefined || values.copy))
     throw new Error(
-      `--draft is a render of the video for watching; leave out ${values["check-layout"] ? "--check-layout" : values.still !== undefined ? "--still" : "--copy"}`,
+      `--draft is a render of the video for watching; leave out ${values["check-layout"] ? "--check-layout" : values["check-motion"] ? "--check-motion" : values.still !== undefined ? "--still" : "--copy"}`,
     );
+  if (values["check-layout"] && values["check-motion"])
+    throw new Error("--check-layout and --check-motion are two checks; run them one at a time");
+  if (values.min !== undefined && !values["check-motion"]) throw new Error("--min goes with --check-motion");
+  if (values["check-motion"]) {
+    const result = await checkMotion({
+      ...common,
+      ...(values.min !== undefined ? { min: numberFlag("min", values.min) } : {}),
+      ...(values.step !== undefined ? { step: numberFlag("step", values.step) } : {}),
+      ...(values.from !== undefined ? { from: numberFlag("from", values.from) } : {}),
+      ...(values.to !== undefined ? { to: numberFlag("to", values.to) } : {}),
+      ...(values["no-cache"] ? {} : { cacheDir: cacheDirOf(file) }),
+    });
+    process.stdout.write(values.json ? `${JSON.stringify(result, null, 2)}\n` : formatMotion(result));
+    return result.still.length > 0 ? EXIT_LAYOUT_ISSUES : 0;
+  }
   if (values["check-layout"]) {
     const result = await checkLayout({
       ...common,
@@ -457,7 +490,7 @@ async function main(): Promise<number> {
     process.stdout.write(values.json ? `${JSON.stringify(result, null, 2)}\n` : formatLayout(result));
     return result.issues.length > 0 ? EXIT_LAYOUT_ISSUES : 0;
   }
-  const out = values.out as string; // the usage check above: only --check-layout runs without --out
+  const out = values.out as string; // the usage check above: only the checks run without --out
   if (values.still !== undefined) {
     const time = Number(values.still);
     if (!Number.isFinite(time)) throw new Error(`--still wants seconds, got "${values.still}"`);
@@ -560,12 +593,22 @@ const mediaIn = (given: string | undefined, video: string, manifestPath: string 
 /** `uberscene add <media>...`: one manifest entry per file. */
 async function add(
   files: readonly string[],
-  values: { manifest?: string | undefined; id?: string | undefined; transcript?: string | undefined },
+  values: {
+    manifest?: string | undefined;
+    id?: string | undefined;
+    transcript?: string | undefined;
+    beats?: boolean | undefined;
+    "no-beats"?: boolean | undefined;
+    bpm?: string | undefined;
+    "first-beat"?: string | undefined;
+  },
 ): Promise<number> {
   if (files.length === 0) {
     process.stderr.write(USAGE);
     return 2;
   }
+  if (values["first-beat"] !== undefined && values.bpm === undefined)
+    throw new Error("--first-beat goes with --bpm: it places the first beat of the grid");
   if (files.length > 1 && (values.id || values.transcript))
     throw new Error("--id and --transcript name one asset; add the files one at a time with them");
   for (const media of files) {
@@ -573,6 +616,9 @@ async function add(
       ...(values.manifest ? { manifest: values.manifest } : {}),
       ...(values.id ? { id: values.id } : {}),
       ...(values.transcript ? { transcript: values.transcript } : {}),
+      ...(values.beats ? { beats: true } : values["no-beats"] ? { beats: false } : {}),
+      ...(values.bpm !== undefined ? { bpm: numberFlag("bpm", values.bpm) } : {}),
+      ...(values["first-beat"] !== undefined ? { firstBeat: numberFlag("first-beat", values["first-beat"]) } : {}),
     });
     for (const w of result.warnings) process.stderr.write(`warning: ${w}\n`);
     process.stderr.write(`${describeAdded(result)} → ${result.manifest}\n`);

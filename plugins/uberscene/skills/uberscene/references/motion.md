@@ -91,12 +91,38 @@ What fills the time: content that arrives with the narration (titles anchored to
 
 ## Timing
 
+Write numbers, not moods: "snappy" is a guess, 0.4 s with `easeOutQuart` is a move.
+
+| Move | Duration | Ease |
+|---|---|---|
+| A response to a tap or a click | 0.1-0.2 s | `easeOutQuad` |
+| A title or a card coming in | 0.4-0.6 s | `easeOutQuart` |
+| The hero's reveal | 0.6-0.9 s | `easeOutCubic`, or `easeOutBack` for a small overshoot |
+| Going out | 50-75 % of its entrance | `easeInQuart` |
+| A camera move (push, pan) | as long as the shot | `easeInOutSine` |
+
 - Leave 0.3 to 0.75 s between a big action and its result. Straight from one to the other, the result is lost.
-- An entrance takes 0.8 s at most. A longer build is several things in a stagger.
-- An exit takes about three quarters of its entrance.
-- A whole stagger takes 0.5 s at most; with many items, shorten the step.
-- No bounce or elastic eases. A small overshoot (`easeOutBack`) on an entrance is fine.
-- Things of one kind share one ease and one duration.
+- A longer build is several things in a stagger, not one slow thing. A step of 0.06-0.12 s between words, 0.04-0.08
+  s between items of a list; the whole stagger 0.5 s at most.
+- Overlap: the next move starts when the last is 30-50 % done, so nothing waits for a full stop.
+- Follow-through: parts that hang off the lead (a tag, a tail) arrive 4-6 frames after it.
+- No bounce or elastic eases. Things of one kind share one ease and one duration.
+- On music, a beat lasts `60 / BPM` seconds (0.5 s at 120 BPM): give moves and holds whole beats.
+
+## Springs
+
+A spring's feel is one number, its damping ratio: how much it overshoots before it settles. The kit's `spring()` takes
+physical values; with its default stiffness 100 and mass 1, `damping` is 20 times the ratio:
+
+| Ratio | `damping` | Lands | For |
+|---|---|---|---|
+| 1.0 | 20 | dead still, no overshoot | text, UI, anything read |
+| 0.8 | 16 | one small bounce | cards, products, logos |
+| 0.5 | 10 (the default) | two bounces | characters, mascots, comedy |
+
+`spring({ time: elapsed, damping: 16 })` in a `<Layer>`. It is a closed-form function of the time, so any frame draws
+the same alone as in sequence. Never write a spring that adds velocity frame by frame: the export jumps to frames,
+and such a spring lands somewhere else.
 - Two or three kinds of transition per film, repeated. The default is a cut with matched keys, or a `push` in the
   film's direction.
 
@@ -107,6 +133,8 @@ What fills the time: content that arrives with the narration (titles anchored to
 - `uberscene look video.tsx --motion 2.6..3.4` draws a strip across a cut. What the eye follows should travel one way
   without stopping at the cut.
 - `uberscene inspect video.tsx` prints every cut's time, so the plan matches the file.
+- Stills can't show motion: a still of a frozen scene looks fine. `uberscene video.tsx --check-motion` lists every
+  stretch where nothing moves for a second or more; judge each planned move on a `--motion` strip.
 
 Any change to a scene's first or last second (a trim, a new word cut, a re-timed voice-over) means checking that cut
 again. And cut on the words (`in="word:5"`, `out="word:30.end"`); never squeeze a sentence to fit a slot.

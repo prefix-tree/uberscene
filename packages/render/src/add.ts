@@ -5,10 +5,11 @@ import { existsSync, readFileSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import { basename, dirname, extname, join, resolve } from "node:path";
 
-import { ALL_FORMATS, FilePathSource, Input } from "mediabunny";
+import { ALL_FORMATS, AudioSampleSink, FilePathSource, Input } from "mediabunny";
 
 import { type AssetEntry, type AssetManifest, parseCube, parseTranscript } from "@uberscene/sdk";
 
+import { type BeatTrack, beatGrid, detectBeats } from "./beats";
 import { imageSize } from "./image-size";
 import { findManifest, MANIFEST_FILE, OLD_MANIFEST_FILE } from "./manifest-file";
 
@@ -28,6 +29,15 @@ export interface AddOptions {
   readonly id?: string;
   /** A transcript file other than the one beside the media. */
   readonly transcript?: string;
+  /**
+   * Find the beats (`beat:N`). Default: for a sound file with no transcript, which is most likely music; `true` for
+   * a video's sound too, `false` never.
+   */
+  readonly beats?: boolean;
+  /** Set the beats as a grid at this tempo instead of finding them, from `firstBeat`. */
+  readonly bpm?: number;
+  /** With `bpm`: the time of the first beat, in seconds. Default 0. */
+  readonly firstBeat?: number;
 }
 
 export interface AddResult {
@@ -73,12 +83,25 @@ export async function addAsset(media: string, options: AddOptions = {}): Promise
   }
 
   const previous = manifest.assets?.[id];
+  let beats: BeatTrack | undefined;
+  if (options.bpm !== undefined) {
+    if (probed.kind !== "audio" && probed.kind !== "video")
+      throw new Error(`${basename(media)} has no sound to give beats`);
+    beats = beatGrid(options.bpm, options.firstBeat ?? 0, probed.duration);
+  } else if (options.beats ?? (probed.kind === "audio" && !transcript && !previous?.transcript)) {
+    if (probed.audio) {
+      beats = await findBeats(media);
+      if (beats.beats.length === 0)
+        warnings.push(`found no beats in ${basename(media)}; set them with --bpm <tempo> --first-beat <seconds>`);
+    }
+  }
   // Fields this command does not own (shots, silences, subjects, waveform) stay as they were.
   const entry: AssetEntry = {
     ...previous,
     ...probed,
     id,
     ...(transcript ? { transcript } : previous?.transcript ? { transcript: previous.transcript } : {}),
+    ...(beats && beats.beats.length > 0 ? { beats: beats.beats, tempo: beats.tempo } : {}),
   };
   const next = { ...manifest, assets: { ...manifest.assets, [id]: entry } };
   await writeFile(manifestPath, `${JSON.stringify(next, null, 2)}\n`);
@@ -89,6 +112,41 @@ export async function addAsset(media: string, options: AddOptions = {}): Promise
     estimated,
     warnings,
   };
+}
+
+/** Decodes the file's first sound track to mono and finds its beats. */
+async function findBeats(path: string): Promise<BeatTrack> {
+  const input = new Input({ source: new FilePathSource(path), formats: ALL_FORMATS });
+  try {
+    const track = await input.getPrimaryAudioTrack();
+    if (!track) return { tempo: 0, beats: [] };
+    const sampleRate = await track.getSampleRate();
+    const chunks: Float32Array[] = [];
+    let length = 0;
+    const plane = { data: new Float32Array(0) };
+    for await (const sample of new AudioSampleSink(track).samples()) {
+      const frames = sample.numberOfFrames;
+      const mono = new Float32Array(frames);
+      if (plane.data.length < frames) plane.data = new Float32Array(frames);
+      for (let ch = 0; ch < sample.numberOfChannels; ch++) {
+        sample.copyTo(plane.data, { planeIndex: ch, format: "f32-planar" });
+        for (let i = 0; i < frames; i++)
+          mono[i] = (mono[i] as number) + (plane.data[i] as number) / sample.numberOfChannels;
+      }
+      chunks.push(mono);
+      length += frames;
+      sample.close();
+    }
+    const all = new Float32Array(length);
+    let at = 0;
+    for (const c of chunks) {
+      all.set(c, at);
+      at += c.length;
+    }
+    return detectBeats(all, sampleRate);
+  } finally {
+    input.dispose?.();
+  }
 }
 
 /** The manifest `add` writes when none is named. */
@@ -164,6 +222,7 @@ export function describeAdded(result: AddResult): string {
     parts.push(
       `${e.transcript.words.length} words ${result.estimated ? "estimated from" : "from"} ${basename(result.transcript)}`,
     );
+  if (e.beats?.length) parts.push(`${e.beats.length} beats at ${e.tempo} BPM (beat:0 to beat:${e.beats.length - 1})`);
   return `${e.id}: ${parts.join(", ")}`;
 }
 

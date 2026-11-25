@@ -2,7 +2,7 @@
 // element's id, a word, a shot, a marker) or as plain time (seconds, a frame, a range).
 import { frameStartSeconds, framesUntil, nearestFrame, round3 } from "@uberscene/kit/schema";
 
-import { parseTimeRef } from "../manifest/timeref";
+import { entriesOf, parseTimeRef } from "../manifest/timeref";
 import { type AssetEntry, lookupAsset } from "../manifest/types";
 import { type AssetPlay, onTimeline } from "../resolve/captions";
 import type { ResolvedState } from "../resolve/resolve";
@@ -35,7 +35,7 @@ export interface Moment {
 /** The forms a moment is written in, for an error or a usage text. */
 export const MOMENT_FORMS =
   "4.5 (seconds), 90f (a frame), 2..6/0.5 (a range with a step), hook, hook.start, hook.mid, hook.end (an element), " +
-  "x1 (a transition: both sides), word:14, hook@word:14, shot:1, silence:2 (with .end), marker:intro";
+  "x1 (a transition: both sides), word:14, hook@word:14, shot:1, silence:2, beat:16 (with .end), marker:intro";
 
 /** The most moments one range may ask for. */
 export const MAX_RANGE_MOMENTS = 500;
@@ -44,8 +44,8 @@ const ID = "[A-Za-z_][A-Za-z0-9_-]*";
 const NUMBER = /^\d+(?:\.\d+)?$/;
 const FRAME = /^(\d+)f$/;
 const ELEMENT = new RegExp(`^(${ID})(?:\\.(start|mid|end))?$`);
-const REF = /^(?:word|shot|silence):\d+(?:\.end)?$|^marker:[A-Za-z_][A-Za-z0-9_-]*$/;
-const CLIP_REF = new RegExp(`^(${ID})@((?:word|shot|silence):\\d+(?:\\.end)?)$`);
+const REF = /^(?:word|shot|silence|beat):\d+(?:\.end)?$|^marker:[A-Za-z_][A-Za-z0-9_-]*$/;
+const CLIP_REF = new RegExp(`^(${ID})@((?:word|shot|silence|beat):\\d+(?:\\.end)?)$`);
 
 function parseTime(text: string): (ParsedMoment & { kind: "time" }) | null {
   if (NUMBER.test(text)) return { kind: "time", text, seconds: Number(text) };
@@ -90,11 +90,12 @@ export function parseMoments(list: string): ParsedMoment[] {
     .map(parseMoment);
 }
 
-/** The entry a word, shot or silence reference names on an asset, with the asset second it means. */
+/** The entry a word, shot, silence or beat reference names on an asset, with the asset second it means. */
 function entryOf(asset: AssetEntry, ref: string): { second: number; what: string } | null {
   const parsed = parseTimeRef(ref);
-  if (parsed.kind !== "word" && parsed.kind !== "shot" && parsed.kind !== "silence") return null;
-  const list = parsed.kind === "word" ? asset.transcript?.words : parsed.kind === "shot" ? asset.shots : asset.silences;
+  if (parsed.kind !== "word" && parsed.kind !== "shot" && parsed.kind !== "silence" && parsed.kind !== "beat")
+    return null;
+  const list = entriesOf(asset, parsed.kind);
   const entry = list?.find((e) => e.i === parsed.index);
   if (!entry) return null;
   const text = parsed.kind === "word" ? ` "${(entry as unknown as { text: string }).text}"` : "";
@@ -191,7 +192,7 @@ function resolveRef(
     else errors.push(`${m.text}: the file has no marker "${parsed.id}"`);
     return;
   }
-  // The clips that could mean it: the named one, or every clip whose asset has that word, shot or silence.
+  // The clips that could mean it: the named one, or every clip whose asset has that word, shot, silence or beat.
   const candidates: { play: AssetPlay; asset: AssetEntry }[] = [];
   if (m.clip) {
     const play = playOf(state, m.clip);

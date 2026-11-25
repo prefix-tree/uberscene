@@ -15,7 +15,7 @@ const freezeSpecSchema = z.strictObject({
 const sourceProps = {
   /** The media, as `asset:<id>` from the manifest. */
   src: assetRefSchema,
-  /** Where in the source it starts: seconds, or a word, shot or silence of its transcript (`word:12`). */
+  /** Where in the source it starts: seconds, or a word, shot, silence or beat of the source (`word:12`, `beat:16`). */
   in: timeRefSchema.optional(),
   /** Where in the source it ends, as `in`; `word:40.end` ends after the word is said. */
   out: timeRefSchema.optional(),

@@ -32,6 +32,14 @@ const ITEMS: readonly (Omit<GalleryItem, "lines"> & { readonly file: string })[]
     file: "showcase/pipeline.tsx",
   },
   {
+    title: "Cut on the beat",
+    kind: "Edit",
+    src: "showcase/beats",
+    aspect: 16 / 9,
+    link: "/examples/beats",
+    file: "showcase/beats.tsx",
+  },
+  {
     title: "A coffee film",
     kind: "Edit",
     src: "showcase/coffee",

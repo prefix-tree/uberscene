@@ -9,6 +9,8 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { SOUNDS, wav } from "../shorts/media/sounds";
+// The beat film's music, written first: it needs none of the footage below.
+import "./music";
 
 const dir = join(import.meta.dirname, "media");
 /** The stock clips, committed. */

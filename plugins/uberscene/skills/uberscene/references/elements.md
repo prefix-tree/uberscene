@@ -53,11 +53,11 @@ A stretch of a video or image asset, trimmed by seconds, transcript words or cam
 | `id` | string |  | yes | The element's name: unique in the file, and what anchors, ducking and the editor refer to it by. |
 | `start` | number (0..∞) |  |  | Seconds from the start of the video. Free-layout tracks only; on a sequence track the element follows the one before it. |
 | `anchor` | "start" \| string |  |  | Overlays: start relative to another element's start, or to its end with `id.end`. |
-| `at` | string |  |  | With `anchor`: a word, shot or silence of the anchor's source (`word:14655`); the start is where the anchor plays it, plus `offset`. |
+| `at` | string |  |  | With `anchor`: a word, shot, silence or beat of the anchor's source (`word:14655`, `beat:16`); the start is where the anchor plays it, plus `offset`. |
 | `offset` | number |  |  | Seconds added to the start that `anchor` and `at` give; negative starts earlier. |
 | `duration` | number (> 0) \| "fill" \| "source" \| { match } \| { until } |  |  | How long it plays: seconds; `"source"` for the whole trimmed source; `"fill"` to run to the end of the composition; `{ match: id }` for as long as another element; `{ until: id }` to end when another element ends. |
 | `src` | string |  | yes | The media, as `asset:<id>` from the manifest. |
-| `in` | number (0..∞) \| string |  |  | Where in the source it starts: seconds, or a word, shot or silence of its transcript (`word:12`). |
+| `in` | number (0..∞) \| string |  |  | Where in the source it starts: seconds, or a word, shot, silence or beat of the source (`word:12`, `beat:16`). |
 | `out` | number (0..∞) \| string |  |  | Where in the source it ends, as `in`; `word:40.end` ends after the word is said. |
 | `speed` | number (0.1..20) \| { at, value, easing }[] |  |  | Playback rate: 2 plays twice as fast and half as long; keys ramp it. |
 | `freezes` | { start, duration, source }[] |  |  | Frames held on screen while the clip's time stands still. |
@@ -134,7 +134,7 @@ Free code in the frame: any React, CSS, canvas or WebGL, placed on the timeline 
 | `id` | string |  | yes | The element's name: unique in the file, and what anchors, ducking and the editor refer to it by. |
 | `start` | number (0..∞) |  |  | Seconds from the start of the video. Free-layout tracks only; on a sequence track the element follows the one before it. |
 | `anchor` | "start" \| string |  |  | Overlays: start relative to another element's start, or to its end with `id.end`. |
-| `at` | string |  |  | With `anchor`: a word, shot or silence of the anchor's source (`word:14655`); the start is where the anchor plays it, plus `offset`. |
+| `at` | string |  |  | With `anchor`: a word, shot, silence or beat of the anchor's source (`word:14655`, `beat:16`); the start is where the anchor plays it, plus `offset`. |
 | `offset` | number |  |  | Seconds added to the start that `anchor` and `at` give; negative starts earlier. |
 | `duration` | number (> 0) \| "fill" \| "source" \| { match } \| { until } |  |  | How long it plays: seconds; `"source"` for the whole trimmed source; `"fill"` to run to the end of the composition; `{ match: id }` for as long as another element; `{ until: id }` to end when another element ends. |
 | `enter` | { type, duration, easing } |  |  | How it comes in: a fade, slide, scale or wipe over its first seconds, with an easing. |
@@ -160,7 +160,7 @@ The player draws it once the host calls `installFreeCodeLibraries()` ([Free code
 | `id` | string |  | yes | The element's name: unique in the file, and what anchors, ducking and the editor refer to it by. |
 | `start` | number (0..∞) |  |  | Seconds from the start of the video. Free-layout tracks only; on a sequence track the element follows the one before it. |
 | `anchor` | "start" \| string |  |  | Overlays: start relative to another element's start, or to its end with `id.end`. |
-| `at` | string |  |  | With `anchor`: a word, shot or silence of the anchor's source (`word:14655`); the start is where the anchor plays it, plus `offset`. |
+| `at` | string |  |  | With `anchor`: a word, shot, silence or beat of the anchor's source (`word:14655`, `beat:16`); the start is where the anchor plays it, plus `offset`. |
 | `offset` | number |  |  | Seconds added to the start that `anchor` and `at` give; negative starts earlier. |
 | `duration` | number (> 0) \| "fill" \| "source" \| { match } \| { until } |  |  | How long it plays: seconds; `"source"` for the whole trimmed source; `"fill"` to run to the end of the composition; `{ match: id }` for as long as another element; `{ until: id }` to end when another element ends. |
 | `enter` | { type, duration, easing } |  |  | How it comes in: a fade, slide, scale or wipe over its first seconds, with an easing. |
@@ -193,7 +193,7 @@ The player draws it once the host calls `installFreeCodeLibraries()` ([Free code
 | `id` | string |  | yes | The element's name: unique in the file, and what anchors, ducking and the editor refer to it by. |
 | `start` | number (0..∞) |  |  | Seconds from the start of the video. Free-layout tracks only; on a sequence track the element follows the one before it. |
 | `anchor` | "start" \| string |  |  | Overlays: start relative to another element's start, or to its end with `id.end`. |
-| `at` | string |  |  | With `anchor`: a word, shot or silence of the anchor's source (`word:14655`); the start is where the anchor plays it, plus `offset`. |
+| `at` | string |  |  | With `anchor`: a word, shot, silence or beat of the anchor's source (`word:14655`, `beat:16`); the start is where the anchor plays it, plus `offset`. |
 | `offset` | number |  |  | Seconds added to the start that `anchor` and `at` give; negative starts earlier. |
 | `duration` | number (> 0) \| "fill" \| "source" \| { match } \| { until } |  |  | How long it plays: seconds; `"source"` for the whole trimmed source; `"fill"` to run to the end of the composition; `{ match: id }` for as long as another element; `{ until: id }` to end when another element ends. |
 | `enter` | { type, duration, easing } |  |  | How it comes in: a fade, slide, scale or wipe over its first seconds, with an easing. |
@@ -218,7 +218,7 @@ Text over the picture in the theme's type, with entrances by letter or by word.
 | `id` | string |  | yes | The element's name: unique in the file, and what anchors, ducking and the editor refer to it by. |
 | `start` | number (0..∞) |  |  | Seconds from the start of the video. Free-layout tracks only; on a sequence track the element follows the one before it. |
 | `anchor` | "start" \| string |  |  | Overlays: start relative to another element's start, or to its end with `id.end`. |
-| `at` | string |  |  | With `anchor`: a word, shot or silence of the anchor's source (`word:14655`); the start is where the anchor plays it, plus `offset`. |
+| `at` | string |  |  | With `anchor`: a word, shot, silence or beat of the anchor's source (`word:14655`, `beat:16`); the start is where the anchor plays it, plus `offset`. |
 | `offset` | number |  |  | Seconds added to the start that `anchor` and `at` give; negative starts earlier. |
 | `duration` | number (> 0) \| "fill" \| "source" \| { match } \| { until } |  |  | How long it plays: seconds; `"source"` for the whole trimmed source; `"fill"` to run to the end of the composition; `{ match: id }` for as long as another element; `{ until: id }` to end when another element ends. |
 | `box` | { x, y, width, height, origin } |  |  | The rectangle it occupies, in pixels from the frame's top left as in CSS: `x` and `y` place the point `origin` names (its top left by default), `width` and `height` size it, and its content fills it as `fit` says. Left out, the whole frame. `transform` applies after. |
@@ -319,7 +319,7 @@ A vector shape (rectangle, circle, star, polygon, path) with fill, stroke and sh
 | `id` | string |  | yes | The element's name: unique in the file, and what anchors, ducking and the editor refer to it by. |
 | `start` | number (0..∞) |  |  | Seconds from the start of the video. Free-layout tracks only; on a sequence track the element follows the one before it. |
 | `anchor` | "start" \| string |  |  | Overlays: start relative to another element's start, or to its end with `id.end`. |
-| `at` | string |  |  | With `anchor`: a word, shot or silence of the anchor's source (`word:14655`); the start is where the anchor plays it, plus `offset`. |
+| `at` | string |  |  | With `anchor`: a word, shot, silence or beat of the anchor's source (`word:14655`, `beat:16`); the start is where the anchor plays it, plus `offset`. |
 | `offset` | number |  |  | Seconds added to the start that `anchor` and `at` give; negative starts earlier. |
 | `duration` | number (> 0) \| "fill" \| "source" \| { match } \| { until } |  |  | How long it plays: seconds; `"source"` for the whole trimmed source; `"fill"` to run to the end of the composition; `{ match: id }` for as long as another element; `{ until: id }` to end when another element ends. |
 | `box` | { x, y, width, height, origin } |  |  | The rectangle it occupies, in pixels from the frame's top left as in CSS: `x` and `y` place the point `origin` names (its top left by default), `width` and `height` size it, and its content fills it as `fit` says. Left out, the whole frame. `transform` applies after. |
@@ -355,7 +355,7 @@ One-off vector art from inline SVG markup or a file.
 | `id` | string |  | yes | The element's name: unique in the file, and what anchors, ducking and the editor refer to it by. |
 | `start` | number (0..∞) |  |  | Seconds from the start of the video. Free-layout tracks only; on a sequence track the element follows the one before it. |
 | `anchor` | "start" \| string |  |  | Overlays: start relative to another element's start, or to its end with `id.end`. |
-| `at` | string |  |  | With `anchor`: a word, shot or silence of the anchor's source (`word:14655`); the start is where the anchor plays it, plus `offset`. |
+| `at` | string |  |  | With `anchor`: a word, shot, silence or beat of the anchor's source (`word:14655`, `beat:16`); the start is where the anchor plays it, plus `offset`. |
 | `offset` | number |  |  | Seconds added to the start that `anchor` and `at` give; negative starts earlier. |
 | `duration` | number (> 0) \| "fill" \| "source" \| { match } \| { until } |  |  | How long it plays: seconds; `"source"` for the whole trimmed source; `"fill"` to run to the end of the composition; `{ match: id }` for as long as another element; `{ until: id }` to end when another element ends. |
 | `box` | { x, y, width, height, origin } |  |  | The rectangle it occupies, in pixels from the frame's top left as in CSS: `x` and `y` place the point `origin` names (its top left by default), `width` and `height` size it, and its content fills it as `fit` says. Left out, the whole frame. `transform` applies after. |
@@ -385,7 +385,7 @@ A ready-made icon or sticker by name.
 | `id` | string |  | yes | The element's name: unique in the file, and what anchors, ducking and the editor refer to it by. |
 | `start` | number (0..∞) |  |  | Seconds from the start of the video. Free-layout tracks only; on a sequence track the element follows the one before it. |
 | `anchor` | "start" \| string |  |  | Overlays: start relative to another element's start, or to its end with `id.end`. |
-| `at` | string |  |  | With `anchor`: a word, shot or silence of the anchor's source (`word:14655`); the start is where the anchor plays it, plus `offset`. |
+| `at` | string |  |  | With `anchor`: a word, shot, silence or beat of the anchor's source (`word:14655`, `beat:16`); the start is where the anchor plays it, plus `offset`. |
 | `offset` | number |  |  | Seconds added to the start that `anchor` and `at` give; negative starts earlier. |
 | `duration` | number (> 0) \| "fill" \| "source" \| { match } \| { until } |  |  | How long it plays: seconds; `"source"` for the whole trimmed source; `"fill"` to run to the end of the composition; `{ match: id }` for as long as another element; `{ until: id }` to end when another element ends. |
 | `box` | { x, y, width, height, origin } |  |  | The rectangle it occupies, in pixels from the frame's top left as in CSS: `x` and `y` place the point `origin` names (its top left by default), `width` and `height` size it, and its content fills it as `fit` says. Left out, the whole frame. `transform` applies after. |
@@ -410,7 +410,7 @@ Filters everything beneath it, through its `effects`, for its own stretch of tim
 | `id` | string |  | yes | The element's name: unique in the file, and what anchors, ducking and the editor refer to it by. |
 | `start` | number (0..∞) |  |  | Seconds from the start of the video. Free-layout tracks only; on a sequence track the element follows the one before it. |
 | `anchor` | "start" \| string |  |  | Overlays: start relative to another element's start, or to its end with `id.end`. |
-| `at` | string |  |  | With `anchor`: a word, shot or silence of the anchor's source (`word:14655`); the start is where the anchor plays it, plus `offset`. |
+| `at` | string |  |  | With `anchor`: a word, shot, silence or beat of the anchor's source (`word:14655`, `beat:16`); the start is where the anchor plays it, plus `offset`. |
 | `offset` | number |  |  | Seconds added to the start that `anchor` and `at` give; negative starts earlier. |
 | `duration` | number (> 0) \| "fill" \| "source" \| { match } \| { until } |  |  | How long it plays: seconds; `"source"` for the whole trimmed source; `"fill"` to run to the end of the composition; `{ match: id }` for as long as another element; `{ until: id }` to end when another element ends. |
 | `effects` | { type, enabled }[] |  |  | Effects drawn on it, in order: each `{ type, ...params }`, a param written as keys to animate it. |
@@ -449,7 +449,7 @@ A sequence written once as a component and placed like a clip.
 | `id` | string |  | yes | The element's name: unique in the file, and what anchors, ducking and the editor refer to it by. |
 | `start` | number (0..∞) |  |  | Seconds from the start of the video. Free-layout tracks only; on a sequence track the element follows the one before it. |
 | `anchor` | "start" \| string |  |  | Overlays: start relative to another element's start, or to its end with `id.end`. |
-| `at` | string |  |  | With `anchor`: a word, shot or silence of the anchor's source (`word:14655`); the start is where the anchor plays it, plus `offset`. |
+| `at` | string |  |  | With `anchor`: a word, shot, silence or beat of the anchor's source (`word:14655`, `beat:16`); the start is where the anchor plays it, plus `offset`. |
 | `offset` | number |  |  | Seconds added to the start that `anchor` and `at` give; negative starts earlier. |
 | `duration` | number (> 0) \| "fill" \| "source" \| { match } \| { until } |  |  | How long it plays: seconds; `"source"` for the whole trimmed source; `"fill"` to run to the end of the composition; `{ match: id }` for as long as another element; `{ until: id }` to end when another element ends. |
 | `box` | { x, y, width, height, origin } |  |  | The rectangle it occupies, in pixels from the frame's top left as in CSS: `x` and `y` place the point `origin` names (its top left by default), `width` and `height` size it, and its content fills it as `fit` says. Left out, the whole frame. `transform` applies after. |
@@ -520,11 +520,11 @@ A stretch of a sound asset: volume and pan (constant or keys), fades, ducking un
 | `id` | string |  | yes | The element's name: unique in the file, and what anchors, ducking and the editor refer to it by. |
 | `start` | number (0..∞) |  |  | Seconds from the start of the video. Free-layout tracks only; on a sequence track the element follows the one before it. |
 | `anchor` | "start" \| string |  |  | Overlays: start relative to another element's start, or to its end with `id.end`. |
-| `at` | string |  |  | With `anchor`: a word, shot or silence of the anchor's source (`word:14655`); the start is where the anchor plays it, plus `offset`. |
+| `at` | string |  |  | With `anchor`: a word, shot, silence or beat of the anchor's source (`word:14655`, `beat:16`); the start is where the anchor plays it, plus `offset`. |
 | `offset` | number |  |  | Seconds added to the start that `anchor` and `at` give; negative starts earlier. |
 | `duration` | number (> 0) \| "fill" \| "source" \| { match } \| { until } |  |  | How long it plays: seconds; `"source"` for the whole trimmed source; `"fill"` to run to the end of the composition; `{ match: id }` for as long as another element; `{ until: id }` to end when another element ends. |
 | `src` | string |  | yes | The media, as `asset:<id>` from the manifest. |
-| `in` | number (0..∞) \| string |  |  | Where in the source it starts: seconds, or a word, shot or silence of its transcript (`word:12`). |
+| `in` | number (0..∞) \| string |  |  | Where in the source it starts: seconds, or a word, shot, silence or beat of the source (`word:12`, `beat:16`). |
 | `out` | number (0..∞) \| string |  |  | Where in the source it ends, as `in`; `word:40.end` ends after the word is said. |
 | `speed` | number (0.1..20) \| { at, value, easing }[] |  |  | Playback rate: 2 plays twice as fast and half as long; keys ramp it. |
 | `freezes` | { start, duration, source }[] |  |  | Frames held on screen while the clip's time stands still. |

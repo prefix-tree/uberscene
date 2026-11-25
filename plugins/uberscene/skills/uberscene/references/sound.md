@@ -10,9 +10,13 @@ One thing decides where every cut lands. Pick it first:
 
 - **A voice** (an interview, a voice-over): cut on its words (`in="word:12"`), anchor titles to them
   (`anchor="talk" at="word:14"`), time a script with `narrate`. The music sits under it.
-- **Music** with no voice: cut on its beats. Find the hits with `look --listen all` (the level strip shows them) and
-  put cuts, punches and title entrances on them. Sections of the song are sections of the film: a new part of the
-  song, a new part of the story.
+- **Music** with no voice: the music is the clock. `uberscene add song.mp3` finds its beats and tempo (or
+  `--bpm 120 --first-beat 0.3` sets them), and every cut, punch, title and sound effect anchors to one:
+  `anchor="song" at="beat:16"`. Nothing is timed by hand, so picture and music can't drift, and they stay together
+  when the song is trimmed. Give each shot its beats (`60 / tempo` seconds each) plus 0.1 s, in order on one track, so
+  the next covers it and no frame is empty at a cut; and check the beats against the sound
+  with `look --at song@beat:16,song@beat:32 --listen all`. Sections of the song are sections of the film: a new part
+  of the song, a new part of the story.
 - **Neither**: the picture sets the pace, and the music only keeps it moving. Let a cut land on a strong beat where you
   can.
 
@@ -46,7 +50,8 @@ Sound tells the eye something happened. Put a short effect on things that move a
 | A reveal, the payoff | a hit or a chime, on the frame it lands |
 | Build-up before a reveal | a riser that ends on the reveal |
 
-Anchor each to what it belongs to (`anchor="pop-card" offset={0}`), so it follows the edit. At most one effect at a
+Anchor each to what it belongs to, one frame after the picture: `anchor="pop-card" offset={0.033}` at 30 fps. The eye
+sees the impact, the ear confirms it; a sound before its picture feels early. At most one effect at a
 time, and not on every element of a stagger: on the first and the last, or on none.
 
 ## Levels
@@ -55,13 +60,15 @@ Measure, don't guess. `look --listen all` prints the mix's `lufs` (integrated lo
 
 | | Target |
 |---|---|
-| Loudness, for the web and social | -16 to -14 LUFS |
-| True peak | at most -1 dBTP |
+| Loudness, for the web and social | -14 LUFS (-16 is fine for a site) |
+| True peak | at most -2 dBTP: AAC encoding raises peaks, so leave room |
 | Voice over music | the voice clearly on top: the music ducked to about 0.15 of its level under it |
+| A mono file | measures about 3 LU louder once it plays on two channels: measure the mix, not the file |
 | An effect over the bed | a few dB above it, never louder than the voice |
 
 If the mix is too quiet, raise the voice and music `volume` together; if the peak is over, lower the loudest element.
-Then measure again. Say in your report that the levels were measured, not heard: you can't hear the result.
+Then measure again, and once more on the rendered file, since that is what gets uploaded:
+`ffmpeg -i video.mp4 -af ebur128=peak=true -f null -` prints its integrated loudness and true peak. Say in your report that the levels were measured, not heard: you can't hear the result.
 
 ## Check it
 

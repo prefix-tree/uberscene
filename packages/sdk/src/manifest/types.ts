@@ -29,6 +29,10 @@ export interface AssetEntry {
   readonly transcript?: { readonly words: readonly TranscriptWord[] };
   readonly shots?: readonly Shot[];
   readonly silences?: readonly Silence[];
+  /** The beats of music, found by `uberscene add` or set as a grid: each from its time to the next beat's. */
+  readonly beats?: readonly Beat[];
+  /** The music's tempo in beats per minute, with `beats`. */
+  readonly tempo?: number;
   readonly waveform?: WaveformSummary;
   /** Where the subject (a face, a person) sits in the picture, sampled over time; several boxes may share a `t`. */
   readonly subjects?: readonly SubjectBox[];
@@ -62,6 +66,12 @@ export interface Shot {
   readonly end: number;
 }
 export interface Silence {
+  readonly i: number;
+  readonly start: number;
+  readonly end: number;
+}
+/** A beat of music: `start` is the beat, `end` the next one (for the last, one beat's length later). */
+export interface Beat {
   readonly i: number;
   readonly start: number;
   readonly end: number;

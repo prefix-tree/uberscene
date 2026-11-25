@@ -21,7 +21,7 @@ references.
 
 | To | Use |
 |---|---|
-| Cut on meaning | `in`/`out` as `word:12`, `word:23.end`, `shot:1`, `silence:2`; `at="marker:intro"` with `<Marker>`; `<Gap duration>` for a hole |
+| Cut on meaning | `in`/`out` as `word:12`, `word:23.end`, `shot:1`, `silence:2`, `beat:16` (music's beats, found by `uberscene add`; `anchor="song" at="beat:16"` cuts a shot or a title on one); `at="marker:intro"` with `<Marker>`; `<Gap duration>` for a hole |
 | Change speed | `speed`, `reverse`; keys on `speed` ramp it (`speed={[{ at: 0, value: 1, easing: "easeInOutQuad" }, { at: 1.6, value: 0.4 }]}`); `freezes={[{ start, duration, source }]}` holds the source frame at `source` from `start` seconds into the clip. Sound follows |
 | Several cameras | `<Multicam sync>` with `<Angle src offset>` per camera and `<Cut at angle>` to switch |
 | Reuse a sequence | `<Nested>`: a sequence written once as a component and placed like a clip |
@@ -59,7 +59,7 @@ look, and fix before going on:
    as values ([look.md](references/look.md)), the cuts and what carries each ([motion.md](references/motion.md)),
    the sound ([sound.md](references/sound.md)), and a banned line of defaults to avoid.
 4. **Build**, following the loop below: spine first, then pictures, overlays, sound, captions.
-5. **Check.** `lint` and `--check-layout` clean, `inspect` reads as planned. Fix every warning, or keep it and say why.
+5. **Check.** `lint`, `--check-layout` and `--check-motion` clean, `inspect` reads as planned. Fix every warning, or keep it and say why.
 6. **Review.** One sheet with a cell per beat, measured, then looked at as a stranger would. Rank what's wrong as P0,
    P1 or P2, fix, look again at what changed, and add each default you removed to the banned line
    ([review.md](references/review.md)).
@@ -67,6 +67,11 @@ look, and fix before going on:
    made, the calls they might not expect, what was measured and what was only looked at, and the weakest moment.
 
 For a small edit (a trim, a word, a colour), skip to the loop: make it, check it, look at that moment, report.
+
+**Done** means the full video renders, every check passes and you can say its number (the exit codes, the loudness,
+the sizes), and your report says what changed. Until then keep going: a failed render, a warning or a missing font is
+an ordinary obstacle, so fix it and go on rather than asking whether to continue. Stop only for what the person alone
+can give (footage, the brand, a decision on the story), and then say exactly what you need.
 
 | Making | Read first |
 |---|---|
@@ -112,6 +117,11 @@ Work in this order, and check after each stage.
    npx uberscene video.tsx --check-layout
    ```
    Exit code 0 is clean, 3 means it found layout issues (listed with their line), 1 is an error, 2 is a bad argument.
+   Stills can't show a frozen video, so check the motion too: `--check-motion` reports every stretch of a second or
+   more where nothing on screen moves, with what is on screen there. Keep a hold you meant; give the rest a move:
+   ```sh
+   npx uberscene video.tsx --check-motion
+   ```
    For a vertical video pass `--safe-zone tiktok`, `reels` or `shorts`.
    To the check a `<Layer>` is one box. Put `data-name="lamp-label"` on what its code draws (a label, a group) and
    each is checked on its own, as `<layer id>/lamp-label`. To read where everything is at a moment, in pixels,
@@ -340,8 +350,8 @@ What each element and prop actually draws, and the few it does not:
 
 ## Before you hand it over
 
-- Every command runs with no `warning:` lines, `lint` exits 0, and `--check-layout` exits 0, or 3 only for issues
-  you chose to keep and said so.
+- Every command runs with no `warning:` lines, `lint` exits 0, and `--check-layout` and `--check-motion` exit 0, or
+  3 only for issues and holds you chose to keep and said so.
 - Ids are literal and unique, no sequence track has `start`, there is at most one `<Captions>`, and every `src` is in
   the manifest.
 - Each clip has `in`/`out` or `duration`, not both. Every `$token` and `style` exists in the theme.
