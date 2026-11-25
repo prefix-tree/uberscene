@@ -19,6 +19,7 @@ export {
   type GainPoint,
 } from "./model/audio-plan";
 export { OVERLAY_KINDS } from "./model/backdrop";
+export { type CameraValues, cameraValuesAt, trackCamera } from "./model/camera";
 export { paramsAt } from "./model/effects";
 export { buildFramePlan, type DrawOp } from "./model/frame-plan";
 export { frameIndex, placementSourceTime } from "./model/time";
