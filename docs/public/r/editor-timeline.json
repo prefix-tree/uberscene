@@ -22,7 +22,7 @@
     },
     {
       "path": "registry/editor/use-rows.ts",
-      "content": "import { useMemo } from \"react\";\n\nimport { useEditor } from \"@uberscene/editor\";\nimport { timelineRows } from \"@uberscene/sdk\";\n\n/** The timeline as rows, grouped by track. Every block below reads the editor through this and the editor's hooks. */\nexport function useRows() {\n  const { state } = useEditor();\n  return useMemo(() => {\n    const rows = timelineRows(state);\n    return {\n      ...rows,\n      byTrack: rows.tracks.map((t) => ({ track: t, rows: rows.elements.filter((e) => e.track === t.id) })),\n    };\n  }, [state]);\n}\n",
+      "content": "import { useMemo } from \"react\";\n\nimport { useEditor } from \"@uberscene/editor\";\nimport { timelineRows } from \"@uberscene/sdk\";\n\n/** The timeline as rows, grouped by track. Every block below reads the editor through this and the editor's hooks. */\nexport function useRows() {\n  const { state } = useEditor();\n  return useMemo(() => {\n    const rows = timelineRows(state);\n    return {\n      ...rows,\n      byTrack: rows.tracks.map((t) => ({ track: t, rows: rows.elements.filter((e) => e.track === t.id) })),\n      /** The camera, when the file has one: it moves every track that names it. */\n      camera: rows.elements.find((e) => e.kind === \"camera\"),\n    };\n  }, [state]);\n}\n",
       "type": "registry:hook",
       "target": "components/editor/use-rows.ts"
     }
