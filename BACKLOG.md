@@ -15,7 +15,7 @@ days, L a week or more.
   - The fix and its test are written (`packages/player/src/media/frame-source.ts`); they need a pull request.
   - Done when: a file with one image on two clips renders, and the test is in.
 
-- [x] **2. Cut-out, step 1: a matte as an input** (L) (#PR)
+- [x] **2. Cut-out, step 1: a matte as an input** (L) (#199)
   - A `matte` field on a manifest asset (a greyscale video beside the footage), and `cutout` on a `<Clip>`, with
     `shrink` and `feather`. `despill` moved to item 6, where models without a colour estimate need it.
   - The matte is a second source for the clip, decoded at the same source time; one compositor pass makes it the
