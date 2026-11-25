@@ -3,9 +3,9 @@
 This page follows one frame through `@uberscene/player`, from the resolved file to the pixels on screen. The export
 draws the same way ([How the export works](./export-architecture)). To use the player, read [Player](./player).
 
-## Three layers in one box
+## Layers in one box
 
-The player stacks three layers in a box the size of the composition:
+The player stacks its layers in a box the size of the composition. Most files need three:
 
 ```text
 ┌───────────────────────────────────────────┐
@@ -25,6 +25,21 @@ Tracks draw in the order the file writes them, so the first track is at the bott
 because it has to be decoded and composited by the pixel. Everything else is DOM, because free code is any React and
 CSS and only the browser can lay it out.
 
+A file may write an overlay track between two footage tracks: a card over the interview and under a cut-out speaker.
+One canvas cannot be both under and over that card, so each run of footage tracks is a **band** with a canvas of its
+own (`trackBands`), and the overlays between two bands sit between their canvases:
+
+```text
+overlays above the last footage   DOM
+canvas 1: the footage above       clear ground
+overlays between                  DOM
+canvas 0: the footage beneath     the background, or a clear ground over a backdrop
+```
+
+One frame plan still lists every op; each carries its band, and `bandPlan` gives a canvas its part. An adjustment is
+in the plan of every band beneath it, so it changes all the footage under it. A file whose footage is in one run has
+one band and one canvas. A host that attaches a single canvas (`attachCanvas`) gets all the footage on it.
+
 ## One tick
 
 The `Compositor` draws the canvas. Each tick, for a time `t`, runs four steps:
@@ -36,7 +51,7 @@ The `Compositor` draws the canvas. Each tick, for a time `t`, runs four steps:
    the rest. Assets are opened once and shared, nested sequences included.
 3. **Gather frames.** Each op asks its decoder for the picture at its source time. A nested sequence ticks its own
    compositor at its own time and is drawn as a picture.
-4. **Paint.** The `CanvasPainter` runs the plan on a 2D context: each op under its own transform, alpha, blend and
+4. **Paint.** The `CanvasPainter` runs the plan on a 2D context, once per band: each op under its own transform, alpha, blend and
    filter. Masks clip, and an adjustment re-filters everything drawn so far through a scratch canvas.
 
 A tick that arrives while another is running is merged into one re-run. A tick on the frame already painted only keeps

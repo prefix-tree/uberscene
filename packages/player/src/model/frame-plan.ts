@@ -9,7 +9,7 @@ import {
 import { lookupAsset, type Placement, type ResolvedState } from "@uberscene/sdk/resolver";
 
 import { devWarn } from "../warn";
-import { backdropTracks } from "./backdrop";
+import { backdropTracks, trackBands } from "./backdrop";
 import { type PostEffect, postEffects } from "./effects";
 import type { ClipRect } from "./motion";
 import { effectPipeline, type ShaderPass, type TransitionPass, transitionPass } from "./shaders";
@@ -68,6 +68,8 @@ export interface DrawOp {
   readonly transition?: TransitionPass;
   /** With a built-in shader transition: the opacity a crossfade gives, for a painter without WebGL. */
   readonly fallbackOpacity?: number;
+  /** The canvas it paints on, when the file's track order needs more than one (`trackBands`); left out for the first. */
+  readonly band?: number;
 }
 
 /** A composition background gradient, as the schema writes it. CSS angles: 0 points up, 180 (the default) runs down. */
@@ -88,6 +90,10 @@ export interface FramePlan {
   readonly clear?: true;
   /** `background.type: "blur"`: this op's picture, blurred to cover the frame, goes under everything. */
   readonly backgroundBlur?: { readonly id: string };
+  /** How many canvases the ops are spread over (`DrawOp.band`), when more than one. */
+  readonly bands?: number;
+  /** A band above the first: an adjustment changes only the pixels already there, not the clear ground around them. */
+  readonly atop?: true;
   readonly ops: readonly DrawOp[];
   readonly warnings: readonly string[];
 }
@@ -134,32 +140,47 @@ export function buildFramePlan(state: ResolvedState, t: number, resolveNested?: 
   // shortcut: with overlays beneath the footage the background is a CSS ground under the canvas, so blur shows as its colour; paint the blur on that ground to drop this.
   if (blur && clear) warnings.push("background mode blur is drawn as a colour under backdrop overlays");
 
+  const bands = trackBands(state);
+  /** An op on its track's canvas; the first canvas is not written, so a file with one band plans as it always did. */
+  const banded = (op: DrawOp, track: string): DrawOp => {
+    const band = bands.bandOf.get(track) ?? 0;
+    return band > 0 ? { ...op, band } : op;
+  };
   for (const item of visiblePlacements(state, t)) {
     const p = item.placement;
     if (p.kind === "clip" || p.kind === "nested") {
       const op = mediaOp(state, item, t, resolveNested, warnings);
-      if (op) ops.push(op);
+      if (op) ops.push(banded(op, item.track.id));
+      if (op && op.blend !== "source-over" && (bands.bandOf.get(item.track.id) ?? 0) > 0)
+        warnings.push(
+          `"${p.id}" blends with the footage on its own run of tracks only: an overlay track sits between it and the footage beneath`,
+        );
       const dip = item.transition && !op?.transition && transitionLook(item.transition, comp.width, comp.height).dip;
-      if (op && dip) ops.push(dipOp(item.transition!.placement, dip, comp.width, comp.height));
+      if (op && dip) ops.push(banded(dipOp(item.transition!.placement, dip, comp.width, comp.height), item.track.id));
     } else if (p.kind === "adjustment") {
       if (p.props.enabled === false) continue;
       const { shaders, ...filters } = effectPipeline(state, item.children, p.id, t - p.start, { shaders: true });
       if (ops.length === 0) continue;
       // Vignette and grain darken and speckle everything beneath, before the adjustment's other effects.
       const post = postEffects(state.items, item.children, frameIndex(t, comp.rate), t - p.start);
-      ops.push({
-        id: p.id,
-        kind: "adjustment",
-        rect: { x: 0, y: 0, w: comp.width, h: comp.height },
-        matrix: { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 },
-        fit: "stretch",
-        opacity: Number(p.props.opacity ?? 1),
-        blend: blendOf(p.props.blend),
-        ...filters,
-        borderRadius: 0,
-        ...(post ? { post } : {}),
-        ...(shaders ? { shaders } : {}),
-      });
+      ops.push(
+        banded(
+          {
+            id: p.id,
+            kind: "adjustment",
+            rect: { x: 0, y: 0, w: comp.width, h: comp.height },
+            matrix: { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 },
+            fit: "stretch",
+            opacity: Number(p.props.opacity ?? 1),
+            blend: blendOf(p.props.blend),
+            ...filters,
+            borderRadius: 0,
+            ...(post ? { post } : {}),
+            ...(shaders ? { shaders } : {}),
+          },
+          item.track.id,
+        ),
+      );
     }
   }
   const footage =
@@ -171,9 +192,29 @@ export function buildFramePlan(state: ResolvedState, t: number, resolveNested?: 
     ...(gradient ? { backgroundGradient: gradient } : {}),
     ...(clear ? { clear: true as const } : {}),
     ...(footage ? { backgroundBlur: { id: footage.id } } : {}),
+    ...(bands.count > 1 ? { bands: bands.count } : {}),
     ops,
     warnings,
   };
+}
+
+/**
+ * The part of a plan one canvas paints. The first band has the background (or the clear ground over a backdrop);
+ * the ones above are clear, so what lies between the canvases shows through. An adjustment covers the footage of
+ * every band beneath it as well as its own, so it is in each of them, after their ops.
+ */
+export function bandPlan(plan: FramePlan, band: number): FramePlan {
+  if (!plan.bands) return plan;
+  const ops = plan.ops.filter((op) => {
+    const own = op.band ?? 0;
+    return own === band || (op.kind === "adjustment" && own > band);
+  });
+  const { backgroundBlur, ...rest } = plan;
+  if (band === 0) {
+    const blur = backgroundBlur && ops.some((o) => o.id === backgroundBlur.id) ? { backgroundBlur } : {};
+    return { ...rest, ...blur, ops };
+  }
+  return { ...rest, clear: true, atop: true, ops };
 }
 
 /** The composition's background as the painter draws it: a colour, or a gradient (whose first colour is `background`). */

@@ -1090,7 +1090,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/player`
 
-26 exports.
+28 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -1115,6 +1115,8 @@ Every name each entry exports, read from the code. The sections above explain th
 | `PlayerView` | const | The picture of the enclosing `<PlayerProvider>`. |
 | `PlayerViewProps` | interface |  |
 | `TimeSnapshot` | interface |  |
+| `trackBands` | function | Tracks draw in the order the file writes them, the first at the bottom. |
+| `TrackBands` | interface | Where each track draws, when footage and overlays are stacked in the order the file writes its tracks. |
 | `useCompositionFrame` | function |  |
 | `useCompositionTime` | function |  |
 | `useLayerClock` | function | What the kit's `useLayer()` and `useT()` delegate to while a Player is mounted. |
