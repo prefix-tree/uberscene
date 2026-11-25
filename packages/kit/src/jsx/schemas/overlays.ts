@@ -1,7 +1,6 @@
 import { z } from "zod";
 
-import { zBlendMode, zEasing, zShapeType, zTextAnimationType } from "../enums";
-import { isShot, type ShotDefinition } from "../shot";
+import { zBlendMode, zShapeType, zTextAnimationType } from "../enums";
 import {
   adjustmentEffectsProp,
   assetRefSchema,
@@ -223,36 +222,6 @@ export const layerSchema = z.strictObject({
 
 const vec3Schema = z.tuple([z.number(), z.number(), z.number()]);
 
-/** A marker's time, `"marker:ID"`: where the parent edit has it, in the shot's own seconds once resolved. */
-const markerRefSchema = z
-  .string()
-  .regex(/^marker:[A-Za-z_][A-Za-z0-9_-]*$/, 'marker references look like "marker:reveal"');
-
-/**
- * A shot value: a constant, or keys in shot time. A key's `at` may name a marker, so a pose lands on a cut or a beat
- * of the parent edit wherever either moves.
- */
-const shotAnimatable = <S extends z.ZodType>(value: S) =>
-  z.union([
-    value,
-    z
-      .array(
-        z.strictObject({ at: z.union([z.number().nonnegative(), markerRefSchema]), value, easing: zEasing.optional() }),
-      )
-      .min(1),
-  ]);
-
-/** One placed object of a shot: each channel a constant or keys in shot time. */
-const shotObjectSchema = z.strictObject({
-  /** Metres from the scene's origin, y up. */
-  position: shotAnimatable(vec3Schema).optional(),
-  /** Degrees about x, y and z, applied in that order. */
-  rotation: shotAnimatable(vec3Schema).optional(),
-  scale: shotAnimatable(vec3Schema).optional(),
-});
-
-const shotInputSchema = z.union([shotAnimatable(z.number()), z.boolean(), markerRefSchema, z.string()]);
-
 // biome-ignore-start lint/suspicious/noExplicitAny: the kit does not depend on three; its objects are any here so pasted three.js type-checks.
 /** What `<Three setup>` gets once: the scene, its camera and renderer, and the three.js namespace. */
 export interface ThreeSetupArgs {
@@ -288,15 +257,12 @@ export type ThreeSetupFunction = (setup: ThreeSetupArgs) => ThreeSetupResult;
  */
 export const threeSchema = layerSchema.extend({
   engine: z.literal("three"),
-  /**
-   * The camera: `position` and `lookAt` as `[x, y, z]`, `fov` in degrees, clipping planes, zoom, or orthographic.
-   * `position`, `lookAt` and `fov` may be keys, in the shot's time when the tag has a `shot`.
-   */
+  /** The camera: `position` and `lookAt` as `[x, y, z]`, `fov` in degrees, clipping planes, zoom, or orthographic. */
   camera: z
     .strictObject({
-      position: shotAnimatable(vec3Schema).optional(),
-      lookAt: shotAnimatable(vec3Schema).optional(),
-      fov: shotAnimatable(z.number().min(1).max(179)).optional(),
+      position: vec3Schema.optional(),
+      lookAt: vec3Schema.optional(),
+      fov: z.number().min(1).max(179).optional(),
       near: z.number().positive().optional(),
       far: z.number().positive().optional(),
       zoom: z.number().positive().optional(),
@@ -307,17 +273,6 @@ export const threeSchema = layerSchema.extend({
   background: colorSchema.optional(),
   /** Builds the scene once from `{ scene, camera, renderer, THREE, width, height }`, and may return `update(frame)` for every frame. */
   setup: z.custom<ThreeSetupFunction>((v) => typeof v === "function", "setup must be a function").optional(),
-  /** A 3D shot from `defineShot`: its module builds the scene, and this tag places it. */
-  shot: z.custom<ShotDefinition>(isShot, "shot must be what defineShot returns").optional(),
-  /**
-   * Where in the shot's own time the layer starts, in seconds: at the layer's start the shot is at `in`, and a frame
-   * `s` seconds later it is at `in + s`. Trimming the layer's start moves `start` and `in` together; keys stay put.
-   */
-  in: z.number().nonnegative().optional(),
-  /** The shot's objects by id, each `{ position, rotation, scale }` as `[x, y, z]` or keys in shot time. */
-  objects: z.record(idSchema, shotObjectSchema).optional(),
-  /** Values for the inputs the shot declares: numbers (or keys in shot time), flags, words, or `"marker:ID"`. */
-  inputs: z.record(z.string(), shotInputSchema).optional(),
 });
 
 /** One step of a Motion sequence: a selector inside the tag, its keyframes, and options (`duration`, `at`, `ease`…). */
