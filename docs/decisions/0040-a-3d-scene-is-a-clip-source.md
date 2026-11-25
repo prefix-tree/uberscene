@@ -1,4 +1,4 @@
-# 0039. A 3D scene is a clip source
+# 0040. A 3D scene is a clip source
 
 > Status: accepted. Supersedes the authoring shape of [0037](./0037-a-3d-shot-on-the-timeline.md): its sampling
 > contract, keys in the scene's own time and keys tied to a beat of the edit stay; where a scene's data lives and
