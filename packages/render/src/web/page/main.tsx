@@ -48,6 +48,7 @@ import type {
   PageApi,
   PageJob,
   SegmentRequest,
+  TextFit,
   TilesRequest,
 } from "./protocol";
 import { LISTEN_HEIGHT, TILE_BAND, TILE_GROUND } from "./protocol";
@@ -399,7 +400,11 @@ async function start(): Promise<void> {
           // A ground: beneath the footage, or an element the file marks with `ground` (a card or a scrim, which
           // things are meant to sit on).
           const under = (track !== undefined && backdrop.has(track)) || state.items.get(id)?.props.ground === true;
-          found.push({ id, kind: el.dataset.kind as string, ...ink, backdrop: under });
+          const text =
+            el.dataset.kind === "title"
+              ? textFit(el, state.tree.byId.get(id)?.text ?? "", state.items.get(id)?.props)
+              : null;
+          found.push({ id, kind: el.dataset.kind as string, ...ink, backdrop: under, ...(text ? { text } : {}) });
           // What the element's own code named: each part alone, measured the same way.
           for (const part of partsOf.get(el) ?? []) {
             const name = part.dataset.name;
@@ -637,6 +642,63 @@ function drawZone(
     g.fillText(b.id, left + 3, top + 7);
   }
   g.restore();
+}
+
+/**
+ * A title's whole text laid out in its box: a copy of its text element, with all of its text and none of its motion,
+ * in a hidden box of the same size outside the frame, so neither the animation nor the element's transform changes
+ * what is measured. Null when the title draws no text element.
+ */
+function textFit(el: HTMLElement, text: string, props: Readonly<Record<string, unknown>> | undefined): TextFit | null {
+  const inner = el.firstElementChild;
+  if (!(inner instanceof HTMLElement) || text.trim() === "") return null;
+  const w = el.offsetWidth;
+  const h = el.offsetHeight;
+  const holder = document.createElement("div");
+  holder.style.cssText = `position:fixed;left:0;top:0;width:${w}px;height:${h}px;visibility:hidden;pointer-events:none;contain:layout`;
+  const copy = inner.cloneNode(false) as HTMLElement;
+  copy.style.transform = "none";
+  copy.style.opacity = "1";
+  copy.textContent = text;
+  holder.append(copy);
+  document.body.append(holder);
+  try {
+    const range = document.createRange();
+    const lay = () => {
+      range.selectNodeContents(copy);
+      const origin = holder.getBoundingClientRect();
+      const rects = [...range.getClientRects()].filter((r) => r.width > 0 && r.height > 0);
+      if (rects.length === 0) return null;
+      const x = Math.min(...rects.map((r) => r.left)) - origin.left;
+      const y = Math.min(...rects.map((r) => r.top)) - origin.top;
+      const right = Math.max(...rects.map((r) => r.right)) - origin.left;
+      const bottom = Math.max(...rects.map((r) => r.bottom)) - origin.top;
+      // Each line is one or more rects with the same top; a line's top is within a pixel of its fragments'.
+      const tops: number[] = [];
+      for (const r of rects) if (!tops.some((t) => Math.abs(t - r.top) < 1)) tops.push(r.top);
+      return { content: { x, y, w: right - x, h: bottom - y }, lines: tops.length };
+    };
+    const wrapped = lay();
+    if (!wrapped) return null;
+    copy.style.whiteSpace = "pre";
+    const natural = lay()?.content.w ?? wrapped.content.w;
+    const box = (props?.box ?? {}) as { width?: unknown };
+    const style = getComputedStyle(copy);
+    const size = Number.parseFloat(style.fontSize);
+    const line = Number.parseFloat(style.lineHeight);
+    return {
+      box: { w, h },
+      lines: wrapped.lines,
+      written: text.split("\n").length,
+      content: wrapped.content,
+      natural,
+      fixedWidth: typeof box.width === "number",
+      size,
+      lineHeight: Number.isFinite(line) ? line : size * 1.2,
+    };
+  } finally {
+    holder.remove();
+  }
 }
 
 function tick(): Promise<void> {

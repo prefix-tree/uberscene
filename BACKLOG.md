@@ -31,7 +31,7 @@ days, L a week or more.
   - Report a title on screen for less than 0.5 s plus 0.3 s a word. The rule is in the skill; nothing enforces it.
   - Done when: `lint` or `--check-layout` reports it with the title's id, its time and the time it needs.
 
-- [ ] **4. Layout: text over text, and text that does not fit** (M)
+- [x] **4. Layout: text over text, and text that does not fit** (M) (#PR)
   - Two rules for `--check-layout`: two titles whose ink overlaps, and a title whose text wraps or overflows its
     `box`.
   - Done when: each is reported at its line with a fix, like the other layout rules, with tests.
