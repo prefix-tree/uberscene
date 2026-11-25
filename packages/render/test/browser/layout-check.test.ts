@@ -300,6 +300,37 @@ describe("checkLayout", () => {
     expect(brief(result.issues)).toEqual(["safe-zone:cta>tiktok@0.00-0.90"]);
   });
 
+  it("leaves out a card the file marks as a ground, and still checks the one it does not", async () => {
+    // Two cards reach into the bottom margin and over the captions; only the unmarked one is reported.
+    const card = (id: string, ground?: true) =>
+      h(Shape, {
+        id,
+        type: "rectangle",
+        width: 300,
+        height: 120,
+        fill: "#2244ff",
+        start: 0,
+        duration: 1,
+        box: { x: id === "panel" ? 170 : 470, y: 300, origin: "center" },
+        ...(ground ? { ground } : {}),
+      });
+    const result = await check(
+      h(
+        Composition,
+        { fps: 10, width: 640, height: 360 },
+        h(Track, { id: "cards", layout: "free" }, card("panel", true), card("note")),
+        h(
+          Captions,
+          { id: "caps", style: { size: 30 } },
+          h(Caption, { id: "c1", start: 0, end: 1, text: "Hello world" }),
+        ),
+      ),
+    );
+    const ids = new Set(result.issues.map((i) => i.id));
+    expect(ids.has("note")).toBe(true);
+    expect(ids.has("panel")).toBe(false);
+  });
+
   it("checks against the manifest's subject boxes through the clip's transform", async () => {
     const m: AssetManifest = {
       assets: {

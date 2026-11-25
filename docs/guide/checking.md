@@ -195,15 +195,18 @@ It is reported as the part `diagram/lamp-label`, at the line that names it, and 
 time for the same thing. Its advice is a move in pixels to make in the layer's code. Code that names nothing is
 checked as before, as one layer. A part that is faded out or not displayed is not measured.
 
-A layer that is a ground for other things, such as a scrim that darkens the footage under a title, says so with
-the `ground` prop. The check then treats it like a background beneath the footage: it is not held to the safe zone
-and is not said to cover the captions. `uberscene inspect` marks it `ground`. `<Three>` and `<Motion>` are layers and
-take the prop too.
+A graphic that is a ground for other things says so with the `ground` prop: a scrim that darkens the footage under
+a title, or a card that a cut-out speaker sits on. The check then treats it like a background beneath the footage:
+it is not held to the safe zone and is not said to cover the captions. `uberscene inspect` marks it `ground`.
+`<Layer>`, `<Shape>`, `<Svg>` and `<Sticker>` take the prop; `<Three>` and `<Motion>` are layers and take it too.
+Nothing marks itself: a small callout on the same track is still checked, which is why the prop is yours to set.
 
 ```tsx
 <Layer id="scrim" anchor="talk" duration={{ until: "talk" }} ground>
   <div style={{ position: "absolute", inset: 0, background: "linear-gradient(transparent 60%, #0b1530)" }} />
 </Layer>
+<Shape id="card" start={2} duration={6} type="rectangle" fill="#ffffff" ground
+  box={{ x: 960, y: 600, width: 1200, height: 700, origin: "center" }} />
 ```
 
 ## Where things are at a moment
