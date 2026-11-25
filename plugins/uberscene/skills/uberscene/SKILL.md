@@ -32,6 +32,7 @@ references.
 | Join clips | `<Transition type duration>` between two clips of a track: `crossfade`, `dipToBlack`, `dipToWhite`, `wipe`, `slide`, `push`, `iris`, `clockWipe`, `blinds`, `filmBurn`, `pixelDissolve`, `zoom`. With `on="pip" edge="in"` it brings one element in, or takes it out with `edge="out"` |
 | Correct and grade | `effects={[{ type, ...params }]}` on the element, in order: `exposure`, `whiteBalance`, `brightness`, `contrast`, `saturation`, `vibrance`, `hue`, `levels`, `curves`, `shadowsHighlights`, `lut` (a `.cube` file added with `uberscene add`) |
 | Give a look | `grayscale`, `sepia`, `invert`, `duotone`, `vignette`, `grain`, `lightLeak`, `chromaticAberration`, `halftone`, `pixelate`, `scanlines`, `fractalNoise` |
+| Cut out a person | `cutout` on a `<Clip>` whose asset names a matte (`"matte": "talk.matte"` in the manifest): a greyscale video of the same frames, white where the person is. `{ shrink, feather }` tidies the edge. Made outside UberScene for now |
 | Fix footage | `colorKey` (green screen), `recolor` (one colour into another: a red cup made green), `regionBlur` (hide a face or a plate), `cornerPin` (put a picture on a screen), `blur`, `zoomBlur` |
 | Style text and graphics | `glow`, `outline`, `shadow`, `longShadow`, `bevel` on a title, shape or layer |
 | Affect everything below | `<Adjustment effects={[…]}>`, for its time, on every track beneath it |

@@ -17,6 +17,8 @@ interface Outgoing {
 
 export interface PaintInputs {
   readonly frames: ReadonlyMap<string, Frame | null>;
+  /** For an op with `matte`: the matte's frame at the same source time, whose luminance becomes the op's alpha. */
+  readonly mattes?: ReadonlyMap<string, Frame | null>;
   readonly nested: ReadonlyMap<string, AnyCanvas>;
   /** The textures effect params name (`"asset:ID"`), loaded. */
   readonly textures?: ShaderTextures;
@@ -32,6 +34,10 @@ export class CanvasPainter {
   /** An element drawn on its own before compositing: a feathered mask, vignette, grain. */
   private layer: AnyCanvas | null = null;
   private grain: AnyCanvas | null = null;
+  /** A clip's matte drawn where the clip is, its luminance turned into alpha (`cutout`). */
+  private matteLayer: AnyCanvas | null = null;
+  /** The mattes of the frame being painted, by op id. */
+  private mattes: ReadonlyMap<string, Frame | null> = new Map();
   /** Runs the effects and transitions the file declares; made on first use. */
   private shaders: ShaderRunner | null = null;
   /** The outgoing side of a declared transition between two clips, waiting for the incoming side. */
@@ -76,6 +82,9 @@ export class CanvasPainter {
     const nested = op.kind === "nested" ? (inputs.nested.get(op.id) ?? null) : null;
     if (op.kind !== "nested" && !frame) return;
     if (op.kind === "nested" && !nested) return;
+    // A cutout without its matte's frame is not drawn, rather than drawn whole over what it should sit on.
+    this.mattes = inputs.mattes ?? new Map();
+    if (op.matte && !this.mattes.get(op.id)) return;
     if ((op.shaders || op.transition) && this.runner().available) {
       this.drawShaded(ctx, op, frame, nested);
       return;
@@ -89,7 +98,7 @@ export class CanvasPainter {
     setMatrix(ctx, op.matrix);
     const clipped = this.clip(ctx, op);
     const feathered = !!op.mask && op.mask.feather > 0 && clipped;
-    if (feathered || op.post) {
+    if (feathered || op.post || op.matte) {
       ctx.restore();
       this.drawLayered(ctx, op, frame, nested, feathered);
       return;
@@ -253,6 +262,8 @@ export class CanvasPainter {
     if (!feathered) this.clip(lctx, op);
     this.blit(lctx, op, frame, nested);
     lctx.restore();
+    const matte = op.matte ? (this.mattes.get(op.id) ?? null) : null;
+    if (op.matte && matte) this.cutOut(lctx, op, matte);
     if (feathered) {
       // Punch the mask through with a blurred alpha: draw the mask shape blurred, keep the element where it lands.
       lctx.save();
@@ -269,6 +280,36 @@ export class CanvasPainter {
     }
     this.paintPost(lctx, op.post, op.matrix, op.rect);
     return layer;
+  }
+
+  /**
+   * `cutout`: keeps the element only where its matte is light. The matte frame is drawn where the element is (the
+   * same matrix, fit and crop), its luminance becomes alpha, and that alpha cuts the layer. `shrink` pulls the edge in
+   * (an erosion of that many pixels); `feather` blurs the cut.
+   */
+  private cutOut(lctx: Ctx2D, op: DrawOp, matte: Frame): void {
+    const spec = op.matte!;
+    this.matteLayer ??= this.createCanvas(this.width, this.height);
+    const mctx = this.matteLayer.getContext("2d", { willReadFrequently: true }) as Ctx2D | null;
+    if (!mctx) return;
+    mctx.setTransform(1, 0, 0, 1, 0, 0);
+    mctx.clearRect(0, 0, this.width, this.height);
+    mctx.save();
+    setMatrix(mctx, op.matrix);
+    this.blit(mctx, op, matte, null);
+    mctx.restore();
+    if (typeof mctx.getImageData === "function") {
+      const image = mctx.getImageData(0, 0, this.width, this.height);
+      lumaToAlpha(image.data);
+      erodeAlpha(image.data, this.width, this.height, spec.shrink);
+      mctx.putImageData(image, 0, 0);
+    }
+    lctx.save();
+    lctx.setTransform(1, 0, 0, 1, 0, 0);
+    lctx.globalCompositeOperation = "destination-in";
+    lctx.filter = spec.feather > 0 ? `blur(${spec.feather}px)` : "none";
+    lctx.drawImage(this.matteLayer, 0, 0);
+    lctx.restore();
   }
 
   /**
@@ -447,6 +488,7 @@ function canvasOf(ctx: Ctx2D): AnyCanvas {
 
 /** Whether a draw op puts its picture over the whole canvas as it is: no transform, crop, clip, fade, filter or blend. */
 export function coversCanvas(op: DrawOp, width: number, height: number): boolean {
+  if (op.matte) return false;
   const m = op.matrix;
   return (
     m.a === 1 &&
@@ -542,4 +584,42 @@ function withOpacity(color: string, opacity: number | undefined): string {
           .join("")
       : (hex[1] as string);
   return `rgba(${parseInt(h.slice(0, 2), 16)}, ${parseInt(h.slice(2, 4), 16)}, ${parseInt(h.slice(4, 6), 16)}, ${Math.max(0, opacity)})`;
+}
+
+/**
+ * A matte's pixels made into a mask, in place: each pixel's alpha becomes its luminance, times the alpha it had, so
+ * outside the element stays clear.
+ */
+export function lumaToAlpha(data: Uint8ClampedArray): void {
+  for (let i = 0; i < data.length; i += 4) {
+    const a = ((0.299 * data[i]! + 0.587 * data[i + 1]! + 0.114 * data[i + 2]!) / 255) * (data[i + 3]! / 255);
+    data[i + 3] = Math.round(a * 255);
+  }
+}
+
+/**
+ * Pulls a mask's edge in by `radius` pixels, in place: each pixel's alpha becomes the least alpha within a square of
+ * that radius around it (an erosion), so a soft edge keeps its softness and moves inward. One pass across and one
+ * down, each a running minimum over blocks (van Herk), so the cost does not grow with the radius.
+ */
+export function erodeAlpha(data: Uint8ClampedArray, width: number, height: number, radius: number): void {
+  const r = Math.round(radius);
+  if (r < 1) return;
+  const size = 2 * r + 1;
+  const line = new Uint8Array(Math.max(width, height) + 2 * r);
+  const ahead = new Uint8Array(line.length);
+  const behind = new Uint8Array(line.length);
+  const run = (count: number, at: (i: number) => number) => {
+    // The line, padded with its end values: a subject cut by the frame's edge (a body at the bottom) stays at it.
+    for (let i = 0; i < count; i++) line[i + r] = data[at(i)]!;
+    line.fill(line[r]!, 0, r);
+    line.fill(line[count + r - 1]!, count + r, count + 2 * r);
+    const n = count + 2 * r;
+    for (let i = 0; i < n; i++) ahead[i] = i % size === 0 ? line[i]! : Math.min(ahead[i - 1]!, line[i]!);
+    for (let i = n - 1; i >= 0; i--)
+      behind[i] = i === n - 1 || (i + 1) % size === 0 ? line[i]! : Math.min(behind[i + 1]!, line[i]!);
+    for (let i = 0; i < count; i++) data[at(i)] = Math.min(behind[i]!, ahead[i + 2 * r]!);
+  };
+  for (let y = 0; y < height; y++) run(width, (x) => (y * width + x) * 4 + 3);
+  for (let x = 0; x < width; x++) run(height, (y) => (y * width + x) * 4 + 3);
 }

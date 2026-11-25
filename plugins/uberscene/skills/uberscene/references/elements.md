@@ -74,6 +74,7 @@ A stretch of a video or image asset, trimmed by seconds, transcript words or cam
 | `fade` | { in, out } |  |  | Seconds the sound fades in at the start and out at the end. |
 | `duck` | { under, to, attack, release } |  |  | Turns this sound down while another plays: `under` is a track id or a track role (`dialogue`), `to` the volume it falls to, `attack` and `release` the seconds it takes to fall and recover. |
 | `frame` | { focus } |  |  | Reframe to the composition's aspect: the resolver writes `transform.crop` from the source size and this focus, unless a crop is written. |
+| `cutout` | boolean \| { shrink, feather } |  |  | Cut the subject out of its background with the asset's matte: a greyscale video of the same frames, white where the subject is, named by `"matte": "<asset id>"` on the asset's manifest entry. Where the matte is black the clip is transparent, so what is under it shows. It applies before `effects`, so they act on the subject alone. `true`, or `{ shrink, feather }` in pixels of the composition: `shrink` pulls the edge in, `feather` softens it. |
 
 Timed, visual, audible, trims its source, transformable. Children: `mask`. [All elements](https://uberscene.prefixtree.xyz/reference/elements/)
 

@@ -1157,7 +1157,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `coversCanvas` | function | Whether a draw op puts its picture over the whole canvas as it is. |
 | `CreateCanvas` | type |  |
 | `Ctx2D` | type |  |
-| `DecoderPool` | class | Keeps a ClipDecoder for every media placement near the play head and drops the rest. |
+| `DecoderPool` | class | Keeps a ClipDecoder for every media placement near the play head and drops the rest, and a second one reading the matte for a clip with `cutout`. |
 | `defaultCreateCanvas` | function |  |
 | `devWarn` | function | Warn once per key. |
 | `DrawOp` | interface |  |

@@ -206,6 +206,12 @@ export function recorderContext(): { ctx: Ctx2D; calls: Recorded[]; canvas: obje
             height: args[1],
             data: new Uint8ClampedArray((args[0] as number) * (args[1] as number) * 4),
           };
+        if (prop === "getImageData")
+          return {
+            width: args[2],
+            height: args[3],
+            data: new Uint8ClampedArray((args[2] as number) * (args[3] as number) * 4),
+          };
         return undefined;
       };
     },

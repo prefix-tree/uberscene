@@ -282,6 +282,40 @@ const cutInsideWord: Rule = {
   },
 };
 
+/** `cutout` on a clip whose asset names no matte, or names one the manifest does not have. */
+const cutoutWithoutMatte: Rule = {
+  name: "cutout-without-matte",
+  check: (index, options) => {
+    if (!options.manifest) return [];
+    const out: Diagnostic[] = [];
+    for (const site of index.elements.values()) {
+      const cutout = site.props.get("cutout");
+      if (site.kind !== "clip" || !cutout || cutout.literal === false) continue;
+      const src = site.props.get("src")?.literal;
+      if (typeof src !== "string" || !src.startsWith("asset:")) continue;
+      const id = src.slice("asset:".length);
+      const asset = options.manifest.assets[id];
+      if (!asset) continue; // missing-asset says so
+      const message =
+        asset.matte === undefined
+          ? `cutout needs a matte for ${id}: add a greyscale video of the same frames (npx uberscene add ${id}.matte.webm) and set "matte": "${id}.matte" on ${id} in the manifest`
+          : options.manifest.assets[asset.matte]
+            ? null
+            : `the matte of ${id}, asset ${asset.matte}, is not in the manifest`;
+      if (message)
+        out.push({
+          rule: "cutout-without-matte",
+          severity: "error",
+          message,
+          range: cutout.range,
+          id: site.id,
+          prop: "cutout",
+        });
+    }
+    return out;
+  },
+};
+
 export const rules: readonly Rule[] = [
   literalIds,
   uniqueIds,
@@ -294,6 +328,7 @@ export const rules: readonly Rule[] = [
   ambiguousDuration,
   fileShape,
   missingAsset,
+  cutoutWithoutMatte,
   sequenceGap,
   cutInsideWord,
   cutNearShot,
