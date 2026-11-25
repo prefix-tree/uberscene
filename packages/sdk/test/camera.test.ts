@@ -199,7 +199,7 @@ describe("putting a camera in and taking it out", () => {
     const exec = editor(FLAT);
     const refused = (action: Parameters<Executor["execute"]>[0]) => {
       const result = exec.execute(action);
-      return result.ok ? null : result.errors[0]?.message;
+      return result.ok ? null : result.errors?.[0]?.message;
     };
     expect(refused({ type: "camera/add", params: { cameraId: "cam", tracks: ["under", "cards"] } })).toContain(
       "next to each other",
@@ -250,7 +250,7 @@ describe("the camera's values and keys", () => {
     ]);
     expect(load(saved(VIDEO, exec)).errors).toEqual([]);
     const bad = exec.execute({ type: "key/add", params: { id: "cam", path: "box.x", at: 0, value: 1 } });
-    expect(bad.ok ? "" : bad.errors[0]?.message).toContain("cannot hold keys on a camera");
+    expect(bad.ok ? "" : bad.errors?.[0]?.message).toContain("cannot hold keys on a camera");
   });
 });
 
