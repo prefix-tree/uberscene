@@ -15,9 +15,9 @@ days, L a week or more.
   - The fix and its test are written (`packages/player/src/media/frame-source.ts`); they need a pull request.
   - Done when: a file with one image on two clips renders, and the test is in.
 
-- [ ] **2. Cut-out, step 1: a matte as an input** (L)
+- [x] **2. Cut-out, step 1: a matte as an input** (L) (#199)
   - A `matte` field on a manifest asset (a greyscale video beside the footage), and `cutout` on a `<Clip>`, with
-    `shrink`, `feather` and `despill`.
+    `shrink` and `feather`. `despill` moved to item 6, where models without a colour estimate need it.
   - The matte is a second source for the clip, decoded at the same source time; one compositor pass makes it the
     clip's alpha, before its `effects`. The same in the player and the export.
   - No model yet: a matte made by any tool works.
@@ -42,6 +42,7 @@ days, L a week or more.
   - Done when: decision 0039's table has the new rows, and the default model is named in a record.
 
 - [ ] **6. Cut-out, step 2: `uberscene matte`** (L; needs 2, and 5 for its default)
+  - `despill` on `cutout`: takes the old background's colour out of the edge, for models that give no colour estimate.
   - The command decodes the footage, runs a matting model frame by frame through ONNX Runtime (an optional
     dependency fetched on first use), and writes the matte and the manifest entry.
   - A registry of models: name, source, SHA-256, licence, whether it keeps state between frames. The first use of a

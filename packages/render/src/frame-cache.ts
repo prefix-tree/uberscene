@@ -8,7 +8,7 @@ import { join } from "node:path";
 
 import { frameStartSeconds, motionBlurOf, shutterTimes } from "@uberscene/kit/schema";
 import type { MediaResolver } from "@uberscene/player/engine";
-import type { Placement, ResolvedState } from "@uberscene/sdk";
+import { lookupAsset, type Placement, type ResolvedState } from "@uberscene/sdk";
 
 import type { FontFile } from "./fonts";
 import type { ExportSource } from "./renderer";
@@ -166,7 +166,12 @@ export class FrameKeys {
   /** See `wholeKey`: the whole file, every asset it plays, and `extra`. */
   async whole_(extra: unknown): Promise<string> {
     const assets = new Set<string>();
-    for (const p of this.input.state.items.values()) if (p.source) assets.add(p.source.asset.replace(/^asset:/, ""));
+    for (const p of this.input.state.items.values()) {
+      if (!p.source) continue;
+      assets.add(p.source.asset.replace(/^asset:/, ""));
+      const matte = matteAsset(this.input.state, p);
+      if (matte) assets.add(matte);
+    }
     const stats = await Promise.all([...assets].sort().map(async (id) => `${id}=${await this.stat(id)}`));
     const hash = createHash("sha256");
     hash.update(this.shared);
@@ -203,6 +208,8 @@ export class FrameKeys {
             interior: p.interior,
             text: tree.byId.get(p.id)?.text,
             props: p.props,
+            // The manifest is not hashed, so the matte a cutout cuts with is named here, its file's stat with it.
+            ...(matteAsset(state, p) ? { matte: `asset:${matteAsset(state, p)}` } : {}),
           },
           flags,
         );
@@ -299,4 +306,10 @@ export function trimCache(dir: string, cap = CACHE_CAP_BYTES): void {
       total -= f.size;
     } catch {}
   }
+}
+
+/** The matte a clip with `cutout` draws with, by asset id, from the manifest; none for anything else. */
+function matteAsset(state: ResolvedState, p: Placement): string | undefined {
+  if (!p.source || p.props.cutout === undefined || p.props.cutout === false) return undefined;
+  return lookupAsset(state.manifest, p.source.asset)?.matte;
 }

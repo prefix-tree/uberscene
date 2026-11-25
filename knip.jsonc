@@ -2,6 +2,8 @@
   "$schema": "https://unpkg.com/knip@5/schema-jsonc.json",
   // Binaries the tests and scripts run from the system, not from node_modules.
   "ignoreBinaries": ["ffmpeg", "ffprobe"],
+  // What a prepare script downloads to make an example's media (examples/interview/scripts/prepare.sh).
+  "ignore": ["examples/*/.work/**"],
   "rules": { "exports": "error", "types": "error", "enumMembers": "error" },
   "workspaces": {
     ".": {
@@ -17,7 +19,9 @@
         // A 3D scene in an edit: the video file, loaded by path like any cut file, and the scene file it plays, whose
         // exports the player reads as a module.
         "examples/3d/*.tsx",
-        "examples/3d/*.scene.js"
+        "examples/3d/*.scene.js",
+        // The interview edit: its media is made by a script, so nothing imports the file.
+        "examples/interview/*.tsx"
       ],
       // Run through its binary by scripts/check-packages.mjs.
       "ignoreDependencies": ["@arethetypeswrong/cli"]

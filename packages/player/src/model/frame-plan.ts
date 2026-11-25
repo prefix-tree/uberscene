@@ -6,7 +6,7 @@ import {
   TRANSITION_TYPES,
   type Transform,
 } from "@uberscene/kit/schema";
-import { lookupAsset, type Placement, type ResolvedState } from "@uberscene/sdk/resolver";
+import { type AssetEntry, lookupAsset, type Placement, type ResolvedState } from "@uberscene/sdk/resolver";
 
 import { devWarn } from "../warn";
 import { backdropTracks, trackBands } from "./backdrop";
@@ -70,6 +70,17 @@ export interface DrawOp {
   readonly fallbackOpacity?: number;
   /** The canvas it paints on, when the file's track order needs more than one (`trackBands`); left out for the first. */
   readonly band?: number;
+  /**
+   * `cutout`: the matte asset decoded beside the footage at the same source time, whose luminance becomes the
+   * picture's alpha before its effects. `shrink` and `feather` are in composition pixels.
+   */
+  readonly matte?: MatteSpec;
+}
+
+export interface MatteSpec {
+  readonly asset: string;
+  readonly shrink: number;
+  readonly feather: number;
 }
 
 /** A composition background gradient, as the schema writes it. CSS angles: 0 points up, 180 (the default) runs down. */
@@ -319,6 +330,7 @@ function mediaOp(
   }
   const size = { width: asset.width ?? comp.width, height: asset.height ?? comp.height };
   const layout = layoutRect(comp, size, fit, transform, box);
+  const matte = matteOf(state, p, asset);
   return {
     ...common,
     kind: asset.kind === "image" ? "image" : "video",
@@ -327,7 +339,20 @@ function mediaOp(
     rect: layout.rect,
     matrix: shift(layout.matrix),
     ...(layout.crop ? { crop: layout.crop, cropReference: size } : {}),
+    ...(matte ? { matte } : {}),
   };
+}
+
+/** The matte a clip's `cutout` cuts with: only for footage whose matte is a video in the manifest (the resolver reports the rest). */
+export function matteOf(state: ResolvedState, p: Placement, asset: AssetEntry): MatteSpec | null {
+  const cutout = p.props.cutout;
+  if (cutout === undefined || cutout === false || p.kind !== "clip" || asset.kind !== "video" || !asset.matte)
+    return null;
+  if (lookupAsset(state.manifest, asset.matte)?.kind !== "video") return null;
+  const given =
+    typeof cutout === "object" && cutout !== null ? (cutout as { shrink?: unknown; feather?: unknown }) : {};
+  const px = (v: unknown): number => (typeof v === "number" && Number.isFinite(v) && v > 0 ? v : 0);
+  return { asset: asset.matte, shrink: px(given.shrink), feather: px(given.feather) };
 }
 
 /** A dip to black or white over everything drawn so far: an adjustment that maps the picture to the colour, `amount` of the way. */

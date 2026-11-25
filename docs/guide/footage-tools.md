@@ -28,6 +28,46 @@ To tune a key:
 
 It compares colour, not brightness, so the shadowed and lit parts of the screen go together.
 
+## Cut out a person
+
+Footage with no green screen needs a matte: a greyscale video of the same frames, white where the person is and black
+where the background is, made by a matting model. Add it like any footage, name it on the footage's manifest entry,
+and set `cutout` on the clip:
+
+```bash
+npx uberscene add talk.matte.webm
+```
+
+```json
+"talk": { "id": "talk", "kind": "video", "matte": "talk.matte", ... }
+```
+
+```tsx
+<Track id="cards" layout="free">
+  <Shape id="card" start={0} duration={6} type="rectangle" fill="#1d4ed8" ground width={1920} height={1080}
+    box={{ x: 960, y: 540, origin: "center" }} />
+</Track>
+<Track id="speaker" layout="free">
+  <Clip id="talk-cut" src="asset:talk" start={0} in="word:12" out="word:30.end" cutout
+    effects={[{ type: "grayscale" }, { type: "contrast", amount: 1.2 }]} />
+</Track>
+```
+
+- Where the matte is black the clip is transparent, so the tracks drawn before it show. Tracks draw in the order the
+  file writes them, footage included, so the card's track comes first. `ground` tells the layout check the card is
+  something to sit on, not a callout.
+- The matte follows the clip: the same trims, speed, freezes, `reverse`, crop and `box`. Each matte frame is read at
+  the same source time as the footage's.
+- The cut is made before `effects`, so a black-and-white grade changes the person and not what shows through.
+- `cutout={{ shrink: 2, feather: 1 }}` tidies the edge, in pixels of the composition: `shrink` pulls the edge in (to
+  lose a rim of the old background), `feather` softens it.
+- A clip with `cutout` and no matte is an error that says what to add; `uberscene lint` reports it as
+  `cutout-without-matte`.
+
+What makes a good matte, and the faults to look for on white and on a colour, is in the skill's interview reference.
+UberScene does not make mattes yet: use a matting model (RobustVideoMatting kept hair; it is GPL-3.0), and write the
+matte with the footage's exact frames and length.
+
 ## Hiding a face, a plate or a screen
 
 [`regionBlur`](/reference/effects/regionBlur) blurs inside a box. Give the box keys to follow what it hides:

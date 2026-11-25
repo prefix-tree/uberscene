@@ -894,6 +894,8 @@ function intrinsicCompute(
       p.duration = typeof dur === "number" ? dur : 0;
     } else {
       sourceRange(p, asset, markers);
+      if (props.cutout !== undefined && props.cutout !== false)
+        own.push(...cutoutErrors(node.id, asset, manifest, scene));
     }
   } else if (node.kind === "transition") {
     p.duration = lengthOr(props.duration, 0.5);
@@ -1475,6 +1477,35 @@ function settleMatches(pending: Map<string, Pending>): void {
     p.duration = 0;
     delete (p as Pending).durationDep;
   }
+}
+
+/** What stands between a clip's `cutout` and a matte to cut with: none, or the error that says what is missing. */
+function cutoutErrors(id: string, asset: AssetEntry, manifest: AssetManifest, scene: boolean): ResolveError[] {
+  const fail = (code: "SCHEMA" | "MISSING_ASSET", message: string): ResolveError[] => [
+    { code, id, prop: "cutout", message },
+  ];
+  if (scene || asset.kind !== "video")
+    return fail(
+      "SCHEMA",
+      `cutout needs footage with a matte; ${asset.id} is ${scene ? "a 3D scene" : `an ${asset.kind} asset`}`,
+    );
+  if (asset.matte === undefined)
+    return fail(
+      "SCHEMA",
+      `cutout needs a matte for ${asset.id}: a greyscale video of the same frames, white where the subject is. Add it (npx uberscene add ${asset.id}.matte.webm) and set "matte": "${asset.id}.matte" on ${asset.id} in the manifest`,
+    );
+  const matte = lookupAsset(manifest, asset.matte);
+  if (!matte)
+    return fail(
+      "MISSING_ASSET",
+      `the matte of ${asset.id}, asset ${asset.matte}, is not in the manifest; add it with npx uberscene add`,
+    );
+  if (matte.kind !== "video")
+    return fail(
+      "SCHEMA",
+      `the matte of ${asset.id}, asset ${asset.matte}, is an ${matte.kind}; a matte is a video of the same frames`,
+    );
+  return [];
 }
 
 /**

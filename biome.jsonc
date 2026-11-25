@@ -8,6 +8,8 @@
       "!**/__snapshots__",
       // Generated: media, measurements and placement fixtures.
       "!examples/*/media",
+      // What a prepare script downloads to make that media (examples/interview/scripts/prepare.sh).
+      "!examples/*/.work",
       "!examples/*/public",
       "!docs/public",
       "!docs/bench.json",

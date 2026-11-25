@@ -60,6 +60,21 @@ export const clipSchema = z.strictObject({
         .default("center"),
     })
     .optional(),
+  /**
+   * Cut the subject out of its background with the asset's matte: a greyscale video of the same frames, white where
+   * the subject is, named by `"matte": "<asset id>"` on the asset's manifest entry. Where the matte is black the clip
+   * is transparent, so what is under it shows. It applies before `effects`, so they act on the subject alone. `true`,
+   * or `{ shrink, feather }` in pixels of the composition: `shrink` pulls the edge in, `feather` softens it.
+   */
+  cutout: z
+    .union([
+      z.boolean(),
+      z.strictObject({
+        shrink: z.number().nonnegative().max(64).optional(),
+        feather: z.number().nonnegative().max(64).optional(),
+      }),
+    ])
+    .optional(),
 });
 
 /** `<Audio>` is `<Clip>` for audio-only assets: the same schema, no visual props accepted. */
