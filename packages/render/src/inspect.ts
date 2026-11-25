@@ -110,7 +110,7 @@ export function describeAt(state: ResolvedState, moment: Moment): MomentView {
       // Ends carry float fuzz from the resolver: a sound is over at its end, to the microsecond.
       if (!(t >= p.start && t < p.end - 1e-6) || !p.source) continue;
       const asset = lookupAsset(state.manifest, p.source.asset);
-      if (!asset || asset.kind === "image" || (asset.kind === "video" && !asset.audio)) continue;
+      if (!asset || asset.kind === "image" || (asset.kind !== "audio" && !asset.audio)) continue;
       const gain = envelopeAt(buildGainEnvelope(p, track, state, p.start, p.end), t, 1);
       heard.push({ id: p.id, track: track.id, asset: asset.id, gain: Math.round(gain * 100) / 100 });
     }

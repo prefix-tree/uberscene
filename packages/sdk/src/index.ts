@@ -61,7 +61,7 @@ export {
   lint,
   rules,
 } from "./source/lint/index";
-export { ALLOWED_IMPORTS, type CutModule, type LoadOptions, loadModule } from "./source/load";
+export { ALLOWED_IMPORTS, type CutModule, type LoadOptions, loadModule, runModule } from "./source/load";
 export { type GatherOptions, gatherLocalFiles } from "./source/local-files";
 export { parseSource, type Range, rangeOf } from "./source/parse";
 export { elementName, printElement, printLiteral, printProp, printValue } from "./source/print";

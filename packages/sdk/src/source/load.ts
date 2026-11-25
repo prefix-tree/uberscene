@@ -48,6 +48,16 @@ export interface LoadOptions {
 }
 
 export function loadModule(source: string, options: LoadOptions = {}): CutModule {
+  const exports = runModule(source, options);
+  if (typeof exports.default !== "function") throw new Error("The file has no default export (the video).");
+  return exports as unknown as CutModule;
+}
+
+/**
+ * Runs a module's source as `loadModule` runs a video file, with the same imports, scope and local files, and returns
+ * its exports whatever they are: a scene file (manifest kind `scene`) exports a shot, not a video.
+ */
+export function runModule(source: string, options: LoadOptions = {}): Record<string, unknown> {
   const offered = { ...ALLOWED_IMPORTS, ...options.imports };
   const files = options.files ?? {};
   const scope = Object.entries(options.scope ?? {});
@@ -86,6 +96,5 @@ export function loadModule(source: string, options: LoadOptions = {}): CutModule
   };
   const module = { exports: {} as Record<string, unknown> };
   run(compileModule(source), "", "The file", module);
-  if (typeof module.exports.default !== "function") throw new Error("The file has no default export (the video).");
-  return module.exports as unknown as CutModule;
+  return module.exports;
 }

@@ -25,6 +25,9 @@ const EXTENSIONS = [
   ".svg",
   // LUTs (the `lut` effect).
   ".cube",
+  // Scene files (kind `scene`): standalone 3D scenes whose frames are computed.
+  ".js",
+  ".mjs",
   // Fonts the manifest lists (`fonts`).
   ".ttf",
   ".otf",

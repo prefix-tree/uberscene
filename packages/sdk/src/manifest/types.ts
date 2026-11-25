@@ -18,8 +18,11 @@ export interface InstalledBlock {
 
 export interface AssetEntry {
   readonly id: string;
-  /** `lut`: a 3D colour lookup table (`.cube`), read by the `lut` effect, not played. */
-  readonly kind: "video" | "audio" | "image" | "lut";
+  /**
+   * `lut`: a 3D colour lookup table (`.cube`), read by the `lut` effect, not played. `scene`: a standalone 3D scene
+   * file (`.js`) that plays like silent footage whose frames are computed at the source time asked for.
+   */
+  readonly kind: "video" | "audio" | "image" | "lut" | "scene";
   /** Seconds. Images and LUTs report 0; an image may be held for any duration. */
   readonly duration: number;
   readonly fps?: number;

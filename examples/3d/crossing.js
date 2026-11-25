@@ -1,6 +1,8 @@
-// A blockout for a five-second shot: a walker crosses behind a table while the camera slides. This module only builds
-// things and computes the walk cycle. Where the table stands, the walker's path and the camera move are written on the
-// <Three> tag in crossing.tsx, so the editor's viewport can change them and the change shows up there.
+// A blockout for a five-second shot: a walker crosses behind a table while the camera slides. This module builds
+// things and computes the walk cycle. Used two ways:
+// - On a <Three shot> tag (crossing.tsx): the tag stages it, so the editor's viewport can change the staging there.
+// - As media (crossing-clip.tsx): the manifest lists this file as a `scene` asset, a <Clip> plays it like footage,
+//   and the `stage` below says where things stand, since no tag does.
 import { defineShot } from "@uberscene/kit";
 
 export default defineShot({
@@ -18,6 +20,31 @@ export default defineShot({
     swing: 28,
   },
   length: 5,
+  // The staging when the file plays as a scene asset: the same data as crossing.tsx's tag, in shot time. The reveal
+  // is at 2 s, where the tag ties it to the "reveal" marker (4 s in the edit, the shot starting at 2 s).
+  stage: {
+    background: "#1d1b18",
+    camera: {
+      fov: 35,
+      position: [
+        { at: 0, value: [-1.5, 1.4, 5.5], easing: "easeInOut" },
+        { at: 5, value: [1.5, 1.4, 5.5] },
+      ],
+      lookAt: [0, 1.1, 0],
+    },
+    objects: {
+      table: { position: [0, 0, 0.6] },
+      flat: { position: [-2.2, 0, -0.3] },
+      walker: {
+        position: [
+          { at: 0.5, value: [-2.5, 0, -0.8] },
+          { at: 2, value: [-1, 0, -0.8] },
+          { at: 3.2, value: [1.5, 0, -0.8] },
+        ],
+      },
+    },
+    inputs: { stride: 1.4 },
+  },
   build({ THREE, scene }) {
     const mat = (color) => new THREE.MeshStandardMaterial({ color, roughness: 0.85 });
     const box = (w, h, d, material, x = 0, y = 0, z = 0) => {

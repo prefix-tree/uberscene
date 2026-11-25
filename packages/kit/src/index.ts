@@ -61,6 +61,7 @@ export {
   type ShotInputDefault,
   type ShotObjectSpec,
   type ShotSampleArgs,
+  type ShotStage,
 } from "./jsx/shot";
 export * from "./jsx/use-seekable";
 export { type LayerClock, useLayer, useT } from "./jsx/use-t";

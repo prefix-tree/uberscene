@@ -63,7 +63,7 @@ export function buildAudioPlan(
       const src = p.source;
       if (!src || src.out <= src.in) continue;
       const asset = lookupAsset(state.manifest, src.asset);
-      if (!asset || asset.kind === "image" || (asset.kind === "video" && !asset.audio)) continue;
+      if (!asset || asset.kind === "image" || (asset.kind !== "audio" && !asset.audio)) continue;
       const reverse = p.props.reverse === true;
       const envelope = buildGainEnvelope(p, track, state, p.start, p.end);
       const children = p.children.map((id) => state.items.get(id)).filter((c): c is Placement => c !== undefined);

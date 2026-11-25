@@ -10,7 +10,8 @@ import type {
   MediaResolver,
   PlayerErrorEvent,
 } from "../types";
-import { ErrorFrameSource } from "./frame-source";
+import { defaultCreateCanvas, ErrorFrameSource } from "./frame-source";
+import { SceneFrameSource } from "./scene-frame-source";
 
 export interface AssetSourceDeps {
   readonly media: MediaResolver;
@@ -107,7 +108,11 @@ export class AssetSources {
     };
     try {
       const handle = await this.deps.media.resolve(assetId);
-      const source = this.deps.frameSourceFactory(assetId, handle, asset?.kind ?? "video");
+      // A scene's frames are computed, not decoded: whatever decoder the host chose, the scene engine draws them.
+      const source =
+        asset?.kind === "scene"
+          ? new SceneFrameSource(assetId, handle, asset, defaultCreateCanvas)
+          : this.deps.frameSourceFactory(assetId, handle, asset?.kind ?? "video");
       const info = await source.open();
       if (!info.decodable) {
         source.close();

@@ -44,3 +44,43 @@ export function holdLayerFrame(): () => void {
 export function layerFramesPending(): number {
   return pending.count;
 }
+
+/**
+ * A scene file's pictures at given times: a 3D scene built once and drawn at each moment asked for. What `draw`
+ * returns is a canvas (or anything `drawImage` takes) that holds the picture until the next `draw`.
+ */
+export interface SceneRenderer {
+  /** Seconds of the scene's own time, as its file declares them (`length`), if it does. */
+  readonly length?: number;
+  draw(seconds: number):
+    | { readonly width: number; readonly height: number }
+    | Promise<{
+        readonly width: number;
+        readonly height: number;
+      }>;
+  close(): void;
+}
+
+/**
+ * What turns a scene asset (manifest kind `scene`, a standalone `.js` file) into pictures. The player plays it as
+ * footage whose frames are computed: it asks for the frame at a source time, as it asks a decoder. The kit draws
+ * nothing; a host installs one, as `installSceneFiles` from `@uberscene/graphics/libraries` does.
+ */
+export interface SceneEngine {
+  /** Runs a scene file's source and builds it for pictures `size` pixels big. */
+  open(source: string, size: { readonly width: number; readonly height: number }): Promise<SceneRenderer>;
+}
+
+const scenes = ((globalThis as Record<symbol, { engine: SceneEngine | null }>)[
+  Symbol.for("@uberscene/kit/scene-engine")
+] ??= { engine: null });
+
+/** Install (or with `null`, remove) the engine that draws scene assets. */
+export function installSceneEngine(engine: SceneEngine | null): void {
+  scenes.engine = engine;
+}
+
+/** The installed scene engine, or null when the host installed none. */
+export function sceneEngine(): SceneEngine | null {
+  return scenes.engine;
+}

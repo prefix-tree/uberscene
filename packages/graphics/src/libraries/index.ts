@@ -44,6 +44,7 @@ export function installFreeCodeLibraries(): Readonly<Record<string, unknown>> {
 }
 
 export { MotionLayer, useLayerTime, useTimeline } from "./motion";
+export { installSceneFiles, openScene, type SceneLoader, sceneEngine } from "./scene";
 export {
   type ThreeCamera,
   type ThreeFrame,

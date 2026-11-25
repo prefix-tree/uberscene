@@ -19,7 +19,7 @@ import { createRef } from "react";
 import { flushSync } from "react-dom";
 import { createRoot } from "react-dom/client";
 
-import { installFreeCodeLibraries } from "@uberscene/graphics/libraries";
+import { installFreeCodeLibraries, installSceneFiles } from "@uberscene/graphics/libraries";
 import {
   frameAtSeconds,
   frameStartSeconds,
@@ -34,7 +34,7 @@ import {
   mediabunnyFrameSourceFactory,
   SETTLE_MS,
 } from "@uberscene/player/engine";
-import { type AssetManifest, collectModule, loadModule, resolve, withoutEffects } from "@uberscene/sdk";
+import { type AssetManifest, collectModule, loadModule, resolve, runModule, withoutEffects } from "@uberscene/sdk";
 
 import { measureSound, renderSoundtrack } from "./audio";
 import { createFreeCodeClock } from "./clock";
@@ -74,6 +74,8 @@ async function start(): Promise<void> {
   // export needs no network once Google's are cached. The player is told not to fetch them again.
   await addFontFaces(job.fonts.map((f) => ({ family: f.family, weight: f.weight, style: f.style, source: f.url })));
   const imports = installFreeCodeLibraries();
+  // Scene assets (kind `scene`): standalone .js files, run like the video file, drawn by three.js at each frame asked.
+  installSceneFiles((source) => runModule(source, { imports }));
   // The file's own requestAnimationFrame, performance, Date and Math.random run on the video's clock, set per frame.
   const clock = createFreeCodeClock(job.startedAt);
   const mod = loadModule(job.source, { imports, scope: clock.scope, ...(job.files ? { files: job.files } : {}) });

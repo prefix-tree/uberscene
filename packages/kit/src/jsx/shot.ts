@@ -44,6 +44,18 @@ export interface ShotBuilt {
 }
 // biome-ignore-end lint/suspicious/noExplicitAny: end of the three.js types.
 
+/**
+ * Where a scene file stages itself when it plays as media (a `<Clip>` of a scene asset), with no `<Three>` tag to
+ * stage it: the same literal data the tag's `camera`, `objects` and `inputs` hold, keys in shot time included.
+ */
+export interface ShotStage {
+  readonly camera?: Readonly<Record<string, unknown>>;
+  readonly objects?: Readonly<Record<string, Readonly<Record<string, unknown>>>>;
+  readonly inputs?: Readonly<Record<string, unknown>>;
+  /** A CSS colour behind the scene; without one the scene's frames are transparent where nothing is drawn. */
+  readonly background?: string;
+}
+
 export interface ShotDefinition {
   readonly kind: "shot";
   /** Every object the file may place, by id. */
@@ -52,6 +64,8 @@ export interface ShotDefinition {
   readonly inputs: Readonly<Record<string, ShotInputDefault>>;
   /** How long the shot's own time runs, in seconds; past it the last pose holds. */
   readonly length?: number;
+  /** How the shot stages itself when a scene asset plays it as media. A `<Three shot>` tag's props replace it. */
+  readonly stage?: ShotStage;
   readonly build: (args: ShotBuildArgs) => ShotBuilt;
 }
 
