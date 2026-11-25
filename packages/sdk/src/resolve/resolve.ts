@@ -4,6 +4,7 @@ import { isScene } from "@uberscene/kit";
 import {
   applyTheme,
   capabilitiesOf,
+  DERIVED_KINDS,
   type DeclaredFont,
   defaultTransitionParams,
   ENGINE_SCHEMAS,
@@ -91,6 +92,8 @@ export interface ResolvedTrack {
   readonly solo: boolean;
   readonly role?: TrackRole;
   readonly group?: string;
+  /** The `<Camera>` the track is written inside, which moves everything on it. Absent for a track outside one. */
+  readonly camera?: string;
   /** The main track of a file that writes its clips straight in the composition: no `<Track>` stands for it. */
   readonly implicit?: true;
   readonly items: readonly string[];
@@ -263,24 +266,49 @@ function compute(
 
   const markersKey = markersSignature(markers);
   let order = 0;
+  // A camera's tracks are numbered in place, so the file's order is the drawing order across the camera's edge.
+  const addTrack = (child: CollectedNode, camera: string | undefined): void => {
+    const p = parseProps(child, errors, theme);
+    tracks.push({
+      id: child.id,
+      layout: (p.layout as TrackLayout) ?? "sequence",
+      order: order++,
+      locked: Boolean(p.locked),
+      hidden: Boolean(p.hidden),
+      muted: Boolean(p.muted),
+      solo: Boolean(p.solo),
+      ...(typeof p.role === "string" ? { role: p.role as TrackRole } : {}),
+      ...(typeof p.group === "string" ? { group: p.group } : {}),
+      ...(camera !== undefined ? { camera } : {}),
+      ...(child.implicit ? { implicit: true as const } : {}),
+      items: child.children.map((c) => c.id),
+    });
+    for (const item of child.children) intrinsic(item, child.id, pending, manifest, markers, markersKey, theme, errors);
+  };
+  let camera: CollectedNode | undefined;
   for (const child of root.children) {
     if (child.kind === "track") {
-      const p = parseProps(child, errors, theme);
-      tracks.push({
-        id: child.id,
-        layout: (p.layout as TrackLayout) ?? "sequence",
-        order: order++,
-        locked: Boolean(p.locked),
-        hidden: Boolean(p.hidden),
-        muted: Boolean(p.muted),
-        solo: Boolean(p.solo),
-        ...(typeof p.role === "string" ? { role: p.role as TrackRole } : {}),
-        ...(typeof p.group === "string" ? { group: p.group } : {}),
-        ...(child.implicit ? { implicit: true as const } : {}),
-        items: child.children.map((c) => c.id),
-      });
-      for (const item of child.children)
-        intrinsic(item, child.id, pending, manifest, markers, markersKey, theme, errors);
+      addTrack(child, undefined);
+    } else if (child.kind === "camera") {
+      if (camera) {
+        errors.push({
+          code: "INVALID_CHILD",
+          id: child.id,
+          message: `a composition has one <Camera>: move these tracks into <Camera id="${camera.id}">, or out of a camera`,
+        });
+      } else camera = child;
+      for (const inner of child.children) {
+        if (inner.kind === "track") addTrack(inner, camera.id);
+        else if (!DERIVED_KINDS.has(inner.kind))
+          errors.push({
+            code: "INVALID_CHILD",
+            id: inner.id,
+            message:
+              inner.kind === "camera"
+                ? "a <Camera> cannot hold another <Camera>"
+                : `<Camera> holds <Track>s only: put <${inner.kind}> in a <Track>, or outside the camera`,
+          });
+      }
     } else if (child.kind === "captions") {
       intrinsic(child, null, pending, manifest, markers, markersKey, theme, errors);
     } else if (child.kind === "multicam") {
@@ -369,14 +397,36 @@ function compute(
   const items = new Map<string, Placement>();
   // The composition, its tracks and its markers are addressable too: the inspector edits them by id.
   const structural: Placement[] = [];
+  const structuralTrack = (child: CollectedNode, parent: string): void => {
+    const own: ResolveError[] = [];
+    const props = parseProps(child, own, theme);
+    structural.push({
+      id: child.id,
+      kind: "track",
+      track: child.id,
+      parent,
+      children: child.children.map((c) => c.id),
+      start: 0,
+      end: 0,
+      duration: 0,
+      props,
+      editable: child.editable,
+      lockedProps: child.lockedProps,
+      boundProps: child.boundProps,
+      errors: own,
+      ...themedField(props),
+    });
+  };
   for (const child of root.children) {
     if (child.kind === "track") {
+      structuralTrack(child, root.id);
+    } else if (child.kind === "camera") {
       const own: ResolveError[] = [];
       const props = parseProps(child, own, theme);
       structural.push({
         id: child.id,
-        kind: "track",
-        track: child.id,
+        kind: "camera",
+        track: null,
         parent: root.id,
         children: child.children.map((c) => c.id),
         start: 0,
@@ -389,6 +439,16 @@ function compute(
         errors: own,
         ...themedField(props),
       });
+      for (const inner of child.children) {
+        if (inner.kind === "track") structuralTrack(inner, child.id);
+        else if (inner.kind === "keyframe") {
+          // The camera's keys are on the video's clock: `at` is seconds from its start.
+          const keyErrors: ResolveError[] = [];
+          const keyProps = parseProps(inner, keyErrors, theme);
+          const at = lengthOr(keyProps.at, 0);
+          structural.push(place(inner, null, child.id, at, 0, keyProps, keyErrors, undefined, undefined));
+        }
+      }
     } else if (child.kind === "marker") {
       const own: ResolveError[] = [];
       const props = parseProps(child, own, theme);
@@ -435,7 +495,7 @@ function compute(
   }
 
   for (const s of structural) {
-    items.set(s.id, reuse(s.kind === "track" ? { ...s, end: duration, duration } : s));
+    items.set(s.id, reuse(s.kind === "track" || s.kind === "camera" ? { ...s, end: duration, duration } : s));
     errors.push(...s.errors);
   }
   items.set(

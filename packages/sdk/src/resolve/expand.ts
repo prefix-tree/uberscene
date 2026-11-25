@@ -4,7 +4,7 @@
 // `expandKeys` makes those items from the props, after the patch log is overlaid and before the props are parsed, so
 // an edit that writes a key list is read the same way as a file that does.
 
-import { capabilitiesOf } from "@uberscene/kit/schema";
+import { CAMERA_FIELDS, capabilitiesOf } from "@uberscene/kit/schema";
 
 import { createPatchLog } from "../patches/log";
 import type { Json, PatchLog } from "../patches/types";
@@ -80,7 +80,7 @@ interface Expansion {
 
 /** One element's props without their keys, effects, speed keys and holds, and the items they make. Null when none. */
 function expandNode(node: CollectedNode): Expansion | null {
-  if (capabilitiesOf(node.kind).placementScope !== "track") return null;
+  if (node.kind !== "camera" && capabilitiesOf(node.kind).placementScope !== "track") return null;
   const props: Record<string, unknown> = { ...node.props };
   const derived: CollectedNode[] = [];
   const item = (path: string, kind: string, itemProps: Record<string, unknown>, children: CollectedNode[] = []) => {
@@ -116,6 +116,14 @@ function expandNode(node: CollectedNode): Expansion | null {
     derived.push(...keyItems(path, value, { property }));
     return value[0]?.value;
   };
+
+  if (node.kind === "camera") {
+    // A camera's keys are the same items, named `camera.x`…; its first key stands in as the constant.
+    for (const f of Object.keys(CAMERA_FIELDS)) {
+      if (isKeyList(props[f])) props[f] = take(props[f], f, `camera.${f}`);
+    }
+    return derived.length === 0 ? null : { props, derived };
+  }
 
   const transform = props.transform;
   if (transform && typeof transform === "object" && !Array.isArray(transform)) {
