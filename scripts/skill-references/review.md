@@ -79,6 +79,7 @@ Render only after the person has seen the sheet, unless they asked for the file 
 | A cut feels like a stop | Key both sides moving the same way through the cut ([motion.md](motion.md)) |
 | A landing differs between the preview and the render | Something carries state between frames; draw it as a function of the time (`useLayer()`, `spring()`) |
 | Text cut at the edge | Every word fully in the frame or fully out; `--check-layout` lists what leaves the safe area |
+| Lines that touch, a title that wraps or spills out of its box | `--check-layout` reports `text-over-text` and `text-fit`, with the box or size that fixes it |
 | A zoom used for energy | Cut on the beat instead; hold a good shot for a whole beat |
 | Labels and words nobody asked for | Only the words in the plan go on screen |
 | Glow, gradients, lens flares | Name them in the plan's banned line, then remove them |

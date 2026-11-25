@@ -217,6 +217,117 @@ describe("checkLayout", () => {
     expect(result.summary).toMatch(/^1 layout issue on 1 element/);
   });
 
+  it("reports a title over another title once, on the one drawn over it", async () => {
+    const line = (id: string, y: number, start = 0) =>
+      h(
+        Title,
+        { id, start, duration: 1, style: { size: 60 }, box: { x: 320, y, width: 500, height: 80, origin: "center" } },
+        "OVERLAP",
+      );
+    const tight = await check(
+      h(
+        Composition,
+        { fps: 10, width: 640, height: 360 },
+        h(Track, { id: "t", layout: "free" }, line("a", 150), line("b", 190)),
+      ),
+    );
+    const over = tight.issues.filter((i) => i.rule === "text-over-text");
+    expect(brief(over)).toEqual(["text-over-text:b>a@0.00-0.90"]);
+    expect(over[0]!.message).toBe('title "b" covers title "a" from 0.00 s to 0.90 s.');
+    expect(over[0]!.fix).toMatch(/^move it (up|down) \d+ px .*, or start it after "a" ends, then check again/);
+    const apart = await check(
+      h(
+        Composition,
+        { fps: 10, width: 640, height: 360 },
+        h(Track, { id: "t", layout: "free" }, line("a", 120), line("b", 220)),
+      ),
+    );
+    expect(apart.issues.filter((i) => i.rule === "text-over-text")).toEqual([]);
+    const later = await check(
+      h(
+        Composition,
+        { fps: 10, width: 640, height: 360 },
+        h(Track, { id: "t", layout: "free" }, line("a", 150), line("b", 190, 1)),
+      ),
+    );
+    expect(later.issues.filter((i) => i.rule === "text-over-text")).toEqual([]);
+  });
+
+  it("reports a title whose text does not fit its box, across or down", async () => {
+    const title = (id: string, text: string, box: object, extra: object = {}) =>
+      h(
+        Title,
+        { id, start: 0, duration: 1, style: { size: 40 }, box: { x: 320, y: 180, origin: "center", ...box }, ...extra },
+        text,
+      );
+    const result = await check(
+      h(
+        Composition,
+        { fps: 10, width: 640, height: 360 },
+        h(
+          Track,
+          { id: "t", layout: "free" },
+          title("tall", "ONE\nTWO\nTHREE", { width: 300, height: 60 }),
+          title("wide", "SUPERCALIFRAGILISTIC", { width: 150, height: 60 }),
+        ),
+      ),
+    );
+    const fit = result.issues.filter((i) => i.rule === "text-fit");
+    expect(fit.map((i) => i.id).sort()).toEqual(["tall", "wide"]);
+    const tall = fit.find((i) => i.id === "tall")!;
+    expect(tall.message).toMatch(
+      /^title "tall" does not fit its box: 3 lines of 48 px need 144 px, the box is 60 px high/,
+    );
+    expect(tall.fix).toBe("make box.height 144, or style.size 16 or less, or cut words");
+    expect(tall.text).toMatchObject({ lines: 3, written: 3, box: { w: 300, h: 60 } });
+    const wide = fit.find((i) => i.id === "wide")!;
+    expect(wide.message).toMatch(/^title "wide" does not fit its box: its text is \d+ px wide, the box is 150 px wide/);
+    expect(wide.fix).toMatch(/^make box\.width \d+, or style\.size \d+ or less$/);
+  });
+
+  it("reports a soft wrap only in a box the file gives a width, and judges a typed title by its whole text", async () => {
+    const headline = (id: string, text: string, box: object, extra: object = {}) =>
+      h(
+        Title,
+        { id, start: 0, duration: 1, style: { size: 40 }, box: { x: 320, y: 180, origin: "center", ...box }, ...extra },
+        text,
+      );
+    const result = await check(
+      h(
+        Composition,
+        { fps: 10, width: 640, height: 360 },
+        h(Track, { id: "a", layout: "free" }, headline("narrow", "A LONG HEADLINE", { width: 200, height: 160 })),
+        h(
+          Track,
+          { id: "b", layout: "free" },
+          headline("broken", "A LONG\nHEADLINE", { y: 60, width: 200, height: 110 }),
+        ),
+        h(Track, { id: "c", layout: "free" }, headline("free", "A LONG HEADLINE", { y: 300, height: 50 })),
+        h(
+          Track,
+          { id: "d", layout: "free" },
+          headline(
+            "typed",
+            "A LONG HEADLINE",
+            { x: 120, y: 300, width: 200, height: 100 },
+            {
+              animation: { type: "typewriter", in: 0.9 },
+            },
+          ),
+        ),
+      ),
+    );
+    const fit = result.issues.filter((i) => i.rule === "text-fit");
+    expect(fit.map((i) => i.id).sort()).toEqual(["narrow", "typed"]);
+    const narrow = fit.find((i) => i.id === "narrow")!;
+    expect(narrow.message).toMatch(/^title "narrow" wraps onto 2 lines in a 200 px wide box; on one line it is \d+ px/);
+    expect(narrow.fix).toMatch(
+      /^widen box\.width to \d+, make style\.size \d+ or less, or write a line break where it should break$/,
+    );
+    // Typed in: reported from the first frame it draws anything (0.1 s, one letter in), judged on its whole text.
+    expect(fit.find((i) => i.id === "typed")!.from).toBe(0.1);
+  });
+
   it("points an element a loop made at the JSX in the loop, and lists issues by line", async () => {
     const text = [
       'import { Composition, Shape, Track } from "@uberscene/kit";',

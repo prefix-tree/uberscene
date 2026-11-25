@@ -14,7 +14,7 @@ import { buildSourceIndex, lookupAsset, type ResolvedState, type SourceIndex, ty
 import type { FontFile } from "./fonts";
 import { checkReadTime } from "./read-check";
 import { type ExportSource, openEngine } from "./renderer";
-import type { InkBounds as OverlayBounds } from "./web/page/protocol";
+import type { InkBounds as OverlayBounds, TextFit } from "./web/page/protocol";
 
 /** Margins as fractions of the frame's height (top, bottom) and width (left, right). */
 export interface Insets {
@@ -40,7 +40,14 @@ export const SAFE_ZONES = {
 } as const satisfies Record<string, Insets>;
 export type SafeZoneName = keyof typeof SAFE_ZONES;
 
-export type LayoutRule = "frame-edge" | "safe-zone" | "captions" | "subject" | "read-time";
+export type LayoutRule =
+  | "frame-edge"
+  | "safe-zone"
+  | "captions"
+  | "subject"
+  | "text-over-text"
+  | "text-fit"
+  | "read-time";
 
 /**
  * One element breaking one rule over a run of consecutive samples, described for a reader who cannot see the
@@ -62,6 +69,8 @@ export interface LayoutIssue {
   readonly box?: DrawRect;
   /** What it breaks at `at`: the frame, the safe zone, or the captions' or subject's box it overlaps. */
   readonly area?: DrawRect;
+  /** `text-fit`: the title's whole text as laid out in its box at `at`. */
+  readonly text?: TextFit;
   /** `read-time`: seconds on screen, and seconds its words need. */
   readonly seconds?: number;
   readonly needs?: number;
@@ -130,6 +139,9 @@ type Run = { -readonly [K in keyof Sampled]: Sampled[K] } & { n: number; worst: 
  * of consecutive offending samples. Overlays beneath the footage, and ones whose ink fills the frame (backgrounds),
  * are not checked; neither is a moment where an element is fainter than 10%. Titles on screen for less time than their
  * words take to read are reported too (`read-time`, see `checkReadTime`), from the timeline rather than the frames.
+ * Titles are also checked against each other (`text-over-text`: one title's ink over another's) and against their
+ * own box (`text-fit`: the whole text, as it is once every word shows, spills out of the box, or wraps in a box the
+ * file gave a width; its `text` holds the measurement, its `area` the safe zone a wider box must stay in).
  */
 export async function checkLayout(options: LayoutCheckOptions): Promise<LayoutCheckResult> {
   const { state } = options;
@@ -227,6 +239,22 @@ export async function checkLayout(options: LayoutCheckOptions): Promise<LayoutCh
             break;
           }
         }
+      }
+      // Titles over titles: each pair once, reported on the one drawn later (over the other).
+      const titles = shown.filter((b) => b.kind === "title");
+      for (let j = 1; j < titles.length; j++)
+        for (let i = 0; i < j; i++) {
+          const hit = collision(titles[j]!.parts, titles[i]!.parts);
+          if (hit) report("text-over-text", titles[j]!, n, hit.size, hit.mine, hit.theirs, titles[i]!.id, said);
+        }
+      // Titles whose whole text does not fit its box, or wraps in a box the file gave a width.
+      for (const b of titles) {
+        if (!b.text) continue;
+        const spill = misfit(b.text);
+        if (spill <= 0) continue;
+        report("text-fit", b, n, spill, b.rect, safe, undefined, said);
+        const run = open.get(`text-fit|${b.id}|`);
+        if (run && run.at === frameStartSeconds(n, rate)) run.text = b.text;
       }
     }
   } finally {
@@ -450,7 +478,13 @@ function describe(issue: Sampled, at?: Placed): LayoutIssue {
           : 0;
     return { ...issue, message, fix: moveText(issue.kind, dx, dy, at) };
   }
-  const other = issue.rule === "subject" ? "the subject" : `captions "${issue.with}"`;
+  if (issue.rule === "text-fit" && issue.text) return { ...issue, ...fitWords(issue.text, issue.area, who, when) };
+  const other =
+    issue.rule === "subject"
+      ? "the subject"
+      : issue.rule === "text-over-text"
+        ? `title "${issue.with}"`
+        : `captions "${issue.with}"`;
   const message = `${who} covers ${other} ${when}.`;
   // The shortest way out of the overlap, one axis at a time.
   const moves: [number, number][] = [
@@ -465,7 +499,48 @@ function describe(issue: Sampled, at?: Placed): LayoutIssue {
   return {
     ...issue,
     message,
-    fix: `${moveText(issue.kind, Math.round(dx), Math.round(dy), at)}, then check again: the move may run into something else`,
+    fix: `${moveText(issue.kind, Math.round(dx), Math.round(dy), at)}${issue.rule === "text-over-text" ? `, or start it after "${issue.with}" ends` : ""}, then check again: the move may run into something else`,
+  };
+}
+
+/** How far a title's text spills out of its box, in pixels: across past its sides, or down past its height by more
+ * than a quarter of a line (the room above and below the letters). 1 for a soft wrap in a box the file gave a width.
+ * 0 when it fits. */
+function misfit(f: TextFit): number {
+  const wide = Math.max(-f.content.x, f.content.x + f.content.w - f.box.w);
+  const tall = f.lines * f.lineHeight - f.box.h;
+  const over = Math.max(wide > SLACK ? wide : 0, tall > Math.max(SLACK, f.lineHeight / 4) ? tall : 0);
+  if (over > 0) return over;
+  return f.fixedWidth && f.lines > f.written ? 1 : 0;
+}
+
+/** The message and the fix of a `text-fit` issue; `safe` caps a wider box at the safe zone's width. */
+function fitWords(f: TextFit, safe: DrawRect, who: string, when: string): { message: string; fix: string } {
+  const lines = `${f.lines} line${f.lines === 1 ? "" : "s"}`;
+  const wide = Math.max(-f.content.x, f.content.x + f.content.w - f.box.w);
+  const need = Math.ceil(f.lines * f.lineHeight);
+  const box = { w: Math.round(f.box.w), h: Math.round(f.box.h) };
+  if (need - f.box.h > Math.max(SLACK, f.lineHeight / 4))
+    return {
+      message: `${who} does not fit its box: ${lines} of ${Math.round(f.lineHeight)} px need ${need} px, the box is ${box.h} px high, ${when}.`,
+      fix: `make box.height ${need}, or style.size ${Math.floor((f.size * f.box.h) / need)} or less, or cut words`,
+    };
+  if (wide > SLACK) {
+    const width = Math.ceil(f.content.w);
+    return {
+      message: `${who} does not fit its box: its text is ${width} px wide, the box is ${box.w} px wide, ${when}.`,
+      fix: `make box.width ${width}, or style.size ${Math.floor((f.size * f.box.w) / f.content.w)} or less`,
+    };
+  }
+  const natural = Math.ceil(f.natural);
+  const size = Math.floor((f.size * f.box.w) / f.natural);
+  const breakIt = "or write a line break where it should break";
+  return {
+    message: `${who} wraps onto ${lines} in a ${box.w} px wide box; on one line it is ${natural} px, ${when}.`,
+    fix:
+      natural <= safe.w
+        ? `widen box.width to ${natural}, make style.size ${size} or less, ${breakIt}`
+        : `make style.size ${size} or less, ${breakIt} (on one line it is wider than the safe zone)`,
   };
 }
 

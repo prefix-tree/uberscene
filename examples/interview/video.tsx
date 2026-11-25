@@ -232,7 +232,7 @@ export default function Video() {
           at="word:45"
           duration={1.06}
           style={{ font: caps, size: 330, weight: 700, color: INK, align: "left" }}
-          box={{ x: 770, y: 400, width: 1040, height: 400, origin: "topLeft" }}
+          box={{ x: 770, y: 400, width: 1080, height: 400, origin: "topLeft" }}
           enter={{ type: "slideUp", duration: 0.22, easing: "easeOutQuart" }}
           exit={{ type: "none" }}
         >
@@ -308,7 +308,7 @@ export default function Video() {
           at="word:7"
           duration={2.22}
           style={{ font: caps, size: 128, weight: 700, color: BLUE, align: "left", background: WHITE }}
-          box={{ x: 1200, y: 562, width: 470, height: 140, origin: "topLeft" }}
+          box={{ x: 1200, y: 562, width: 480, height: 140, origin: "topLeft" }}
           enter={{ type: "slideUp", duration: 0.22, easing: "easeOutQuart" }}
           exit={{ type: "none" }}
         >
@@ -414,7 +414,7 @@ export default function Video() {
             letterSpacing: -4,
           }}
           animation={{ type: "typewriter", in: 0.3 }}
-          box={{ x: 130, y: 244, width: 990, height: 128, origin: "topLeft" }}
+          box={{ x: 130, y: 252, width: 990, height: 128, origin: "topLeft" }}
           enter={{ type: "none" }}
           exit={{ type: "none" }}
         >
@@ -567,7 +567,7 @@ export default function Video() {
             letterSpacing: -4,
           }}
           animation={{ type: "typewriter", in: 0.3 }}
-          box={{ x: 130, y: 234, width: 400, height: 128, origin: "topLeft" }}
+          box={{ x: 130, y: 242, width: 400, height: 128, origin: "topLeft" }}
           enter={{ type: "none" }}
           exit={{ type: "none" }}
         >

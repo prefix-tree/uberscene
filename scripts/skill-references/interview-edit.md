@@ -42,7 +42,7 @@ interviews in general, see [kinds.md](kinds.md).
 | `uberscene lint` | Ids, timing, the same footage twice on one track, a gap on the main track | Anything about how it looks |
 | `uberscene inspect` | Every element's seconds, so card lengths can be worked out from word times | |
 | `uberscene look --at …` | The real frame of each card. Most layout mistakes were found here | Motion and sound. Draw a still of every card; a card you did not look at is a card you did not check |
-| `--check-layout` | What leaves the safe zone. With `--subject x,y,w,h` for the face, a title over the face. A title too short to read (`read-time`): on this film, a hook word and four typed lines | Two titles overlapping each other, and a title that wraps or overflows its box: both pass. A long title in a narrow `box` wraps without warning, so give big titles a generous width and look |
+| `--check-layout` | What leaves the safe zone. With `--subject x,y,w,h` for the face, a title over the face. A title too short to read (`read-time`): on this film, a hook word and four typed lines | Since `text-over-text` and `text-fit`, two titles that overlap and a title that wraps or spills out of its box are reported (on this film: a descender in a highlighted line, two words wider than their box). Whether the text looks good still takes a still |
 | `--check-motion` | A stretch with nothing moving (only the end card, a hold on purpose) | Whether something moves too fast to read |
 | `look --listen all` | The mix's loudness and peak over time | What it sounds like |
 | `ffmpeg -af ebur128=peak=true` on the render | The loudness of the file people get | |

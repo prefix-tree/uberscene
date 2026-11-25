@@ -9,7 +9,7 @@ after every change.
 | Whether the file keeps to the conventions an editor relies on | `uberscene lint video.tsx` |
 | What plays when, and which words each clip says | `uberscene inspect video.tsx` |
 | What it looks like | `uberscene look video.tsx` |
-| Whether anything leaves the frame, the safe zone, or covers the captions or the speaker, and whether every title stays long enough to read | `uberscene video.tsx --check-layout` |
+| Whether anything leaves the frame, the safe zone, or covers the captions or the speaker; whether titles overlap or fit their box; whether every title stays long enough to read | `uberscene video.tsx --check-layout` |
 | Whether anything stays still that shouldn't | `uberscene video.tsx --check-motion` ([Motion check](/reference/cli#motion-check)) |
 | Where each thing sits at a moment | `uberscene where video.tsx --at 2.6` |
 | Whether the exported file is sound | `ffprobe` and `ffmpeg` |
@@ -140,7 +140,27 @@ It writes no file, and exits with 3 when it finds a problem, so a script can sto
 | `safe-zone` | It is inside the frame but outside the safe zone. |
 | `captions` | It overlaps a line of captions. |
 | `subject` | It overlaps the subject, such as the speaker's face. |
+| `text-over-text` | A title's ink overlaps another title's: a descender in the line below, a highlight box over the line above. Reported once per pair, on the title drawn over the other. |
+| `text-fit` | A title's text spills out of its box (wider than the box, or more lines than its height holds), or wraps in a box the file gives a `width`. |
 | `read-time` | A title is on screen for less than 0.5 s plus 0.3 s a word, by more than a frame. |
+
+**Text that fits** is judged on a title's whole text, as it is once every word shows, laid out in its box: a title
+that types in is checked from its first frame, not when its last letter lands. Its text is too wide when a word runs
+past the box's sides, and too tall when its lines need more than a quarter of a line over the box's height (the
+room above and below the letters). A title that wraps onto more lines than the file writes is reported only when the
+file gives its box a `width`; one laid out across the frame wraps as a paragraph does, and a line break written in
+the text is never reported.
+
+```text
+video.tsx:235:11: text-fit: title "hook-2" does not fit its box: its text is 1069 px wide, the box is 1040 px wide, from 0.50 s to 1.00 s.
+  fix: make box.width 1069, or style.size 321 or less
+
+video.tsx:417:11: text-over-text: title "craft-2" covers title "craft-1" from 16.02 s to 17.52 s.
+  fix: move it down 6 px (box.y 250, a narrower box.width, or a smaller style.size), or start it after "craft-1" ends, then check again: the move may run into something else
+```
+
+A wrap reads `title "head" wraps onto 2 lines in a 200 px wide box; on one line it is 312 px`, with the width that
+keeps it on one line (capped at the safe zone), the size that does, or a line break.
 
 **Read time** is worked out from the timeline, not from frames: a title's resolved start and end (after anchors, words
 and the end of what holds it) against 0.5 s to find it plus 0.3 s a word. A title that types in needs its
@@ -169,7 +189,9 @@ It samples every frame (or every `--step` seconds, between `--from` and `--to`) 
 actually draws, after its entrance, exit, keyframes and transform, so a slide that crosses the edge between two
 samples is still caught. Hollow graphics count by the cells their ink touches, so corner brackets round a face don't
 cover it. Overlays beneath the footage, ones that fill the frame and ones fainter than 10% are not checked. Subject
-boxes are mapped through each clip's crop, fit and transform.
+boxes are mapped through each clip's crop, fit and transform. For `text-fit`, each title's whole text is also laid out
+once more in a hidden box of the same size, with no animation or transform, and its lines, its width and its width on
+one line are read from the browser's layout.
 
 From code: `checkLayout({ state, media, source: { ...video.source, file }, safeZone, subject })`, and
 `formatLayout(result)` for the text.
@@ -178,7 +200,9 @@ From code: `checkLayout({ state, media, source: { ...video.source, file }, safeZ
 ::: details The report as JSON
 `--json` prints the same report as data. `from` and `to` are the first and last samples with the problem; `at` is the
 worst one, where `box` is the element's ink and `area` is what it breaks. Pixels are counted from the top left. A
-`read-time` issue has no `box` or `area`; it has `seconds` and `needs`.
+`read-time` issue has no `box` or `area`; it has `seconds` and `needs`. A `text-fit` issue has `text`, the measurement
+(`box`, `lines`, `written`, `content`, `natural`, `size`, `lineHeight`), and its `area` is the safe zone a wider box must
+stay in.
 
 ```json
 {
