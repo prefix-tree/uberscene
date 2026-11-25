@@ -6,6 +6,8 @@ const src = (p: string): string => new URL(p, import.meta.url).pathname;
 export default defineConfig({
   root: src("./page"),
   plugins: [react()],
+  // The scene page loads its file with the SDK's loadModule, whose source tools pull Babel; Babel reads process.env.
+  define: { "process.env": "{}" },
   logLevel: "error",
   resolve: {
     alias: {
