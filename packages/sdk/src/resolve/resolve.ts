@@ -51,6 +51,7 @@ import {
 import type { ResolveError } from "./errors";
 import { derivedOrigin, expandKeys } from "./expand";
 import { overlay } from "./overlay";
+import { type PushSpec, pushKeys } from "./push";
 import { placeScene, type SceneUse, sceneAssetId, withSceneAssets } from "./scene3d";
 import { freezeHoldsOf, heldWithin, holdTotal, rampAdvance, rampInverse, reachedHolds, speedKeysOf } from "./speed";
 import type { CollectedNode, CollectedTree, Editable, LayerInterior } from "./tree";
@@ -497,6 +498,59 @@ function compute(
   for (const s of structural) {
     items.set(s.id, reuse(s.kind === "track" || s.kind === "camera" ? { ...s, end: duration, duration } : s));
     errors.push(...s.errors);
+  }
+  // A camera's push becomes ordinary camera keys, made once everything it names has a start: the player, the export
+  // and the tools then read a pushed camera as they read one keyed by hand.
+  const pushed = camera ? items.get(camera.id) : undefined;
+  const push = pushed?.props.push as PushSpec | undefined;
+  if (camera && pushed && push) {
+    const keyed = (["x", "y", "zoom"] as const).filter((f) =>
+      pushed.children.some((c) => items.get(c)?.props.property === `camera.${f}`),
+    );
+    if (keyed.length > 0) {
+      errors.push({
+        code: "SCHEMA",
+        id: camera.id,
+        prop: "push",
+        message: `push sets the camera's x, y and zoom, and ${keyed.join(" and ")} ${keyed.length > 1 ? "have" : "has"} keys of ${keyed.length > 1 ? "their" : "its"} own: write ${keyed.length > 1 ? "them" : "it"} as a number (where the view starts), or turn the push into keys with camera/bakePush`,
+      });
+    } else {
+      const made = pushKeys(
+        pushed,
+        push,
+        items,
+        tracks,
+        { width: Number(compParsed.width ?? 1920), height: Number(compParsed.height ?? 1080) },
+        manifest,
+      );
+      for (const problem of made.problems)
+        errors.push({ code: "UNKNOWN_REF", id: problem.id, prop: "push", message: problem.message });
+      const count = { x: 0, y: 0, zoom: 0 };
+      const ids: string[] = [];
+      for (const key of made.keys) {
+        const id = `${camera.id}.push.${key.field}.${count[key.field]++}`;
+        const props = {
+          id,
+          property: `camera.${key.field}`,
+          at: key.at,
+          value: key.value,
+          easing: key.easing ?? "linear",
+        };
+        const node: CollectedNode = {
+          id,
+          kind: "keyframe",
+          props,
+          children: [],
+          parent: camera.id,
+          editable: camera.editable,
+          lockedProps: [],
+          boundProps: {},
+        };
+        items.set(id, place(node, null, camera.id, key.at, 0, props, [], undefined, undefined));
+        ids.push(id);
+      }
+      if (ids.length > 0) items.set(camera.id, reuse({ ...pushed, children: [...pushed.children, ...ids] }));
+    }
   }
   items.set(
     root.id,
