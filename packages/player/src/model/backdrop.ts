@@ -32,3 +32,55 @@ export function backdropTracks(state: ResolvedState): ReadonlySet<string> {
   memo.set(state, set);
   return set;
 }
+
+/** Where each track draws, when footage and overlays are stacked in the order the file writes its tracks. */
+export interface TrackBands {
+  /** How many canvases the footage needs: one per run of footage tracks that overlays split. At least 1. */
+  readonly count: number;
+  /** The canvas a track's footage and adjustments paint on, by track id. */
+  readonly bandOf: ReadonlyMap<string, number>;
+  /** The canvas a track's overlays sit above, by track id; -1 is beneath every canvas (the backdrop). */
+  readonly slotOf: ReadonlyMap<string, number>;
+}
+
+const bandsMemo = new WeakMap<ResolvedState, TrackBands>();
+
+/**
+ * Tracks draw in the order the file writes them, the first at the bottom. Footage is painted on a canvas and
+ * overlays are DOM, so a file that puts an overlay track between two footage tracks (a card under a cut-out
+ * speaker) needs a second canvas above the card: each run of footage tracks is a band with a canvas of its own,
+ * and the overlays between two bands sit between their canvases. A file with its footage in one run has one band,
+ * and draws as it always did.
+ */
+export function trackBands(state: ResolvedState): TrackBands {
+  const hit = bandsMemo.get(state);
+  if (hit) return hit;
+  const bandOf = new Map<string, number>();
+  const slotOf = new Map<string, number>();
+  const kindOf = (id: string) => state.items.get(id)?.kind ?? "";
+  let band = 0;
+  let footageSeen = false;
+  let overlaySinceFootage = false;
+  for (const track of [...state.tracks].sort((a, b) => a.order - b.order)) {
+    if (track.hidden) continue;
+    const hasFootage = track.items.some((id) => FOOTAGE_KINDS.has(kindOf(id)));
+    const hasOverlay = track.items.some((id) => kindOf(id) !== "adjustment" && OVERLAY_KINDS.has(kindOf(id)));
+    if (hasFootage) {
+      // Footage above an overlay that is itself above footage: a new canvas, over that overlay.
+      if (footageSeen && overlaySinceFootage) band++;
+      footageSeen = true;
+      overlaySinceFootage = false;
+    }
+    bandOf.set(track.id, band);
+    // A track with both: its overlays are above its own footage.
+    if (hasOverlay) {
+      slotOf.set(track.id, footageSeen ? band : -1);
+      if (footageSeen) overlaySinceFootage = true;
+    }
+  }
+  // With no footage there is nothing to be beneath: every overlay is above the one canvas, as `backdropTracks` has it.
+  if (!footageSeen) for (const id of slotOf.keys()) slotOf.set(id, 0);
+  const bands: TrackBands = { count: band + 1, bandOf, slotOf };
+  bandsMemo.set(state, bands);
+  return bands;
+}

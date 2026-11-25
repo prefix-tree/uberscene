@@ -375,13 +375,18 @@ export class PlayerCore {
     }, SETTLE_MS);
   }
 
-  attachCanvas(canvas: HTMLCanvasElement | OffscreenCanvas | null): void {
+  /**
+   * The canvas the footage is painted on. A file that writes an overlay track between two footage tracks needs a
+   * canvas for each run of footage (`trackBands(state).count`): attach the ones above the first with their `band`,
+   * and stack them with the overlays between. With only the first attached, all footage is painted on it.
+   */
+  attachCanvas(canvas: HTMLCanvasElement | OffscreenCanvas | null, band = 0): void {
     const ctx = canvas ? (canvas.getContext("2d") as Ctx2D | null) : null;
     if (canvas) {
       canvas.width = this._state.composition.width;
       canvas.height = this._state.composition.height;
     }
-    this.compositor.attach(ctx);
+    this.compositor.attach(ctx, band);
     if (ctx && !this.transport.playing) void this.compositor.tick(this.transport.time(), { wait: true });
   }
 
