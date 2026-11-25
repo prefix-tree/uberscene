@@ -167,7 +167,8 @@ define({
     const plan = extractionPlan(state, a.params.id);
     let after = trackId;
     for (const track of plan.tracks) {
-      insertNode(log, state.tree.root.id, after, track);
+      // Beside the track the scene was on: inside the camera when that track is.
+      insertNode(log, rawNode(state, trackId)?.parent ?? state.tree.root.id, after, track);
       after = track.id;
     }
     if (plan.gap) insertNode(log, trackId, siblingAfter(state, a.params.id), plan.gap);
