@@ -6,6 +6,8 @@ import {
   animatedBox,
   animatedTransform,
   buildGainEnvelope,
+  type CameraValues,
+  cameraValuesAt,
   paramsAt,
   placementSourceTime,
   visiblePlacements,
@@ -29,6 +31,8 @@ export interface SeenElement {
   readonly id: string;
   readonly kind: string;
   readonly track: string;
+  /** Set when the track is inside the camera: `box` and `transform` are then the element's own, before the camera. */
+  readonly camera?: true;
   /** 0..1 through the element. */
   readonly progress: number;
   /** The second of its asset on screen, for footage. */
@@ -58,6 +62,8 @@ export interface HeardElement {
 }
 
 export interface MomentView extends Moment {
+  /** The camera's values at this moment, in a file with one: what it does to every element marked `camera`. */
+  readonly camera?: CameraValues;
   /** What is drawn, the top of the picture first. */
   readonly seen: readonly SeenElement[];
   readonly heard: readonly HeardElement[];
@@ -85,6 +91,7 @@ export function describeAt(state: ResolvedState, moment: Moment): MomentView {
       id: p.id,
       kind: p.kind,
       track: track.id,
+      ...(track.camera !== undefined ? { camera: true as const } : {}),
       progress: round3(p.duration > 0 ? Math.min(1, Math.max(0, rel / p.duration)) : 0),
       ...(p.source ? { sourceTime: round3(placementSourceTime(p, children, t)) } : {}),
       ...(text ? { text } : {}),
@@ -120,8 +127,12 @@ export function describeAt(state: ResolvedState, moment: Moment): MomentView {
   const caption = [...state.items.values()].find(
     (p) => p.kind === "caption" && state.items.get(p.parent ?? "")?.kind === "captions" && t >= p.start && t < p.end,
   );
+  const view = cameraValuesAt(state, t);
   return {
     ...moment,
+    ...(view
+      ? { camera: { x: round3(view.x), y: round3(view.y), zoom: round3(view.zoom), rotation: round3(view.rotation) } }
+      : {}),
     seen,
     heard,
     ...(word ? { word: { i: word.i, text: word.text, clip: word.play } } : {}),

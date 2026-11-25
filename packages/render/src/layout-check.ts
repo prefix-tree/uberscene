@@ -7,6 +7,7 @@ import {
   type DrawOp,
   type DrawRect,
   type MediaResolver,
+  trackCamera,
 } from "@uberscene/player/engine";
 import { buildSourceIndex, lookupAsset, type ResolvedState, type SourceIndex, type SubjectBox } from "@uberscene/sdk";
 
@@ -236,7 +237,7 @@ export async function checkLayout(options: LayoutCheckOptions): Promise<LayoutCh
         box: rounded(issue.box),
         area: rounded(issue.area),
       },
-      placedOf(state, issue.id),
+      placedOf(state, issue.id, issue.at),
     );
     const spot = options.source.file && index ? locate(options.source.file, index, state, issue.id, issue.kind) : null;
     return spot ? { ...described, source: spot } : described;
@@ -325,10 +326,20 @@ interface Placed {
   readonly keyed: { readonly x: boolean; readonly y: boolean };
   readonly W: number;
   readonly H: number;
+  /** The camera over the element when the issue was at its worst: how its own pixels become the screen's. */
+  readonly view?: { readonly a: number; readonly b: number; readonly c: number; readonly d: number };
 }
 
-/** The `box` values that move an element by (dx, dy): the new number where it has one, else from the centre. */
-function boxMove(at: Placed, dx: number, dy: number): string {
+/** A move of (dx, dy) screen pixels in the numbers of an element under a camera: the camera's zoom and turn undone. */
+function throughCamera(view: NonNullable<Placed["view"]>, dx: number, dy: number): [number, number] {
+  const det = view.a * view.d - view.b * view.c;
+  if (Math.abs(det) < 1e-9) return [dx, dy];
+  return [Math.round((view.d * dx - view.c * dy) / det), Math.round((view.a * dy - view.b * dx) / det)];
+}
+
+/** The `box` values that move an element by (dx, dy) on screen: the new number where it has one, else from the centre. */
+function boxMove(at: Placed, screenDx: number, screenDy: number): string {
+  const [dx, dy] = at.view ? throughCamera(at.view, screenDx, screenDy) : [screenDx, screenDy];
   const centred = at.box?.origin === undefined || at.box.origin === "center";
   const props: string[] = [];
   let centre = false;
@@ -366,7 +377,7 @@ function moveText(kind: string, dx: number, dy: number, at?: Placed): string {
 }
 
 /** Where element `id` is placed now, or undefined for one the file does not place (a part a layer draws). */
-function placedOf(state: ResolvedState, id: string): Placed | undefined {
+function placedOf(state: ResolvedState, id: string, t: number): Placed | undefined {
   const item = state.items.get(id);
   if (!item || item.kind === "part") return undefined;
   const keyed = (axis: "x" | "y"): boolean =>
@@ -376,7 +387,14 @@ function placedOf(state: ResolvedState, id: string): Placed | undefined {
   const written = item.props.box as Placed["box"];
   // The captions' box is the lower safe area, each field written replacing that one.
   const box = item.kind === "captions" ? { ...captionBox(state.composition), ...written } : written;
-  return { box, keyed: { x: keyed("x"), y: keyed("y") }, W: state.composition.width, H: state.composition.height };
+  const view = trackCamera(state, item.track, t);
+  return {
+    box,
+    keyed: { x: keyed("x"), y: keyed("y") },
+    W: state.composition.width,
+    H: state.composition.height,
+    ...(view ? { view } : {}),
+  };
 }
 
 /** Fills in `message` and `fix` from the measurements and where the element is placed now. */
