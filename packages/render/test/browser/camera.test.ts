@@ -170,3 +170,26 @@ it("has the layout check measure after the camera, and give the fix in the eleme
   expect(issue?.fix).toContain("left 20 px");
   expect(issue?.fix).toContain("box.x 230");
 });
+
+it("draws a pushed camera as it draws the keys the push makes", async () => {
+  // The card starts at 0 off the right edge, so the camera has panned to it by 0.5 s.
+  const scene = (camera: string) => `<Camera id="cam" ${camera}>
+        <Track id="cards" layout="free">
+          <Shape id="card" start={0} duration={1} type="rectangle" fill="#00ff00" width={80} height={60}
+            box={{ x: 360, y: 90, origin: "center" }} />
+        </Track>
+      </Camera>`;
+  const pushed = await still("pushed", scene(`push={{ on: ["card"], margin: 0, duration: 0.2 }}`));
+  // The card spans 320 to 400; with no margin the view's right edge goes to 400: 80 px.
+  const keyed = await still("keyed", scene('x={[{ at: 0, value: 0, easing: "snappy" }, { at: 0.2, value: 80 }]}'));
+  for (const [x, y] of [
+    [300, 90],
+    [250, 90],
+    [230, 90],
+    [160, 90],
+    [300, 50],
+  ] as const)
+    expect(pushed(x, y)).toEqual(keyed(x, y));
+  expect(isCard(pushed(280, 90))).toBe(true);
+  expect(isGround(pushed(230, 90))).toBe(true);
+});

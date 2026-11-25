@@ -101,6 +101,19 @@ describe("frame keys", () => {
     expect(await changed(video(), under("zoom={1}"))).toEqual(FRAMES);
   });
 
+  it("a pushed camera's frames change when the element it makes room for moves", async () => {
+    // A title that starts at 0.5 s, placed off the frame's right edge: the push pans to it from then on.
+    const pushed = (x: number) =>
+      video({
+        more: `<Title id="late" start={0.5} duration={3} box={{ x: ${x}, y: 180, origin: "center" }}>Late</Title>`,
+      })
+        .replace("import { Clip,", "import { Camera, Clip,")
+        .replace(/(<Composition [^>]*>)/, `$1\n<Camera id="cam" push={{ on: ["late"] }}>`)
+        .replace("</Composition>", "</Camera>\n</Composition>");
+    expect(await changed(pushed(700), pushed(700))).toEqual([]);
+    expect(await changed(pushed(700), pushed(800))).toEqual(FRAMES);
+  });
+
   it("a comment or a helper nobody draws changes nothing, until free code is on screen", async () => {
     const helper = "const unused = 1;";
     expect(await changed(video(), video({ top: helper }))).toEqual([]);
