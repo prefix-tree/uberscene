@@ -1,6 +1,19 @@
-import { BOX_ORIGIN_POINT, type ElementBox, type FitMode } from "@uberscene/kit/schema";
+import type { FitMode } from "./enums";
+import { BOX_ORIGIN_POINT, type ElementBox } from "./schemas/common";
 
-import type { Box, DrawRect } from "./transform";
+/** A size in pixels. */
+export interface Box {
+  readonly width: number;
+  readonly height: number;
+}
+
+/** A rectangle in composition pixels. */
+export interface DrawRect {
+  readonly x: number;
+  readonly y: number;
+  readonly w: number;
+  readonly h: number;
+}
 
 /**
  * Where a box starts on one axis: at `at` its origin point sits `origin` of the way along its `size`; with no `at`,
