@@ -17,7 +17,9 @@
         // A 3D scene in an edit: the video file, loaded by path like any cut file, and the scene file it plays, whose
         // exports the player reads as a module.
         "examples/3d/*.tsx",
-        "examples/3d/*.scene.js"
+        "examples/3d/*.scene.js",
+        // The interview edit's source, kept until its media is in the repository (BACKLOG.md item 11).
+        "examples/interview/*.tsx"
       ],
       // Run through its binary by scripts/check-packages.mjs.
       "ignoreDependencies": ["@arethetypeswrong/cli"]
