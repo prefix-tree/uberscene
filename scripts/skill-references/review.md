@@ -17,7 +17,7 @@ npx uberscene look video.tsx --at <beats> --listen all --out review.png
 
 From `inspect` and the sheet, check:
 
-- every title is on screen at least 0.5 s plus 0.3 s per word;
+- every title is on screen at least 0.5 s plus 0.3 s per word (`--check-layout` reports `read-time`);
 - no stretch longer than 4 s with nothing new (a dead beat);
 - no text smaller than 28 px at 1080 ([text.md](text.md));
 - the sound: `lufs` about -14, `truePeakDb` at most -2, no silence you didn't mean ([sound.md](sound.md));

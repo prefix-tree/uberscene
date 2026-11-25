@@ -531,7 +531,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/kit/schema`
 
-255 exports.
+258 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -692,6 +692,8 @@ Every name each entry exports, read from the code. The sections above explain th
 | `rateLabel` | function | The rate as people write it. |
 | `rateProblem` | function | Why a rate cannot be used, or null. |
 | `rateValue` | const | The rate as frames per second, for display and for code that only needs an approximate number. |
+| `READ_TIME` | const | How long words must stay on screen to be read. |
+| `readTimeNeeded` | function | Seconds a title of `words` words needs on screen. |
 | `RENAMED_EFFECT_PARAMS` | const | Built-in effects' params that had another name before 0.6, by effect. |
 | `RENAMED_TRANSITION_PARAMS` | const | Built-in transitions' params that had another name before 0.6, by transition. |
 | `renamedParam` | function | What a built-in effect's (or transition's) param `param` is called since 0.6, when that is another name; else undefined. |
@@ -749,6 +751,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `ticksToSeconds` | const |  |
 | `timecode` | function | SMPTE timecode of a frame, `HH:MM:SS:FF`. |
 | `Title` | const | The `<Title>` element ([reference](/reference/elements/title)). |
+| `titleWords` | function | The words of a title's text, as the player reveals them word by word. |
 | `TOKEN_PATTERN` | const | A whole prop value naming a theme value. |
 | `tokenSchema` | const |  |
 | `Track` | const | The `<Track>` element ([reference](/reference/elements/track)). |
@@ -1202,7 +1205,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/render`
 
-90 exports.
+92 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -1216,6 +1219,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `browserCacheDir` | function | Where downloaded browsers live. |
 | `checkLayout` | function | Samples the composition and reports every overlay (titles, shapes, SVG, stickers, layers, and captions), and every part a layer's code named with `data-name`, that leaves the frame, leaves the safe zone, covers captions (not captions themselves), or covers the subject, as runs of consecutive offending samples. |
 | `checkMotion` | function |  |
+| `checkReadTime` | function | Every title whose time on screen is shorter, by more than a frame, than 0.5 s plus 0.3 s a word, plus the time its words take to type in or appear one by one. |
 | `CHROME_MILESTONE` | const | The Chrome milestone UberScene downloads. |
 | `codecModes` | function | The codecs `UBERSCENE_CODECS` asks for; unset or empty is the browser's. |
 | `CodecModes` | interface |  |
@@ -1274,6 +1278,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `PlacedDiagnostic` | interface | A diagnostic with its place as an editor shows it. |
 | `QUALITIES` | const | Mediabunny's quality presets by name; the name travels to the export page. |
 | `QualityName` | type |  |
+| `ReadTimeIssue` | interface | A title on screen for less time than its words take to read. |
 | `renderLook` | function | Draws the moments asked for, or the ones an editor would skim, onto one sheet. |
 | `RenderOptions` | interface |  |
 | `RenderResult` | interface |  |

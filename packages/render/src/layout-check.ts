@@ -11,6 +11,7 @@ import {
 import { buildSourceIndex, lookupAsset, type ResolvedState, type SourceIndex, type SubjectBox } from "@uberscene/sdk";
 
 import type { FontFile } from "./fonts";
+import { checkReadTime } from "./read-check";
 import { type ExportSource, openEngine } from "./renderer";
 import type { InkBounds as OverlayBounds } from "./web/page/protocol";
 
@@ -38,7 +39,7 @@ export const SAFE_ZONES = {
 } as const satisfies Record<string, Insets>;
 export type SafeZoneName = keyof typeof SAFE_ZONES;
 
-export type LayoutRule = "frame-edge" | "safe-zone" | "captions" | "subject";
+export type LayoutRule = "frame-edge" | "safe-zone" | "captions" | "subject" | "read-time";
 
 /**
  * One element breaking one rule over a run of consecutive samples, described for a reader who cannot see the
@@ -56,10 +57,13 @@ export interface LayoutIssue {
   readonly to: number;
   /** The worst moment: furthest past the edge, or the largest overlap. */
   readonly at: number;
-  /** The element's ink at `at`; for an overlap, the part of it that overlaps. */
-  readonly box: DrawRect;
+  /** The element's ink at `at`; for an overlap, the part of it that overlaps. Not on `read-time`, a rule of time. */
+  readonly box?: DrawRect;
   /** What it breaks at `at`: the frame, the safe zone, or the captions' or subject's box it overlaps. */
-  readonly area: DrawRect;
+  readonly area?: DrawRect;
+  /** `read-time`: seconds on screen, and seconds its words need. */
+  readonly seconds?: number;
+  readonly needs?: number;
   /** What is wrong, in one plain sentence. */
   readonly message: string;
   /** The smallest change that clears it at `at`, in props to edit. */
@@ -114,14 +118,17 @@ export const SLACK = 2;
 /** A subject box is used this many seconds either side of the time it was sampled at. */
 const SUBJECT_REACH = 1;
 
-type Run = { -readonly [K in keyof LayoutIssue]: LayoutIssue[K] } & { n: number; worst: number };
+/** An issue found in sampled frames: it has a box and an area. */
+type Sampled = LayoutIssue & { readonly box: DrawRect; readonly area: DrawRect };
+type Run = { -readonly [K in keyof Sampled]: Sampled[K] } & { n: number; worst: number };
 
 /**
  * Samples the composition and reports every overlay (titles, shapes, SVG, stickers, layers, and captions), and every
  * part a layer's code named with `data-name`, that
  * leaves the frame, leaves the safe zone, covers captions (not captions themselves), or covers the subject, as runs
  * of consecutive offending samples. Overlays beneath the footage, and ones whose ink fills the frame (backgrounds),
- * are not checked; neither is a moment where an element is fainter than 10%.
+ * are not checked; neither is a moment where an element is fainter than 10%. Titles on screen for less time than their
+ * words take to read are reported too (`read-time`, see `checkReadTime`), from the timeline rather than the frames.
  */
 export async function checkLayout(options: LayoutCheckOptions): Promise<LayoutCheckResult> {
   const { state } = options;
@@ -241,6 +248,13 @@ export async function checkLayout(options: LayoutCheckOptions): Promise<LayoutCh
     const spot = options.source.file && index ? locate(options.source.file, index, state, issue.id, issue.kind) : null;
     return spot ? { ...described, source: spot } : described;
   });
+  // Read time is a rule of the timeline, not of a frame: worked out from the resolved state.
+  for (const r of checkReadTime(state, { from: options.from, to: options.to })) {
+    const issue: LayoutIssue = { rule: "read-time", ...r, at: r.from };
+    const spot =
+      options.source.file && index ? locate(options.source.file, index, state, r.id, r.kind, "duration") : null;
+    result.push(spot ? { ...issue, source: spot } : issue);
+  }
   // As a compiler lists them: by place in the file, then by time; issues with no place come last, by time.
   const place = (i: LayoutIssue): number =>
     i.source ? i.source.line * 1e6 + i.source.column : Number.POSITIVE_INFINITY;
@@ -380,7 +394,7 @@ function placedOf(state: ResolvedState, id: string): Placed | undefined {
 }
 
 /** Fills in `message` and `fix` from the measurements and where the element is placed now. */
-function describe(issue: LayoutIssue, at?: Placed): LayoutIssue {
+function describe(issue: Sampled, at?: Placed): LayoutIssue {
   const { box, area } = issue;
   const who = `${issue.kind} "${issue.id}"`;
   const when = issue.from === issue.to ? `at ${s2(issue.from)}` : `from ${s2(issue.from)} to ${s2(issue.to)}`;
@@ -442,7 +456,15 @@ function describe(issue: LayoutIssue, at?: Placed): LayoutIssue {
  * element a helper generated, the call to the helper; for one a loop made, the JSX in the loop. Null when the file
  * shows no single place for it.
  */
-function locate(file: string, index: SourceIndex, state: ResolvedState, id: string, kind: string): SourceSpot | null {
+function locate(
+  file: string,
+  index: SourceIndex,
+  state: ResolvedState,
+  id: string,
+  kind: string,
+  /** A prop to point at first, when the element writes it. */
+  prop?: string,
+): SourceSpot | null {
   if (kind === "part") {
     // A part is found by its name where the file writes it; a name the file builds is found at its layer.
     const slash = id.lastIndexOf("/");
@@ -469,7 +491,9 @@ function locate(file: string, index: SourceIndex, state: ResolvedState, id: stri
     helper: string | undefined,
     loop = false;
   if (site) {
-    at = (site.props.get("box") ?? site.props.get(kind === "captions" ? "style" : "transform") ?? site).range[0];
+    const first = prop ? site.props.get(prop) : undefined;
+    at = (first ?? site.props.get("box") ?? site.props.get(kind === "captions" ? "style" : "transform") ?? site)
+      .range[0];
   } else if (call) {
     at = call.range[0];
     helper = call.helper;
