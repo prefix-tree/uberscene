@@ -416,7 +416,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/kit`
 
-109 exports.
+108 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -444,7 +444,6 @@ Every name each entry exports, read from the code. The sections above explain th
 | `CountUp` | function | A number that counts from one value to another. |
 | `CountUpProps` | interface |  |
 | `Cut` | const | The `<Cut>` element ([reference](/reference/elements/cut)). |
-| `defineShot` | function | Defines a 3D shot for `<Three shot>`. |
 | `DrawnLine` | function | A line that draws itself from one point to another. |
 | `DrawnLineProps` | interface |  |
 | `effect` | function | Declares an effect drawn by a GLSL function, and returns it for an effect's `type`. |
@@ -464,7 +463,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `holdLayerFrame` | function | Hold the frame until the returned release is called (once; later calls do nothing). |
 | `interpolate` | function | Maps `input` from `inputRange` onto `outputRange`, piecewise. |
 | `InterpolateOptions` | interface |  |
-| `isShot` | function | Whether a value is a shot `defineShot` made. |
+| `isScene` | function | Whether a value is a scene module. |
 | `Key` | interface | One key of a value that changes over time. |
 | `knob` | const | Schema helpers for values that are strings to zod but want their own control. |
 | `Knob` | interface | One value of a file's `schema`, as an editor or an agent needs it to offer a control. |
@@ -474,6 +473,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `LabelSide` | type |  |
 | `Layer` | const | The `<Layer>` element ([reference](/reference/elements/layer)). |
 | `LayerClock` | interface | Time inside a `<Layer>`. |
+| `lensFov` | function | The vertical field of view, in degrees, of a lens of `focal` millimetres on a full-frame sensor (24 mm tall). |
 | `LowerThird` | function | A name and a role in the lower third of the frame. |
 | `Marker` | const | The `<Marker>` element ([reference](/reference/elements/marker)). |
 | `Mask` | const | The `<Mask>` element ([reference](/reference/elements/mask)). |
@@ -489,18 +489,17 @@ Every name each entry exports, read from the code. The sections above explain th
 | `Point` | type |  |
 | `progress` | function | How far along something is on a layer's clock. |
 | `random` | function | A number in [0, 1) fixed by its keys. |
+| `Scene` | interface | A scene module's exports. |
+| `SceneBuildArgs` | interface | What `build` gets, once. |
+| `SceneSampleArgs` | interface | What `sample` gets on every frame. |
 | `Seekable` | interface | Anything that can be set to a moment. |
 | `Shape` | const | The `<Shape>` element ([reference](/reference/elements/shape)). |
-| `SHOT_CHANNELS` | const | The transform channels a shot object has. |
-| `ShotBuildArgs` | interface | What `build` gets, once. |
-| `ShotBuilt` | interface | What `build` returns. |
-| `ShotChannel` | type |  |
-| `ShotDefinition` | interface |  |
-| `ShotInputDefault` | type | An input's default. |
-| `ShotObjectSpec` | interface | What a shot declares about one object. |
-| `ShotSampleArgs` | interface | What `sample` gets on every frame. |
 | `spring` | function | A physical spring from `from` (default 0) to `to` (default 1) at `time` seconds. |
 | `SpringOptions` | interface |  |
+| `Stage` | type | What a scene stages. |
+| `stageAt` | function | The whole stage at scene time `t`, every channel evaluated. |
+| `stageTimeNames` | function | The names a stage's keys use for their times, so a resolver can say which ones a clip does not hand in. |
+| `stageValueAt` | function | The value of one staged channel at scene time `t`. |
 | `stepAt` | function | Which step a moment has reached. |
 | `Sticker` | const | The `<Sticker>` element ([reference](/reference/elements/sticker)). |
 | `Svg` | const | The `<Svg>` element ([reference](/reference/elements/svg)). |
@@ -532,7 +531,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/kit/schema`
 
-252 exports.
+255 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -640,6 +639,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `holdLayerFrame` | function | Hold the frame until the returned release is called (once; later calls do nothing). |
 | `installLayerClock` | function |  |
 | `installLayerEngine` | function | Install (or with `null`, remove) the engine that draws `<Layer engine={name}>` tags such as `<Three>`. |
+| `installSceneSource` | function |  |
 | `isBuiltInTransition` | function |  |
 | `isBundledFont` | function |  |
 | `isDropFrame` | const | Whether a rate is shown in drop-frame timecode. |
@@ -705,6 +705,8 @@ Every name each entry exports, read from the code. The sections above explain th
 | `sampleAtSeconds` | const | The audio sample a time in seconds falls in. |
 | `sampleRateProblem` | function | Why a sample rate cannot be used, or null. |
 | `samplesUntil` | const | The first sample that starts at or after a time. |
+| `sceneSource` | function |  |
+| `SceneSourceFactory` | type | Makes the frames of a 3D scene a clip plays (`<Clip src={scene}>`), drawn at `width` by `height`. |
 | `SCHEMAS_BY_KIND` | const |  |
 | `secondAndFrame` | function | The whole second a frame falls in and the frame's place within it, for a timecode. |
 | `secondsToTicks` | const | Seconds as the nearest tick. |
@@ -791,7 +793,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/sdk`
 
-206 exports.
+210 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -846,6 +848,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `describeAction` | function |  |
 | `Diagnostic` | interface |  |
 | `Editable` | type |  |
+| `editStage` | function | The text of a scene file with one change to its stage. |
 | `EffectActions` | interface |  |
 | `EffectRow` | interface |  |
 | `elementName` | function |  |
@@ -880,6 +883,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `INTERIOR_PREFIX` | const | Prop keys under this prefix address a Layer's handles rather than the Layer's own props. |
 | `invalid` | function |  |
 | `isResolveError` | function |  |
+| `isSceneAsset` | function | Whether an asset id is a scene's. |
 | `isTimeRefString` | function |  |
 | `Json` | type |  |
 | `jsxTags` | function | Every JSX opening tag in the file, in source order; with `name`, only the tags of that name. |
@@ -966,8 +970,8 @@ Every name each entry exports, read from the code. The sections above explain th
 | `sameAsset` | function |  |
 | `samePlacement` | function | Whether two placements would render and edit the same; used to hand back the previous object. |
 | `SceneFn` | type |  |
+| `SceneUse` | interface | A scene a clip plays, and the moments the clip hands in, in scene seconds. |
 | `Shot` | interface |  |
-| `ShotActions` | interface |  |
 | `Silence` | interface |  |
 | `skimMoments` | function | The moments an editor skims a cut by. |
 | `SourceActions` | interface |  |
@@ -977,6 +981,8 @@ Every name each entry exports, read from the code. The sections above explain th
 | `speedKeysOf` | function | A clip's speed keys (from `speed={[…]}`), sorted by `at`. |
 | `spokenWords` | function | Every transcript word the timeline plays, at the time it plays, in timeline order. |
 | `stableJson` | function |  |
+| `StageEdit` | type |  |
+| `stageOf` | function | The scene file's stage, as data. |
 | `SubjectBox` | interface | A subject's box at source second `t`, as fractions of the source picture (0..1 from its top left). |
 | `SubtitleOptions` | interface |  |
 | `subtitles` | function | The captions the cut plays, as an SRT or WebVTT file. |
@@ -1004,7 +1010,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/sdk/resolver`
 
-79 exports.
+81 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -1039,6 +1045,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `InstalledBlock` | interface | A block copied into the project. |
 | `INTERIOR_PREFIX` | const | Prop keys under this prefix address a Layer's handles rather than the Layer's own props. |
 | `isResolveError` | function |  |
+| `isSceneAsset` | function | Whether an asset id is a scene's. |
 | `isTimeRefString` | function |  |
 | `Json` | type |  |
 | `LayerInterior` | interface |  |
@@ -1072,6 +1079,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `sameAsset` | function |  |
 | `samePlacement` | function | Whether two placements would render and edit the same; used to hand back the previous object. |
 | `SceneFn` | type |  |
+| `SceneUse` | interface | A scene a clip plays, and the moments the clip hands in, in scene seconds. |
 | `Shot` | interface |  |
 | `Silence` | interface |  |
 | `SourceIndexLike` | interface |  |
@@ -1291,13 +1299,18 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/graphics`
 
-13 exports.
+18 exports.
 
 | Export | Kind | |
 |---|---|---|
+| `buildScene` | function | Builds a scene module into a fresh three.js scene, once. |
+| `BuiltScene` | interface | What `build` made. |
 | `FREE_CODE_LIBRARIES` | const | The libraries free code in a `<Layer>` may import, by import name. |
-| `installFreeCodeLibraries` | function | Make `<Three>` and `<Motion>` draw (installs their layer engines) and return the imports a host passes to `loadModule`. |
+| `installFreeCodeLibraries` | function | Make `<Three>`, `<Motion>` and clips that play a 3D scene draw (installs their engines) and return the imports a host passes to `loadModule`. |
 | `MotionLayer` | function | What draws `<Motion>`. |
+| `poseScene` | function | Puts a built scene at scene time `t`. |
+| `SceneFrameSource` | class | A frame source over a scene. |
+| `SceneUse` | interface | A scene as a clip plays it. |
 | `ThreeCamera` | interface |  |
 | `ThreeFrame` | interface | What `update` gets on every frame. |
 | `ThreeLayer` | function | What draws `<Three>`. |
@@ -1311,13 +1324,18 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/graphics/libraries`
 
-13 exports.
+18 exports.
 
 | Export | Kind | |
 |---|---|---|
+| `buildScene` | function | Builds a scene module into a fresh three.js scene, once. |
+| `BuiltScene` | interface | What `build` made. |
 | `FREE_CODE_LIBRARIES` | const | The libraries free code in a `<Layer>` may import, by import name. |
-| `installFreeCodeLibraries` | function | Make `<Three>` and `<Motion>` draw (installs their layer engines) and return the imports a host passes to `loadModule`. |
+| `installFreeCodeLibraries` | function | Make `<Three>`, `<Motion>` and clips that play a 3D scene draw (installs their engines) and return the imports a host passes to `loadModule`. |
 | `MotionLayer` | function | What draws `<Motion>`. |
+| `poseScene` | function | Puts a built scene at scene time `t`. |
+| `SceneFrameSource` | class | A frame source over a scene. |
+| `SceneUse` | interface | A scene as a clip plays it. |
 | `ThreeCamera` | interface |  |
 | `ThreeFrame` | interface | What `update` gets on every frame. |
 | `ThreeLayer` | function | What draws `<Three>`. |
