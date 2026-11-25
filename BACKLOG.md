@@ -9,7 +9,7 @@ days, L a week or more.
 
 ## Now
 
-- [ ] **1. An image used by two clips fails the render** (S)
+- [x] **1. An image used by two clips fails the render** (S) (#197)
   - The render stops with "The image source is detached": every clip of a still image gets the same frame, and the
     first clip to end closes the picture for the rest.
   - The fix and its test are written (`packages/player/src/media/frame-source.ts`); they need a pull request.

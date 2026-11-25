@@ -50,9 +50,13 @@ export function copyFrame(frame: Frame, createCanvas: CreateCanvas): Frame {
   );
 }
 
-/** Still images: one bitmap, returned for every time. */
+/**
+ * Still images: one bitmap, drawn for every time. Each frame handed out is a view that does not own the bitmap, so a
+ * clip that closes its frame (when it ends, or is replaced) leaves the picture open for the other clips of the same
+ * image; the source closes it.
+ */
 export class ImageFrameSource implements FrameSource {
-  private bitmap: Promise<ImageFrame> | null = null;
+  private bitmap: Promise<ImageBitmap | HTMLImageElement> | null = null;
   constructor(private readonly load: () => Promise<ImageBitmap | HTMLImageElement>) {}
 
   async open(): Promise<FrameSourceInfo> {
@@ -66,20 +70,22 @@ export class ImageFrameSource implements FrameSource {
     yield await this.frame();
   }
   close(): void {
-    void this.bitmap?.then((f) => f.close()).catch(() => undefined);
+    void this.bitmap
+      ?.then((img) => {
+        if ("close" in img) img.close();
+      })
+      .catch(() => undefined);
     this.bitmap = null;
   }
-  private frame(): Promise<ImageFrame> {
-    this.bitmap ??= this.load().then(
-      (img) =>
-        new ImageFrame(
-          img as CanvasImageSource & { width: number; height: number },
-          0,
-          Number.POSITIVE_INFINITY,
-          "close" in img,
-        ),
+  private async frame(): Promise<ImageFrame> {
+    this.bitmap ??= this.load();
+    const img = await this.bitmap;
+    return new ImageFrame(
+      img as CanvasImageSource & { width: number; height: number },
+      0,
+      Number.POSITIVE_INFINITY,
+      false,
     );
-    return this.bitmap;
   }
 }
 
