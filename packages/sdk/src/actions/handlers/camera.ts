@@ -4,7 +4,7 @@
 import type { Json } from "../../patches/types";
 import type { ResolvedState } from "../../resolve/resolve";
 import { define, insertNode, makePropHandler, rawNode, siblingAfter } from "../handler-kit";
-import { type ActionInput, invalid, ok, type ValidationResult } from "../types";
+import { type ActionInput, type CameraPush, invalid, ok, type ValidationResult } from "../types";
 
 const FIELDS = ["x", "y", "zoom", "rotation"] as const;
 
@@ -61,6 +61,7 @@ define({
       const v = a.params[f];
       if (v !== undefined) props[f] = v as Json;
     }
+    if (a.params.push) props.push = a.params.push as unknown as Json;
     // The camera stands where its lowest track stood, and the tracks go inside in the order they had.
     insertNode(log, ctx.before.tree.root.id, siblingAfter(ctx.before, tracks[0] as string), {
       id: a.params.cameraId,
@@ -106,6 +107,7 @@ define({
         cameraId: camera.id,
         tracks: camera.children.filter((c) => c.kind === "track").map((c) => c.id),
         ...values,
+        ...(camera.props.push ? { push: camera.props.push as unknown as CameraPush } : {}),
       },
     };
   },
@@ -118,3 +120,54 @@ define(makePropHandler({
   kinds: ["camera"],
   write: (p) => Object.fromEntries(FIELDS.flatMap((f) => (p[f] === undefined ? [] : [[f, p[f] as Json]]))),
 }));
+
+define(makePropHandler({
+  type: "camera/setPush",
+  target: (p) => p.cameraId,
+  kinds: ["camera"],
+  write: (p) => ({ push: (p.push ?? undefined) as unknown as Json | undefined }),
+}));
+
+/** The keys a pushed camera's push made, as the lists a file writes for `x`, `y` and `zoom`. */
+function pushedKeys(state: ResolvedState, cameraId: string): Record<string, Json> {
+  const lists: Record<string, Json[]> = {};
+  for (const item of state.items.values()) {
+    if (item.kind !== "keyframe" || item.parent !== cameraId || !item.id.startsWith(`${cameraId}.push.`)) continue;
+    const field = String(item.props.property).replace("camera.", "");
+    const easing = item.props.easing;
+    const list = lists[field] ?? [];
+    lists[field] = list;
+    list.push({
+      at: item.start,
+      value: item.props.value as Json,
+      ...(typeof easing === "string" && easing !== "linear" ? { easing } : {}),
+    });
+  }
+  return lists;
+}
+
+define({
+  type: "camera/bakePush",
+  validate: (a, state) => {
+    const camera = state.items.get(a.params.cameraId);
+    if (camera?.kind !== "camera")
+      return invalid({ code: "ELEMENT_NOT_FOUND", message: `camera "${a.params.cameraId}" does not exist` });
+    if (!camera.props.push)
+      return invalid({ code: "INVALID_PARAMS", message: `camera "${camera.id}" has no push to turn into keys` });
+    const broken = state.errors.find((e) => e.id === camera.id && e.prop === "push");
+    return broken ? invalid({ code: "INVALID_PARAMS", message: broken.message }) : ok;
+  },
+  // The moves the push makes now, written as keys; from here on they are the file's, and no longer follow the cards.
+  apply: (a, log, ctx) => {
+    for (const [field, keys] of Object.entries(pushedKeys(ctx.before, a.params.cameraId)))
+      log.append({ op: "set", id: a.params.cameraId, prop: field, value: keys });
+    log.append({ op: "set", id: a.params.cameraId, prop: "push", value: undefined });
+  },
+  invert: (a, before) => {
+    const node = rawNode(before, a.params.cameraId)!;
+    const prior: Record<string, Json | undefined> = { push: node.props.push as Json | undefined };
+    for (const field of Object.keys(pushedKeys(before, a.params.cameraId))) prior[field] = node.props[field] as Json;
+    return { type: "source/setProps", params: { id: a.params.cameraId, props: prior } };
+  },
+  fold: () => [],
+});

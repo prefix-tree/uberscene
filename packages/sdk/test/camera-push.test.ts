@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { buildSourceIndex, collectModule, loadModule, type ResolvedState, resolve } from "@uberscene/sdk";
+import {
+  buildSourceIndex,
+  collectModule,
+  Executor,
+  foldToSource,
+  loadModule,
+  type ResolvedState,
+  resolve,
+} from "@uberscene/sdk";
 
 import { manifest } from "./helpers";
 
@@ -158,5 +166,88 @@ describe("what a push refuses", () => {
     const state = pushed(`{ on: ["a"] }`, card("a", 1, 1100), "rotation={[{ at: 0, value: 0 }, { at: 1, value: 5 }]}");
     expect(state.errors).toEqual([]);
     expect(keysOf(state).filter((k) => k.startsWith("x"))).toEqual(["x 1 0 snappy", "x 1.3 180 linear"]);
+  });
+});
+
+// ── editing ─────────────────────────────────────────────────────────────────
+
+const editor = (text: string): Executor =>
+  new Executor({ tree: collectModule(loadModule(text) as never, {}, { index: buildSourceIndex(text) }), manifest });
+
+const saved = (text: string, exec: Executor): string => {
+  const result = foldToSource(text, exec.log(), exec.state());
+  expect(result.skipped).toEqual([]);
+  return result.text;
+};
+
+const run = (exec: Executor, action: Parameters<Executor["execute"]>[0]): void => {
+  const result = exec.execute(action);
+  expect(result.ok ? [] : result.errors).toEqual([]);
+};
+
+describe("editing a push", () => {
+  const PLAIN = file("zoom={1}", `${card("a", 1, 1100)}\n${card("b", 3, -100)}`);
+  const PUSHED = file(`push={{ on: ["a", "b"], keep: ["speaker"] }}`, `${card("a", 1, 1100)}\n${card("b", 3, -100)}`);
+
+  it("is set on a camera, written to the file, and undone", () => {
+    const exec = editor(PLAIN);
+    run(exec, { type: "camera/setPush", params: { cameraId: "cam", push: { on: ["a"], keep: ["speaker"] } } });
+    expect(keysOf(exec.state())).toEqual(["x 1 0 snappy", "x 1.3 180 linear"]);
+    const text = saved(PLAIN, exec);
+    expect(text).toContain(`push={{ on: ["a"], keep: ["speaker"] }}`);
+    expect(keysOf(load(text))).toEqual(keysOf(exec.state()));
+    exec.undo();
+    expect(saved(PLAIN, exec)).toBe(PLAIN);
+  });
+
+  it("is taken off with null", () => {
+    const exec = editor(PUSHED);
+    run(exec, { type: "camera/setPush", params: { cameraId: "cam", push: null } });
+    expect(keysOf(exec.state())).toEqual([]);
+    expect(saved(PUSHED, exec)).not.toContain("push=");
+  });
+
+  it("follows a card an edit moves", () => {
+    const exec = editor(PUSHED);
+    expect(keysOf(exec.state())[1]).toBe("x 1.3 180 linear");
+    run(exec, { type: "box/update", params: { id: "a", box: { x: 1200 } } });
+    expect(keysOf(exec.state())[1]).toBe("x 1.3 280 linear");
+  });
+
+  it("bakes into keys that draw the same moves, and then stops following", () => {
+    const exec = editor(PUSHED);
+    const before = keysOf(exec.state());
+    run(exec, { type: "camera/bakePush", params: { cameraId: "cam" } });
+    const text = saved(PUSHED, exec);
+    expect(text).not.toContain("push=");
+    expect(text).toContain(`{ at: 1, value: 0, easing: "snappy" }`);
+    const baked = load(text);
+    expect(baked.errors).toEqual([]);
+    // The same keys, now the file's own: ordered by the prop that wrote them.
+    expect(keysOf(baked).sort()).toEqual([...before].sort());
+
+    run(exec, { type: "box/update", params: { id: "a", box: { x: 1200 } } });
+    expect(keysOf(exec.state()).sort()).toEqual([...before].sort());
+  });
+
+  it("undoes a bake back to the push", () => {
+    const exec = editor(PUSHED);
+    run(exec, { type: "camera/bakePush", params: { cameraId: "cam" } });
+    exec.undo();
+    expect(saved(PUSHED, exec)).toBe(PUSHED);
+    expect(exec.state().items.get("cam")?.props.push).toBeDefined();
+  });
+
+  it("refuses keys on what the push sets, and takes them on rotation", () => {
+    const exec = editor(PUSHED);
+    const bad = exec.execute({ type: "key/add", params: { id: "cam", path: "x", at: 0, value: 10 } });
+    expect(bad.ok ? "" : bad.errors?.[0]?.message).toContain("camera/bakePush");
+    run(exec, { type: "key/add", params: { id: "cam", path: "rotation", at: 0, value: 0 } });
+  });
+
+  it("refuses to bake a camera with no push", () => {
+    const exec = editor(PLAIN);
+    const bad = exec.execute({ type: "camera/bakePush", params: { cameraId: "cam" } });
+    expect(bad.ok ? "" : bad.errors?.[0]?.message).toContain("has no push");
   });
 });
