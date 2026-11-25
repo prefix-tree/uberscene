@@ -24,9 +24,10 @@ const OVERLAY_CHILDREN = ["effect", "keyframe", "mask"] as const;
 export const KIND_CAPABILITIES: Readonly<Record<string, ElementCapabilities>> = {
   composition: with_({
     container: true,
-    childKinds: ["track", "marker", "captions"],
+    childKinds: ["track", "camera", "marker", "captions"],
     placementScope: "none",
   }),
+  camera: with_({ container: true, childKinds: ["track"], placementScope: "composition" }),
   track: with_({
     container: true,
     placementScope: "composition",

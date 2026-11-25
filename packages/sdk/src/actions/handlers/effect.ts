@@ -2,7 +2,7 @@
 // Every action here writes that prop on the element, so its undo is the prop as it was (`source/setProps`), and the
 // fold rewrites one prop.
 
-import { effectParamProblem, shaderFor, VIDEO_EFFECT_TYPES } from "@uberscene/kit/schema";
+import { CAMERA_FIELDS, effectParamProblem, shaderFor, VIDEO_EFFECT_TYPES } from "@uberscene/kit/schema";
 
 import type { Json } from "../../patches/types";
 import { isKeyList } from "../../resolve/expand";
@@ -40,6 +40,11 @@ function pathProblem(state: ResolvedState, id: string, path: string): string | n
     const effects = effectsOf(state, id);
     return Number(fx[1]) < effects.length ? null : `element "${id}" has no effect ${fx[1]}`;
   }
+  // A camera's keys are its four values, on the video's clock.
+  if (state.items.get(id)?.kind === "camera")
+    return path in CAMERA_FIELDS
+      ? null
+      : `"${path}" cannot hold keys on a camera; use one of ${Object.keys(CAMERA_FIELDS).join(", ")}`;
   return KEY_PATHS.has(path)
     ? null
     : `"${path}" cannot hold keys; use one of ${[...KEY_PATHS].join(", ")}, or effects.<n>.<param>`;

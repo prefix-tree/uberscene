@@ -42,21 +42,42 @@ export interface CompositionActions {
 }
 
 export interface TrackActions {
-  /** Adds an empty track at `position` (last by default), with an optional layout, role and name. */
-  "track/add": { trackId: Id; position?: number; layout?: TrackLayout; role?: TrackRole; name?: string };
+  /**
+   * Adds an empty track at `position` (last by default), with an optional layout, role and name. Positions count the
+   * composition's rows in file order, a camera's tracks in the camera's place. The track lands after the row below
+   * it and in that row's parent, so above one of the camera's tracks it is the camera's too; `camera` decides at the
+   * camera's edge (true: inside, false: outside).
+   */
+  "track/add": {
+    trackId: Id;
+    position?: number;
+    layout?: TrackLayout;
+    role?: TrackRole;
+    name?: string;
+    camera?: boolean;
+  };
   /** Deletes a track and everything on it. */
   "track/remove": { trackId: Id };
   /** The undo of track/remove: puts the track back where it was, with its contents. */
-  "track/restore": { trackId: Id; node: NodeSpec; position: number };
+  "track/restore": { trackId: Id; node: NodeSpec; position: number; camera?: boolean };
   /**
    * Copies a track and its contents to `position` (below the source by default), named "<name> Copy"; `idMap` names the
    * copies, other ids get a `_<trackId>` suffix, and anchors inside the track follow the copies.
    */
-  "track/duplicate": { sourceTrackId: Id; trackId: Id; idMap: Readonly<Record<Id, Id>>; position?: number };
+  "track/duplicate": {
+    sourceTrackId: Id;
+    trackId: Id;
+    idMap: Readonly<Record<Id, Id>>;
+    position?: number;
+    camera?: boolean;
+  };
   /** Sets the track's name. */
   "track/rename": { trackId: Id; name: string };
-  /** Moves the track to `position` in the stack. */
-  "track/reorder": { trackId: Id; position: number };
+  /**
+   * Moves the track to `position` in the stack, counted as in track/add. Moved above one of the camera's tracks it
+   * joins the camera, and moved away it leaves; `camera` decides at the camera's edge.
+   */
+  "track/reorder": { trackId: Id; position: number; camera?: boolean };
   /** Turns one track flag on or off: `locked`, `hidden`, `muted` or `solo`. */
   "track/setFlag": { trackId: Id; flag: TrackFlag; value: boolean };
   /**
@@ -326,6 +347,29 @@ export interface CaptionActions {
   "caption/setAll": { captionsId: Id; nodes: readonly NodeSpec[]; after?: Id | null };
 }
 
+/** A camera value as a file writes it: a number, or keys over the video's time. */
+export type CameraValue = number | readonly KeyJson[];
+
+export interface CameraActions {
+  /**
+   * Puts a camera around `tracks`, which must be next to each other in the file: everything on them then moves,
+   * zooms and turns together, and tracks outside stay fixed to the screen. The tracks keep their place in the stack.
+   * A composition has one camera.
+   */
+  "camera/add": {
+    cameraId: Id;
+    tracks: readonly Id[];
+    x?: CameraValue;
+    y?: CameraValue;
+    zoom?: CameraValue;
+    rotation?: CameraValue;
+  };
+  /** Sets the camera's values: `x` and `y` in pixels, `zoom` (1 is as written), `rotation` in degrees. Keys go through key/add. */
+  "camera/update": { cameraId: Id; x?: number; y?: number; zoom?: number; rotation?: number };
+  /** Takes the camera away and leaves its tracks where they were, fixed to the screen. */
+  "camera/remove": { cameraId: Id };
+}
+
 export interface MarkerActions {
   /** Adds a timeline marker at `start` seconds, with an optional label and colour. */
   "marker/add": { markerId: Id; start: number; label?: string; color?: string };
@@ -401,6 +445,7 @@ export type ActionMap = CompositionActions &
   AudioActions &
   OverlayActions &
   CaptionActions &
+  CameraActions &
   MarkerActions &
   MaskActions &
   MulticamActions &
@@ -438,6 +483,7 @@ export const AUTO_GROUP_TYPES: ReadonlySet<ActionType> = new Set<ActionType>([
   "clip/setSpeed",
   "key/move",
   "key/update",
+  "camera/update",
   "composition/updateSettings",
   "composition/setBackground",
   "theme/setToken",

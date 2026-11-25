@@ -1,6 +1,7 @@
 # 0041. Motion design on the timeline: four seams that DaVinci-style edits plug into
 
-> Status: proposed. Builds on [0039](./0039-a-person-cut-out-of-the-background.md) (the matte beside the footage),
+> Status: proposed, built in steps. The camera of seam 3 is built (`<Camera>`, its keys, the tools and the editing
+> actions; see [the guide](../guide/camera.md)); its `push`, `follow` and the other seams are not. Builds on [0039](./0039-a-person-cut-out-of-the-background.md) (the matte beside the footage),
 > which becomes the first case of seam 1 and seam 2 here, and on [0035](./0035-everything-is-a-prop.md) (a value is a
 > constant or a key list), which seam 4 extends with a third kind of value. 3D stays with
 > [0040](./0040-a-3d-scene-is-a-clip-source.md).
@@ -110,8 +111,8 @@ A rig moves things it does not own. Two forms, both literal props the editor can
 ```tsx
 <Composition ...>
   <Camera id="cam"
-    x={[{ at: 1.0, value: 0 }, { at: 1.3, value: -180, easing: "snappy" }]}
-    zoom={[{ at: 2.1, value: 1 }, { at: 2.4, value: 1.06, easing: "snappy" }]}
+    x={[{ at: 1.0, value: 0, easing: "snappy" }, { at: 1.3, value: 180 }]}
+    zoom={[{ at: 2.1, value: 1, easing: "snappy" }, { at: 2.4, value: 1.06 }]}
     drift={{ x: 12, zoom: 0.03 }}>
     <Track id="speaker">...</Track>
     <Track id="cards">...</Track>
@@ -135,9 +136,13 @@ A rig moves things it does not own. Two forms, both literal props the editor can
   `camera/bakePush`, turns it into keys for someone who wants to tune them by hand, and removes the prop.
 - **`follow`** pins an element's `box` to a space ref (seam 1): a tracked face, a planar corner pin, or another
   element's box (parenting). The offset is in pixels and may be keyed.
+- Its values are a camera's, not an element's: `x` and `y` say where the view's centre has moved, so `x: 180` puts
+  everything 180 px to the left; `zoom` closes in about the frame's centre; `rotation` turns the view clockwise, so
+  what it shows turns the other way. A key's `at` is seconds on the video's clock, since a camera has no start.
 - Extendable by design: a track may later carry `depth`, and the camera then moves near tracks more than far ones
-  (2.5D parallax, as Fusion's Camera3D over image planes). The field is reserved now so files written today keep
-  their meaning. A true 3D camera stays inside a 3D scene clip (0040).
+  (2.5D parallax, as Fusion's Camera3D over image planes). The field is added when parallax is built, not reserved
+  now: the schema says only what is drawn, and a file without `depth` keeps its meaning when it arrives. A true 3D
+  camera stays inside a 3D scene clip (0040).
 - One camera per composition to start, not nested; a nested sequence may have its own.
 
 ### Seam 4. Generated motion: a third kind of value
@@ -187,7 +192,7 @@ One PR each, from fresh `main`, each with its decision section moved to accepted
 1. **Analyses registry and `uberscene analyze`**, with the existing manifest fields listed in it. No behaviour change.
 2. **`analyze matte`** makes the matte `cutout` already reads (#199); then **`matte`** with the `element` source,
    `cutout` as the short form of the `asset` source; the text behind a person recipe and test.
-3. **`<Camera>`** around tracks, with keys, the layout check after the camera; then `push`.
+3. **`<Camera>`** around tracks, with keys, the layout check after the camera (done); then `push`.
 4. **Generators**: `wiggle`, `drift`, `overshoot`, `loop`, `then`; the camera's `drift` on top.
 5. **Preview motion blur** (a).
 6. **Styled runs and word-ended durations** (b, c).
@@ -209,7 +214,7 @@ Steps 1 to 4 give most of the look; 5 makes it judgeable in the preview.
   a matte cycle is an error naming both elements.
 - The layout check and `inspect` report positions after the camera and `follow`, so what an agent reads matches what
   is drawn.
-- Reserving `depth` on tracks now means 2.5D parallax later is a feature, not a migration.
+- 2.5D parallax later is a new optional `depth` on tracks, so a feature and not a migration.
 - Risk: the camera changes the meaning of "where an element is" for the editor. Drags inside a camera write the
   element's own `box`, in the camera's space; the editor shows both. This needs its own test in the editor suite.
 

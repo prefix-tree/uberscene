@@ -10,6 +10,7 @@ import { type AssetEntry, lookupAsset, type Placement, type ResolvedState } from
 
 import { devWarn } from "../warn";
 import { backdropTracks, trackBands } from "./backdrop";
+import { trackCamera } from "./camera";
 import { type PostEffect, postEffects } from "./effects";
 import type { ClipRect } from "./motion";
 import { effectPipeline, type ShaderPass, type TransitionPass, transitionPass } from "./shaders";
@@ -58,6 +59,8 @@ export interface DrawOp {
   readonly fallbackFilter?: string;
   readonly borderRadius: number;
   readonly mask?: MaskSpec;
+  /** What `clip`'s rectangles go through before they cut: the camera, for an element under one. */
+  readonly clipMatrix?: Matrix2D;
   /** The part shown, in composition pixels (a wipe). */
   readonly clip?: readonly ClipRect[];
   /** Vignette and grain, drawn over the element's own pixels. */
@@ -160,7 +163,13 @@ export function buildFramePlan(state: ResolvedState, t: number, resolveNested?: 
   for (const item of visiblePlacements(state, t)) {
     const p = item.placement;
     if (p.kind === "clip" || p.kind === "nested") {
-      const op = mediaOp(state, item, t, resolveNested, warnings);
+      const drawn = mediaOp(state, item, t, resolveNested, warnings);
+      const view = drawn ? trackCamera(state, item.track.id, t) : null;
+      // The camera goes on last, over the element's own placement and a transition's slide, so both follow the view.
+      const op =
+        drawn && view
+          ? { ...drawn, matrix: multiply(view, drawn.matrix), ...(drawn.clip ? { clipMatrix: view } : {}) }
+          : drawn;
       if (op) ops.push(banded(op, item.track.id));
       if (op && op.blend !== "source-over" && (bands.bandOf.get(item.track.id) ?? 0) > 0)
         warnings.push(

@@ -87,6 +87,20 @@ describe("frame keys", () => {
     expect(await changed(video(), video({ fps: 25 }))).toEqual(FRAMES);
   });
 
+  it("a camera's values and keys change every frame it is over", async () => {
+    const under = (camera: string) =>
+      video()
+        .replace("import { Clip,", "import { Camera, Clip,")
+        .replace(/(<Composition [^>]*>)/, `$1\n<Camera id="cam" ${camera}>`)
+        .replace("</Composition>", "</Camera>\n</Composition>");
+    expect(await changed(under("zoom={1.2}"), under("zoom={1.2}"))).toEqual([]);
+    expect(await changed(under("zoom={1.2}"), under("zoom={1.5}"))).toEqual(FRAMES);
+    const keyed = (to: number) => under(`x={[{ at: 0, value: 0 }, { at: 3, value: ${to} }]}`);
+    expect(await changed(keyed(100), keyed(200))).toEqual(FRAMES);
+    // Putting a camera in is an edit to every frame, though it shows them as written.
+    expect(await changed(video(), under("zoom={1}"))).toEqual(FRAMES);
+  });
+
   it("a comment or a helper nobody draws changes nothing, until free code is on screen", async () => {
     const helper = "const unused = 1;";
     expect(await changed(video(), video({ top: helper }))).toEqual([]);

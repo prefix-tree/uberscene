@@ -134,6 +134,10 @@ const ELEMENT_DOCS: Record<string, readonly (readonly [element: string, summary:
       "Clip",
       "A stretch of a video or image asset, trimmed by seconds, transcript words or camera shots, with speed, fit and transform.",
     ],
+    [
+      "Camera",
+      "One view over the tracks written inside it: they move, zoom and turn together, by a constant or by keys on the video's clock. Tracks outside it stay fixed to the screen. A composition has one, or none.",
+    ],
     ["Gap", "Empty time between clips on a sequence track."],
     ["Transition", "A blend between the two clips it sits between on a sequence track."],
     ["Marker", "A named point on the timeline."],

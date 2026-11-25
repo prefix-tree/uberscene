@@ -20,6 +20,8 @@ export const SETUP: Partial<Record<ActionType, readonly ActionInput[]>> = {
     { type: "transition/remove", params: { transitionId: "x1" } },
   ],
   "clip/roll": [{ type: "transition/remove", params: { transitionId: "x1" } }],
+  "camera/update": [{ type: "camera/add", params: { cameraId: "cam", tracks: ["main", "overlays"] } }],
+  "camera/remove": [{ type: "camera/add", params: { cameraId: "cam", tracks: ["main", "overlays"] } }],
   "track/consolidate": [{ type: "clip/move", params: { id: "a1", place: { start: 2 } } }],
   "clip/merge": [{ type: "clip/split", params: { id: "c3", at: 11, newId: "c3_b" } }],
   "effect/setOrder": [{ type: "effect/add", params: { id: "c1", effect: { type: "sepia" }, index: 0 } }],
@@ -226,6 +228,10 @@ export const CASES: Partial<Record<ActionType, ActionInput>> = {
   "caption/setStyle": { type: "caption/setStyle", params: { captionsId: "cap", style: { size: 50 } } },
   "caption/setAnimation": { type: "caption/setAnimation", params: { captionsId: "cap", animation: "typewriter" } },
   "caption/setAll": { type: "caption/setAll", params: { captionsId: "cap", nodes: [] } },
+
+  "camera/add": { type: "camera/add", params: { cameraId: "cam", tracks: ["overlays", "main"], zoom: 1.2 } },
+  "camera/update": { type: "camera/update", params: { cameraId: "cam", x: 120, zoom: 1.5 } },
+  "camera/remove": { type: "camera/remove", params: { cameraId: "cam" } },
 
   "marker/add": { type: "marker/add", params: { markerId: "m9", start: 5, label: "x" } },
   "marker/update": { type: "marker/update", params: { markerId: "m1", start: 3 } },

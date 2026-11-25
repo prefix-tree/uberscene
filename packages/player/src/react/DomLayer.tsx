@@ -4,8 +4,10 @@ import { effectEntry } from "@uberscene/kit/schema";
 import type { Placement, ResolvedState } from "@uberscene/sdk/resolver";
 
 import { trackBands } from "../model/backdrop";
+import { trackCamera } from "../model/camera";
 import { effectPipeline } from "../model/shaders";
 import { frameIndex } from "../model/time";
+import type { Matrix2D } from "../model/transform";
 import { type VisibleItem, visiblePlacements } from "../model/visible";
 import { type ElementProps, OVERLAY_KINDS } from "../overlays/layout";
 import { devWarn } from "../warn";
@@ -214,5 +216,13 @@ export function sameElement(a: ElementCellProps, b: ElementCellProps): boolean {
       : frameIndex(a.time - p.start, ca.rate) !== frameIndex(b.time - q.start, cb.rate)
   )
     return false;
+  // A camera moves an overlay that has no keys of its own, at times its own frame does not change.
+  if (!sameMatrix(trackCamera(a.state, p.track, a.time), trackCamera(b.state, q.track, b.time))) return false;
   return (a.item.transition?.progress ?? -1) === (b.item.transition?.progress ?? -1);
+}
+
+function sameMatrix(m: Matrix2D | null, n: Matrix2D | null): boolean {
+  if (m === n) return true;
+  if (!m || !n) return false;
+  return m.a === n.a && m.b === n.b && m.c === n.c && m.d === n.d && m.e === n.e && m.f === n.f;
 }

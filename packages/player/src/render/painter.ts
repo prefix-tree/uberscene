@@ -476,7 +476,8 @@ export function setMatrix(ctx: Ctx2D, m: Matrix2D): void {
 /** Clips to the op's shown part in composition pixels (a wipe), leaving the transform at identity. */
 function clipFrame(ctx: Ctx2D, op: DrawOp): void {
   if (!op.clip) return;
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  if (op.clipMatrix) setMatrix(ctx, op.clipMatrix);
+  else ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.beginPath();
   for (const r of op.clip) ctx.rect(r.x, r.y, r.w, r.h);
   ctx.clip();

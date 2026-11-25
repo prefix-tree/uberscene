@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { themeSchema } from "../../theme/schema";
 import { zTrackLayout, zTrackRole } from "../enums";
-import { colorSchema, gradientSchema, idSchema } from "./common";
+import { animatable, colorSchema, gradientSchema, idSchema } from "./common";
 
 export const compositionSchema = z.strictObject({
   /** The video's name. */
@@ -66,6 +66,24 @@ export const trackSchema = z.strictObject({
   solo: z.boolean().default(false),
   /** Tracks with the same group move together in the editor. */
   group: idSchema.optional(),
+});
+
+/**
+ * `<Camera>`: one view over the tracks written inside it. Every element on those tracks moves, scales and turns
+ * together; tracks outside it stay fixed to the screen, and file order still says what draws over what. A key's
+ * `at` is seconds from the start of the video.
+ */
+export const cameraSchema = z.strictObject({
+  /** The camera's name in the file; actions refer to it by this. */
+  id: idSchema,
+  /** How far the view has moved right, in pixels: at 180 everything under the camera sits 180 px to the left. */
+  x: animatable(z.number()).default(0),
+  /** How far the view has moved down, in pixels: at 100 everything under the camera sits 100 px higher. */
+  y: animatable(z.number()).default(0),
+  /** How close the view is, about the frame's centre: 1 is as written, 2 shows everything twice the size. */
+  zoom: animatable(z.number().min(0.01).max(100)).default(1),
+  /** How far the view is turned clockwise, in degrees, about the frame's centre: what it shows turns the other way. */
+  rotation: animatable(z.number()).default(0),
 });
 
 export const markerSchema = z.strictObject({

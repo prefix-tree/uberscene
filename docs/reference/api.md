@@ -416,7 +416,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/kit`
 
-108 exports.
+109 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -430,6 +430,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `blockMetaSchema` | const | What a block says about itself, so an agent or a person can choose it without opening it. |
 | `builtInShader` | function | The built-in shader of an effect type, if it has one. |
 | `Callout` | function | A note on a surface box, with a line drawn from it to the thing it is about. |
+| `Camera` | const | The `<Camera>` element ([reference](/reference/elements/camera)). |
 | `Caption` | const | The `<Caption>` element ([reference](/reference/elements/caption)). |
 | `Captions` | const | The `<Captions>` element ([reference](/reference/elements/captions)). |
 | `Cells` | function | A row of cells, each with a value under it if you give them. |
@@ -531,7 +532,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/kit/schema`
 
-258 exports.
+260 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -554,6 +555,8 @@ Every name each entry exports, read from the code. The sections above explain th
 | `BUNDLED_FONT_WEIGHTS` | const |  |
 | `BUNDLED_FONTS` | const |  |
 | `BundledFont` | interface | The font families the player ships. |
+| `Camera` | const | The `<Camera>` element ([reference](/reference/elements/camera)). |
+| `CAMERA_FIELDS` | const | What a `<Camera>` animates, and its value when the file writes none. |
 | `capabilitiesOf` | function |  |
 | `Caption` | const | The `<Caption>` element ([reference](/reference/elements/caption)). |
 | `CAPTION_ANIMATIONS` | const |  |
@@ -796,7 +799,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/sdk`
 
-210 exports.
+212 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -827,6 +830,8 @@ Every name each entry exports, read from the code. The sections above explain th
 | `bake` | function | Replace the helper call that produced a generated element with the literal elements that call produced, so the editor can address them. |
 | `Beat` | interface | A beat of music. |
 | `buildSourceIndex` | function | Index every vocabulary JSX element with a literal id so patches can be written back as text edits. |
+| `CameraActions` | interface |  |
+| `CameraValue` | type | A camera value as a file writes it. |
 | `CanResult` | interface | What `can()` answers. |
 | `CaptionActions` | interface |  |
 | `ClipActions` | interface |  |
@@ -1136,7 +1141,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/player/engine`
 
-44 exports.
+47 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -1152,6 +1157,8 @@ Every name each entry exports, read from the code. The sections above explain th
 | `buildAudioPlan` | function | Every audio-bearing chunk that overlaps [from, to). |
 | `buildFramePlan` | function | Everything the painter needs to draw composition time `t`, in draw order. |
 | `buildGainEnvelope` | function | Gain over [winFrom, winTo] in composition seconds. |
+| `CameraValues` | interface | A `<Camera>`'s four values at one moment. |
+| `cameraValuesAt` | function | The camera's values at composition time `t`, or null in a file without a camera that holds a track. |
 | `CanvasPainter` | class | Executes a FramePlan on a 2D context of composition size. |
 | `captionBox` | function | The captions' default box in a frame. |
 | `captureWarnings` | function |  |
@@ -1183,6 +1190,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `PICK_EPS` | const | Container timestamps are often rounded to the millisecond, so the frame for the exact time n/fps can sit a fraction of a millisecond after it. |
 | `placementSourceTime` | function | Source seconds a media placement shows at composition time `t`. |
 | `SETTLE_MS` | const | Quiet time after the last setState before a paused preview fetches its exact frame. |
+| `trackCamera` | function | The camera's matrix for something on `track` at `t`. |
 | `visiblePlacements` | function | Visual, timed placements that show at `t`. |
 
 ### `@uberscene/editor`

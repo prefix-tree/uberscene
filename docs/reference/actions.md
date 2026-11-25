@@ -4,7 +4,7 @@ editLink: false
 
 # Actions
 
-Generated from the registered handlers (95). Do not edit by hand; run `pnpm docs:gen`.
+Generated from the registered handlers (98). Do not edit by hand; run `pnpm docs:gen`.
 
 Every action has `validate`, `apply`, `invert` and `fold`; the inverse is never null. Each runs as `{ type, params }`; the params and notes here are read from `packages/sdk/src/actions/types/index.ts`.
 
@@ -28,6 +28,14 @@ Every action has `validate`, `apply`, `invert` and `fold`; the inverse is never 
 | action | params | what it does |
 |---|---|---|
 | `box/update` | `{ id, box }` | Places an element or the captions: merges `box` (`x`, `y` in pixels from the frame's top left, `origin`) into its box; only the fields given change, and a field set to null is removed, so that axis is centred again. |
+
+## `camera/`
+
+| action | params | what it does |
+|---|---|---|
+| `camera/add` | `{ cameraId, tracks, x?, y?, zoom?, rotation? }` | Puts a camera around `tracks`, which must be next to each other in the file: everything on them then moves, zooms and turns together, and tracks outside stay fixed to the screen. The tracks keep their place in the stack. A composition has one camera. |
+| `camera/remove` | `{ cameraId }` | Takes the camera away and leaves its tracks where they were, fixed to the screen. |
+| `camera/update` | `{ cameraId, x?, y?, zoom?, rotation? }` | Sets the camera's values: `x` and `y` in pixels, `zoom` (1 is as written), `rotation` in degrees. Keys go through key/add. |
 
 ## `caption/`
 
@@ -186,13 +194,13 @@ Every action has `validate`, `apply`, `invert` and `fold`; the inverse is never 
 
 | action | params | what it does |
 |---|---|---|
-| `track/add` | `{ trackId, position?, layout?, role?, name? }` | Adds an empty track at `position` (last by default), with an optional layout, role and name. |
+| `track/add` | `{ trackId, position?, layout?, role?, name?, camera? }` | Adds an empty track at `position` (last by default), with an optional layout, role and name. Positions count the composition's rows in file order, a camera's tracks in the camera's place. The track lands after the row below it and in that row's parent, so above one of the camera's tracks it is the camera's too; `camera` decides at the camera's edge (true: inside, false: outside). |
 | `track/consolidate` | `{ trackId }` | Free tracks only: packs every element from 0 with no gaps, keeping their order. |
-| `track/duplicate` | `{ sourceTrackId, trackId, idMap, position? }` | Copies a track and its contents to `position` (below the source by default), named "&lt;name> Copy"; `idMap` names the copies, other ids get a `_<trackId>` suffix, and anchors inside the track follow the copies. |
+| `track/duplicate` | `{ sourceTrackId, trackId, idMap, position?, camera? }` | Copies a track and its contents to `position` (below the source by default), named "&lt;name> Copy"; `idMap` names the copies, other ids get a `_<trackId>` suffix, and anchors inside the track follow the copies. |
 | `track/remove` | `{ trackId }` | Deletes a track and everything on it. |
 | `track/rename` | `{ trackId, name }` | Sets the track's name. |
-| `track/reorder` | `{ trackId, position }` | Moves the track to `position` in the stack. |
-| `track/restore` | `{ trackId, node, position }` | The undo of track/remove: puts the track back where it was, with its contents. |
+| `track/reorder` | `{ trackId, position, camera? }` | Moves the track to `position` in the stack, counted as in track/add. Moved above one of the camera's tracks it joins the camera, and moved away it leaves; `camera` decides at the camera's edge. |
+| `track/restore` | `{ trackId, node, position, camera? }` | The undo of track/remove: puts the track back where it was, with its contents. |
 | `track/restorePositions` | `{ trackId, positions }` | Sets the `start` of several elements at once; the undo of track/consolidate and of clip/closeGapBefore on a free track. |
 | `track/setFlag` | `{ trackId, flag, value }` | Turns one track flag on or off: `locked`, `hidden`, `muted` or `solo`. |
 | `track/setGroup` | `{ trackId, group? }` | Puts the track in a group, or takes it out when `group` is omitted. |

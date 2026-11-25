@@ -103,6 +103,8 @@ export interface TimelineRows {
     readonly muted: boolean;
     readonly solo: boolean;
     readonly locked: boolean;
+    /** The camera the track is inside, which moves everything on it. */
+    readonly camera?: string;
   }[];
   readonly elements: readonly ElementRow[];
   readonly effects: readonly EffectRow[];
@@ -203,6 +205,7 @@ export function timelineRows(state: ResolvedState): TimelineRows {
       muted: t.muted,
       solo: t.solo,
       locked: t.locked,
+      ...(t.camera !== undefined ? { camera: t.camera } : {}),
     })),
     elements,
     effects,

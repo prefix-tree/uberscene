@@ -156,7 +156,14 @@ export const KEYFRAME_PROPERTIES = [
   "transform.crop.height",
   "audio.volume",
   "audio.pan",
+  "camera.x",
+  "camera.y",
+  "camera.zoom",
+  "camera.rotation",
 ] as const;
+
+/** What a `<Camera>` animates, and its value when the file writes none. */
+export const CAMERA_FIELDS = { x: 0, y: 0, zoom: 1, rotation: 0 } as const;
 
 /** A property a key list can animate, as the resolver names it (`transform.opacity` for `transform={{ opacity: […] }}`). */
 export function isKeyframeProperty(value: string): boolean {
