@@ -59,7 +59,7 @@ npx uberscene add talk.matte.webm
 - The matte follows the clip: the same trims, speed, freezes, `reverse`, crop and `box`. Each matte frame is read at
   the same source time as the footage's.
 - The cut is made before `effects`, so a black-and-white grade changes the person and not what shows through.
-- `cutout={{ shrink: 2, feather: 1 }}` tidies the edge, in pixels of the composition: `shrink` pulls the edge in (to
+- `cutout` with `shrink: 2, feather: 1` tidies the edge, in pixels of the composition: `shrink` pulls the edge in (to
   lose a rim of the old background), `feather` softens it.
 - A clip with `cutout` and no matte is an error that says what to add; `uberscene lint` reports it as
   `cutout-without-matte`.
