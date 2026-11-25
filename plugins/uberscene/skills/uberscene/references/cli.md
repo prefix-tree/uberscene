@@ -66,7 +66,7 @@ moves it), checked against the hash the package carries. See [Native codecs](htt
 
 | Option | |
 |---|---|
-| `--check-layout` | Report every overlay, and every part a layer's code names with `data-name`, that leaves the frame or the safe zone, or covers the captions or the subject, at its line in the file. Writes no file, and exits with code 3 when it finds issues. |
+| `--check-layout` | Report every overlay, and every part a layer's code names with `data-name`, that leaves the frame or the safe zone, or covers the captions or the subject, and every title on screen for less than 0.5 s plus 0.3 s a word (`read-time`), at its line in the file. Writes no file, and exits with code 3 when it finds issues. |
 | `--safe-zone <zone>` | `tiktok`, `reels`, `shorts`, `title-safe` (the default) or `action-safe`, or `top,right,bottom,left` fractions. |
 | `--subject <x,y,w,h>` | Where the subject is, as fractions of the frame, for footage whose manifest has no subjects. |
 | `--step <s>` | Seconds between samples. Default: every frame. |

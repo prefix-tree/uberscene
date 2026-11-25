@@ -116,7 +116,7 @@ describe("checkLayout", () => {
     );
     const low = issues.find((i) => i.rule === "captions")!;
     expect(low.message).toBe('shape "low" covers captions "caps" from 0.00 s to 0.90 s.');
-    expect(low.box.y).toBe(295);
+    expect(low.box?.y).toBe(295);
     expect(low.fix).toMatch(/^move it (up|down) \d+ px \(box\.y \d+\), then check again/);
   });
 
@@ -178,6 +178,43 @@ describe("checkLayout", () => {
     );
     expect(printed).toContain("^ made by Dot()");
     expect(printed.trimEnd().endsWith(result.summary)).toBe(true);
+  });
+
+  it("reports a title too short to read, at its duration, beside the issues of frames", async () => {
+    const text = [
+      'import { Composition, Title, Track } from "@uberscene/kit";',
+      "",
+      "export default function Video() {",
+      "  return (",
+      '    <Composition id="v" fps={10} width={640} height={360}>',
+      '      <Track id="t" layout="free">',
+      '        <Title id="flash" start={0} duration={0.4}>SOMEONE SAT DOWN</Title>',
+      '        <Title id="calm" start={0.5} duration={1}>HELLO</Title>',
+      "      </Track>",
+      "    </Composition>",
+      "  );",
+      "}",
+    ].join("\n");
+    const el = h(
+      Composition,
+      { id: "v", fps: 10, width: 640, height: 360 },
+      h(
+        Track,
+        { id: "t", layout: "free" },
+        h(Title, { id: "flash", start: 0, duration: 0.4 }, "SOMEONE SAT DOWN"),
+        h(Title, { id: "calm", start: 0.5, duration: 1 }, "HELLO"),
+      ),
+    );
+    const result = await check(el, manifest, { source: { file: "video.tsx", text } });
+    expect(result.issues.map((i) => `${i.rule}:${i.id}`)).toEqual(["read-time:flash"]);
+    const [flash] = result.issues;
+    expect(flash).toMatchObject({ from: 0, to: 0.4, at: 0, seconds: 0.4, needs: 1.4 });
+    expect(flash?.box).toBeUndefined();
+    const line = text.split("\n")[6]!;
+    expect(formatLayout(result)).toContain(
+      `video.tsx:7:${line.indexOf("duration=") + 1}: read-time: "flash" is on screen 0.40 s; 3 words need 1.40 s to be read\n  7 | ${line}\n    | ${" ".repeat(line.indexOf("duration="))}^\n  fix: hold it 1.40 s or more (duration), or cut words`,
+    );
+    expect(result.summary).toMatch(/^1 layout issue on 1 element/);
   });
 
   it("points an element a loop made at the JSX in the loop, and lists issues by line", async () => {

@@ -9,7 +9,7 @@ after every change.
 | Whether the file keeps to the conventions an editor relies on | `uberscene lint video.tsx` |
 | What plays when, and which words each clip says | `uberscene inspect video.tsx` |
 | What it looks like | `uberscene look video.tsx` |
-| Whether anything leaves the frame, the safe zone, or covers the captions or the speaker | `uberscene video.tsx --check-layout` |
+| Whether anything leaves the frame, the safe zone, or covers the captions or the speaker, and whether every title stays long enough to read | `uberscene video.tsx --check-layout` |
 | Whether anything stays still that shouldn't | `uberscene video.tsx --check-motion` ([Motion check](/reference/cli#motion-check)) |
 | Where each thing sits at a moment | `uberscene where video.tsx --at 2.6` |
 | Whether the exported file is sound | `ffprobe` and `ffmpeg` |
@@ -116,7 +116,7 @@ The [CLI reference](/reference/cli#look) has every option.
 ## Check the layout
 
 `--check-layout` finds anything drawn over the picture that leaves the frame, leaves a platform's safe zone, or
-covers the captions or the speaker. It reports each problem like a compiler: where it is in the file, when it
+covers the captions or the speaker, and any title gone before it can be read. It reports each problem like a compiler: where it is in the file, when it
 happens, and the smallest fix.
 
 ```sh
@@ -140,6 +140,23 @@ It writes no file, and exits with 3 when it finds a problem, so a script can sto
 | `safe-zone` | It is inside the frame but outside the safe zone. |
 | `captions` | It overlaps a line of captions. |
 | `subject` | It overlaps the subject, such as the speaker's face. |
+| `read-time` | A title is on screen for less than 0.5 s plus 0.3 s a word, by more than a frame. |
+
+**Read time** is worked out from the timeline, not from frames: a title's resolved start and end (after anchors, words
+and the end of what holds it) against 0.5 s to find it plus 0.3 s a word. A title that types in needs its
+`animation.in` on top; one that comes word by word needs the time until its last word shows. Fades and slides add
+nothing: words can be read while they move. The issue points at the title's `duration` and gives `seconds` (what it
+has) and `needs`:
+
+```text
+video.tsx:7:54: read-time: "flash" is on screen 0.40 s; 3 words need 1.40 s to be read
+  7 |         <Title id="flash" anchor="talk" at="word:11" duration={0.4}>SOMEONE SAT DOWN</Title>
+    |                                                      ^
+  fix: hold it 1.40 s or more (duration), or cut words
+```
+
+Hold the title past the moment the speaker moves on rather than shortening it, or cut words. Captions are not
+checked: speech sets their pace.
 
 `--safe-zone` takes `tiktok`, `reels` or `shorts` (each platform's published zone for 1080×1920), `title-safe` (the
 default) or `action-safe`, or your own `top,right,bottom,left` fractions.
@@ -160,7 +177,8 @@ From code: `checkLayout({ state, media, source: { ...video.source, file }, safeZ
 
 ::: details The report as JSON
 `--json` prints the same report as data. `from` and `to` are the first and last samples with the problem; `at` is the
-worst one, where `box` is the element's ink and `area` is what it breaks. Pixels are counted from the top left.
+worst one, where `box` is the element's ink and `area` is what it breaks. Pixels are counted from the top left. A
+`read-time` issue has no `box` or `area`; it has `seconds` and `needs`.
 
 ```json
 {

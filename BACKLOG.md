@@ -27,7 +27,7 @@ days, L a week or more.
 
 ## Next
 
-- [ ] **3. A read-time check** (S)
+- [x] **3. A read-time check** (S) (#203)
   - Report a title on screen for less than 0.5 s plus 0.3 s a word. The rule is in the skill; nothing enforces it.
   - Done when: `lint` or `--check-layout` reports it with the title's id, its time and the time it needs.
 
