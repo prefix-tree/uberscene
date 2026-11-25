@@ -294,4 +294,31 @@ export default function Video() {
     const rows = JSON.parse(inspect(ground, video.state, { json: true }).output);
     expect(JSON.stringify(rows)).toContain('"ground":true');
   });
+
+  it("says so for a shape, an SVG and a sticker too", async () => {
+    const file = join(dir, "ground-shapes.tsx");
+    writeFileSync(
+      file,
+      `import { Composition, Shape, Svg, Track } from "@uberscene/kit";
+export const manifest = { assets: {} };
+export default function Video() {
+  return (
+    <Composition fps={30} width={640} height={360}>
+      <Track id="t" layout="free">
+        <Shape id="panel" start={0} duration={2} type="rectangle" fill="#ffffff" ground />
+        <Shape id="note" start={0} duration={2} type="rectangle" fill="#ffffff" />
+        <Svg id="frame" start={0} duration={2} content="<svg viewBox='0 0 1 1'><rect width='1' height='1'/></svg>" ground />
+      </Track>
+    </Composition>
+  );
+}
+`,
+    );
+    const video = await loadVideo(file);
+    expect(video.state.errors).toEqual([]);
+    const { output } = inspect(file, video.state, {});
+    expect(output).toMatch(/shape\s+panel\s+ground/);
+    expect(output).toMatch(/svg\s+frame\s+ground/);
+    expect(output).not.toMatch(/shape\s+note\s+ground/);
+  });
 });

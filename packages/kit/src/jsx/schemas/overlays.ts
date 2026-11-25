@@ -9,6 +9,7 @@ import {
   fitProp,
   fontWeightSchema,
   gradientSchema,
+  groundProp,
   idSchema,
   overlayProps,
   placedProps,
@@ -111,6 +112,7 @@ const strokeSchema = z.strictObject({
 export const shapeSchema = z.strictObject({
   ...timedProps,
   ...overlayProps,
+  ...groundProp,
   ...entranceProps,
   /** A theme preset for shapes. */
   style: idSchema.optional(),
@@ -146,6 +148,7 @@ export const svgSchema = z
   .strictObject({
     ...timedProps,
     ...overlayProps,
+    ...groundProp,
     ...fitProp,
     /** A theme preset for svg elements. */
     style: idSchema.optional(),
@@ -170,6 +173,7 @@ export const svgSchema = z
 export const stickerSchema = z.strictObject({
   ...timedProps,
   ...overlayProps,
+  ...groundProp,
   ...entranceProps,
   /** A theme preset for stickers. */
   style: idSchema.optional(),
@@ -212,12 +216,7 @@ export const layerSchema = z.strictObject({
   ...placedProps,
   /** How the layer mixes with what is under it, as CSS `mix-blend-mode` does. */
   blend: zBlendMode.optional(),
-  /**
-   * The layer is a ground that other things sit on: a wall behind a game, a scrim that darkens footage under a
-   * title. The layout check then treats it like a background: it is not held to the safe zone and is not said to
-   * cover the captions.
-   */
-  ground: z.boolean().optional(),
+  ...groundProp,
 });
 
 const vec3Schema = z.tuple([z.number(), z.number(), z.number()]);
