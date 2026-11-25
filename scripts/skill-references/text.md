@@ -22,7 +22,8 @@ Sizes for a 1080-high frame; scale with the height for other sizes (1920-high ve
 
 ## Time
 
-- Hold a title for 0.5 s plus 0.3 s per word, at least. Two lines of eight words each: about 5 s.
+- Hold a title for 0.5 s plus 0.3 s per word, at least, plus the time it takes to type in. Two lines of eight words
+  each: about 5 s. `--check-layout` reports a title held less (`read-time`).
 - One title on screen at a time, unless one is a label on something.
 - Enter fast (0.3-0.6 s) and leave faster (about three quarters of the entrance). The entrance is the motion style's
   (`theme.motion`); write `enter` only where one should differ.

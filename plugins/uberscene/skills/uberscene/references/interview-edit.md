@@ -25,7 +25,7 @@ interviews in general, see [kinds.md](kinds.md).
 | A title that lands on a word | `anchor="talk" at="word:N"` on the `<Title>` | The hook's clip and the answer's clip are two clips of one take: put them on separate tracks, or `lint` reports the footage as repeated |
 | Lines that type in | `animation={{ type: "typewriter", in: 0.3 }}` | One burst of key clicks per line, anchored to the same word |
 | A coloured word | One `<Title>` per line, each one colour | A title takes one colour: colour a whole line, or give the word its own title. A highlighted line is a title with a `background` |
-| A flash card | A full-frame `<Shape>` and a `<Title>`, anchored to the word | Hold it 0.5 s plus 0.3 s a word, even if the speaker has moved on: 0.3 s cards pass every check and cannot be read |
+| A flash card | A full-frame `<Shape>` and a `<Title>`, anchored to the word | Hold it 0.5 s plus 0.3 s a word, even if the speaker has moved on: a 0.3 s card cannot be read. `--check-layout` reports one held less (`read-time`) |
 | A colour card under the speaker | A `<Shape ground>` on a track before the speaker's | Tracks draw in the order the file writes them, footage included. `ground` keeps the layout check from treating the card as a callout |
 | B-roll tinted to the card | The clip in black and white with `blend="screen"` over the card: its black becomes the card's colour | A blended clip blends with footage, not with a shape: make that card an image clip of the colour, on the track below the b-roll. Pick shots on true black; a hazy shot shows its frame. Lift a dim subject with `exposure` (2 stops was needed) |
 | The speaker cut out | `cutout` on the clip, with a matte named on its asset (`"matte": "talk.matte"`) | The matte is made outside for now; see "The cut-out" below |
@@ -42,7 +42,7 @@ interviews in general, see [kinds.md](kinds.md).
 | `uberscene lint` | Ids, timing, the same footage twice on one track, a gap on the main track | Anything about how it looks |
 | `uberscene inspect` | Every element's seconds, so card lengths can be worked out from word times | |
 | `uberscene look --at …` | The real frame of each card. Most layout mistakes were found here | Motion and sound. Draw a still of every card; a card you did not look at is a card you did not check |
-| `--check-layout` | What leaves the safe zone. With `--subject x,y,w,h` for the face, a title over the face | Two titles overlapping each other, and a title that wraps or overflows its box: both pass. A long title in a narrow `box` wraps without warning, so give big titles a generous width and look |
+| `--check-layout` | What leaves the safe zone. With `--subject x,y,w,h` for the face, a title over the face. A title too short to read (`read-time`): on this film, a hook word and four typed lines | Two titles overlapping each other, and a title that wraps or overflows its box: both pass. A long title in a narrow `box` wraps without warning, so give big titles a generous width and look |
 | `--check-motion` | A stretch with nothing moving (only the end card, a hold on purpose) | Whether something moves too fast to read |
 | `look --listen all` | The mix's loudness and peak over time | What it sounds like |
 | `ffmpeg -af ebur128=peak=true` on the render | The loudness of the file people get | |

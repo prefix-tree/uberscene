@@ -4,7 +4,7 @@
 import { Children, type CSSProperties, cloneElement, isValidElement, type ReactNode } from "react";
 
 import { fontFamily } from "@uberscene/kit";
-import { TEXT_ANIMATION_TYPES } from "@uberscene/kit/schema";
+import { TEXT_ANIMATION_TYPES, titleWords } from "@uberscene/kit/schema";
 import type { Placement } from "@uberscene/sdk/resolver";
 
 import { isVisibleAt } from "../model/visible";
@@ -117,7 +117,7 @@ function animation(
 
 function words(text: string, rel: number, anim: { in: number; stagger?: number }, duration: number) {
   const parts = text.split(/(\s+)/);
-  const wordCount = parts.filter((w) => w.trim().length > 0).length;
+  const wordCount = titleWords(text).length;
   const stagger = anim.stagger ?? (wordCount > 0 ? anim.in / wordCount : 0);
   let i = 0;
   return parts.map((part, idx) => {
