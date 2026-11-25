@@ -4,7 +4,9 @@ A 38-second interview clip in a kinetic-type style: a cold open on the speaker's
 caps beside him, flash cards, a blue card with the spacecraft, and the quote typing itself in beside a black-and-white
 cut-out of him. Every title is anchored to a word he says.
 
-`video.tsx` is the film. What it was like to build, tool by tool, is in the agent skill
+`video.tsx` is the film (1920x1080), and `reel.tsx` the same edit laid out as a vertical reel (1080x1920) for TikTok,
+Reels and Shorts: the words in the upper part, inside both platforms' safe zones, and the speaker low in the frame.
+What it was like to build, tool by tool, is in the agent skill
 (`plugins/uberscene/skills/uberscene/references/interview-edit.md`), and what UberScene was missing for it is in
 [decision 0039](../../docs/decisions/0039-a-person-cut-out-of-the-background.md) and [the backlog](../../BACKLOG.md).
 
@@ -15,7 +17,10 @@ The media is not in the repository (about 110 MB). One script prepares it from p
 ```sh
 bash examples/interview/scripts/prepare.sh
 npx tsx packages/render/src/cli.ts examples/interview/video.tsx --out examples/interview/interview.mp4
+npx tsx packages/render/src/cli.ts examples/interview/reel.tsx --out examples/interview/reel.mp4
 ```
+
+Check the reel against the platform it goes to: `--check-layout --safe-zone reels` (or `tiktok`, `shorts`).
 
 The script needs ffmpeg, git, curl and Python 3 with numpy, torch and torchvision, and about 2 GB of disk while it
 runs. On four CPU cores it takes about ten minutes, most of it the cut-out.
@@ -23,6 +28,7 @@ runs. On four CPU cores it takes about ten minutes, most of it the cut-out.
 | File | What it is |
 |---|---|
 | `video.tsx` | The film |
+| `reel.tsx` | The film as a vertical reel |
 | `uberscene.json` | The manifest: each asset's length and size, and the words of the take |
 | `talk.json` | The take's words with their times, from Whisper (`small.en`, word timestamps) |
 | `scripts/prepare.sh` | Fetches and makes everything in `media/` |
