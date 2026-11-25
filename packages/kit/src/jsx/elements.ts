@@ -7,7 +7,7 @@ import { defineElement, type VocabularyComponent, type VocabularyMeta, type Voca
 import type { Easing, TransitionType, VideoEffectType } from "./enums";
 import { captionSchema, captionsSchema } from "./schemas/captions";
 import { effectSchema, freezeSchema, keyframeSchema, maskSchema, speedKeySchema } from "./schemas/children";
-import { compositionSchema, gapSchema, markerSchema, trackSchema } from "./schemas/composition";
+import { cameraSchema, compositionSchema, gapSchema, markerSchema, trackSchema } from "./schemas/composition";
 import { audioSchema, clipSchema } from "./schemas/media";
 import { angleSchema, cutSchema, multicamSchema } from "./schemas/multicam";
 import {
@@ -29,6 +29,7 @@ const el = <K extends string, S extends Parameters<typeof defineElement>[0]["sch
 
 export const Composition = el("composition", compositionSchema);
 export const Track = el("track", trackSchema);
+export const Camera = el("camera", cameraSchema);
 export const Clip = el("clip", clipSchema) as unknown as WithEffects<VocabularyComponent<"clip", typeof clipSchema>>;
 export const Audio = el("audio", audioSchema);
 export const Gap = el("gap", gapSchema);
@@ -163,6 +164,7 @@ type WithEffects<C> =
 
 export const ELEMENTS = {
   Composition,
+  Camera,
   Track,
   Clip,
   Audio,

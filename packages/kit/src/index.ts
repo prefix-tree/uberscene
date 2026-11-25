@@ -20,6 +20,7 @@ export {
   type Animatable,
   type AnyEffectSpec,
   Audio,
+  Camera,
   Caption,
   Captions,
   Clip,
