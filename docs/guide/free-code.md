@@ -260,6 +260,44 @@ the same `time`:
 </Three>
 ```
 
+### A scene file as footage
+
+A 3D scene can also be media. A standalone `.js` file whose default export is a shot (`defineShot`, as `<Three shot>`
+takes) is listed in the manifest as an asset of kind `scene`, and a `<Clip>` plays it like footage whose frames are
+computed: the player asks for the frame at a source time, and three.js draws the scene at that moment.
+
+```js
+// crossing.js: builds the scene, and stages it in `stage` since no tag does. Keys are in the scene's own seconds.
+export default defineShot({
+  objects: { walker: {} },
+  length: 5,
+  stage: {
+    background: "#1d1b18",
+    camera: { fov: 35, position: [0, 1.4, 5.5], lookAt: [0, 1.1, 0] },
+    objects: { walker: { position: [{ at: 0.5, value: [-2.5, 0, -0.8] }, { at: 3.2, value: [1.5, 0, -0.8] }] } },
+  },
+  build({ THREE, scene }) { /* ...returns { objects: { walker } } */ },
+});
+```
+
+```tsx
+export const manifest = {
+  assets: { crossing: { id: "crossing", kind: "scene", duration: 5, fps: 30, width: 1920, height: 1080 } },
+};
+// ...
+<Clip id="slow" src="asset:crossing" in={1.5} out={3.2} speed={0.5} />
+```
+
+The asset's `fps`, `width` and `height` say how its frames come out; `duration` is how long the scene runs. Everything
+a clip does to footage works on a scene: trims by seconds, speed and its ramps, `reverse`, freezes, transitions,
+effects, `box` and `fit`. Without a `background` the frames are transparent where nothing is drawn, so a scene on a
+track above footage sits over it. The same file can still go on a `<Three shot>` tag, whose props then stage it in
+place of `stage` (decision 0039).
+
+The file runs like the video file, with the same imports, and its frames are set from the time alone, never from the
+frame before. The host installs the engine that draws scenes with `installSceneFiles` from
+`@uberscene/graphics/libraries`; the export does.
+
 ### `<Motion>`
 
 `<Motion>` plays a Motion `sequence` over its children. Each step names a selector inside the tag, its keyframes,

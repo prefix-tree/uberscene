@@ -416,7 +416,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/kit`
 
-109 exports.
+110 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -499,6 +499,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `ShotInputDefault` | type | An input's default. |
 | `ShotObjectSpec` | interface | What a shot declares about one object. |
 | `ShotSampleArgs` | interface | What `sample` gets on every frame. |
+| `ShotStage` | interface | Where a scene file stages itself when it plays as media (a `<Clip>` of a scene asset), with no `<Three>` tag to stage it. |
 | `spring` | function | A physical spring from `from` (default 0) to `to` (default 1) at `time` seconds. |
 | `SpringOptions` | interface |  |
 | `stepAt` | function | Which step a moment has reached. |
@@ -532,7 +533,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/kit/schema`
 
-252 exports.
+256 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -640,6 +641,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `holdLayerFrame` | function | Hold the frame until the returned release is called (once; later calls do nothing). |
 | `installLayerClock` | function |  |
 | `installLayerEngine` | function | Install (or with `null`, remove) the engine that draws `<Layer engine={name}>` tags such as `<Three>`. |
+| `installSceneEngine` | function | Install (or with `null`, remove) the engine that draws scene assets. |
 | `isBuiltInTransition` | function |  |
 | `isBundledFont` | function |  |
 | `isDropFrame` | const | Whether a rate is shown in drop-frame timecode. |
@@ -705,6 +707,9 @@ Every name each entry exports, read from the code. The sections above explain th
 | `sampleAtSeconds` | const | The audio sample a time in seconds falls in. |
 | `sampleRateProblem` | function | Why a sample rate cannot be used, or null. |
 | `samplesUntil` | const | The first sample that starts at or after a time. |
+| `sceneEngine` | function | The installed scene engine, or null when the host installed none. |
+| `SceneEngine` | interface | What turns a scene asset (manifest kind `scene`, a standalone `.js` file) into pictures. |
+| `SceneRenderer` | interface | A scene file's pictures at given times. |
 | `SCHEMAS_BY_KIND` | const |  |
 | `secondAndFrame` | function | The whole second a frame falls in and the frame's place within it, for a timecode. |
 | `secondsToTicks` | const | Seconds as the nearest tick. |
@@ -791,7 +796,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/sdk`
 
-206 exports.
+207 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -963,6 +968,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `resolveScene` | function | Resolve a `<Nested of={Scene}>` interior. |
 | `resolveTimeRef` | function | Turn a reference into seconds. |
 | `rules` | const |  |
+| `runModule` | function | Runs a module's source as `loadModule` runs a video file, with the same imports, scope and local files, and returns its exports whatever they are. |
 | `sameAsset` | function |  |
 | `samePlacement` | function | Whether two placements would render and edit the same; used to hand back the previous object. |
 | `SceneFn` | type |  |
@@ -1289,13 +1295,17 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/graphics`
 
-13 exports.
+17 exports.
 
 | Export | Kind | |
 |---|---|---|
 | `FREE_CODE_LIBRARIES` | const | The libraries free code in a `<Layer>` may import, by import name. |
 | `installFreeCodeLibraries` | function | Make `<Three>` and `<Motion>` draw (installs their layer engines) and return the imports a host passes to `loadModule`. |
+| `installSceneFiles` | function | Make scene assets (manifest kind `scene`) play. |
 | `MotionLayer` | function | What draws `<Motion>`. |
+| `openScene` | function | Builds a scene file once and draws it at any time asked, from the time alone. |
+| `sceneEngine` | function | The scene engine for a host. |
+| `SceneLoader` | type | Runs a scene file's source and returns its exports, as the host's `loadModule` does for a video file. |
 | `ThreeCamera` | interface |  |
 | `ThreeFrame` | interface | What `update` gets on every frame. |
 | `ThreeLayer` | function | What draws `<Three>`. |
@@ -1309,13 +1319,17 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/graphics/libraries`
 
-13 exports.
+17 exports.
 
 | Export | Kind | |
 |---|---|---|
 | `FREE_CODE_LIBRARIES` | const | The libraries free code in a `<Layer>` may import, by import name. |
 | `installFreeCodeLibraries` | function | Make `<Three>` and `<Motion>` draw (installs their layer engines) and return the imports a host passes to `loadModule`. |
+| `installSceneFiles` | function | Make scene assets (manifest kind `scene`) play. |
 | `MotionLayer` | function | What draws `<Motion>`. |
+| `openScene` | function | Builds a scene file once and draws it at any time asked, from the time alone. |
+| `sceneEngine` | function | The scene engine for a host. |
+| `SceneLoader` | type | Runs a scene file's source and returns its exports, as the host's `loadModule` does for a video file. |
 | `ThreeCamera` | interface |  |
 | `ThreeFrame` | interface | What `update` gets on every frame. |
 | `ThreeLayer` | function | What draws `<Three>`. |
