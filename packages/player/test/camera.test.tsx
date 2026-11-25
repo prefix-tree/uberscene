@@ -23,7 +23,7 @@ const main = { id: "main", items: [clip("talk")] };
 const cards = { id: "cards", layout: "free" as const, items: [shape("card")] };
 const logo = { id: "logo", layout: "free" as const, items: [shape("mark")] };
 const tracks = [main, cards, logo];
-const under = (camera: StateSpec["camera"]) => makeState({ tracks, camera });
+const under = (camera: NonNullable<StateSpec["camera"]>) => makeState({ tracks, camera });
 const COMP = { width: 640, height: 360 };
 
 const at = (m: Matrix2D, x: number, y: number): [number, number] => [
