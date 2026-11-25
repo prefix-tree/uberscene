@@ -2,6 +2,8 @@
   "$schema": "https://unpkg.com/knip@5/schema-jsonc.json",
   // Binaries the tests and scripts run from the system, not from node_modules.
   "ignoreBinaries": ["ffmpeg", "ffprobe"],
+  // What a prepare script downloads to make an example's media (examples/interview/scripts/prepare.sh).
+  "ignore": ["examples/*/.work/**"],
   "rules": { "exports": "error", "types": "error", "enumMembers": "error" },
   "workspaces": {
     ".": {
