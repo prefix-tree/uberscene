@@ -3,7 +3,7 @@ import { memo, type ReactNode } from "react";
 import { effectEntry } from "@uberscene/kit/schema";
 import type { Placement, ResolvedState } from "@uberscene/sdk/resolver";
 
-import { backdropTracks } from "../model/backdrop";
+import { trackBands } from "../model/backdrop";
 import { effectPipeline } from "../model/shaders";
 import { frameIndex } from "../model/time";
 import { type VisibleItem, visiblePlacements } from "../model/visible";
@@ -23,12 +23,17 @@ import { ShaderBox } from "./ShaderBox";
 export interface DomLayerProps {
   readonly state: ResolvedState;
   readonly interiors: ReadonlyMap<string, ReactNode>;
-  /** Which overlays: those beneath the footage (`backdropTracks`), or the rest and the captions (default). */
+  /**
+   * Which overlays: those beneath the footage (`"backdrop"`), the rest and the captions (`"front"`, the default),
+   * or, in a player with a canvas per band (`trackBands`), those above canvas `slot`. The captions go with the
+   * top slot.
+   */
   readonly layer?: "backdrop" | "front";
+  readonly slot?: number;
 }
 
 /** Overlay elements as DOM, one absolutely positioned group per track in compositing order, above the canvas (or, for the backdrop, below it). */
-export function DomLayer({ state, interiors, layer = "front" }: DomLayerProps) {
+export function DomLayer({ state, interiors, layer = "front", slot }: DomLayerProps) {
   const time = useCompositionTime();
   const exact = usePlayer().exactTime;
   const items = visiblePlacements(state, time).filter((v) => OVERLAY_KINDS.has(v.placement.kind));
@@ -38,9 +43,13 @@ export function DomLayer({ state, interiors, layer = "front" }: DomLayerProps) {
     list.push(item);
     byTrack.set(item.track.id, list);
   }
-  const backdrop = backdropTracks(state);
-  const tracks = state.tracks.filter((t) => backdrop.has(t.id) === (layer === "backdrop"));
-  const captions = layer === "front" ? [...state.items.values()].filter((p) => p.kind === "captions") : [];
+  const bands = trackBands(state);
+  const slotOf = (id: string) => bands.slotOf.get(id) ?? bands.count - 1;
+  const tracks = state.tracks.filter((t) =>
+    slot !== undefined ? slotOf(t.id) === slot : slotOf(t.id) < 0 === (layer === "backdrop"),
+  );
+  const top = slot !== undefined ? slot === bands.count - 1 : layer === "front";
+  const captions = top ? [...state.items.values()].filter((p) => p.kind === "captions") : [];
   return (
     <>
       {tracks.map((track) => {

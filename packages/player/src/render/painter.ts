@@ -39,6 +39,8 @@ export class CanvasPainter {
   private outgoingPicture: AnyCanvas | null = null;
   /** The textures of the frame being painted. */
   private textures: ShaderTextures | undefined;
+  /** The plan being painted is a band over a clear ground: an adjustment keeps to the pixels already drawn. */
+  private atop = false;
 
   constructor(
     readonly width: number,
@@ -48,6 +50,7 @@ export class CanvasPainter {
 
   paint(ctx: Ctx2D, plan: FramePlan, inputs: PaintInputs): void {
     this.textures = inputs.textures;
+    this.atop = plan.atop === true;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = "source-over";
@@ -357,7 +360,7 @@ export class CanvasPainter {
     this.paintPost(sctx, op.post, op.matrix, op.rect);
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.globalCompositeOperation = "source-over";
+    ctx.globalCompositeOperation = this.atop ? "source-atop" : "source-over";
     ctx.globalAlpha = op.opacity;
     ctx.filter = op.filter || "none";
     ctx.drawImage(this.scratch, 0, 0);
@@ -379,7 +382,7 @@ export class CanvasPainter {
     }
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.globalCompositeOperation = "source-over";
+    ctx.globalCompositeOperation = this.atop ? "source-atop" : "source-over";
     ctx.globalAlpha = op.opacity;
     ctx.filter = op.filter || "none";
     ctx.drawImage(picture, 0, 0);
