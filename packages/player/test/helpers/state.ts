@@ -57,6 +57,12 @@ export interface StateSpec {
   background?: { type: "color" | "blur"; color?: string };
   tracks: TrackSpec[];
   manifest?: AssetManifest;
+  /** A camera over the named tracks: constants in `props`, keys as `[field, at, value, easing?]`. */
+  camera?: {
+    tracks: string[];
+    props?: Partial<Record<"x" | "y" | "zoom" | "rotation", number>>;
+    keys?: [field: "x" | "y" | "zoom" | "rotation", at: number, value: number, easing?: string][];
+  };
 }
 
 export const DEFAULT_MANIFEST: AssetManifest = {
@@ -276,6 +282,38 @@ export function makeState(spec: StateSpec): ResolvedState {
       boundProps: {},
       errors: [],
     });
+  }
+  if (spec.camera) {
+    const base = { editable: "literal" as const, lockedProps: [], boundProps: {}, errors: [] };
+    const keys = (spec.camera.keys ?? []).map(([field, at, value, easing], i) => {
+      const id = `cam.${field}.${i}`;
+      items.set(id, {
+        ...base,
+        id,
+        kind: "keyframe",
+        track: null,
+        parent: "cam",
+        children: [],
+        start: at,
+        end: at,
+        duration: 0,
+        props: { id, property: `camera.${field}`, at, value, easing: easing ?? "linear" },
+      });
+      return id;
+    });
+    items.set("cam", {
+      ...base,
+      id: "cam",
+      kind: "camera",
+      track: null,
+      parent: "composition",
+      children: [...spec.camera.tracks, ...keys],
+      start: 0,
+      end: duration,
+      duration,
+      props: { id: "cam", x: 0, y: 0, zoom: 1, rotation: 0, ...spec.camera.props },
+    });
+    for (const [i, t] of tracks.entries()) if (spec.camera.tracks.includes(t.id)) tracks[i] = { ...t, camera: "cam" };
   }
   const compProps = {
     id: "composition",

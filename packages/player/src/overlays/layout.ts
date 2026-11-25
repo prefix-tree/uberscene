@@ -3,6 +3,7 @@ import type { CSSProperties } from "react";
 import type { ElementBox, FitMode, Transform } from "@uberscene/kit/schema";
 import type { Placement, ResolvedState } from "@uberscene/sdk/resolver";
 
+import { trackCamera } from "../model/camera";
 import { blendOf } from "../model/frame-plan";
 import { type ClipRect, combine, type GraphicAnimation, type Motion, motionAt, STILL } from "../model/motion";
 import { effectPipeline } from "../model/shaders";
@@ -68,9 +69,11 @@ export function overlayLayout(p: ElementProps, size: Box, fit: FitMode = "none",
     transitionMotion(p.transition, layout.rect.w, layout.rect.h),
   );
   const fadeForDraw = !drawable && motion.draw !== null ? motion.draw : 1;
+  const view = trackCamera(p.state, p.placement.track, p.time);
   return {
     rect: { w: layout.rect.w, h: layout.rect.h },
-    matrix: multiply(layout.matrix, motion.matrix),
+    // Under a camera, the view goes on last: the element's own place and its entrance both follow it.
+    matrix: view ? multiply(view, multiply(layout.matrix, motion.matrix)) : multiply(layout.matrix, motion.matrix),
     opacity: (transform.opacity ?? 1) * motion.opacity * fadeForDraw,
     filter: filter || null,
     blend: blend && blend !== "normal" ? blendOf(blend) : null,

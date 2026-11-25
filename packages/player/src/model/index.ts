@@ -1,6 +1,7 @@
 export * from "./audio-plan";
 export * from "./backdrop";
 export * from "./box";
+export * from "./camera";
 export * from "./effects";
 export * from "./frame-plan";
 export * from "./keyframes";
