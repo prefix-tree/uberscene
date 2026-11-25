@@ -2,9 +2,7 @@ import { Canvas, type CanvasProps, useFrame, useThree } from "@react-three/fiber
 import { type CSSProperties, type ReactNode, useCallback, useLayoutEffect, useRef } from "react";
 import * as THREE from "three";
 
-import { holdLayerFrame, isShot, type ShotBuilt, type ShotDefinition, useLayer } from "@uberscene/kit";
-
-import { applyCamera, applyShot, buildShot, type ShotProps, shotTime } from "./shot";
+import { holdLayerFrame, useLayer } from "@uberscene/kit";
 
 export type ThreeSceneProps = Omit<CanvasProps, "frameloop">;
 
@@ -81,13 +79,10 @@ export type ThreeUpdate = (frame: ThreeFrame) => void;
 // biome-ignore lint/suspicious/noConfusingVoidType: a setup may return nothing; `void` lets one without a return statement type-check.
 export type ThreeSetupFn = (setup: ThreeSetup) => ThreeUpdate | { update?: ThreeUpdate; dispose?: () => void } | void;
 
-type Vec3Keys = readonly { readonly at: number; readonly value: readonly [number, number, number] }[];
-
 export interface ThreeCamera {
-  /** `[x, y, z]`, or keys in shot time. */
-  readonly position?: readonly [number, number, number] | Vec3Keys;
-  readonly lookAt?: readonly [number, number, number] | Vec3Keys;
-  readonly fov?: number | readonly { readonly at: number; readonly value: number }[];
+  readonly position?: readonly [number, number, number];
+  readonly lookAt?: readonly [number, number, number];
+  readonly fov?: number;
   readonly near?: number;
   readonly far?: number;
   readonly zoom?: number;
@@ -99,73 +94,33 @@ export function ThreeLayer(props: {
   readonly setup?: unknown;
   readonly camera?: unknown;
   readonly background?: unknown;
-  readonly shot?: unknown;
-  readonly in?: unknown;
-  readonly objects?: unknown;
-  readonly inputs?: unknown;
   readonly children?: ReactNode;
 }) {
   const camera = (props.camera ?? {}) as ThreeCamera;
   return (
     // The camera type is fixed when the canvas is made, so switching it makes a new one.
     <ThreeScene key={camera.orthographic ? "ortho" : "persp"} orthographic={camera.orthographic === true}>
-      <CameraRig {...camera} start={typeof props.in === "number" ? props.in : 0} />
+      <CameraRig {...camera} />
       {typeof props.background === "string" ? <color attach="background" args={[props.background]} /> : null}
       {typeof props.setup === "function" ? <Setup setup={props.setup as ThreeSetupFn} /> : null}
-      {isShot(props.shot) ? <Shot shot={props.shot} props={props as ShotProps} /> : null}
       {props.children}
     </ThreeScene>
   );
 }
 
-/**
- * The camera props: lenses on every change, position, look-at and field of view at the shot's time on every frame,
- * since each may be keys.
- */
-function CameraRig({ position, lookAt, fov, near, far, zoom, start }: ThreeCamera & { readonly start: number }) {
+/** The literal camera props, applied on every change, so the inspector can move the camera. */
+function CameraRig({ position, lookAt, fov, near, far, zoom }: ThreeCamera) {
   const camera = useThree((s) => s.camera);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the tuples are compared by value, so a new array with the same numbers does not re-apply the camera.
   useLayoutEffect(() => {
+    if (position) camera.position.set(...position);
+    if (camera instanceof THREE.PerspectiveCamera && fov !== undefined) camera.fov = fov;
     if (near !== undefined) (camera as THREE.PerspectiveCamera).near = near;
     if (far !== undefined) (camera as THREE.PerspectiveCamera).far = far;
     if (zoom !== undefined) (camera as THREE.PerspectiveCamera).zoom = zoom;
+    if (lookAt) camera.lookAt(...lookAt);
     (camera as THREE.PerspectiveCamera).updateProjectionMatrix();
-  }, [camera, near, far, zoom]);
-  const spec = useRef({ position, lookAt, fov, start });
-  spec.current = { position, lookAt, fov, start };
-  // Before the shot's own frame callback, so a shot's sample sees this frame's camera.
-  useFrame((state) => {
-    const s = spec.current;
-    applyCamera(state.camera, s, s.start + state.clock.elapsedTime);
-  }, -1);
-  return null;
-}
-
-/** A shot: built once per scene, then set at the shot's time on every frame the video shows. */
-function Shot({ shot, props }: { readonly shot: ShotDefinition; readonly props: ShotProps }) {
-  const { scene, camera } = useThree();
-  const built = useRef<ShotBuilt | null>(null);
-  const latest = useRef(props);
-  latest.current = props;
-  useLayoutEffect(() => {
-    const before = new Set(scene.children);
-    built.current = buildShot(shot, scene, camera);
-    const made = built.current;
-    return () => {
-      built.current = null;
-      made.dispose?.();
-      for (const child of [...scene.children])
-        if (!before.has(child)) {
-          scene.remove(child);
-          disposeTree(child);
-        }
-    };
-  }, [shot, scene, camera]);
-  useFrame((state) => {
-    if (!built.current) return;
-    const p = latest.current;
-    // The camera rig has already set the camera; applyShot sets it again from the same props, a no-op.
-    applyShot(shot, built.current, p, state.camera, shotTime(state.clock.elapsedTime, p, shot.length));
-  });
+  }, [camera, position?.join(), lookAt?.join(), fov, near, far, zoom]);
   return null;
 }
 

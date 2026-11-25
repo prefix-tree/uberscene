@@ -3,9 +3,10 @@ import * as motion from "motion";
 import * as motionReact from "motion/react";
 import * as three from "three";
 
-import { installLayerEngine, type LayerEngine } from "@uberscene/kit/schema";
+import { installLayerEngine, installSceneSource, type LayerEngine } from "@uberscene/kit/schema";
 
 import * as cutMotion from "./motion";
+import { SceneFrameSource, type SceneUse } from "./scene3d";
 import * as cutThree from "./three";
 
 /**
@@ -29,7 +30,7 @@ export const FREE_CODE_LIBRARIES: Readonly<Record<string, unknown>> = {
 };
 
 /**
- * Make `<Three>` and `<Motion>` draw (installs their layer engines) and return the imports a host passes to
+ * Make `<Three>`, `<Motion>` and clips that play a 3D scene draw (installs their engines) and return the imports a host passes to
  * `loadModule`. Call it once, before the Player mounts:
  *
  * ```ts
@@ -40,10 +41,13 @@ export const FREE_CODE_LIBRARIES: Readonly<Record<string, unknown>> = {
 export function installFreeCodeLibraries(): Readonly<Record<string, unknown>> {
   installLayerEngine("three", cutThree.ThreeLayer as LayerEngine);
   installLayerEngine("motion", cutMotion.MotionLayer as LayerEngine);
+  // A clip that plays a 3D scene (`<Clip src={crossing} />`) gets its frames drawn by three.js.
+  installSceneSource((use) => new SceneFrameSource(use as SceneUse));
   return FREE_CODE_LIBRARIES;
 }
 
 export { MotionLayer, useLayerTime, useTimeline } from "./motion";
+export { type BuiltScene, buildScene, poseScene, SceneFrameSource, type SceneUse } from "./scene3d";
 export {
   type ThreeCamera,
   type ThreeFrame,
