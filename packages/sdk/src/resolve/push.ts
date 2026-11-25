@@ -44,7 +44,7 @@ const round = (v: number): number => Math.round(v * 1000) / 1000;
  * size, and the point at its `box.x`, `box.y` when it does not (its real size is only known once it is drawn).
  * Its own keys, scale and rotation are not followed.
  */
-export function restBox(item: Placement, frame: Frame, manifest: AssetManifest): DrawRect {
+function restBox(item: Placement, frame: Frame, manifest: AssetManifest): DrawRect {
   const box = item.props.box as ElementBox | undefined;
   const sized = (width: number, height: number, fit: FitMode): DrawRect =>
     placeBox(frame, { width, height }, fit, box).rect;
@@ -68,7 +68,7 @@ const union = (a: DrawRect, b: DrawRect): DrawRect => {
  * The view that holds `held` inside the margin, moved as little as it can be from `from`: the zoom pulls back only
  * when `held` cannot fit, and each axis pans the shortest way that brings `held` inside.
  */
-export function leastMove(from: View, held: DrawRect, frame: Frame, margin: number): View {
+function leastMove(from: View, held: DrawRect, frame: Frame, margin: number): View {
   const roomW = Math.max(1, frame.width - 2 * margin);
   const roomH = Math.max(1, frame.height - 2 * margin);
   const fits = Math.min(held.w > 0 ? roomW / held.w : Infinity, held.h > 0 ? roomH / held.h : Infinity);

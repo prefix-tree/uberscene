@@ -330,6 +330,8 @@ function keyOf(s: ResolvedState): { element: string; path: string; at: number } 
   // A key in a prop written as a literal: one computed in code is the file's to change, not the editor's.
   const key = [...s.items.values()].find((p) => {
     if (p.kind !== "keyframe") return false;
+    // A key a camera's push made is the push's: no prop wrote it, and the key actions refuse it.
+    if (p.id.includes(".push.")) return false;
     const owner = s.items.get(p.id.split(".")[0] ?? "");
     return owner?.editable === "literal" && !owner.lockedProps.includes(p.id.split(".")[1] ?? "");
   });
