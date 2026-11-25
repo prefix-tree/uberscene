@@ -43,6 +43,11 @@ captions, audio, transitions, effects, and any React, Motion or three.js on top.
   <br><sub><b>One prompt, one line.</b> "change red cup color to green" adds a <code>recolor</code> effect to the file, and the same short plays green. <a href="https://uberscene.prefixtree.xyz/examples/recolor">The file →</a></sub>
 </p>
 
+<p align="center">
+  <a href="examples/interview"><img src="docs/public/readme/interview.gif" width="640" alt="An interview edit: WOULDN'T IT BE AMAZING in giant caps beside a black and white cut-out of the speaker, IF WE COULD SEND A MESSAGE INTO THE STARS on a blue card with a spacecraft, then tall caps stacking beside him as he talks, and SOMEONE, SAT DOWN as flash cards"></a>
+  <br><sub><b>An interview, cut to its words.</b> 38 seconds of a NASA talk in kinetic type, every title anchored to a word he says. <a href="examples/interview">The file →</a></sub>
+</p>
+
 ## Why
 
 - **A video is a file.** Diff it, review it in a pull request, generate a hundred variants.

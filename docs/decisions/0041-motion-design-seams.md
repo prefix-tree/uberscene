@@ -27,8 +27,9 @@ A short-form "before and after" of a podcast clip, cut in DaVinci Resolve and Af
 
 Most of that is already UberScene: keyed `box`, scale and rotation with `spring` or `snappy` easing, `pop` entrances,
 the `outline`, `halftone`, `grayscale`, `blur` and `zoomBlur` effects, Shape gradients and blend modes, word by word
-captions, tracks drawing in file order (#192), motion blur in the export. Three things are not: the cut-out (0039,
-proposed), moving many elements together (3), and motion that is not keys (4). The interview edit that led to 0039
+captions, tracks drawing in file order (#192), motion blur in the export. The cut-out is drawn since #199 (`cutout` on a
+clip, its matte a second asset named in the manifest), though the matte is still made outside UberScene. Two things
+are not there at all: moving many elements together (3), and motion that is not keys (4). The interview edit that led to 0039
 found more of the same kind (coloured words in one title, a duration that ends on a word, checks for text over text
 and for read time).
 
@@ -81,14 +82,15 @@ Every visual element (clip, title, shape, svg, layer, nested sequence) takes `ma
 is one of a fixed list, and the list is the extension point:
 
 ```tsx
-<Clip id="speaker" src="asset:talk" matte="asset" />                         // the asset's matte analysis (0039's cutout)
+<Clip id="speaker" src="asset:talk" cutout />                                // shipped in #199; short for matte="asset"
 <Clip id="speaker" src="asset:talk" matte={{ source: "asset", shrink: 1, feather: 1.5, despill: 0.8 }} />
 <Clip id="plate" src="asset:talk" matte={{ source: "element", id: "logo", channel: "alpha", invert: true }} />
 <Clip id="far" src="asset:talk" matte={{ source: "depth", near: 0.6, far: 1 }} />   // later: a depth slice
 <Clip id="green" src="asset:screen" matte={{ source: "key", color: "#00ff00", tolerance: 0.3 }} />
 ```
 
-- `asset` reads the asset's matte analysis. `cutout` from 0039 is this, written `matte="asset"`.
+- `asset` reads the asset's matte. This is what `cutout` does since #199, and `cutout` stays as its short form:
+  files written today keep working, and `matte` adds the other sources.
 - `element` uses another element's alpha or luma at the same moment: a track matte, as on DaVinci's Edit page.
 - `key` is today's `colorKey` effect expressed as a matte, so a key and a cut-out combine the same way.
 - `shape` takes what `<Mask>` holds today. `<Mask>` children stay until the shape source has the same edit support
@@ -99,34 +101,44 @@ is one of a fixed list, and the list is the extension point:
   schema, and a function that gives a greyscale texture for a frame.
 
 **Text behind a person** is no new feature: the footage twice, the full shot on a lower track and the same clip with
-`matte="asset"` on a higher one, the title on a track between. The docs gain that recipe and a test.
+`cutout` on a higher one, the title on a track between. The docs gain that recipe and a test.
 
 ### Seam 3. Rigs: one transform over many elements, and elements that follow
 
 A rig moves things it does not own. Two forms, both literal props the editor can change:
 
 ```tsx
-<Camera id="cam" tracks={["speaker", "cards"]}
-  x={[{ at: 1.0, value: 0 }, { at: 1.3, value: -180, easing: "snappy" }]}
-  zoom={[{ at: 2.1, value: 1 }, { at: 2.4, value: 1.06, easing: "snappy" }]}
-  drift={{ x: 12, zoom: 0.03 }} />
+<Composition ...>
+  <Camera id="cam"
+    x={[{ at: 1.0, value: 0 }, { at: 1.3, value: -180, easing: "snappy" }]}
+    zoom={[{ at: 2.1, value: 1 }, { at: 2.4, value: 1.06, easing: "snappy" }]}
+    drift={{ x: 12, zoom: 0.03 }}>
+    <Track id="speaker">...</Track>
+    <Track id="cards">...</Track>
+  </Camera>
+  <Track id="subtitles">...</Track>
+</Composition>
 
 <Title id="name" ... follow={{ ref: "tracked:talk.face", offset: { x: 0, y: -220 } }} />
 ```
 
-- **`<Camera>`** is a 2D view over the tracks it names: `x`, `y`, `zoom`, `rotation` around the frame's centre, each a
-  constant or keys (0035). Tracks it does not name (subtitles, a logo, the frame of the card) stay fixed to the screen.
-  Each element inside keeps its own entrance and timing; the camera adds the shared move on top, so the sdk's edits,
+- **`<Camera>` is optional, and it is a parent.** A composition without one draws exactly as today; no file has to
+  change. Where there is one, it is a 2D view over the tracks written inside it: `x`, `y`, `zoom`, `rotation` around
+  the frame's centre, each a constant, keys (0035) or a generator (seam 4). Tracks outside it (subtitles, a logo, the
+  frame of the card) stay fixed to the screen. What a camera moves is read from the file's structure, not from a
+  list of ids that can be misspelled, and file order still decides what draws over what, across the camera's edge.
+- Each element inside keeps its own entrance and timing; the camera adds the shared move on top, so the sdk's edits,
   the editor's drags and the layout check work as before, the check reading positions after the camera.
-- **`push`** places camera keys at named elements' starts: `push={{ on: ["tv", "film", "radio"], by: "room" }}` moves
-  the view so each new element is inside the safe zone with the others, eased with the entrance. It writes nothing
-  into the file until the first edit bakes it into keys, as captions' cues are baked (`source/bake.ts`).
+- **`push`** reframes on entrances: `push={{ on: ["tv", "film", "radio"], by: "room" }}` moves the view so each named
+  element, as it starts, is inside the safe zone with the others, eased with the entrance. It is always derived:
+  move a card and the camera's move follows. It is never written back into the file on its own. An explicit action,
+  `camera/bakePush`, turns it into keys for someone who wants to tune them by hand, and removes the prop.
 - **`follow`** pins an element's `box` to a space ref (seam 1): a tracked face, a planar corner pin, or another
   element's box (parenting). The offset is in pixels and may be keyed.
 - Extendable by design: a track may later carry `depth`, and the camera then moves near tracks more than far ones
   (2.5D parallax, as Fusion's Camera3D over image planes). The field is reserved now so files written today keep
   their meaning. A true 3D camera stays inside a 3D scene clip (0040).
-- One camera per composition to start; nested sequences have their own.
+- One camera per composition to start, not nested; a nested sequence may have its own.
 
 ### Seam 4. Generated motion: a third kind of value
 
@@ -173,9 +185,9 @@ These do not need a new shape, only work:
 One PR each, from fresh `main`, each with its decision section moved to accepted when it merges:
 
 1. **Analyses registry and `uberscene analyze`**, with the existing manifest fields listed in it. No behaviour change.
-2. **`matte` with the `asset` source** (0039's cut-out, `analyze matte`) and the `element` source; the text behind a
-   person recipe and test.
-3. **`<Camera>`** with keys, `tracks`, the layout check after the camera; then `push`.
+2. **`analyze matte`** makes the matte `cutout` already reads (#199); then **`matte`** with the `element` source,
+   `cutout` as the short form of the `asset` source; the text behind a person recipe and test.
+3. **`<Camera>`** around tracks, with keys, the layout check after the camera; then `push`.
 4. **Generators**: `wiggle`, `drift`, `overshoot`, `loop`, `then`; the camera's `drift` on top.
 5. **Preview motion blur** (a).
 6. **Styled runs and word-ended durations** (b, c).
@@ -191,7 +203,8 @@ Steps 1 to 4 give most of the look; 5 makes it judgeable in the preview.
 - One new value form (a generator) and two new props (`matte`, `follow`) and one new tag (`<Camera>`) cover what
   would otherwise be a dozen props. Each later feature is a registry entry: a new analysis, matte source or generator
   does not change the schema of any element.
-- `cutout` from 0039 is spelled `matte="asset"`; 0039's matte file, its model registry and its measurements stand.
+- `cutout` (#199) stays, as the short form of `matte="asset"`; 0039's model registry and its measurements stand, and
+  making the matte becomes `analyze matte`.
 - The resolver gains a camera pass and a matte dependency (an element matted by another needs that one drawn first);
   a matte cycle is an error naming both elements.
 - The layout check and `inspect` report positions after the camera and `follow`, so what an agent reads matches what
@@ -204,6 +217,8 @@ Steps 1 to 4 give most of the look; 5 makes it judgeable in the preview.
 
 - Whether `push` should be a camera prop or a generator over the camera (`{ type: "push", on: [...] }`). The record
   proposes a prop because it reads elements, which no other generator does.
+- Whether `matte` from an element and `follow` should also be said by structure rather than by id. Proposed: ids,
+  as anchors use today, because the two elements usually sit on different tracks; an unknown id is an error.
 - Whether generators should also be allowed on non-numeric values (a colour wiggle). Proposed: numbers only at first.
 - Whether `follow` replaces anchors (`at` refs between elements) or sits beside them. Proposed: beside; anchors place
   once, `follow` holds over time.
