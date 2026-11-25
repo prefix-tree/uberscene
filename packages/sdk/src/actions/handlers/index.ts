@@ -11,4 +11,3 @@ import "./caption";
 import "./marker";
 import "./mask";
 import "./multicam";
-import "./shot";

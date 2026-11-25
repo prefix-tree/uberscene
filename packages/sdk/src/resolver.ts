@@ -12,6 +12,7 @@ export * from "./resolve/dependents";
 export * from "./resolve/errors";
 export * from "./resolve/resolve";
 export * from "./resolve/scene";
+export { isSceneAsset, type SceneUse } from "./resolve/scene3d";
 export * from "./resolve/speed";
 export * from "./resolve/subtitles";
 export * from "./resolve/tree";
