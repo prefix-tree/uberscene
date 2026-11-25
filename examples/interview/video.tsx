@@ -13,8 +13,8 @@ import { Audio, Clip, Composition, googleFont, Shape, Title, Track } from "@uber
  * Footage: Dr. Joe Westlake, NASA, and Voyager b-roll, NASA's Scientific Visualization Studio (svs.gsfc.nasa.gov/15111).
  * Sound effects (key clicks only): Kenney's Interface Sounds (CC0), by way of soundcn. The music is synthesized for this film.
  *
- * The media is not in the repository yet, so this file does not render from here: it is kept as the source of the
- * edit. BACKLOG.md item 11 rebuilds it on `cutout` with its media prepared by a script.
+ * The media is not in the repository: `scripts/prepare.sh` makes it (see README.md). BACKLOG.md item 11 rebuilds
+ * the film on `cutout` once UberScene has it.
  */
 const caps = googleFont("Antonio", { weights: [700] });
 const light = googleFont("Inter Tight", { weights: [400] });

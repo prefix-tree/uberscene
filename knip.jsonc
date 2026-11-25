@@ -18,7 +18,7 @@
         // exports the player reads as a module.
         "examples/3d/*.tsx",
         "examples/3d/*.scene.js",
-        // The interview edit's source, kept until its media is in the repository (BACKLOG.md item 11).
+        // The interview edit: its media is made by a script, so nothing imports the file.
         "examples/interview/*.tsx"
       ],
       // Run through its binary by scripts/check-packages.mjs.
