@@ -40,6 +40,8 @@ The person speaking is the story; your job is to make them sound sharp.
 - **Lower third** at the speaker's first line, 3 to 4 s, once.
 - **Captions** in full lines ([text.md](text.md)).
 - Fits: `<Multicam>` for several cameras, `LowerThird`, the `quote-build` block for the line to share.
+- For the kinetic-type style (tall caps, flash cards, the speaker cut out beside the quote), read
+  [interview-edit.md](interview-edit.md): what each tool can and cannot do for it.
 - Autopilot signs: every cut a jump cut; music loud under speech; b-roll that illustrates the literal word ("money":
   a stack of coins).
 

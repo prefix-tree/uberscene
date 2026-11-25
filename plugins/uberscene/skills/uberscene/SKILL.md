@@ -80,6 +80,7 @@ can give (footage, the brand, a decision on the story), and then say exactly wha
 | More than one scene, transitions, any animation | [motion.md](references/motion.md), then [motion-catalog.md](references/motion-catalog.md) for a technique by name |
 | Titles, labels, captions | [text.md](references/text.md) |
 | Music, a voice-over, sound effects | [sound.md](references/sound.md) |
+| An interview in the kinetic-type style: caps, flash cards, a cut-out speaker | [interview-edit.md](references/interview-edit.md) |
 | The pass before you hand it over | [review.md](references/review.md) |
 
 ## The loop
@@ -328,9 +329,11 @@ Give the video one look and say it once.
     <Count to={1200} />
   </Layer>
   ```
-- **Backgrounds go on the lowest track**, beneath the footage. A layer that other things sit on but that is drawn
-  above footage (a scrim under a title, the wall of a game) takes `ground`: `<Layer id="scrim" ground>`. The layout
-  check then treats it as a background.
+- **Tracks draw in the order the file writes them, footage included.** A background goes on the first track; a card
+  between two footage tracks is over the footage before it and under the footage after it (a colour card under a
+  cut-out speaker). Anything other things sit on (a card, a scrim under a title, the wall of a game) takes `ground`,
+  on a `<Layer>`, `<Shape>`, `<Svg>` or `<Sticker>`: `<Shape id="card" ground …>`. The layout check then treats it as
+  a background. A clip's `blend` mixes with footage, not with a shape under it.
 
 What each element and prop actually draws, and the few it does not:
 [references/rendering.md](references/rendering.md).
@@ -369,6 +372,8 @@ What each element and prop actually draws, and the few it does not:
 - [references/story.md](references/story.md): the one thing, three storylines, the shape, words, the plan comment.
 - [references/kinds.md](references/kinds.md): what a launch, an explainer, an interview, a vertical short, numbers,
   a music cut and a logo sting each need.
+- [references/interview-edit.md](references/interview-edit.md): a kinetic interview edit, by capability and by tool:
+  what works, what each check misses, the cut-out, and sound you cannot hear.
 - [references/look.md](references/look.md): where the look comes from, adjectives turned into values, and defaults to
   avoid.
 - [references/text.md](references/text.md): sizes, read times, placement and captions.
