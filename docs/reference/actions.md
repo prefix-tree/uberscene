@@ -4,7 +4,7 @@ editLink: false
 
 # Actions
 
-Generated from the registered handlers (98). Do not edit by hand; run `pnpm docs:gen`.
+Generated from the registered handlers (100). Do not edit by hand; run `pnpm docs:gen`.
 
 Every action has `validate`, `apply`, `invert` and `fold`; the inverse is never null. Each runs as `{ type, params }`; the params and notes here are read from `packages/sdk/src/actions/types/index.ts`.
 
@@ -33,8 +33,10 @@ Every action has `validate`, `apply`, `invert` and `fold`; the inverse is never 
 
 | action | params | what it does |
 |---|---|---|
-| `camera/add` | `{ cameraId, tracks, x?, y?, zoom?, rotation? }` | Puts a camera around `tracks`, which must be next to each other in the file: everything on them then moves, zooms and turns together, and tracks outside stay fixed to the screen. The tracks keep their place in the stack. A composition has one camera. |
+| `camera/add` | `{ cameraId, tracks, x?, y?, zoom?, rotation?, push? }` | Puts a camera around `tracks`, which must be next to each other in the file: everything on them then moves, zooms and turns together, and tracks outside stay fixed to the screen. The tracks keep their place in the stack. A composition has one camera. |
+| `camera/bakePush` | `{ cameraId }` | Turns the moves a push makes into keys on the camera's `x`, `y` and `zoom`, and removes the push: the moves can then be changed by hand, and no longer follow the elements. |
 | `camera/remove` | `{ cameraId }` | Takes the camera away and leaves its tracks where they were, fixed to the screen. |
+| `camera/setPush` | `{ cameraId, push }` | Lets the camera make room for the elements in `push.on` as each starts, or (`null`) stops it. With a push, the camera's `x`, `y` and `zoom` are numbers: where the view starts. |
 | `camera/update` | `{ cameraId, x?, y?, zoom?, rotation? }` | Sets the camera's values: `x` and `y` in pixels, `zoom` (1 is as written), `rotation` in degrees. Keys go through key/add. |
 
 ## `caption/`
