@@ -14,3 +14,4 @@ sums them up.
 | [0036](./0036-clips-straight-in-the-composition.md) | Clips straight in the composition are its main track: the bottom one, id `main`, with `<Track>` for the rows above |
 | [0037](./0037-a-3d-shot-on-the-timeline.md) | A 3D shot on the timeline: a module builds the scene, the `<Three>` tag stages it with literal objects, keys in shot time and marker-tied keys (proposed, prototype in `examples/3d`) |
 | [0038](./0038-generated-takes-from-the-blockout.md) | Generated takes from the blockout: takes are assets beside their shot, compared at the same moment; first experiment measures whether a 0.5 s move of the reveal survives generation, by text or by blockout (proposed) |
+| [0039](./0039-a-3d-scene-is-a-clip-source.md) | A 3D scene is a clip source: a plain scene file with `stage` data, played by `<Clip src={scene} times={…}>`; replaces the `<Three shot>` shape of 0037 |

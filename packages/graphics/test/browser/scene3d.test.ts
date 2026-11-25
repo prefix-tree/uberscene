@@ -1,6 +1,7 @@
-// The crossing shot (examples/3d) in the real Player in Chromium, as an editor previews it: playing forward,
-// scrubbing back and jumping to a moment draw the same pixels, and the export draws that frame with the walker,
-// the table and the camera in the same places.
+// The crossing edit (examples/3d) in the real Player in Chromium: a clip that plays a 3D scene is drawn like footage.
+// Playing forward, scrubbing back and jumping to a moment draw the same pixels, and the export draws that frame with
+// the walker where the preview has it. Needs Chrome 157 for the export: the cached Chrome for Testing, or
+// UBERSCENE_CHROMIUM.
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -21,7 +22,7 @@ beforeAll(async () => {
   page = await browser.newPage({ viewport: { width: W, height: H } });
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto(`http://localhost:${address.port}/shot.html`);
+  await page.goto(`http://localhost:${address.port}/scene.html`);
   await page
     .waitForFunction(() => window.__ready === true, null, { timeout: 60_000 })
     .catch((e: unknown) => {
@@ -37,20 +38,7 @@ afterAll(async () => {
 const pixels = async (): Promise<Buffer> => Buffer.from(await page.evaluate(() => window.__pixels()), "base64");
 const seek = (t: number) => page.evaluate((s) => window.__seek(s), t);
 
-/**
- * Seeks to `t` and reads the shot. A layer the seek mounts makes its renderer a frame or two later, as any <Three>
- * does in the preview (the export holds the frame until it has drawn), so this reads until the canvas has drawn.
- */
-async function drawnAt(t: number): Promise<Buffer> {
-  for (let i = 0; i < 20; i++) {
-    await seek(t);
-    const p = await pixels();
-    if (p.some((v, j) => j % 4 === 3 && v !== 0)) return p;
-  }
-  throw new Error(`the shot drew nothing at ${t} s`);
-}
-
-/** Where the walker's orange is on screen: its centroid and pixel count. */
+/** Where the walker's orange is: its centroid and pixel count. */
 function walker(rgba: Buffer, width: number): { x: number; y: number; n: number } {
   let x = 0;
   let y = 0;
@@ -69,24 +57,33 @@ function walker(rgba: Buffer, width: number): { x: number; y: number; n: number 
   return { x: x / n, y: y / n, n };
 }
 
-describe("the crossing shot in the Player", () => {
+/** Seeks to `t` and reads the frame once the scene has drawn it (the walker is in it). */
+async function drawnAt(t: number): Promise<Buffer> {
+  let last: Buffer = Buffer.alloc(0);
+  for (let i = 0; i < 20; i++) {
+    await seek(t);
+    last = await pixels();
+    if (walker(last, W).n > 2000) return last;
+  }
+  return last;
+}
+
+describe("a clip that plays a 3D scene, in the Player", () => {
   it("draws 5.2 s the same after playing forward, scrubbing back and jumping there", async () => {
     for (let t = 2; t < 5.2; t += 0.2) await seek(t);
     const forward = await drawnAt(5.2);
     for (let t = 6.9; t > 5.2; t -= 0.2) await seek(t);
     const back = await drawnAt(5.2);
-    // Before the shot starts, so the jump mounts it afresh.
     await seek(0.5);
     const jump = await drawnAt(5.2);
     expect(forward.length).toBe(W * H * 4);
+    expect(walker(jump, W).n).toBeGreaterThan(2000);
     expect(back.equals(forward)).toBe(true);
     expect(jump.equals(forward)).toBe(true);
-    // The walker is in frame, right of the table, having crossed.
-    expect(walker(jump, W).n).toBeGreaterThan(2000);
   });
 
-  it("exports that frame with the walker and the camera where the preview has them", async () => {
-    const dir = mkdtempSync(join(tmpdir(), "shot-"));
+  it("exports that frame with the walker where the preview has it", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "scene-"));
     try {
       const render = join(import.meta.dirname, "..", "..", "..", "render");
       const out = join(dir, "still.png");
@@ -113,7 +110,6 @@ describe("the crossing shot in the Player", () => {
       expect(Math.abs(a.x - b.x)).toBeLessThan(1);
       expect(Math.abs(a.y - b.y)).toBeLessThan(1);
       expect(Math.abs(a.n - b.n) / a.n).toBeLessThan(0.01);
-      // And the whole frame: the same picture, give or take the rounding of two GPU builds.
       let total = 0;
       for (let i = 0; i < preview.length; i++) total += Math.abs(preview[i]! - exported[i]!);
       expect(total / preview.length).toBeLessThan(1);

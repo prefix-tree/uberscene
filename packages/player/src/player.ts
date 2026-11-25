@@ -148,6 +148,7 @@ export class PlayerCore {
       frameSourceFactory,
       clock: this.clock,
       onError: (e) => this.emit("error", e),
+      scene: (assetId) => this._state.scenes?.get(assetId),
     });
     this.compositor = new Compositor(options.state, {
       sources: this.sources,

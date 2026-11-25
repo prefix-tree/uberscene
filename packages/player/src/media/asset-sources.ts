@@ -1,4 +1,5 @@
-import { type AssetManifest, lookupAsset } from "@uberscene/sdk/resolver";
+import { sceneSource } from "@uberscene/kit/schema";
+import { type AssetManifest, lookupAsset, type SceneUse } from "@uberscene/sdk/resolver";
 
 import { INPUT_IDLE_CLOSE_S, MAX_OPEN_INPUTS } from "../constants";
 import type {
@@ -18,6 +19,8 @@ export interface AssetSourceDeps {
   readonly frameSourceFactory: FrameSourceFactory;
   readonly clock: Clock;
   readonly onError: (e: PlayerErrorEvent) => void;
+  /** The 3D scene an asset id stands for, from the current state (`state.scenes`); none for a file. */
+  readonly scene?: (assetId: string) => SceneUse | undefined;
 }
 
 interface Entry {
@@ -105,6 +108,22 @@ export class AssetSources {
       const source = new ErrorFrameSource(assetId, asset?.width ?? 640, asset?.height ?? 360);
       return { source, info: await source.open() };
     };
+    const scene = this.deps.scene?.(assetId);
+    if (scene) {
+      const make = sceneSource();
+      if (!make)
+        return fail(
+          new Error(
+            `"${assetId}" is a 3D scene, and no scene renderer is installed; the host installs one (installFreeCodeLibraries from @uberscene/graphics/libraries)`,
+          ),
+        );
+      try {
+        const source = make(scene) as FrameSource;
+        return { source, info: await source.open() };
+      } catch (error) {
+        return fail(error instanceof Error ? error : new Error(String(error)));
+      }
+    }
     try {
       const handle = await this.deps.media.resolve(assetId);
       const source = this.deps.frameSourceFactory(assetId, handle, asset?.kind ?? "video");

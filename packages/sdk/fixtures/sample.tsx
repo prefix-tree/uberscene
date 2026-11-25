@@ -18,7 +18,6 @@ import {
   Shape,
   Sticker,
   Svg,
-  Three,
   Title,
   Track,
   Transition,
@@ -104,7 +103,6 @@ export default function Video({ title, accent }: z.infer<typeof schema>) {
         <Layer id="l1" anchor="c2" duration={4}>
           <Counter from={0} to={1200} />
         </Layer>
-        <Three id="room" anchor="c2" duration={2} camera={{ position: [0, 1, 5], fov: 40 }} />
         <Adjustment id="adj1" anchor="start" duration="fill" effects={[{ type: "vignette", amount: 0.3 }]} />
         <Badge id="b1" anchor="c1" label="LIVE" />
         <Badge id="b2" anchor="c3" label="REPLAY" />

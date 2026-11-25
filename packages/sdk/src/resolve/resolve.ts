@@ -1,5 +1,6 @@
 import type { z } from "zod";
 
+import { isScene } from "@uberscene/kit";
 import {
   applyTheme,
   capabilitiesOf,
@@ -49,7 +50,7 @@ import {
 import type { ResolveError } from "./errors";
 import { derivedOrigin, expandKeys } from "./expand";
 import { overlay } from "./overlay";
-import { resolveShotProps } from "./shot";
+import { placeScene, type SceneUse, sceneAssetId, withSceneAssets } from "./scene3d";
 import { freezeHoldsOf, heldWithin, holdTotal, rampAdvance, rampInverse, reachedHolds, speedKeysOf } from "./speed";
 import type { CollectedNode, CollectedTree, Editable, LayerInterior } from "./tree";
 
@@ -118,6 +119,8 @@ export interface ResolvedState {
   readonly fonts: readonly DeclaredFont[];
   /** The effects and transitions the file declares (`effect()`, `transition()`). */
   readonly shaders: readonly ShaderDefinition[];
+  /** The 3D scenes clips play, by the asset id of their frames (a placement's `source.asset`). Absent when none. */
+  readonly scenes?: ReadonlyMap<string, SceneUse>;
 }
 
 const DEFAULT_OVERLAY_DURATION = 5;
@@ -183,6 +186,13 @@ function compute(
   const root = tree.root;
   const theme = resolveTheme(root.props.theme);
   const compParsed = parseProps(root, errors, theme);
+  // A clip that plays a 3D scene reads its length from an asset made for it (`withSceneAssets`).
+  manifest = withSceneAssets(manifest, tree, {
+    fps: rateValue(rateOf(compParsed.fps, root.id, [])),
+    width: Number(compParsed.width ?? 1920),
+    height: Number(compParsed.height ?? 1080),
+  });
+  const scenes = new Map<string, SceneUse>();
   const markers = new Map<string, number>();
   const pending = new Map<string, Pending>();
   const tracks: ResolvedTrack[] = [];
@@ -405,8 +415,19 @@ function compute(
   for (const p of pending.values()) {
     const start = p.start as number;
     const length = p.duration as number;
-    const props = p.node.kind === "layer" ? resolveShotProps(p.props, p.node.id, start, markers, p.errors) : p.props;
-    const placement = place(p.node, p.track, p.parent, start, length, props, p.errors, p.source, p.between);
+    if (p.source && isScene(p.props.src)) {
+      const played = placeScene(
+        { id: p.node.id, start, props: p.props, source: p.source },
+        manifest,
+        markers,
+        p.errors,
+      );
+      if (played) {
+        p.source = { ...p.source, asset: played.asset };
+        scenes.set(played.asset, played.use);
+      }
+    }
+    const placement = place(p.node, p.track, p.parent, start, length, p.props, p.errors, p.source, p.between);
     items.set(p.node.id, placement);
     if (p.errors.length > 0) errors.push(...p.errors);
     if (p.node.kind !== "transition" && placement.end > placement.start) duration = Math.max(duration, placement.end);
@@ -465,6 +486,7 @@ function compute(
     theme,
     fonts: withPickedFonts(original.fonts ?? [], root.props.$fonts),
     shaders: original.shaders ?? [],
+    ...(scenes.size > 0 ? { scenes } : {}),
   };
 }
 
@@ -850,8 +872,10 @@ function intrinsicCompute(
     }
   }
 
-  if (caps.trimSource && typeof props.src === "string") {
-    const asset = lookupAsset(manifest, props.src);
+  const scene = isScene(props.src);
+  if (caps.trimSource && (typeof props.src === "string" || scene)) {
+    const ref = scene ? sceneAssetId(node.id) : (props.src as string);
+    const asset = lookupAsset(manifest, ref);
     if (!asset) {
       own.push({
         code: "MISSING_ASSET",
