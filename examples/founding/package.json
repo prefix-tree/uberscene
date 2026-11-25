@@ -1,0 +1,25 @@
+{
+  "name": "@uberscene/example-founding",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Why we started UberScene: a 55 second film drawn by code, one file of the kind it describes.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "bed": "tsx media/bed.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@uberscene/kit": "workspace:*",
+    "@uberscene/sdk": "workspace:*",
+    "react": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

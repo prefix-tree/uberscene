@@ -71,6 +71,10 @@
       // Cut files, loaded by path with loadVideo; the blocks are copies whose meta and schema the CLI reads.
       "entry": ["*.tsx", "cards/*.tsx", "blocks/*.tsx", "test/**/*.ts"]
     },
+    "examples/founding": {
+      // A cut file, loaded by path; media/bed.ts writes its music.
+      "entry": ["*.tsx", "media/*.ts", "test/**/*.ts"]
+    },
     "blocks": {
       // Each block's file is read by `uberscene blocks` and copied into projects; each demo is a cut file.
       "entry": ["*/block.tsx", "*/demo.tsx", "test/**/*.ts"]
