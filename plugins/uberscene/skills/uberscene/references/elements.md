@@ -20,7 +20,7 @@ The video: frame rate, size, background and theme. It ends where its content end
 | `theme` | { extends, palette, fonts, radius, motion, styles } |  |  | The video's look: palette, fonts, radius, motion style and element presets. Elements use it through `$tokens` and `style`. |
 | `motionBlur` | { shutterAngle, samples } |  |  | A film camera's blur on everything that moves, in the export: each frame averages `samples` moments across the time its shutter is open, `shutterAngle` degrees of the frame (180 is half the frame, the film default). Drawn by the browser export, which a file with it uses on its own; the preview stays sharp. |
 
-Children: `track`, `marker`, `captions`. [All elements](https://uberscene.prefixtree.xyz/reference/elements/)
+Children: `track`, `camera`, `marker`, `captions`. [All elements](https://uberscene.prefixtree.xyz/reference/elements/)
 
 ## `<Track>`
 
@@ -77,6 +77,22 @@ A stretch of a video or image asset, trimmed by seconds, transcript words or cam
 | `cutout` | boolean \| { shrink, feather } |  |  | Cut the subject out of its background with the asset's matte: a greyscale video of the same frames, white where the subject is, named by `"matte": "<asset id>"` on the asset's manifest entry. Where the matte is black the clip is transparent, so what is under it shows. It applies before `effects`, so they act on the subject alone. `true`, or `{ shrink, feather }` in pixels of the composition: `shrink` pulls the edge in, `feather` softens it. |
 
 Timed, visual, audible, trims its source, transformable. Children: `mask`. [All elements](https://uberscene.prefixtree.xyz/reference/elements/)
+
+## `<Camera>`
+
+One view over the tracks written inside it: they move, zoom and turn together, by a constant or by keys on the video's clock. Tracks outside it stay fixed to the screen. A composition has one, or none.
+
+### Props
+
+| prop | type | default | required | description |
+|---|---|---|---|---|
+| `id` | string |  | yes | The camera's name in the file; actions refer to it by this. |
+| `x` | number \| { at, value, easing }[] |  |  | How far the view has moved right, in pixels: at 180 everything under the camera sits 180 px to the left. |
+| `y` | number \| { at, value, easing }[] |  |  | How far the view has moved down, in pixels: at 100 everything under the camera sits 100 px higher. |
+| `zoom` | number (0.01..100) \| { at, value, easing }[] |  |  | How close the view is, about the frame's centre: 1 is as written, 2 shows everything twice the size. |
+| `rotation` | number \| { at, value, easing }[] |  |  | How far the view is turned clockwise, in degrees, about the frame's centre: what it shows turns the other way. |
+
+Children: `track`. [All elements](https://uberscene.prefixtree.xyz/reference/elements/)
 
 ## `<Gap>`
 
