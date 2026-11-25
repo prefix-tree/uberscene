@@ -396,7 +396,7 @@ async function start(): Promise<void> {
           if (!ink) continue;
           const track = el.closest<HTMLElement>("[data-track]")?.dataset.track;
           const id = el.dataset.el as string;
-          // A ground: beneath the footage, or a layer the file marks with `ground` (a scrim over the footage, which
+          // A ground: beneath the footage, or an element the file marks with `ground` (a card or a scrim, which
           // things are meant to sit on).
           const under = (track !== undefined && backdrop.has(track)) || state.items.get(id)?.props.ground === true;
           found.push({ id, kind: el.dataset.kind as string, ...ink, backdrop: under });

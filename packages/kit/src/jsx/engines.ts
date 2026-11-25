@@ -1,5 +1,7 @@
 import type { ComponentType, ReactNode } from "react";
 
+import type { Scene } from "./scene3d";
+
 /**
  * What draws an engine Layer (`<Three>`, `<Motion>`): a component given the Layer's resolved props (functions
  * included) and its children. The kit draws nothing; a host installs engines, as `@uberscene/graphics/libraries` does.
@@ -43,4 +45,29 @@ export function holdLayerFrame(): () => void {
 /** How many holds are open: 0 when every engine has drawn the frame it was given. */
 export function layerFramesPending(): number {
   return pending.count;
+}
+
+/**
+ * Makes the frames of a 3D scene a clip plays (`<Clip src={scene}>`), drawn at `width` by `height`: a frame source the
+ * Player reads like footage. The kit does not draw; a host installs one (`installFreeCodeLibraries` from
+ * `@uberscene/graphics/libraries` installs three.js's).
+ */
+export type SceneSourceFactory = (use: {
+  readonly scene: Scene;
+  readonly times: Readonly<Record<string, number>>;
+  readonly width: number;
+  readonly height: number;
+  readonly fps: number;
+}) => unknown;
+
+const sceneSlot = ((globalThis as Record<symbol, { factory: SceneSourceFactory | null }>)[
+  Symbol.for("@uberscene/kit/scene-source")
+] ??= { factory: null });
+
+export function installSceneSource(factory: SceneSourceFactory | null): void {
+  sceneSlot.factory = factory;
+}
+
+export function sceneSource(): SceneSourceFactory | null {
+  return sceneSlot.factory;
 }

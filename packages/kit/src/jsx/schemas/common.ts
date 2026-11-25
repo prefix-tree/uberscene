@@ -225,6 +225,16 @@ export const fitProp = {
 /** What everything drawn over the picture takes: where it sits, how it mixes with what is under it, its effects. */
 export const overlayProps = { ...transformProp, ...blendProp, ...effectsProp };
 
+/** For graphics other things sit on. */
+export const groundProp = {
+  /**
+   * A ground that other things sit on: a card under a cut-out speaker, a wall behind a game, a scrim that darkens
+   * footage under a title. The layout check treats it like a background: it is not held to the safe zone and is not
+   * said to cover the captions.
+   */
+  ground: z.boolean().optional(),
+};
+
 /** Where an element sits and how it is turned, with its effects, without `fit` or blending: a layer's. */
 export const placedProps = { ...transformProp, ...effectsProp };
 

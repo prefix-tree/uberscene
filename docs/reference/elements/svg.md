@@ -26,6 +26,7 @@ One-off vector art from inline SVG markup or a file.
 | `transform` | { scale, rotation, anchor, opacity, borderRadius, crop } |  |  | How it is turned and shown: scale, rotation, anchor, opacity, rounded corners and crop. |
 | `blend` | "normal" \| "multiply" \| "screen" \| "overlay" \| "darken" \| … 13 more |  |  | How it mixes with what is under it, as CSS `mix-blend-mode` does. Only `normal` renders ([What renders](/reference/rendering)). |
 | `effects` | { type, enabled }[] |  |  | Effects drawn on it, in order: each `{ type, ...params }`, a param written as keys to animate it. |
+| `ground` | boolean |  |  | A ground that other things sit on: a card under a cut-out speaker, a wall behind a game, a scrim that darkens footage under a title. The layout check treats it like a background: it is not held to the safe zone and is not said to cover the captions. |
 | `fit` | "contain" \| "cover" \| "stretch" \| "none" |  |  | How it fills the frame: `contain` shows all of it, `cover` fills the frame and crops, `stretch` distorts to fill, `none` keeps its own size. |
 | `style` | string |  |  | A theme preset for svg elements. |
 | `src` | string |  |  | An SVG file from the manifest, as `asset:<id>`. Give this or `content`. |

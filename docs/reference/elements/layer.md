@@ -32,6 +32,6 @@ The coffee footage is Pixabay videos [209419](https://pixabay.com/videos/id-2094
 | `transform` | { scale, rotation, anchor, opacity, borderRadius, crop } |  |  | How it is turned and shown: scale, rotation, anchor, opacity, rounded corners and crop. |
 | `effects` | { type, enabled }[] |  |  | Effects drawn on it, in order: each `{ type, ...params }`, a param written as keys to animate it. |
 | `blend` | "normal" \| "multiply" \| "screen" \| "overlay" \| "darken" \| … 13 more |  |  | How the layer mixes with what is under it, as CSS `mix-blend-mode` does. Only `normal` renders ([What renders](/reference/rendering)). |
-| `ground` | boolean |  |  | The layer is a ground that other things sit on: a wall behind a game, a scrim that darkens footage under a title. The layout check then treats it like a background: it is not held to the safe zone and is not said to cover the captions. |
+| `ground` | boolean |  |  | A ground that other things sit on: a card under a cut-out speaker, a wall behind a game, a scrim that darkens footage under a title. The layout check treats it like a background: it is not held to the safe zone and is not said to cover the captions. |
 
 Timed, visual, transformable. No children. [All elements](/reference/elements/)

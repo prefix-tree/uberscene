@@ -9,7 +9,6 @@ import { isKeyList } from "../../resolve/expand";
 import type { ResolvedState } from "../../resolve/resolve";
 import { define, makePropHandler, onElement, rawNode, rawProp } from "../handler-kit";
 import { invalid, type KeyJson, ok, type ValidationResult } from "../types";
-import { isShotPath, keyTime, shotPathProblem, shotValueProblem } from "./shot";
 
 /** The paths a key list may sit at, besides an effect's params (`effects.<n>.<param>`). */
 const KEY_PATHS: ReadonlySet<string> = new Set([
@@ -36,7 +35,6 @@ const EFFECT_PARAM = /^effects\.(\d+)\.([A-Za-z_]\w*)$/;
 
 /** Why `path` cannot hold keys on element `id`, or null. */
 function pathProblem(state: ResolvedState, id: string, path: string): string | null {
-  if (isShotPath(path)) return shotPathProblem(state, id, path);
   const fx = EFFECT_PARAM.exec(path);
   if (fx) {
     const effects = effectsOf(state, id);
@@ -100,27 +98,15 @@ function keysAt(state: ResolvedState, id: string, path: string): KeyJson[] {
   return isKeyList(v) ? (v as unknown as KeyJson[]).map((k) => ({ ...k })) : [];
 }
 
-/** Whether key `k` sits at `at` seconds. A shot key may name a marker; it is at the marker's shot time. */
-function keyIsAt(state: ResolvedState, id: string, k: KeyJson, at: number): boolean {
-  return Math.abs(keyTime(state, id, k.at) - at) <= 1e-9;
-}
-
 /** Keys as a file writes them: sorted by time; none is nothing. A single key stays a key, so it keeps its time. */
-export function canonicalKeys(
-  keys: readonly KeyJson[],
-  timeOf: (at: unknown) => number = (at) => at as number,
-): Json | undefined {
-  const sorted = [...keys].sort((a, b) => timeOf(a.at) - timeOf(b.at));
+export function canonicalKeys(keys: readonly KeyJson[]): Json | undefined {
+  const sorted = [...keys].sort((a, b) => a.at - b.at);
   if (sorted.length === 0) return undefined;
   return sorted.map((k) => ({ at: k.at, value: k.value, ...(k.easing !== undefined ? { easing: k.easing } : {}) }));
 }
 
 function writeKeys(state: ResolvedState, id: string, path: string, keys: readonly KeyJson[]) {
-  const { prop, value } = writePath(
-    rawNode(state, id)?.props,
-    path,
-    canonicalKeys(keys, (at) => keyTime(state, id, at)),
-  );
+  const { prop, value } = writePath(rawNode(state, id)?.props, path, canonicalKeys(keys));
   return { [prop]: value };
 }
 
@@ -132,10 +118,7 @@ function effectsOf(state: ResolvedState, id: string): Record<string, Json>[] {
 
 const keyTargets = onElement({ when: (item) => item.duration > 0 });
 
-function insideElement(state: ResolvedState, id: string, at: number, path?: string): ValidationResult {
-  // A shot's keys are in its own time, which runs on before and after the part the layer shows.
-  if (path !== undefined && isShotPath(path))
-    return at >= 0 ? ok : invalid({ code: "OUT_OF_BOUNDS", message: "a key's time is not negative", path: "at" });
+function insideElement(state: ResolvedState, id: string, at: number): ValidationResult {
   const item = state.items.get(id);
   return item && at >= 0 && at <= item.duration + 1e-6
     ? ok
@@ -149,10 +132,6 @@ function checkPath(state: ResolvedState, id: string, path: string): ValidationRe
 
 /** A value an effect's param takes, when `path` is one. */
 function checkValue(state: ResolvedState, id: string, path: string, value: Json | undefined): ValidationResult {
-  if (isShotPath(path) && value !== undefined) {
-    const problem = shotValueProblem(state, id, path, value);
-    return problem ? invalid({ code: "INVALID_PARAMS", message: problem, path: "value" }) : ok;
-  }
   const fx = EFFECT_PARAM.exec(path);
   if (!fx || value === undefined) return ok;
   const effect = effectsOf(state, id)[Number(fx[1])];
@@ -172,7 +151,7 @@ define(makePropHandler({
     const written = readPath(rawNode(state, p.id)?.props, p.path);
     const before: KeyJson[] =
       written !== undefined && !isKeyList(written) && p.at > 0 ? [{ at: 0, value: written as Json }] : [];
-    const keys = [...before, ...keysAt(state, p.id, p.path)].filter((k) => !keyIsAt(state, p.id, k, p.at));
+    const keys = [...before, ...keysAt(state, p.id, p.path)].filter((k) => Math.abs(k.at - p.at) > 1e-9);
     return writeKeys(state, p.id, p.path, [
       ...keys,
       { at: p.at, value: p.value, ...(p.easing !== undefined ? { easing: p.easing } : {}) },
@@ -181,7 +160,7 @@ define(makePropHandler({
   validate: (a, state) =>
     all(
       checkPath(state, a.params.id, a.params.path),
-      insideElement(state, a.params.id, a.params.at, a.params.path),
+      insideElement(state, a.params.id, a.params.at),
       checkValue(state, a.params.id, a.params.path, a.params.value),
     ),
 }));
@@ -189,7 +168,7 @@ define(makePropHandler({
 /** The key of `path` at `at`, or an error naming the times there are. */
 function requireKey(state: ResolvedState, id: string, path: string, at: number): ValidationResult {
   const keys = keysAt(state, id, path);
-  return keys.some((k) => keyIsAt(state, id, k, at))
+  return keys.some((k) => Math.abs(k.at - at) <= 1e-9)
     ? ok
     : invalid({
         code: "ELEMENT_NOT_FOUND",
@@ -207,7 +186,7 @@ define(makePropHandler({
       p.id,
       p.path,
       keysAt(state, p.id, p.path).map((k) =>
-        keyIsAt(state, p.id, k, p.at)
+        Math.abs(k.at - p.at) <= 1e-9
           ? {
               ...k,
               ...("value" in p ? { value: p.value as Json } : {}),
@@ -232,15 +211,11 @@ define(makePropHandler({
       p.id,
       p.path,
       keysAt(state, p.id, p.path)
-        .filter((k) => !keyIsAt(state, p.id, k, p.to) || keyIsAt(state, p.id, k, p.at))
-        // A key tied to a marker and moved by hand is untied: it now sits at the number it was moved to.
-        .map((k) => (keyIsAt(state, p.id, k, p.at) ? { ...k, at: p.to } : k)),
+        .filter((k) => Math.abs(k.at - p.to) > 1e-9 || Math.abs(k.at - p.at) <= 1e-9)
+        .map((k) => (Math.abs(k.at - p.at) <= 1e-9 ? { ...k, at: p.to } : k)),
     ),
   validate: (a, state) =>
-    all(
-      requireKey(state, a.params.id, a.params.path, a.params.at),
-      insideElement(state, a.params.id, a.params.to, a.params.path),
-    ),
+    all(requireKey(state, a.params.id, a.params.path, a.params.at), insideElement(state, a.params.id, a.params.to)),
 }));
 
 define(makePropHandler({
@@ -251,7 +226,7 @@ define(makePropHandler({
       state,
       p.id,
       p.path,
-      keysAt(state, p.id, p.path).filter((k) => !keyIsAt(state, p.id, k, p.at)),
+      keysAt(state, p.id, p.path).filter((k) => Math.abs(k.at - p.at) > 1e-9),
     ),
   validate: (a, state) => requireKey(state, a.params.id, a.params.path, a.params.at),
 }));
@@ -263,7 +238,7 @@ define(makePropHandler({
   validate: (a, state) =>
     all(
       checkPath(state, a.params.id, a.params.path),
-      ...a.params.keys.map((k) => insideElement(state, a.params.id, keyTime(state, a.params.id, k.at), a.params.path)),
+      ...a.params.keys.map((k) => insideElement(state, a.params.id, k.at)),
       ...a.params.keys.map((k) => checkValue(state, a.params.id, a.params.path, k.value)),
     ),
 }));
