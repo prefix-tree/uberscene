@@ -1,3 +1,5 @@
+import type { ComponentProps } from "react";
+
 import { Camera, Clip, Composition, Shape, Title, Track } from "@uberscene/kit";
 
 /**
@@ -21,7 +23,7 @@ const POP = {
     { at: 0.3, value: 1 },
   ],
   borderRadius: 14,
-} as const;
+} satisfies ComponentProps<typeof Clip>["transform"];
 
 export default function Video() {
   return (
