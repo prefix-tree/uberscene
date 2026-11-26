@@ -143,40 +143,43 @@ transform={{ rotation: { type: "wiggle", amount: 3, base: [{ at: 0, value: 0 }, 
 - **On a pushed camera** a generator goes on top of the moves the push makes: a `drift` on `zoom` beside `push`
   closes in slowly while the camera still makes room. See [the camera](./camera).
 
-## Moving with another element {#parent}
+## Following another element {#follow}
 
 A hand moves with its forearm, and the forearm with the arm. Keys copied from one to the next drift apart as soon as
-one of them changes. Give an overlay a `parent` and it moves with that one instead.
+one of them changes. Give an overlay a `follow` and it moves with that one instead.
 
-<Example src="previews/guide/parent" alt="An orange upper arm swings from its shoulder; a teal forearm bends at its lower end, a white hand at the forearm's end, and the word hello riding beside the hand">
+<Example src="previews/guide/follow" alt="An orange upper arm swings from its shoulder; a teal forearm bends at its lower end, a white hand at the forearm's end, and the word hello riding beside the hand">
 
-<<< @/../examples/showcase/guide/parent.tsx
+<<< @/../examples/showcase/guide/follow.tsx
 
 </Example>
 
 ```tsx
 <Shape id="arm" ... box={{ x: 480, y: 110, width: 36, height: 170, origin: "top" }} transform={{ rotation: 20 }} />
-<Shape id="hand" parent="arm" ... box={{ x: 18, y: 170, origin: "center" }} />
+<Shape id="hand" follow="arm" ... box={{ x: 18, y: 170, origin: "center" }} />
 ```
 
-- **Its box is read in its parent's box.** `box.x` and `box.y` are pixels from the parent box's top left, before
-  the parent turns or scales; a coordinate left out centres it in the parent. Above, the hand sits at the bottom
-  middle of the arm.
-- **What it takes from its parent:** where the parent is, its rotation and scale (about the parent's own `anchor`),
-  and its `enter` and `exit` moves, so a card that slides in brings its label with it. Each link up the chain adds
-  its own.
+- **Its box is read in the box of what it follows.** `box.x` and `box.y` are pixels from that box's top left, before
+  it turns or scales; a coordinate left out centres it there. Above, the hand sits at the bottom middle of the arm.
+- **What it takes from what it follows:** where that element is, its rotation and scale (about that element's own
+  `anchor`), and its `enter` and `exit` moves, so a card that slides in brings its label with it. Each link up the
+  chain adds its own.
 - **What stays its own:** opacity, crop and corner rounding. Fading the arm does not fade the hand; fade both, or
   give the hand the same keys.
-- **Time.** Each element plays its keys on its own clock. A parent places its children even outside its own start
-  and duration, held at its first or last moment, and the child's own timing decides when it shows.
-- **Who can be a parent:** titles, shapes, SVG, stickers and layers, and each takes a `parent`. A parent and its
-  child sit on the same side of a [camera](./camera): both on tracks inside it, or both outside.
-- **Mistakes the resolver names:** a `parent` that does not exist, one that is not an overlay, a child and parent on
-  different sides of the camera, and a chain that comes back to where it started (it names every element in the
-  circle).
-- **Removing a parent** hands its children to its own parent, or to none, in the same edit; undo puts it back.
-- The [layout check](./checking) and `uberscene inspect` report where a child really is, after its parents, and a
-  fix the layout check suggests is in the child's own numbers.
+- **Time.** Each element plays its keys on its own clock. An element places its followers even outside its own start
+  and duration: before it starts, where its entrance leaves it; after it ends, where it stood before its exit began,
+  so a follower is not left carried off screen. The follower's own timing decides when it shows.
+- **What can follow and be followed:** titles, shapes, SVG, stickers and layers. Both sit on the same side of a
+  [camera](./camera): on tracks inside it, or outside. An SVG read from a file (`src`) can't be followed yet, since
+  its size is only known once it is drawn; write its markup in `content`.
+- **Mistakes the resolver names:** a `follow` that does not exist, one that is not an overlay, an SVG read from a
+  file, two elements on different sides of the camera, and a chain that comes back to where it started (it names
+  every element in the circle).
+- **Removing an element others follow** hands its followers to what it followed, or to none, in the same edit, and
+  writes their numbers again so they stay where they were drawn: its rotation is added to theirs and its scale
+  multiplied in. A keyed value is taken where it stands when the follower starts. Undo puts it back.
+- The [layout check](./checking) and `uberscene inspect` report where a follower really is, after the chain, and a
+  fix the layout check suggests is in the follower's own numbers.
 
 ## Effects {#effects}
 
