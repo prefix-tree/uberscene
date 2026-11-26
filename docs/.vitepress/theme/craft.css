@@ -2704,3 +2704,29 @@ html:has(.VPContent.has-sidebar) .VPSidebar {
     transition: none;
   }
 }
+
+/* The mission, at the top of the hero: a label key, then one line of what UberScene is for. */
+.vp-doc p.home-mission {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 12px;
+  max-width: 640px;
+  margin: 0 0 18px;
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--cc-ink);
+}
+.vp-doc p.home-mission span {
+  flex: none;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--cc-ink);
+  color: var(--cc-paper);
+  font-family: var(--cc-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}

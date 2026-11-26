@@ -19,9 +19,11 @@ import { withBase } from "vitepress";
 
 <p class="home-tags"><span>Open source · MIT</span><span>Early: the API changes until 1.0</span></p>
 
+<p class="home-mission"><span>Our mission</span>Every tool of a studio as code: the editor, the animation studio, the compositor, 3D and sound, in files you and your agent write.</p>
+
 <h1 class="home-title">Multimedia pipeline as code.</h1>
 
-<p class="home-lead">Write a video as <strong>a React file</strong>. Play it in the browser, fine-tune it on a timeline and <strong>export it to MP4</strong>. <strong>Your coding agent</strong> can do all of it.</p>
+<p class="home-lead">Write it as <strong>a React file</strong>. Play it in the browser, fine-tune it on a timeline and <strong>export it to MP4</strong>. <strong>Your coding agent</strong> can do all of it.</p>
 
 <div class="home-actions">
 <a class="home-button primary" :href="withBase('/guide/getting-started')">Get started</a>
@@ -82,9 +84,9 @@ import { withBase } from "vitepress";
 
 <section class="home-features">
 
-## Features
+## The whole pipeline
 
-<p class="home-chapter-lead">What works today, from the first cut to the export, in the order you use it. Under it, the roadmap: what is being built now and what is planned next. <a href="https://github.com/prefix-tree/uberscene/blob/main/BACKLOG.md">The backlog →</a></p>
+<p class="home-chapter-lead">Not only video as code: the edit, motion, compositing, 3D and sound. What works today, from the first cut to the export, in the order you use it. Under it, the roadmap: what is being built now and what is planned next. <a href="https://github.com/prefix-tree/uberscene/blob/main/BACKLOG.md">The backlog →</a></p>
 
 <FeatureGroups />
 
