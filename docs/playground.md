@@ -11,7 +11,8 @@ footer: false
 # Playground
 
 Edit the file and the video follows, played by the same player your app embeds and the export renders. Start from one
-of the files above the editor; **Copy link** shares what you wrote.
+of the files above the editor; **Copy link** shares what you wrote, and while the video is paused it opens paused on
+that frame, for review.
 
 <Playground share />
 
