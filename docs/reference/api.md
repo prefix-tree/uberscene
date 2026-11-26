@@ -1168,7 +1168,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/player/engine`
 
-47 exports.
+49 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -1217,6 +1217,8 @@ Every name each entry exports, read from the code. The sections above explain th
 | `PICK_EPS` | const | Container timestamps are often rounded to the millisecond, so the frame for the exact time n/fps can sit a fraction of a millisecond after it. |
 | `placementSourceTime` | function | Source seconds a media placement shows at composition time `t`. |
 | `SETTLE_MS` | const | Quiet time after the last setState before a paused preview fetches its exact frame. |
+| `Space` | interface | Where an overlay is placed from. |
+| `spaceOf` | function | The space `p` is placed in at composition time `t`. |
 | `trackCamera` | function | The camera's matrix for something on `track` at `t`. |
 | `visiblePlacements` | function | Visual, timed placements that show at `t`. |
 
