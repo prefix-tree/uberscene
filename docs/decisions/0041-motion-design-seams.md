@@ -1,7 +1,7 @@
 # 0041. Motion design on the timeline: four seams that DaVinci-style edits plug into
 
-> Status: proposed, built in steps. The camera of seam 3 is built (`<Camera>`, its keys, the tools and the editing
-> actions; see [the guide](../guide/camera.md)); its `push`, `follow` and the other seams are not. Builds on [0039](./0039-a-person-cut-out-of-the-background.md) (the matte beside the footage),
+> Status: proposed, built in steps. The camera of seam 3 is built (`<Camera>`, its keys, its `push`, the tools and the
+> editing actions; see [the guide](../guide/camera.md)); `follow` and the other seams are not. Builds on [0039](./0039-a-person-cut-out-of-the-background.md) (the matte beside the footage),
 > which becomes the first case of seam 1 and seam 2 here, and on [0035](./0035-everything-is-a-prop.md) (a value is a
 > constant or a key list), which seam 4 extends with a third kind of value. 3D stays with
 > [0040](./0040-a-3d-scene-is-a-clip-source.md).
@@ -130,10 +130,13 @@ A rig moves things it does not own. Two forms, both literal props the editor can
   list of ids that can be misspelled, and file order still decides what draws over what, across the camera's edge.
 - Each element inside keeps its own entrance and timing; the camera adds the shared move on top, so the sdk's edits,
   the editor's drags and the layout check work as before, the check reading positions after the camera.
-- **`push`** reframes on entrances: `push={{ on: ["tv", "film", "radio"], by: "room" }}` moves the view so each named
-  element, as it starts, is inside the safe zone with the others, eased with the entrance. It is always derived:
-  move a card and the camera's move follows. It is never written back into the file on its own. An explicit action,
-  `camera/bakePush`, turns it into keys for someone who wants to tune them by hand, and removes the prop.
+- **`push`** reframes on entrances: `push={{ on: ["tv", "film", "radio"] }}`. As each named element starts, the view
+  moves as little as it can to hold it with everything else on screen under the camera (or only what `keep` names):
+  it pans the shortest way, and pulls back only when all of it cannot fit. It is always derived: the resolver makes
+  ordinary camera keys from it each time the file is read, so the player and the tools read a pushed camera as one
+  keyed by hand, and a card that moves takes the camera's move with it. It is never written back into the file on
+  its own. An explicit action, `camera/bakePush`, turns it into keys for someone who wants to tune them by hand, and
+  removes the prop. With a push, `x`, `y` and `zoom` are numbers (where the view starts), not keys.
 - **`follow`** pins an element's `box` to a space ref (seam 1): a tracked face, a planar corner pin, or another
   element's box (parenting). The offset is in pixels and may be keyed.
 - Its values are a camera's, not an element's: `x` and `y` say where the view's centre has moved, so `x: 180` puts
@@ -192,7 +195,7 @@ One PR each, from fresh `main`, each with its decision section moved to accepted
 1. **Analyses registry and `uberscene analyze`**, with the existing manifest fields listed in it. No behaviour change.
 2. **`analyze matte`** makes the matte `cutout` already reads (#199); then **`matte`** with the `element` source,
    `cutout` as the short form of the `asset` source; the text behind a person recipe and test.
-3. **`<Camera>`** around tracks, with keys, the layout check after the camera (done); then `push`.
+3. **`<Camera>`** around tracks, with keys, the layout check after the camera, and `push` (done).
 4. **Generators**: `wiggle`, `drift`, `overshoot`, `loop`, `then`; the camera's `drift` on top.
 5. **Preview motion blur** (a).
 6. **Styled runs and word-ended durations** (b, c).
@@ -220,8 +223,8 @@ Steps 1 to 4 give most of the look; 5 makes it judgeable in the preview.
 
 ## Open questions
 
-- Whether `push` should be a camera prop or a generator over the camera (`{ type: "push", on: [...] }`). The record
-  proposes a prop because it reads elements, which no other generator does.
+- Closed: `push` is a camera prop, not a generator. It reads other elements, which no generator does, and it makes
+  keys rather than a value.
 - Whether `matte` from an element and `follow` should also be said by structure rather than by id. Proposed: ids,
   as anchors use today, because the two elements usually sit on different tracks; an unknown id is an error.
 - Whether generators should also be allowed on non-numeric values (a colour wiggle). Proposed: numbers only at first.

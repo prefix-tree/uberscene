@@ -3,10 +3,10 @@ import type { ComponentProps } from "react";
 import { Camera, Clip, Composition, Shape, Title, Track } from "@uberscene/kit";
 
 /**
- * A camera over the tracks that should move together. A subject sits in the middle; each card that comes in pushes
- * the whole frame aside to make room, and the last one is written off the frame's left edge, so the camera pulls
- * back and across until all three are in view. The mark in the corner is on a track outside the camera, so it stays where it is.
- * Nothing on the cards or the subject is keyed for these moves: the camera's `x` and `zoom` are.
+ * A camera that makes room. A subject sits in the middle. Each card is written where it belongs beside it, partly or
+ * wholly outside the frame, and the camera's `push` does the rest: as a card starts, the view moves as little as it
+ * can to hold it with everything already on screen, panning first and pulling back only when it must. Move a card
+ * and the camera's move follows. The mark in the corner is on a track outside the camera, so it stays where it is.
  */
 const BLUE = "#3447ff";
 const INK = "#1b2bd6";
@@ -28,27 +28,7 @@ const POP = {
 export default function Video() {
   return (
     <Composition fps={30} width={1920} height={1080} background={{ type: "color", color: BLUE }}>
-      <Camera
-        id="cam"
-        x={[
-          { at: 1, value: 0, easing: "snappy" },
-          { at: 1.3, value: -90 },
-          { at: 2.2, value: -90, easing: "snappy" },
-          { at: 2.5, value: 0 },
-          { at: 3.4, value: 0, easing: "snappy" },
-          { at: 3.8, value: -250 },
-        ]}
-        zoom={[
-          { at: 0, value: 1 },
-          { at: 1, value: 1.03, easing: "snappy" },
-          { at: 1.3, value: 1 },
-          { at: 2.2, value: 1.02, easing: "snappy" },
-          { at: 2.5, value: 0.94 },
-          { at: 3.4, value: 0.96, easing: "snappy" },
-          { at: 3.8, value: 0.82 },
-          { at: 6, value: 0.84 },
-        ]}
-      >
+      <Camera id="cam" push={{ on: ["frame-a", "frame-b", "frame-c"] }}>
         <Track id="subject" layout="free">
           <Clip
             id="pour"
@@ -72,7 +52,7 @@ export default function Video() {
             height={420}
             cornerRadius={22}
             fill={PAPER}
-            box={{ x: 250, y: 560, origin: "center" }}
+            box={{ x: 70, y: 560, origin: "center" }}
             enter={{ type: "pop", duration: 0.3 }}
           />
           <Shape
@@ -84,7 +64,7 @@ export default function Video() {
             height={420}
             cornerRadius={22}
             fill={PAPER}
-            box={{ x: 1670, y: 560, origin: "center" }}
+            box={{ x: 1900, y: 560, origin: "center" }}
             enter={{ type: "pop", duration: 0.3 }}
           />
           <Shape
@@ -96,7 +76,7 @@ export default function Video() {
             height={420}
             cornerRadius={22}
             fill={PAPER}
-            box={{ x: -250, y: 560, origin: "center" }}
+            box={{ x: -360, y: 560, origin: "center" }}
             enter={{ type: "pop", duration: 0.3 }}
           />
         </Track>
@@ -109,7 +89,7 @@ export default function Video() {
             duration={5}
             volume={0}
             fit="cover"
-            box={{ x: 250, y: 530, width: 296, height: 296, origin: "center" }}
+            box={{ x: 70, y: 530, width: 296, height: 296, origin: "center" }}
             transform={POP}
           />
           <Clip
@@ -120,7 +100,7 @@ export default function Video() {
             duration={3.8}
             volume={0}
             fit="cover"
-            box={{ x: 1670, y: 530, width: 296, height: 296, origin: "center" }}
+            box={{ x: 1900, y: 530, width: 296, height: 296, origin: "center" }}
             transform={POP}
           />
           <Clip
@@ -131,7 +111,7 @@ export default function Video() {
             duration={2.6}
             volume={0}
             fit="cover"
-            box={{ x: -250, y: 530, width: 296, height: 296, origin: "center" }}
+            box={{ x: -360, y: 530, width: 296, height: 296, origin: "center" }}
             transform={POP}
           />
         </Track>
@@ -140,7 +120,7 @@ export default function Video() {
             id="label-a"
             start={1}
             duration={5}
-            box={{ x: 250, y: 724, origin: "center" }}
+            box={{ x: 70, y: 724, origin: "center" }}
             style={{ size: 30, weight: 800, color: INK, letterSpacing: 2 }}
             enter={{ type: "pop", duration: 0.3 }}
           >
@@ -150,7 +130,7 @@ export default function Video() {
             id="label-b"
             start={2.2}
             duration={3.8}
-            box={{ x: 1670, y: 724, origin: "center" }}
+            box={{ x: 1900, y: 724, origin: "center" }}
             style={{ size: 30, weight: 800, color: INK, letterSpacing: 2 }}
             enter={{ type: "pop", duration: 0.3 }}
           >
@@ -160,7 +140,7 @@ export default function Video() {
             id="label-c"
             start={3.4}
             duration={2.6}
-            box={{ x: -250, y: 724, origin: "center" }}
+            box={{ x: -360, y: 724, origin: "center" }}
             style={{ size: 30, weight: 800, color: INK, letterSpacing: 2 }}
             enter={{ type: "pop", duration: 0.3 }}
           >

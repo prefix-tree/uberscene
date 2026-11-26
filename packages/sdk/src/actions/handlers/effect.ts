@@ -41,7 +41,10 @@ function pathProblem(state: ResolvedState, id: string, path: string): string | n
     return Number(fx[1]) < effects.length ? null : `element "${id}" has no effect ${fx[1]}`;
   }
   // A camera's keys are its four values, on the video's clock.
-  if (state.items.get(id)?.kind === "camera")
+  const target = state.items.get(id);
+  if (target?.kind === "camera" && target.props.push && path !== "rotation" && path in CAMERA_FIELDS)
+    return `the camera's push sets its ${path}: turn the push into keys with camera/bakePush, then change them`;
+  if (target?.kind === "camera")
     return path in CAMERA_FIELDS
       ? null
       : `"${path}" cannot hold keys on a camera; use one of ${Object.keys(CAMERA_FIELDS).join(", ")}`;

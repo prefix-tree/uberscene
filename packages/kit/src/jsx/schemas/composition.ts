@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { themeSchema } from "../../theme/schema";
-import { zTrackLayout, zTrackRole } from "../enums";
+import { zEasing, zTrackLayout, zTrackRole } from "../enums";
 import { animatable, colorSchema, gradientSchema, idSchema } from "./common";
 
 export const compositionSchema = z.strictObject({
@@ -84,6 +84,29 @@ export const cameraSchema = z.strictObject({
   zoom: animatable(z.number().min(0.01).max(100)).default(1),
   /** How far the view is turned clockwise, in degrees, about the frame's centre: what it shows turns the other way. */
   rotation: animatable(z.number()).default(0),
+  /**
+   * Lets the camera make room: as each element in `on` starts, the view moves as little as it can so that element is
+   * in view with everything else on the camera's tracks that is on screen then. It pans the shortest way, and pulls back only when all of it
+   * cannot fit. With `push`, `x`, `y` and `zoom` are where the view starts, as numbers; `camera/bakePush` turns the
+   * moves into keys to change by hand.
+   */
+  push: z
+    .strictObject({
+      /** The elements to make room for, on the camera's tracks, each as it starts. */
+      on: z.array(idSchema).min(1),
+      /**
+       * The only elements that must stay in view, a speaker for one, with those in `on`. Left out, everything on the
+       * camera's tracks that is on screen at the moment stays in view.
+       */
+      keep: z.array(idSchema).optional(),
+      /** How far inside the frame's edge everything sits, in pixels. Left out, a twentieth of the frame's shorter side. */
+      margin: z.number().min(0).optional(),
+      /** How long each move takes, in seconds, from the moment its element starts. */
+      duration: z.number().positive().default(0.3),
+      /** How each move goes. */
+      easing: zEasing.default("snappy"),
+    })
+    .optional(),
 });
 
 export const markerSchema = z.strictObject({

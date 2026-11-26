@@ -532,7 +532,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/kit/schema`
 
-260 exports.
+266 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -545,6 +545,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `BLEND_MODES` | const |  |
 | `BlendMode` | type |  |
 | `BLOCK_ASPECTS` | const | The frame shapes a block can be laid out for. |
+| `Box` | interface | A size in pixels. |
 | `BOX_ORIGIN_POINT` | const | Each origin as fractions of the element's width and height from its top left. |
 | `BOX_ORIGINS` | const | Which point of an element's box `box.x` and `box.y` place. |
 | `BoxOrigin` | type |  |
@@ -584,6 +585,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `DERIVED_KINDS` | const |  |
 | `DERIVED_SCHEMAS` | const | The resolver's own item kinds. |
 | `DerivedKind` | type |  |
+| `DrawRect` | interface | A rectangle in composition pixels. |
 | `ease` | function | `name` applied to `x` clamped to 0..1; an unknown or missing name is linear. |
 | `Easing` | type |  |
 | `EASING_FN` | const |  |
@@ -614,6 +616,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `findFont` | function | The catalogue's entry for a family, whatever its letter case; undefined for a family the catalogue does not list. |
 | `FIT_MODES` | const |  |
 | `FitMode` | type |  |
+| `fitRect` | function | The fitted rectangle of a source inside a frame, centred. |
 | `font` | function | Declares a face from a font file and returns it (a `FontRef`, standing for its family), to pass as a `font` prop, a theme font or a CSS `fontFamily`. |
 | `FONT_CATALOG` | const | The fonts to choose from. |
 | `FONT_KEYS` | const |  |
@@ -688,6 +691,9 @@ Every name each entry exports, read from the code. The sections above explain th
 | `OldEasing` | type | An easing name spelled the way it was before 0.6, which free code still takes. |
 | `PALETTE_KEYS` | const | The palette names every built-in theme fills. |
 | `parseRate` | function | A frame rate as an exact fraction. |
+| `placeAxis` | function | Where a box starts on one axis. |
+| `placeBox` | function | The one rule every element that draws is placed by. |
+| `Placed` | interface | Where an element's content lands. |
 | `PlacementScope` | type |  |
 | `POST_EFFECTS` | const | Effects the painter draws over the element after it. |
 | `Presets` | type |  |
@@ -799,7 +805,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/sdk`
 
-212 exports.
+213 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -831,6 +837,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `Beat` | interface | A beat of music. |
 | `buildSourceIndex` | function | Index every vocabulary JSX element with a literal id so patches can be written back as text edits. |
 | `CameraActions` | interface |  |
+| `CameraPush` | interface | A camera's `push` as a file writes it. |
 | `CameraValue` | type | A camera value as a file writes it. |
 | `CanResult` | interface | What `can()` answers. |
 | `CaptionActions` | interface |  |
@@ -1171,7 +1178,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `defaultCreateCanvas` | function |  |
 | `devWarn` | function | Warn once per key. |
 | `DrawOp` | interface |  |
-| `DrawRect` | interface |  |
+| `DrawRect` | interface | A rectangle in composition pixels. |
 | `Frame` | interface | One decoded picture. |
 | `frameIndex` | function | The frame a composition time falls in, counted in exact ticks. |
 | `FrameSource` | interface |  |

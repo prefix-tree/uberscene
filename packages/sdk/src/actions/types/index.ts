@@ -350,6 +350,15 @@ export interface CaptionActions {
 /** A camera value as a file writes it: a number, or keys over the video's time. */
 export type CameraValue = number | readonly KeyJson[];
 
+/** A camera's `push` as a file writes it. */
+export interface CameraPush {
+  readonly on: readonly Id[];
+  readonly keep?: readonly Id[];
+  readonly margin?: number;
+  readonly duration?: number;
+  readonly easing?: string;
+}
+
 export interface CameraActions {
   /**
    * Puts a camera around `tracks`, which must be next to each other in the file: everything on them then moves,
@@ -363,11 +372,22 @@ export interface CameraActions {
     y?: CameraValue;
     zoom?: CameraValue;
     rotation?: CameraValue;
+    push?: CameraPush;
   };
   /** Sets the camera's values: `x` and `y` in pixels, `zoom` (1 is as written), `rotation` in degrees. Keys go through key/add. */
   "camera/update": { cameraId: Id; x?: number; y?: number; zoom?: number; rotation?: number };
   /** Takes the camera away and leaves its tracks where they were, fixed to the screen. */
   "camera/remove": { cameraId: Id };
+  /**
+   * Lets the camera make room for the elements in `push.on` as each starts, or (`null`) stops it. With a push, the
+   * camera's `x`, `y` and `zoom` are numbers: where the view starts.
+   */
+  "camera/setPush": { cameraId: Id; push: CameraPush | null };
+  /**
+   * Turns the moves a push makes into keys on the camera's `x`, `y` and `zoom`, and removes the push: the moves can
+   * then be changed by hand, and no longer follow the elements.
+   */
+  "camera/bakePush": { cameraId: Id };
 }
 
 export interface MarkerActions {

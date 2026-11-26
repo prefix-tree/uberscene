@@ -1,15 +1,10 @@
-import type { ElementBox, FitMode, Transform } from "@uberscene/kit/schema";
+import type { Box, DrawRect, ElementBox, FitMode, Transform } from "@uberscene/kit/schema";
 import type { Placement } from "@uberscene/sdk/resolver";
 
 import { placeBox } from "./box";
 import { keyframedValue } from "./keyframes";
 
-export interface DrawRect {
-  readonly x: number;
-  readonly y: number;
-  readonly w: number;
-  readonly h: number;
-}
+export type { Box, DrawRect };
 
 /** Row-major 2D affine matrix in the canvas/CSS `matrix(a, b, c, d, e, f)` convention. */
 export interface Matrix2D {
@@ -56,11 +51,6 @@ export function rotate(deg: number): Matrix2D {
 export function matrixToCss(m: Matrix2D): string {
   const n = (v: number): string => (Math.abs(v) < 1e-9 ? "0" : String(Math.round(v * 1e6) / 1e6));
   return `matrix(${n(m.a)}, ${n(m.b)}, ${n(m.c)}, ${n(m.d)}, ${n(m.e)}, ${n(m.f)})`;
-}
-
-export interface Box {
-  readonly width: number;
-  readonly height: number;
 }
 
 /**

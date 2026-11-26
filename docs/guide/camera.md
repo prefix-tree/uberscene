@@ -67,6 +67,49 @@ Under it the zoom closes in slowly for the whole six seconds, so the frame is ne
 
 An element written off the frame is not lost: a camera that pans or pulls back far enough shows it.
 
+## Let the camera make room
+
+Working out each pan and zoom by hand means redoing them whenever a card moves. With `push`, the camera does it:
+
+```tsx
+<Camera id="cam" push={{ on: ["card-a", "card-b", "card-c"] }}>
+  <Track id="subject" layout="free">...</Track>
+  <Track id="cards" layout="free">...</Track>
+</Camera>
+```
+
+Write each card where it belongs beside the subject, partly or wholly outside the frame. As each element in `on`
+starts, the view moves **as little as it can** to hold it with everything else on the camera's tracks that is on
+screen then:
+
+- If the element is already in view, nothing moves.
+- Else the view pans the shortest way that brings everything inside the margin.
+- Only when everything cannot fit does it pull back, and only as far as it must. It never closes in past the
+  camera's own `zoom`.
+
+Move a card and the camera's move follows, because the moves are worked out from the file each time it is read.
+
+| In `push` | What it does |
+|---|---|
+| `on` | The elements to make room for, on the camera's tracks. Ones that start together are one move. |
+| `keep` | The only elements that must stay in view, with those in `on`: a speaker, say. Left out, everything on screen under the camera stays in view. |
+| `margin` | How far inside the frame's edge everything sits, in pixels. Left out, a twentieth of the frame's shorter side. |
+| `duration` | How long each move takes, from the moment its element starts. 0.3 s when left out. |
+| `easing` | How each move goes. `snappy` when left out. |
+
+With `push`, the camera's `x`, `y` and `zoom` are numbers: where the view starts. Keys on them beside a push are an
+error, since two things cannot both set them. `rotation` is free.
+
+The camera makes room for an element's box: a shape's `width` and `height`, footage as it is fitted into its `box`,
+a title or layer's `box.width` and `box.height`. A title with no size in its `box` counts as the point it is placed
+at, so give it a `box.width` and `box.height` if the camera should make room for all of it. An element's own keys,
+scale and rotation are not followed: it counts where it stands when it starts. `--check-layout` still measures the
+real picture, so anything left cut off is reported.
+
+To change the moves by hand, turn them into keys: `camera/bakePush` writes them as key lists on `x`, `y` and `zoom`
+and removes the push. From then on they are the file's, and no longer follow the cards. In the editor, select the
+camera and choose "Turn its moves into keys".
+
 ## What stays in screen pixels
 
 A zoom scales where things are and how big they are. It does not scale an effect's own pixel sizes: a `blur` of 12
@@ -79,6 +122,7 @@ adjustment on a track inside the camera still grades the whole frame beneath it.
   in the element's own numbers: under a zoom of 2, a title 40 px too far right is told to move its `box.x` by 20.
 - `uberscene inspect` gives the camera's four values at each moment, and marks the elements under it. Their `box`
   and `transform` are as written, before the camera.
+- `camera/setPush` gives a camera a push or takes it away, and `camera/bakePush` turns it into keys.
 - An editor changes the camera with `camera/update` and its keys with `key/add` and the other
   [key actions](/reference/actions), using the paths `x`, `y`, `zoom` and `rotation`.
 - `camera/add` puts a camera around tracks that are next to each other, and `camera/remove` takes it away. Either way

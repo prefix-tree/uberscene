@@ -101,6 +101,22 @@ export function Inspector({ className }: { className?: string }) {
               <Badge variant="secondary">{item.kind}</Badge>
               <span className="truncate font-mono text-xs text-muted-foreground">{item.id}</span>
             </div>
+            {item.kind === "camera" && item.props.push !== undefined && (
+              <div className="flex flex-col gap-2 rounded-md border p-2 text-xs text-muted-foreground">
+                <span>
+                  The camera makes room by itself as elements come in. Its x, y and zoom below are where the view
+                  starts.
+                </span>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  data-editor-bake-push=""
+                  onClick={() => run({ type: "camera/bakePush", params: { cameraId: item.id } })}
+                >
+                  Turn its moves into keys
+                </Button>
+              </div>
+            )}
             {/* A camera has no time of its own: its values hold for the whole video, or change by keys. */}
             {item.kind !== "camera" && (
               <Group title="Timing">
