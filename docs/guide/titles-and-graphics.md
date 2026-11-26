@@ -71,6 +71,25 @@ The look's fields, each with its default when neither the element nor a preset s
 | `letterSpacing` | Extra space between letters, in pixels. | `0` |
 | `decoration` | `"underline"`, `"overline"` or `"lineThrough"`. | none |
 
+### Colour a word
+
+A `<Mark>` inside the text draws its words in their own colour, weight or highlight, and the rest keeps the title's
+look. One title, so the words stay on one line and wrap together:
+
+```tsx
+<Title id="quote" start={0} duration={3} style={{ preset: "quote", color: "$text" }}>
+  wouldn't it be <Mark color="$accent">amazing</Mark>
+</Title>
+<Title id="claim" start={3} duration={2} style="h2">
+  Ten times <Mark background="$accent" color="#000000">faster</Mark>
+</Title>
+```
+
+A mark takes `color` (a colour or a theme token), `weight`, `italic` and `background`. It has no id or time of its
+own, and holds text only. A typewriter types through a mark as through the rest, and word by word counts its words with
+the others. Edit the title's text and a mark stays on its words while they are still in it; with the words gone, the
+mark goes with them. Anything else inside a title (a `<span>`, a component) is an error that names it.
+
 A file written before 0.6, with these fields as flat props (`size={64}`) and the text box as `width` and `height`, is
 moved by `uberscene lint --fix`. [`<Title>`](/reference/elements/title) lists every prop.
 

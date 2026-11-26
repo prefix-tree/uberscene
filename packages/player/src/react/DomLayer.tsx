@@ -159,7 +159,13 @@ function warnPostOnOverlay(id: string, children: readonly Placement[]): void {
 function elementContent(item: VisibleItem, props: ElementProps, state: ResolvedState, interior: ReactNode): ReactNode {
   switch (item.placement.kind) {
     case "title":
-      return <Title {...props} text={state.tree.byId.get(item.placement.id)?.text ?? ""} />;
+      return (
+        <Title
+          {...props}
+          text={state.tree.byId.get(item.placement.id)?.text ?? ""}
+          runs={state.tree.byId.get(item.placement.id)?.runs}
+        />
+      );
     case "shape":
       return <Shape {...props} />;
     case "svg":
@@ -209,7 +215,11 @@ export function sameElement(a: ElementCellProps, b: ElementCellProps): boolean {
     cb = b.state.composition;
   if (ca.width !== cb.width || ca.height !== cb.height || ca.rate.num !== cb.rate.num || ca.rate.den !== cb.rate.den)
     return false;
-  if (p.kind === "title" && a.state.tree.byId.get(p.id)?.text !== b.state.tree.byId.get(p.id)?.text) return false;
+  if (p.kind === "title") {
+    const was = a.state.tree.byId.get(p.id);
+    const now = b.state.tree.byId.get(p.id);
+    if (was?.text !== now?.text || was?.runs !== now?.runs) return false;
+  }
   if (
     a.exact || b.exact
       ? a.time - p.start !== b.time - q.start

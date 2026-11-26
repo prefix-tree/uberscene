@@ -31,6 +31,7 @@ import {
   type TrackLayout,
   type TrackRole,
   type TransitionType,
+  themedRuns,
   VIDEO_EFFECT_TYPES,
 } from "@uberscene/kit/schema";
 
@@ -968,6 +969,15 @@ function intrinsicCompute(
   const caps = capabilitiesOf(node.kind);
   const own: ResolveError[] = [];
   const props = parseProps(node, own, theme);
+  // A title's <Mark> colours are theme tokens too, but live in its text, not its props.
+  if (node.runs)
+    for (const token of themedRuns(node.runs, theme).unknown)
+      own.push({
+        code: "UNKNOWN_TOKEN",
+        id: node.id,
+        prop: "children",
+        message: `unknown theme token ${token} in a <Mark>`,
+      });
   const p: Pending = { node, track, parent: node.parent, props, errors: own };
   pending.set(node.id, p);
 

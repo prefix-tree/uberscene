@@ -282,7 +282,7 @@ describe("theme", () => {
   });
 
   it("lints unknown tokens and styles, literal colours and fonts under a theme, and fonts no renderer ships", () => {
-    const text = `import { Composition, Shape, Title, Track } from "@uberscene/kit";
+    const text = `import { Composition, Mark, Shape, Title, Track } from "@uberscene/kit";
 export default function Video() {
   return (
     <Composition fps={30} width={1920} height={1080} theme={{ extends: "paper", fonts: { mono: "Comic Mono" } }}>
@@ -290,6 +290,7 @@ export default function Video() {
         <Title id="a" start={0} style={{ preset: "h1", color: "$brand" }}>A</Title>
         <Title id="b" start={0} style={{ preset: "giant", font: "Helvetica", color: "#1d1b17" }}>B</Title>
         <Title id="c" start={0} style={{ preset: "nope", font: face }}>C</Title>
+        <Title id="m" start={0} style={{ preset: "h1" }}>a <Mark color="#1d1b17">word</Mark> and <Mark color="$brand">one</Mark></Title>
         <Shape id="s" start={0} type="rectangle" fill="$surface" shadow={{ color: "#000000", blur: 10 }} />
       </Track>
     </Composition>
@@ -305,6 +306,7 @@ export default function Video() {
         ["theme-refs", "b", "style", "error"],
         ["theme-refs", "c", "style", "error"],
         ["theme-literals", "b", "style", "warning"],
+        ["theme-literals", "m", "children", "warning"],
         ["font-available", "b", "style", "warning"],
         ["font-available", "composition", "theme", "warning"],
       ]),

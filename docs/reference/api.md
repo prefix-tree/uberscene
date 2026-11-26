@@ -416,7 +416,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/kit`
 
-109 exports.
+111 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -476,7 +476,9 @@ Every name each entry exports, read from the code. The sections above explain th
 | `LayerClock` | interface | Time inside a `<Layer>`. |
 | `lensFov` | function | The vertical field of view, in degrees, of a lens of `focal` millimetres on a full-frame sensor (24 mm tall). |
 | `LowerThird` | function | A name and a role in the lower third of the frame. |
+| `Mark` | function | `<Mark>`. |
 | `Marker` | const | The `<Marker>` element ([reference](/reference/elements/marker)). |
+| `MarkProps` | type |  |
 | `Mask` | const | The `<Mask>` element ([reference](/reference/elements/mask)). |
 | `Motion` | const | The `<Motion>` element ([reference](/reference/elements/motion)). |
 | `Multicam` | const | The `<Multicam>` element ([reference](/reference/elements/multicam)). |
@@ -532,7 +534,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/kit/schema`
 
-276 exports.
+282 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -660,6 +662,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `isKeyframeProperty` | function | A property a key list can animate, as the resolver names it (`transform.opacity` for <code v-pre>transform={{ opacity: […] }}</code>). |
 | `isNeutral` | function | Whether a built-in effect changes nothing with these params. |
 | `isShaderRef` | function | Whether a value is an effect or transition a file declared. |
+| `isTextMark` | function | Whether a component is `<Mark>`. |
 | `isVocabulary` | function |  |
 | `Key` | interface | One key of a value that changes over time. |
 | `KEYFRAME_PROPERTIES` | const |  |
@@ -674,6 +677,8 @@ Every name each entry exports, read from the code. The sections above explain th
 | `MAIN_TRACK_ID` | const | The id of the track made of the clips written straight in a `<Composition>`. |
 | `MAIN_TRACK_KINDS` | const | What may be written straight in a `<Composition>` to make that track. |
 | `Marker` | const | The `<Marker>` element ([reference](/reference/elements/marker)). |
+| `MarkProps` | type |  |
+| `markSchema` | const | How a marked stretch of a title's text differs from the rest. |
 | `Mask` | const | The `<Mask>` element ([reference](/reference/elements/mask)). |
 | `MASK_NOT_RENDERED` | const |  |
 | `MASK_TYPES` | const |  |
@@ -689,6 +694,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `MOTIONS` | const |  |
 | `MotionStyle` | interface | What a motion style fills where an element says nothing. |
 | `motionStyleSchema` | const |  |
+| `moveRuns` | function | The runs of `before` carried onto its new text `after`. |
 | `Multicam` | const | The `<Multicam>` element ([reference](/reference/elements/multicam)). |
 | `nearestFont` | function | The listed family whose name is nearest a misspelt one, when one is near enough to be what was meant. |
 | `nearestFrame` | const | The frame nearest a time, for times given by a person (`--at 2.5`) rather than computed. |
@@ -752,10 +758,12 @@ Every name each entry exports, read from the code. The sections above explain th
 | `TEXT_ANIMATION_TYPES` | const |  |
 | `TEXT_DECORATIONS` | const |  |
 | `TEXT_VALIGNS` | const |  |
+| `TextRun` | interface | A stretch of a title's text drawn its own way, from character `from` up to `to` of the title's text, with the look its `<Mark>` gives. |
 | `THEME_NAMES` | const | The built-in themes and motion styles a file can name. |
 | `themeCss` | function | A theme value for CSS inside a Layer. |
 | `Themed` | interface |  |
 | `ThemeDefinition` | interface |  |
+| `themedRuns` | function | A title's runs with their `$token` colours made the theme's values. |
 | `ThemeInput` | type |  |
 | `ThemeIssue` | interface |  |
 | `ThemeName` | type |  |

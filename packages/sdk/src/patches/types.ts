@@ -1,3 +1,5 @@
+import type { TextRun } from "@uberscene/kit/schema";
+
 import type { CollectedNode } from "../resolve/tree";
 
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
@@ -5,7 +7,7 @@ export type Json = null | boolean | number | string | Json[] | { [key: string]: 
 /** One change recorded by an action. Patches address elements by id, never by position in the file. */
 export type Patch =
   | { readonly op: "set"; readonly id: string; readonly prop: string; readonly value: Json | undefined }
-  | { readonly op: "text"; readonly id: string; readonly text: string }
+  | { readonly op: "text"; readonly id: string; readonly text: string; readonly runs?: readonly TextRun[] }
   | {
       readonly op: "insert";
       readonly id: string;
@@ -25,6 +27,8 @@ export interface NetPatch {
   presence: Presence;
   readonly props: Map<string, Json | undefined>;
   text?: string;
+  /** Its marked words with `text`: set (empty for none) whenever `text` is. */
+  runs?: readonly TextRun[];
   /** Where it was last inserted or moved to; `seq` orders those writes, so they replay in the order made. */
   place?: { parent: string; after: string | null; seq: number };
   node?: CollectedNode;

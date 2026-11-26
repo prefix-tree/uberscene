@@ -242,6 +242,28 @@ function usedIn(name: string): string | null {
   return hits.length > 0 ? `**Used in:** ${hits.join(" · ")}` : null;
 }
 
+/** What an element's page says beyond its props: written here, after the props and `style`. */
+const ELEMENT_NOTES: Record<string, string> = {
+  Title: [
+    "### Coloured words: `<Mark>`",
+    "",
+    "Words inside a title drawn their own way, as part of its text:",
+    "",
+    "```tsx",
+    '<Title id="q" style={{ color: "$text" }}>into the <Mark color="$accent">stars</Mark></Title>',
+    "```",
+    "",
+    "| prop | type | description |",
+    "|---|---|---|",
+    '| `color` | string | The words\' colour: a colour, or a theme token such as `"$accent"`. |',
+    '| `weight` | number, `"normal"` or `"bold"` | Their weight. |',
+    "| `italic` | boolean | Set them in italics. |",
+    "| `background` | string | A colour behind them: a highlight. |",
+    "",
+    "A `<Mark>` has no id and no time of its own, and holds text only (marks do not nest). Typewriter and word-by-word animations count its words with the rest. Editing the title's text keeps a mark on its words while they are still there.",
+  ].join("\n"),
+};
+
 const ENGINE_NOTE =
   "The player draws it once the host calls `installFreeCodeLibraries()` ([Free code](/guide/free-code#three-js-and-motion)); the export draws it the same way, in headless Chrome ([Exporting](/guide/exporting)).";
 
@@ -345,6 +367,7 @@ function elementPage(name: string, summary: string): string {
           `| \`${field}\` | ${typeOf(s, 6)} | ${defaultOf(s.default)} | ${describe(`style:${name}`, field)} |`,
       ),
     );
+  if (ELEMENT_NOTES[name]) lines.push("", ELEMENT_NOTES[name]);
   lines.push(
     "",
     `${traits.length ? `${capital(traits.join(", "))}. ` : ""}${

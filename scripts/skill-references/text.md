@@ -24,6 +24,7 @@ Sizes for a 1080-high frame; scale with the height for other sizes (1920-high ve
 
 - Hold a title for 0.5 s plus 0.3 s per word, at least, plus the time it takes to type in. Two lines of eight words
   each: about 5 s. `--check-layout` reports a title held less (`read-time`).
+- Colour one word, not a line: `<Mark color="$accent">` inside the title, never a second title placed beside it.
 - Give a big title a box at least as wide as its text on one line: `--check-layout` reports one that wraps in its box
   or spills out of it (`text-fit`), and lines that touch (`text-over-text`).
 - One title on screen at a time, unless one is a label on something.

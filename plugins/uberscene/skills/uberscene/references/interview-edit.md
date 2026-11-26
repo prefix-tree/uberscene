@@ -25,7 +25,7 @@ interviews in general, see [kinds.md](kinds.md).
 |---|---|---|
 | A title that lands on a word | `anchor="talk" at="word:N"` on the `<Title>` | The hook's clip and the answer's clip are two clips of one take: put them on separate tracks, or `lint` reports the footage as repeated |
 | Lines that type in | `animation={{ type: "typewriter", in: 0.3 }}` | One burst of key clicks per line, anchored to the same word |
-| A coloured word | One `<Title>` per line, each one colour | A title takes one colour: colour a whole line, or give the word its own title. A highlighted line is a title with a `background` |
+| A coloured word | `<Title>into the <Mark color="$accent">stars</Mark></Title>` | One title, so the line wraps and moves as one. A highlighted word is a `<Mark background>`; a highlighted line is a title with a `background` |
 | A flash card | A full-frame `<Shape>` and a `<Title>`, anchored to the word | Hold it 0.5 s plus 0.3 s a word, even if the speaker has moved on: a 0.3 s card cannot be read. `--check-layout` reports one held less (`read-time`) |
 | A colour card under the speaker | A `<Shape ground>` on a track before the speaker's | Tracks draw in the order the file writes them, footage included. `ground` keeps the layout check from treating the card as a callout |
 | B-roll tinted to the card | The clip in black and white with `blend="screen"` over the card: its black becomes the card's colour | A blended clip blends with footage, not with a shape: make that card an image clip of the colour, on the track below the b-roll. Pick shots on true black; a hazy shot shows its frame. Lift a dim subject with `exposure` (2 stops was needed) |

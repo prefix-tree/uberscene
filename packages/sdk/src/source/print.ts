@@ -1,4 +1,4 @@
-import { ELEMENTS } from "@uberscene/kit/schema";
+import { ELEMENTS, type TextRun } from "@uberscene/kit/schema";
 
 import type { NodeSpec } from "../actions/types";
 import type { Json } from "../patches/types";
@@ -85,14 +85,40 @@ export function printElement(spec: NodeSpec, indent = "", step = "  "): string {
   const open = `${indent}<${name}${attrs.length ? ` ${attrs.join(" ")}` : ""}`;
   const children = spec.children ?? [];
   if (children.length === 0 && spec.text === undefined) return `${open} />`;
-  if (children.length === 0) return `${open}>${escapeText(spec.text ?? "")}</${name}>`;
+  if (children.length === 0) return `${open}>${printRuns(spec.text ?? "", spec.runs)}</${name}>`;
   const inner = children.map((c) => printElement(c, indent + step, step)).join("\n");
-  const text = spec.text !== undefined ? `\n${indent + step}${escapeText(spec.text)}` : "";
+  const text = spec.text !== undefined ? `\n${indent + step}${printRuns(spec.text, spec.runs)}` : "";
   return `${open}>${text}\n${inner}\n${indent}</${name}>`;
 }
 
+/**
+ * A title's text as JSX children, its marked words (`runs`) as `<Mark>` elements:
+ * `into the <Mark color="$accent">stars</Mark>`. Plain text alone prints as `escapeText` does.
+ */
+export function printRuns(text: string, runs: readonly TextRun[] | undefined): string {
+  if (!runs?.length) return escapeText(text);
+  // Between tags, JSX keeps spaces as typed: only braces, tags, entities and line breaks need a string expression,
+  // and whitespace only at the very start or end of the children.
+  const piece = (s: string, first: boolean, last: boolean) =>
+    /[{}<>&\r\n]/.test(s) || (first && /^\s/.test(s)) || (last && /\s$/.test(s)) ? `{${JSON.stringify(s)}}` : s;
+  const out: string[] = [];
+  let at = 0;
+  runs.forEach((r, i) => {
+    if (r.from > at) out.push(piece(text.slice(at, r.from), at === 0, false));
+    const { from, to, ...look } = r;
+    const attrs = Object.entries(look)
+      .filter(([, v]) => v !== undefined)
+      .map(([k, v]) => printProp(k, v as Json));
+    const words = piece(text.slice(from, to), false, false);
+    out.push(`<Mark${attrs.length ? ` ${attrs.join(" ")}` : ""}>${words}</Mark>`);
+    at = to;
+    if (i === runs.length - 1 && at < text.length) out.push(piece(text.slice(at), false, true));
+  });
+  return out.join("");
+}
+
 /** Text as JSX children: as it is, or as a string expression (`{"50%}"}`) when JSX would not read it back as typed. */
-export function escapeText(text: string): string {
+function escapeText(text: string): string {
   // Braces for what JSX text would read otherwise: an expression or a tag, an entity (`&amp;` reads as `&`), a line
   // break (joined into a space) and whitespace at either end (trimmed). The rule isPlainAttribute keeps for attributes.
   return /[{}<>&\r\n]|^\s|\s$/.test(text) ? `{${JSON.stringify(text)}}` : text;
