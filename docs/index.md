@@ -56,7 +56,26 @@ import { withBase } from "vitepress";
 
 <section class="p-section">
 
-<p class="p-label"><span>02</span> Demo</p>
+<p class="p-label"><span>02</span> Made with it</p>
+
+## Made with UberScene.
+
+<p class="p-sub">Every one of these is a single file, written and checked by an agent and rendered by UberScene. Hover to play; open one to read its file. <a :href="withBase('/examples/')">All examples →</a></p>
+
+<ul class="p-films">
+<li><a :href="withBase('/examples/game-lighting')"><video :src="withBase('/shorts/game-lighting.webm')" :poster="withBase('/shorts/game-lighting.jpg')" muted loop playsinline preload="none" @mouseenter="(e) => e.target.play()" @mouseleave="(e) => e.target.pause()" aria-label="How game lighting fakes it"></video><span class="p-film-kind">A 3D explainer</span><span class="p-film-title">How game lighting fakes it</span></a></li>
+<li><a :href="withBase('/examples/one-pixel')"><video :src="withBase('/shorts/one-pixel.webm')" :poster="withBase('/shorts/one-pixel.jpg')" muted loop playsinline preload="none" @mouseenter="(e) => e.target.play()" @mouseleave="(e) => e.target.pause()" aria-label="One pixel"></video><span class="p-film-kind">A narrated explainer</span><span class="p-film-title">One pixel</span></a></li>
+<li><a :href="withBase('/examples/lunar-eclipse')"><video :src="withBase('/shorts/lunar-eclipse.webm')" :poster="withBase('/shorts/lunar-eclipse.jpg')" muted loop playsinline preload="none" @mouseenter="(e) => e.target.play()" @mouseleave="(e) => e.target.pause()" aria-label="The lunar eclipse"></video><span class="p-film-kind">A talking head with a diagram</span><span class="p-film-title">The lunar eclipse</span></a></li>
+<li><a :href="withBase('/examples/hundred-videos')"><video :src="withBase('/shorts/hundred-videos.webm')" :poster="withBase('/shorts/hundred-videos.jpg')" muted loop playsinline preload="none" @mouseenter="(e) => e.target.play()" @mouseleave="(e) => e.target.pause()" aria-label="An interview that changes layout"></video><span class="p-film-kind">An interview short</span><span class="p-film-title">An interview that changes layout</span></a></li>
+<li><a :href="withBase('/examples/kinetic')"><video :src="withBase('/showcase/kinetic.webm')" :poster="withBase('/showcase/kinetic.jpg')" muted loop playsinline preload="none" @mouseenter="(e) => e.target.play()" @mouseleave="(e) => e.target.pause()" aria-label="Kinetic type"></video><span class="p-film-kind">Kinetic type</span><span class="p-film-title">Kinetic type</span></a></li>
+<li><a :href="withBase('/examples/snake-heart')"><video :src="withBase('/shorts/snake-heart.webm')" :poster="withBase('/shorts/snake-heart.jpg')" muted loop playsinline preload="none" @mouseenter="(e) => e.target.play()" @mouseleave="(e) => e.target.pause()" aria-label="Snake that ends in a heart"></video><span class="p-film-kind">A generative short</span><span class="p-film-title">Snake that ends in a heart</span></a></li>
+</ul>
+
+</section>
+
+<section class="p-section">
+
+<p class="p-label"><span>03</span> Demo</p>
 
 ## One prompt, one line.
 
@@ -70,7 +89,7 @@ import { withBase } from "vitepress";
 
 <section class="p-section" id="get">
 
-<p class="p-label"><span>03</span> Get it</p>
+<p class="p-label"><span>04</span> Get it</p>
 
 ## Give it to your agent.
 
@@ -82,7 +101,7 @@ import { withBase } from "vitepress";
 
 <section class="p-section">
 
-<p class="p-label"><span>04</span> Roadmap</p>
+<p class="p-label"><span>05</span> Roadmap</p>
 
 ## What comes next.
 
