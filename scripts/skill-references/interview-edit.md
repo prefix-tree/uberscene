@@ -50,14 +50,13 @@ interviews in general, see [kinds.md](kinds.md).
 
 ## The cut-out
 
-UberScene draws a cut-out from a matte, but does not make the matte yet (decision 0039, step 2):
-
-1. **Make the matte outside**, with a matting model: a greyscale video with the same frames and length as the take,
-   white where the speaker is. Add it (`npx uberscene add talk.matte.webm`) and set `"matte": "talk.matte"` on the
-   take's manifest entry.
-2. **Use a matting model, not a segmenter.** Measured on the same frames: a small selfie segmenter gave a blocky edge
-   and let patches of the background through; RobustVideoMatting kept hair strands and was clean, at about 0.2 s a
-   frame on a CPU. It is GPL-3.0: say so to the person before using it. U²-Net (Apache-2.0) is clean but soft on hair.
+1. **Make the matte**: `npx uberscene matte talk.mp4` (it needs `onnxruntime-web` in the project). It writes
+   `talk.matte.webm` and the manifest entries. The default model, RobustVideoMatting, is GPL-3.0: the first run shows
+   the licence and stops; tell the person, and rerun with `--accept-licence` once they agree. It takes about 0.6 s a
+   frame on a CPU: a 40 s take is about 10 minutes, so run it once and keep the matte.
+2. **Read what it prints**: soft edge above about 5% is blurry, a spike in change between frames is a flicker at that
+   time, a subject under 1% means no one was found. A segmenter (`u2net-human`, Apache-2.0) is the choice for a team
+   that cannot use GPL tools; its hair is a smooth blob.
 3. **Cut it in the file**: `cutout` on the speaker's clip, on a track after the card's. `cutout={{ shrink: 1 }}` loses
    a rim of the old background; `feather` softens a hard edge.
 4. **Look at it on white and on the card's colour**, at the hair and at moving hands. What each fault means:

@@ -31,15 +31,18 @@ It compares colour, not brightness, so the shadowed and lit parts of the screen 
 ## Cut out a person
 
 Footage with no green screen needs a matte: a greyscale video of the same frames, white where the person is and black
-where the background is, made by a matting model. Add it like any footage, name it on the footage's manifest entry,
-and set `cutout` on the clip:
+where the background is. `uberscene matte` makes one with a matting model, writes it beside the footage, and names it
+on the footage's manifest entry; then set `cutout` on the clip:
 
 ```bash
-npx uberscene add talk.matte.webm
+npm i -D onnxruntime-web
+npx uberscene matte talk.mp4 --accept-licence
 ```
 
-```json
-"talk": { "id": "talk", "kind": "video", "matte": "talk.matte", ... }
+```text
+talk.matte.webm: 878 frames, 1920x1080, matte of talk as talk.matte in uberscene.json
+  rvm-resnet50 (GPL-3.0), wasm (4 threads): 0.58 s a frame, 512 s in all
+  soft edge 0.9% (most 1.4%), change between frames 0.1% (most 0.9% at 12.41 s), subject 27.8% of the picture
 ```
 
 ```tsx
@@ -64,9 +67,29 @@ npx uberscene add talk.matte.webm
 - A clip with `cutout` and no matte is an error that says what to add; `uberscene lint` reports it as
   `cutout-without-matte`.
 
+### Making the matte
+
+`uberscene matte` runs the model on every frame in Chrome, with ONNX Runtime for the web, and writes
+`<name>.matte.webm`: one grey frame for each frame of the footage, at its size and rate. It adds the matte to the
+manifest as `<id>.matte`, and sets `matte`, `matteModel` (which model made it) and `subjects` (where the person is,
+every half second, which `--check-layout` uses) on the footage. A matte already there is kept unless `--force`.
+
+| Model | Licence | On 4 CPU cores, 1080p | Edges |
+|---|---|---|---|
+| `rvm-resnet50` (default) | GPL-3.0 | about 0.6 s a frame | the best: hair kept, clean around hands |
+| `rvm-mobilenet` | GPL-3.0 | about 0.25 s a frame | close to it, a little rougher |
+| `u2net-human` | Apache-2.0 | about 1.5 s a frame | clean, but hair as a smooth blob |
+
+UberScene lists these models, it does not ship them. The first use of one shows its licence and downloads it from its
+own source into `~/.cache/uberscene/models` (or `UBERSCENE_MODEL_CACHE`), checked against its SHA-256. Running a model
+and using its mattes carries no conditions; passing the model file on does, under its licence. On a terminal it asks
+once; `--accept-licence` (or `UBERSCENE_ACCEPT_LICENCE=<name>`) accepts it for scripts and agents. `uberscene matte
+models` lists them, `--model <name>` picks one, and `UBERSCENE_MODEL_REGISTRY` adds your own, as a JSON file of the
+same shape as the package's `models.json`.
+
+What it prints says what it cannot show you: a **soft edge** above about 5% is a blurry matte; a large **change between
+frames** at one moment is a flicker to look at there; a **subject** under 1% of the picture means it found no one.
 What makes a good matte, and the faults to look for on white and on a colour, is in the skill's interview reference.
-UberScene does not make mattes yet: use a matting model (RobustVideoMatting kept hair; it is GPL-3.0), and write the
-matte with the footage's exact frames and length.
 
 ## Hiding a face, a plate or a screen
 

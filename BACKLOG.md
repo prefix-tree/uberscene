@@ -36,21 +36,18 @@ days, L a week or more.
     `box`.
   - Done when: each is reported at its line with a fix, like the other layout rules, with tests.
 
-- [ ] **5. Which matting model** (S)
-  - Test MODNet, and BiRefNet on a GPU, on the frames decision 0039 used. Get a legal read on offering a GPL-3.0
-    model (RobustVideoMatting) by name in a registry that does not ship it.
-  - Done when: decision 0039's table has the new rows, and the default model is named in a record.
+- [x] **5. Which matting model** (S) (#PR)
+  - The default is named in decision 0039: RobustVideoMatting ResNet-50 (GPL-3.0), fetched from its own release on
+    first use after its licence is shown, never shipped; U²-Net (Apache-2.0) by name for teams that cannot use GPL.
+  - Left for later (below): MODNet, and BiRefNet on a GPU.
 
-- [ ] **6. Cut-out, step 2: `uberscene matte`** (L; needs 2, and 5 for its default)
-  - `despill` on `cutout`: takes the old background's colour out of the edge, for models that give no colour estimate.
-  - The command decodes the footage, runs a matting model frame by frame through ONNX Runtime (an optional
-    dependency fetched on first use), and writes the matte and the manifest entry.
-  - A registry of models: name, source, SHA-256, licence, whether it keeps state between frames. The first use of a
-    model shows its licence and fetches it from its source. UberScene ships the runner, not the models.
-  - It writes `subjects` from the matte, so the layout check knows where the person is; `look --matte <clip>` shows
-    the matte beside the picture; the command prints the seconds per frame and what it can measure of the matte.
-  - Done when: `uberscene matte talk.mp4` then `cutout` on a clip gives a cut-out with no other tool, with a test on a
-    short clip, and the CLI reference and the skill cover it.
+- [x] **6. Cut-out, step 2: `uberscene matte`** (L) (#PR)
+  - The command runs a matting model frame by frame in the export's Chrome (ONNX Runtime for the web), writes the
+    matte, its manifest entry, `matte`, `matteModel` and `subjects`, and prints seconds a frame, soft edge, change
+    between frames and coverage.
+  - A registry of models (`models.json`): source, SHA-256, licence, how to feed it, state between frames. UberScene
+    ships the runner, not the models.
+  - `despill` and `look --matte` moved to "Later".
 
 ## Then, in any order
 
@@ -85,8 +82,9 @@ days, L a week or more.
 
 Not scheduled; each needs the cut-out to exist first.
 
-- Cut-out quality: `despill` for models that do not return the person's colour, smoothing over time for models that
-  work one frame at a time, a GPU provider, more models in the registry.
+- Cut-out quality: `despill` for models that do not return the person's colour, `look --matte <clip>` to see the
+  matte beside the picture, smoothing over time for models that work one frame at a time, a GPU provider (WebGPU),
+  more models in the registry (MODNet; BiRefNet on a GPU).
 - `cutout` for things other than people (a product, a car).
 - A matte in ten bits, if fine hair over a bright card needs it.
 

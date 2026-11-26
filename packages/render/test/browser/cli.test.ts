@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -178,5 +179,47 @@ export default function Video() {
     expect(both.status).toBe(0);
     expect(readFileSync(vtt, "utf8")).toBe("WEBVTT\n\n00:00:00.000 --> 00:00:00.500\nHello there\n");
     expect(probe(join(dir, "c.webm")).frames).toBe(30);
+  });
+
+  it("makes a matte with a model of the user's own, and stops for a licence not yet accepted", () => {
+    const stub = join(root, "test", "fixtures", "matte", "stub.onnx");
+    const bytes = readFileSync(stub);
+    const registry = join(dir, "models.json");
+    writeFileSync(
+      registry,
+      JSON.stringify({
+        stub: {
+          title: "a stand-in",
+          source: `file://${stub}`,
+          sha256: createHash("sha256").update(bytes).digest("hex"),
+          bytes: bytes.length,
+          licence: "MIT",
+          licenceUrl: "https://example.com",
+          input: "src",
+          output: "pha",
+        },
+      }),
+    );
+    copyFileSync(join(mediaDir, "solid.webm"), join(dir, "talk.webm"));
+    writeFileSync(join(dir, "uberscene.json"), JSON.stringify({ assets: {} }));
+    const env = { ...process.env, UBERSCENE_MODEL_REGISTRY: registry, UBERSCENE_MODEL_CACHE: join(dir, "models") };
+    const matte = (...args: string[]) =>
+      spawnSync(join(root, "node_modules", ".bin", "tsx"), [cli, "matte", ...args], {
+        cwd: dir,
+        encoding: "utf8",
+        env,
+      });
+    const listed = matte("models", "--json");
+    expect(listed.status).toBe(0);
+    expect(JSON.parse(listed.stdout)).toEqual(
+      expect.arrayContaining([expect.objectContaining({ name: "stub", licence: "MIT" })]),
+    );
+    const asked = matte("talk.webm", "--model", "stub");
+    expect(asked.status).toBe(2);
+    expect(asked.stderr).toMatch(/licensed MIT[\s\S]*--accept-licence/);
+    const made = matte("talk.webm", "--model", "stub", "--accept-licence", "--quiet");
+    expect(made.status).toBe(0);
+    expect(made.stdout).toMatch(/talk\.matte\.webm: 60 frames, 640x360, matte of talk as talk\.matte/);
+    expect(probe(join(dir, "talk.matte.webm")).frames).toBe(60);
   });
 });

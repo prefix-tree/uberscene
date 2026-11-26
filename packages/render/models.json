@@ -1,0 +1,40 @@
+{
+  "rvm-resnet50": {
+    "title": "RobustVideoMatting, ResNet-50",
+    "source": "https://github.com/PeterL1n/RobustVideoMatting/releases/download/v1.0.0/rvm_resnet50_fp32.onnx",
+    "sha256": "25db300fcb6ee27f941a1b52c97856e8d1f13c7f35817f81a612f89af0e8a85c",
+    "bytes": 107479165,
+    "licence": "GPL-3.0",
+    "licenceUrl": "https://github.com/PeterL1n/RobustVideoMatting/blob/master/LICENSE",
+    "default": true,
+    "input": "src",
+    "output": "pha",
+    "downsampleRatio": "downsample_ratio",
+    "recurrent": { "inputs": ["r1i", "r2i", "r3i", "r4i"], "outputs": ["r1o", "r2o", "r3o", "r4o"], "warmup": 6 }
+  },
+  "rvm-mobilenet": {
+    "title": "RobustVideoMatting, MobileNetV3",
+    "source": "https://github.com/PeterL1n/RobustVideoMatting/releases/download/v1.0.0/rvm_mobilenetv3_fp32.onnx",
+    "sha256": "88d4531297118f595bf2fd60f6f566aec2e559393802d1f436c380f0cbbd2828",
+    "bytes": 14975696,
+    "licence": "GPL-3.0",
+    "licenceUrl": "https://github.com/PeterL1n/RobustVideoMatting/blob/master/LICENSE",
+    "input": "src",
+    "output": "pha",
+    "downsampleRatio": "downsample_ratio",
+    "recurrent": { "inputs": ["r1i", "r2i", "r3i", "r4i"], "outputs": ["r1o", "r2o", "r3o", "r4o"], "warmup": 6 }
+  },
+  "u2net-human": {
+    "title": "U²-Net, human segmentation (from rembg)",
+    "source": "https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2net_human_seg.onnx",
+    "sha256": "01eb6a29a5c4d8edb30b56adad9bb3a2a0535338e480724a213e0acfd2d1c73c",
+    "bytes": 175997641,
+    "licence": "Apache-2.0",
+    "licenceUrl": "https://github.com/xuebinqin/U-2-Net/blob/master/LICENSE",
+    "input": "input.1",
+    "output": "1959",
+    "size": [320, 320],
+    "normalize": { "scaleToMax": true, "mean": [0.485, 0.456, 0.406], "std": [0.229, 0.224, 0.225] },
+    "stretch": true
+  }
+}
