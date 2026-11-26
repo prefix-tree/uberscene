@@ -1,7 +1,7 @@
 ---
 layout: page
 title: UberScene
-titleTemplate: Multimedia pipeline as code
+titleTemplate: The whole studio, as code
 footer: false
 sidebar: false
 aside: false
@@ -19,11 +19,9 @@ import { withBase } from "vitepress";
 
 <p class="home-tags"><span>Open source · MIT</span><span>Early: the API changes until 1.0</span></p>
 
-<p class="home-mission"><span>Our mission</span>Every tool of a studio as code: the editor, the animation studio, the compositor, 3D and sound, in files you and your agent write.</p>
+<h1 class="home-title">The whole studio, as code.</h1>
 
-<h1 class="home-title">Multimedia pipeline as code.</h1>
-
-<p class="home-lead">Write it as <strong>a React file</strong>. Play it in the browser, fine-tune it on a timeline and <strong>export it to MP4</strong>. <strong>Your coding agent</strong> can do all of it.</p>
+<p class="home-lead">An <strong>editor</strong>, an <strong>animation studio</strong> and a <strong>compositor</strong>, with 3D and sound, in one React file. Play it in the browser, fine-tune it on a timeline and export it to MP4. <strong>Your coding agent</strong> can do all of it.</p>
 
 <div class="home-actions">
 <a class="home-button primary" :href="withBase('/guide/getting-started')">Get started</a>
@@ -56,23 +54,11 @@ import { withBase } from "vitepress";
 
 </section>
 
-<section class="home-install" id="install">
-
-## Install
-
-<p class="home-chapter-lead">UberScene is built for a coding agent to drive: give it the two skills, one to set UberScene up and one that knows the whole language, then ask for a video in plain words. It adds your footage, writes <code>video.tsx</code>, checks it with sheets of frames and renders <code>video.mp4</code>. Or pick By hand and run the commands yourself. Either way you need Node 22.19 or later, and no ffmpeg.</p>
-
-<AgentPicker full />
-
-<p class="home-install-more"><a :href="withBase('/guide/agents')">With your agent →</a> <a :href="withBase('/guide/getting-started')">Quick start →</a></p>
-
-</section>
-
 <section class="home-why">
 
-## Three tools, as code
+## Why code
 
-<p class="home-why-lead">What you would open an editor, an animation studio and a compositor for, written as one file. An agent writes code better than it drives a timeline, so it can do all three.</p>
+<p class="home-why-lead">An agent writes code better than it drives a timeline. So each tool is a few lines of one file, and the model can change all of them.</p>
 
 <ul class="home-why-list">
 <li><span><strong>An editor, as code</strong> Clips on tracks, cuts on words, trims, roll, slip and slide, transitions and multicam. The player is your monitor, and a drag on the timeline writes one value back into the file.</span></li>
@@ -84,107 +70,11 @@ import { withBase } from "vitepress";
 
 <section class="home-features">
 
-## The whole pipeline
+## Features
 
-<p class="home-chapter-lead">Not only video as code: the edit, motion, compositing, 3D and sound. What works today, from the first cut to the export, in the order you use it. Under it, the roadmap: what is being built now and what is planned next. <a href="https://github.com/prefix-tree/uberscene/blob/main/BACKLOG.md">The backlog →</a></p>
+<p class="home-chapter-lead">What works today, in the order you use it, and what comes next. <a :href="withBase('/examples/')">All examples →</a> <a href="https://github.com/prefix-tree/uberscene/blob/main/BACKLOG.md">The backlog →</a></p>
 
 <FeatureGroups />
-
-</section>
-
-<section class="home-elements">
-
-## Every element
-
-<p class="home-chapter-lead">Each one a few lines of TSX, rendered by the same player you embed. <a :href="withBase('/examples/')">All examples →</a></p>
-
-<div class="home-element-grid">
-
-<article class="home-element">
-
-### Cuts and transitions
-
-<p class="home-element-lead">Clips play one after another on a track. A transition between two of them overlaps them: wipe, iris, film burn, blinds and more. <a :href="withBase('/guide/transitions')">Transitions →</a></p>
-
-<Example src="previews/elements/transition" alt="A wipe from one coffee shot to another">
-
-<<< @/../examples/showcase/docs/transition.tsx
-
-</Example>
-
-</article>
-
-<article class="home-element">
-
-### Titles
-
-<p class="home-element-lead">Text over the picture, timed to a clip, animated by letter or by word. <a :href="withBase('/guide/titles-and-graphics')">Titles and graphics →</a></p>
-
-<Example src="previews/elements/title" alt="A title appearing word by word over a coffee shot">
-
-<<< @/../examples/showcase/docs/title.tsx
-
-</Example>
-
-</article>
-
-<article class="home-element">
-
-### Captions
-
-<p class="home-element-lead">Captions from the clip's transcript, or from SRT, VTT and Whisper. Karaoke, word by word or typewriter. <a :href="withBase('/guide/captions-and-sound')">Captions and sound →</a></p>
-
-<Example src="previews/elements/captions" alt="Karaoke captions over a speaker">
-
-<<< @/../examples/showcase/docs/captions.tsx
-
-</Example>
-
-</article>
-
-<article class="home-element">
-
-### Colour and effects
-
-<p class="home-element-lead">Exposure, white balance, curves, LUTs, keying, glow and more, written in the order a colourist works. Shaders in the preview and the export. <a :href="withBase('/reference/effects/')">All 45 effects and transitions →</a></p>
-
-<Example src="previews/guide/colour-grade" alt="A coffee shot, then the same shot graded">
-
-<<< @/../examples/showcase/guide/colour-grade.tsx
-
-</Example>
-
-</article>
-
-<article class="home-element">
-
-### Motion graphics
-
-<p class="home-element-lead">Ready-made lower thirds, callouts, counters and cards, timed like any title. <a :href="withBase('/reference/components/')">Components →</a></p>
-
-<Example src="previews/components/lower-third" alt="A lower third sliding up over a coffee shot">
-
-<<< @/../examples/showcase/components/lower-third.tsx
-
-</Example>
-
-</article>
-
-<article class="home-element">
-
-### Three.js and any React
-
-<p class="home-element-lead">Any component on the video's clock: three.js, Motion, SVG or canvas, frame-exact when you scrub or export. Next: a 3D scene with a camera path that also renders guidance for video models. <a :href="withBase('/guide/free-code')">Free code →</a></p>
-
-<Example src="previews/elements/three" alt="A spinning cube over a coffee shot">
-
-<<< @/../examples/showcase/docs/three.tsx
-
-</Example>
-
-</article>
-
-</div>
 
 </section>
 
