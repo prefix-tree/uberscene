@@ -2,8 +2,8 @@
 
 > Status: proposed, built in steps. The camera of seam 3 is built (`<Camera>`, its keys, its `push`, the tools and the
 > editing actions; see [the guide](../guide/camera.md)), and so are the generators of seam 4 (`wiggle`, `drift`, `loop`; see
-> [the guide](../guide/animation.md#generators)). Parenting, the first link of `follow`, is built as `parent="id"` on
-> overlays (see [the guide](../guide/animation.md#parent)); `follow` to a space ref and seams 1 and 2 are not. Builds on [0039](./0039-a-person-cut-out-of-the-background.md) (the matte beside the footage),
+> [the guide](../guide/animation.md#generators)). `follow` with an element's id (parenting) is built on
+> overlays (see [the guide](../guide/animation.md#follow)); `follow` to a face or a corner pin and seams 1 and 2 are not. Builds on [0039](./0039-a-person-cut-out-of-the-background.md) (the matte beside the footage),
 > which becomes the first case of seam 1 and seam 2 here, and on [0035](./0035-everything-is-a-prop.md) (a value is a
 > constant or a key list), which seam 4 extends with a third kind of value. 3D stays with
 > [0040](./0040-a-3d-scene-is-a-clip-source.md).
@@ -140,9 +140,10 @@ A rig moves things it does not own. Two forms, both literal props the editor can
   its own. An explicit action, `camera/bakePush`, turns it into keys for someone who wants to tune them by hand, and
   removes the prop. With a push, `x`, `y` and `zoom` are numbers (where the view starts), not keys.
 - **`follow`** pins an element's `box` to a space ref (seam 1): a tracked face, a planar corner pin, or another
-  element's box (parenting). The offset is in pixels and may be keyed. Parenting is built first, spelled
-  `parent="id"`: the child's `box` is read in the parent's box, and the parent's transform and entrance carry it
-  up the chain (not its opacity). The chain pass is where `follow` to a face or a corner pin plugs in.
+  element's box (parenting). The offset is in pixels and may be keyed. Following an element is built first,
+  spelled `follow="id"`: the follower's `box` is read in that element's box, and its transform, entrance and exit
+  carry it up the chain (not its opacity). A face or a corner pin later extends the same prop, and plugs into the
+  same chain pass.
 - Its values are a camera's, not an element's: `x` and `y` say where the view's centre has moved, so `x: 180` puts
   everything 180 px to the left; `zoom` closes in about the frame's centre; `rotation` turns the view clockwise, so
   what it shows turns the other way. A key's `at` is seconds on the video's clock, since a camera has no start.
