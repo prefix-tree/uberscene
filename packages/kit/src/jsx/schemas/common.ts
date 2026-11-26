@@ -92,11 +92,35 @@ const keysSchema = <S extends z.ZodType>(value: S) => z.array(keySchema(value)).
 export const keyed = <S extends z.ZodType>(value: S) =>
   z.union([value, keysSchema(value)]).transform((v) => v as z.output<S>);
 
+/** One key of a value, as a generator's `base` or a loop's `keys` hold it. */
+export interface KeyOf<V> {
+  at: number;
+  value: V;
+  easing?: z.infer<typeof zEasing> | undefined;
+}
+
+/**
+ * A generator written in place of a value of type `V`: a `wiggle` or a `drift` added to a `base` (a value or keys),
+ * or a `loop` of keys.
+ */
+export type GeneratorOf<V> =
+  | {
+      type: "wiggle";
+      base?: V | KeyOf<V>[] | undefined;
+      amount: number;
+      frequency?: number | undefined;
+      seed?: number | undefined;
+    }
+  | { type: "drift"; base?: V | KeyOf<V>[] | undefined; speed: number }
+  | { type: "loop"; keys: KeyOf<V>[]; mode?: "repeat" | "pingpong" | undefined };
+
 /**
  * Motion that is computed, in place of a value: a wobble or a steady drift added to the value (`base`: a number or
  * keys; left out, what the value is anyway), or a key list played again and again.
  */
-const generatorSchema = <S extends z.ZodType>(value: S) =>
+const generatorSchema = <S extends z.ZodType>(value: S): z.ZodType<GeneratorOf<z.output<S>>, GeneratorOf<z.input<S>>> =>
+  // Named, so a declaration file writes `GeneratorOf<number>` on each animatable prop and not the union in full:
+  // spelled out on every one, the element table's type is longer than the compiler will write.
   z.discriminatedUnion("type", [
     z.strictObject({
       type: z.literal("wiggle"),
@@ -123,7 +147,7 @@ const generatorSchema = <S extends z.ZodType>(value: S) =>
       /** `repeat` starts over at the end; `pingpong` plays back and forth. */
       mode: z.enum(["repeat", "pingpong"]).default("repeat"),
     }),
-  ]);
+  ]) as unknown as z.ZodType<GeneratorOf<z.output<S>>, GeneratorOf<z.input<S>>>;
 
 /**
  * A value written as a constant, as a list of keys when it changes over time, or as a generator when it is computed

@@ -41,7 +41,15 @@ export * from "./jsx/generators";
 export { knobsOf } from "./jsx/knobs";
 export * from "./jsx/read-time";
 export * from "./jsx/rendering";
-export { BOX_ORIGIN_POINT, BOX_ORIGINS, type BoxOrigin, type ElementBox, type Transform } from "./jsx/schemas/common";
+export {
+  BOX_ORIGIN_POINT,
+  BOX_ORIGINS,
+  type BoxOrigin,
+  type ElementBox,
+  type GeneratorOf,
+  type KeyOf,
+  type Transform,
+} from "./jsx/schemas/common";
 export { defaultTransitionParams, isBuiltInTransition, TRANSITION_PARAMS } from "./jsx/schemas/transition";
 export * from "./jsx/shaders";
 export { installLayerClock } from "./jsx/use-t";
