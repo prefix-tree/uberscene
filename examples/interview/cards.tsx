@@ -3,8 +3,8 @@ import { Audio, Camera, Clip, Composition, googleFont, Shape, Title, Track } fro
 /**
  * One beat of the interview in the style of a short-form "edited" reel: the speaker cut out onto a blue ground with a
  * sticker edge, a word standing behind him, and a card for each of his three "wouldn't it be amazing" lines. Each
- * card is written where it belongs beside him, the later ones outside the frame, and the camera makes room as it
- * lands (`push`), so the speaker and the cards already there slide aside together. Nothing rests: the cards bob on a
+ * card is written where it belongs beside him, half outside the frame, and leaves as the next one lands; the camera
+ * makes room for each (`push`), so the speaker and the word behind him slide aside to one side, then the other. Nothing rests: the cards bob on a
  * `wiggle`, the view closes in on a `drift` and sways a little. No pan, zoom or idle move here is keyed by hand.
  *
  * What is under the camera moves with it; the caps in the corner are on a track outside it and stay put. Everything
@@ -38,6 +38,23 @@ const PRINT = [
   { type: "contrast", amount: 0.35 },
   { type: "halftone", size: 7 },
 ] as const;
+
+/** The spacecraft is dim in its shot: lifted two stops before it is printed. */
+const CRAFT = [{ type: "exposure", stops: 2 }, ...PRINT] as const;
+
+/**
+ * How long the first two cards stay: each leaves as the next one lands, so the camera swings from one side to the
+ * other and never has to pull back so far that the speaker comes off the bottom of the frame. In seconds, worked
+ * out from the words: a duration cannot end on a word yet (BACKLOG.md item 8).
+ */
+const MESSAGE = 4.26;
+const PLANETS = 5.72;
+const OUT = { type: "fade", duration: 0.2 } as const;
+/** A picture is footage, which has no exit: it fades over its last fifth of a second by keys. */
+const leave = (length: number) => [
+  { at: length - 0.2, value: 1 },
+  { at: length, value: 0 },
+];
 
 /** A card is never quite still: its frame, picture and label bob together, on one seed. */
 const bob = (y: number, seed: number) => ({ type: "wiggle", base: y, amount: 10, frequency: 0.4, seed }) as const;
@@ -112,26 +129,28 @@ export default function Video() {
             type="rectangle"
             anchor="voice"
             at="word:51"
-            duration="fill"
+            duration={MESSAGE}
             width={380}
             height={470}
             cornerRadius={20}
             fill={WHITE}
-            box={{ x: 150, y: bob(520, 1), origin: "center" }}
+            box={{ x: 130, y: bob(660, 1), origin: "center" }}
             enter={POP}
+            exit={OUT}
           />
           <Shape
             id="frame-planets"
             type="rectangle"
             anchor="voice"
             at="word:66"
-            duration="fill"
+            duration={PLANETS}
             width={380}
             height={470}
             cornerRadius={20}
             fill={WHITE}
-            box={{ x: 1830, y: bob(520, 2), origin: "center" }}
+            box={{ x: 1790, y: bob(660, 2), origin: "center" }}
             enter={POP}
+            exit={OUT}
           />
           <Shape
             id="frame-farther"
@@ -143,7 +162,7 @@ export default function Video() {
             height={470}
             cornerRadius={20}
             fill={WHITE}
-            box={{ x: -330, y: bob(520, 3), origin: "center" }}
+            box={{ x: 130, y: bob(660, 3), origin: "center" }}
             enter={POP}
           />
         </Track>
@@ -154,11 +173,11 @@ export default function Video() {
             speed={0.28}
             anchor="voice"
             at="word:51"
-            duration="fill"
+            duration={MESSAGE}
             fit="cover"
-            box={{ x: 150, y: bob(488, 1), width: 332, height: 332, origin: "center" }}
-            transform={{ borderRadius: 12 }}
-            effects={PRINT}
+            box={{ x: 130, y: bob(628, 1), width: 332, height: 332, origin: "center" }}
+            transform={{ borderRadius: 12, opacity: leave(MESSAGE) }}
+            effects={CRAFT}
           />
           <Clip
             id="picture-planets"
@@ -166,10 +185,10 @@ export default function Video() {
             speed={0.45}
             anchor="voice"
             at="word:66"
-            duration="fill"
+            duration={PLANETS}
             fit="cover"
-            box={{ x: 1830, y: bob(488, 2), width: 332, height: 332, origin: "center" }}
-            transform={{ borderRadius: 12 }}
+            box={{ x: 1790, y: bob(628, 2), width: 332, height: 332, origin: "center" }}
+            transform={{ borderRadius: 12, opacity: leave(PLANETS) }}
             effects={PRINT}
           />
           <Clip
@@ -181,9 +200,9 @@ export default function Video() {
             at="word:83"
             duration="fill"
             fit="cover"
-            box={{ x: -330, y: bob(488, 3), width: 332, height: 332, origin: "center" }}
+            box={{ x: 130, y: bob(628, 3), width: 332, height: 332, origin: "center" }}
             transform={{ borderRadius: 12 }}
-            effects={PRINT}
+            effects={CRAFT}
           />
         </Track>
         <Track id="labels" layout="free">
@@ -191,10 +210,11 @@ export default function Video() {
             id="label-message"
             anchor="voice"
             at="word:51"
-            duration="fill"
-            box={{ x: 150, y: bob(706, 1), origin: "center" }}
+            duration={MESSAGE}
+            box={{ x: 130, y: bob(846, 1), origin: "center" }}
             style={LABEL}
             enter={POP}
+            exit={OUT}
           >
             A MESSAGE
           </Title>
@@ -202,10 +222,11 @@ export default function Video() {
             id="label-planets"
             anchor="voice"
             at="word:66"
-            duration="fill"
-            box={{ x: 1830, y: bob(706, 2), origin: "center" }}
+            duration={PLANETS}
+            box={{ x: 1790, y: bob(846, 2), origin: "center" }}
             style={LABEL}
             enter={POP}
+            exit={OUT}
           >
             THE PLANETS
           </Title>
@@ -214,7 +235,7 @@ export default function Video() {
             anchor="voice"
             at="word:83"
             duration="fill"
-            box={{ x: -330, y: bob(706, 3), origin: "center" }}
+            box={{ x: 130, y: bob(846, 3), origin: "center" }}
             style={LABEL}
             enter={POP}
           >

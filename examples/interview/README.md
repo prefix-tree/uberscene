@@ -18,6 +18,7 @@ The media is not in the repository (about 110 MB). One script prepares it from p
 bash examples/interview/scripts/prepare.sh
 npx tsx packages/render/src/cli.ts examples/interview/video.tsx --out examples/interview/interview.mp4
 npx tsx packages/render/src/cli.ts examples/interview/reel.tsx --out examples/interview/reel.mp4
+npx tsx packages/render/src/cli.ts examples/interview/cards.tsx --out examples/interview/cards.mp4
 ```
 
 Check the reel against the platform it goes to: `--check-layout --safe-zone reels` (or `tiktok`, `shorts`).
@@ -29,6 +30,7 @@ runs. On four CPU cores it takes about ten minutes, most of it the cut-out.
 |---|---|
 | `video.tsx` | The film |
 | `reel.tsx` | The film as a vertical reel |
+| `cards.tsx` | One beat in a short-form style, on a camera: the speaker cut out on blue, a card for each line that pushes the frame aside as it lands, nothing keyed by hand to keep it moving |
 | `uberscene.json` | The manifest: each asset's length and size, and the words of the take |
 | `talk.json` | The take's words with their times, from Whisper (`small.en`, word timestamps) |
 | `scripts/prepare.sh` | Fetches and makes everything in `media/` |
