@@ -24,6 +24,7 @@ The posts land in `out/`, which is not committed.
 | `hero` | `showcase/hero.tsx`, the woodblock logo | in the repository |
 | `snake-heart` | `shorts/snake-heart.tsx`, a snake that ends in a heart | in the repository |
 | `game-lighting` | `shorts/game-lighting.tsx`, how game lighting fakes it | in the repository |
+| `orbit` | `orbit/video.tsx`, Earth at night from the space station, cut to its music | `pnpm --filter @uberscene/example-orbit prepare-media` |
 
 A film whose media is not made yet is skipped, and the script says which command makes it.
 

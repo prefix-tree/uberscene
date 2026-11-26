@@ -34,6 +34,7 @@ const FILMS: Record<string, Film> = {
   hero: { file: "showcase/hero.tsx" },
   "snake-heart": { file: "shorts/snake-heart.tsx" },
   "game-lighting": { file: "shorts/game-lighting.tsx" },
+  orbit: { file: "orbit/video.tsx", needs: "pnpm --filter @uberscene/example-orbit prepare-media" },
 };
 
 /** Elements whose line lights up while they are on screen; sound and structure do not. */
@@ -74,7 +75,8 @@ for (const [name, film] of Object.entries(FILMS)) {
   const lit = [...video.state.items.values()]
     .filter((p) => SHOWN.has(p.kind) && p.end > p.start)
     .flatMap((p) => {
-      const line = lines.findIndex((l) => l.includes(`id="${p.id}"`));
+      // Written as a prop, or as a field of a table the file maps to elements.
+      const line = lines.findIndex((l) => l.includes(`id="${p.id}"`) || l.includes(`id: "${p.id}"`));
       return line >= 0 ? [{ line, from: round(p.start), to: round(p.end) }] : [];
     });
 

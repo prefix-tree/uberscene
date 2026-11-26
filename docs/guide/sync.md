@@ -35,7 +35,7 @@ The timeline shows the role of each track, the tempo and the beats of each piece
 track music (free, music)
      0.00–16.00    audio       song  asset:groove 0.24–16.25  119.98 BPM  beat:0–31
 …
-music: song  119.98 BPM  a beat every 0.50 s  beat:0 at 0.00 s to beat:31  (beats detected)
+music: song  119.98 BPM  a beat every 0.50 s  beat:0 at 0.00 s to beat:31  (beats found in the sound)
 ```
 
 With `--json` the same is data. `music` has one row for each clip or audio whose asset has beats:
@@ -54,7 +54,7 @@ With `--json` the same is data. `music` has one row for each clip or audio whose
 | `beatSeconds` | Seconds from one beat to the next as the video plays them. |
 | `beats`, `first`, `last` | How many of its beats play, and the first and last by their number (`beat:N`). |
 | `from`, `to` | When the clip plays, in seconds of the video. |
-| `grid` | Where the beats come from. `detected`: found in the sound, or set as a grid, by `uberscene add`. |
+| `grid` | What the beats are. `grid`: every beat the same length to the millisecond, set with `uberscene add --bpm` or made on a clock, so exact. `detected`: found in the sound, which can drift from the true pulse. |
 
 `beats` has one row for each beat that plays:
 
@@ -128,7 +128,7 @@ npx uberscene video.tsx --check-sync
 ```
 
 ```
-music: song  119.98 BPM  a beat every 0.50 s  beat:0 to beat:31  0.00–16.00 s  (beats detected)
+music: song  119.98 BPM  a beat every 0.50 s  beat:0 to beat:31  0.00–16.00 s  (beats found in the sound)
      3.00  start  l6                        on    song@beat:6  (tied to the beat)
      3.10  start  badge                     near  song@beat:6  101 ms after it
      4.00  start  green                     on    song@beat:8  (tied to the beat)
@@ -194,6 +194,26 @@ The lint has one more, on the file's text: `numeric-on-beat` warns when a numeri
 beat's own time, and names the `beat:N` to write, which stays right when the song is added again.
 
 A video with no music that has beats gives an empty report and says so.
+
+## A worked example
+
+[Earth at night](https://github.com/prefix-tree/uberscene/tree/main/examples/orbit) is a 32-second vertical film of
+night timelapses from the space station, cut to 16 bars of music at 120 BPM:
+
+- every shot and title is placed with `at="beat:N"`;
+- the music is made on a clock and added with `--bpm`, so its beats are a grid;
+- each lightning strike starts on a snare, at the frame its flash begins (a script finds the flashes in the footage).
+
+```
+music: song  120 BPM  a beat every 0.50 s  beat:0 to beat:63  0.00–32.00 s  (beats on a grid)
+…
+    10.50  start  strike-1                  on    song@beat:21  (tied to the beat)
+…
+38 of 38 cuts and starts on the beat, 0 just off it, 0 elsewhere; 38 tied to a beat. 0 sync issues.
+```
+
+Its shots are a table the file maps to clips. Each row has an `id` (`strike-1`, `aurora-3`), so the report names
+them as an editor would.
 
 ## What it does not tell you
 

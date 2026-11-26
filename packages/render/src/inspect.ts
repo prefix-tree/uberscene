@@ -289,7 +289,7 @@ export function formatTimeline(file: string, rows: TimelineRows): string {
     );
   for (const m of rows.music)
     lines.push(
-      `music: ${m.clip}  ${m.tempo !== undefined ? `${round3(m.tempo)} BPM  ` : ""}a beat every ${seconds(m.beatSeconds)} s  beat:${m.first} at ${seconds(rows.beats.find((b) => b.clip === m.clip)?.time ?? m.from)} s to beat:${m.last}  (beats ${m.grid})`,
+      `music: ${m.clip}  ${m.tempo !== undefined ? `${round3(m.tempo)} BPM  ` : ""}a beat every ${seconds(m.beatSeconds)} s  beat:${m.first} at ${seconds(rows.beats.find((b) => b.clip === m.clip)?.time ?? m.from)} s to beat:${m.last}  (${m.grid === "grid" ? "beats on a grid" : "beats found in the sound"})`,
     );
   return `${lines.join("\n")}\n`;
 }

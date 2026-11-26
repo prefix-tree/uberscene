@@ -16,7 +16,7 @@ export function formatSync(file: string, report: SyncReport): string {
   const lines: string[] = [];
   for (const m of report.music)
     lines.push(
-      `music: ${m.clip}  ${m.tempo !== undefined ? `${Math.round(m.tempo * 100) / 100} BPM  ` : ""}a beat every ${m.beatSeconds.toFixed(2)} s  beat:${m.first} to beat:${m.last}  ${m.from.toFixed(2)}–${m.to.toFixed(2)} s  (beats ${m.grid})`,
+      `music: ${m.clip}  ${m.tempo !== undefined ? `${Math.round(m.tempo * 100) / 100} BPM  ` : ""}a beat every ${m.beatSeconds.toFixed(2)} s  beat:${m.first} to beat:${m.last}  ${m.from.toFixed(2)}–${m.to.toFixed(2)} s  (${m.grid === "grid" ? "beats on a grid" : "beats found in the sound"})`,
     );
   for (const p of report.points) {
     const { beat } = p;
