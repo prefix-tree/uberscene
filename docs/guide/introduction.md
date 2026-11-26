@@ -1,4 +1,4 @@
-# A whole multimedia pipeline written as code.
+# Editing, animation and compositing, as code.
 
 ::: warning Work in progress
 UberScene is early. The API is still being shaped and changes between releases, often in breaking
@@ -6,7 +6,7 @@ ways, and will keep changing until 1.0. Each release's changelog says how to mov
 moves most of it for you.
 :::
 
-<p class="doc-lead">A video is a file. One TSX file is the project, the edit and the code. The player plays it, an editor changes it, the export renders it, and you and your agent work on that same text.</p>
+<p class="doc-lead">A video is a file, so AI can drive every tool that makes it. One TSX file is the project, the edit and the code. The player plays it, an editor changes it, the export renders it, and you and your agent work on that same text.</p>
 
 ```tsx [video.tsx]
 import { Captions, Clip, Composition, LowerThird, Track } from "@uberscene/kit";
@@ -76,7 +76,7 @@ In practice:
 4. The [`<Player>`](./player) plays it in your app, and an editor around it changes the file by hand.
 5. `npx uberscene video.tsx --out video.mp4` exports it, through the same player in headless Chrome.
 
-It comes as six npm packages, free under the MIT licence:
+It comes as seven npm packages, free under the MIT licence:
 
 | Package | What it does |
 |---|---|
@@ -86,6 +86,7 @@ It comes as six npm packages, free under the MIT licence:
 | [`@uberscene/player`](https://www.npmjs.com/package/@uberscene/player) | A React `<Player>` and a framework-free `PlayerCore` for the browser. |
 | [`@uberscene/render`](https://www.npmjs.com/package/@uberscene/render) | The export from your own code: from Node, through the player in headless Chrome. |
 | [`@uberscene/graphics`](https://www.npmjs.com/package/@uberscene/graphics) | three.js and Motion on the video's clock, for `<Three>` and `<Motion>`. |
+| [`@uberscene/editor`](https://www.npmjs.com/package/@uberscene/editor) | Editor parts to build your own around the player: preview, layers, timeline, inspector and undoable edits. [Build an editor](./editor). |
 
 ## Next
 

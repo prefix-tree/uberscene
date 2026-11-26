@@ -5,7 +5,7 @@ import generated from "./sidebar.generated.json";
 export default defineConfig({
   title: "UberScene",
   description:
-    "Video editor as code: LLMs write code well and math badly, so a model writes a TSX file of words and shots, and UberScene does the arithmetic, plays it in the browser, edits it and exports it.",
+    "Editing, animation and compositing as code, so AI can drive them natively. One TSX file is the video: play it in the browser, edit it on a timeline, export it to MP4.",
   base: "/",
   cleanUrls: true,
   // The decision records are for the repository, not the site.

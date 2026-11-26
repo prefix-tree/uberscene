@@ -38,7 +38,9 @@
       "ignoreDependencies": ["@fontsource/.+"]
     },
     "packages/render": {
-      "entry": ["bench/**/*.{ts,tsx}", "scripts/*.{ts,mjs}"]
+      "entry": ["bench/**/*.{ts,tsx}", "scripts/*.{ts,mjs}"],
+      // `uberscene matte` finds ONNX Runtime for the web on disk and serves it to its page; nothing imports it.
+      "ignoreDependencies": ["onnxruntime-web"]
     },
     "packages/graphics": {
       "entry": ["test/**/*.{ts,tsx}"]
@@ -70,6 +72,10 @@
     "examples/shorts": {
       // Cut files, loaded by path with loadVideo; the blocks are copies whose meta and schema the CLI reads.
       "entry": ["*.tsx", "cards/*.tsx", "blocks/*.tsx", "test/**/*.ts"]
+    },
+    "examples/tiktok": {
+      // Cut files, loaded by path with loadVideo from render.ts.
+      "entry": ["*.tsx", "*.ts"]
     },
     "examples/founding": {
       // A cut file, loaded by path; media/bed.ts writes its music.

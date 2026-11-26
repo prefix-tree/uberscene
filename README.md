@@ -3,7 +3,7 @@
 <h1 align="center">UberScene</h1>
 
 <p align="center">
-  <b>A whole multimedia pipeline written as code.</b>
+  <b>Editing, animation and compositing as code, so AI can drive them natively.</b>
 </p>
 
 <p align="center">
