@@ -33,13 +33,24 @@ export const timeRefSchema = z.union([
     ),
 ]);
 
+/** A word, shot, silence or beat of an element's source, as `at` names it on an anchor or a duration's `until`. */
+const momentSchema = z
+  .string()
+  .regex(
+    /^(word|shot|silence|beat):\d+(\.end)?$/,
+    'at looks like "word:12", "word:12.end", "shot:3", "silence:1" or "beat:16"',
+  );
+
 const durationSchema = z.union([
   z.number().positive(),
   z.literal("fill"),
   z.literal("source"),
   z.strictObject({ match: idSchema }),
-  /** Lasts until the element named ends, wherever this one starts. */
-  z.strictObject({ until: idSchema }),
+  /**
+   * Lasts until the element named ends, wherever this one starts; with `at`, until that element plays a word, shot,
+   * silence or beat of its source (`{ until: "talk", at: "word:54.end" }`), which follows it when the cut changes.
+   */
+  z.strictObject({ until: idSchema, at: momentSchema.optional() }),
 ]);
 
 /** Props shared by everything that occupies time on a track. */
@@ -56,18 +67,13 @@ export const timedProps = {
     ])
     .optional(),
   /** With `anchor`: a word, shot, silence or beat of the anchor's source (`word:14655`, `beat:16`); the start is where the anchor plays it, plus `offset`. */
-  at: z
-    .string()
-    .regex(
-      /^(word|shot|silence|beat):\d+(\.end)?$/,
-      'at looks like "word:12", "word:12.end", "shot:3", "silence:1" or "beat:16"',
-    )
-    .optional(),
+  at: momentSchema.optional(),
   /** Seconds added to the start that `anchor` and `at` give; negative starts earlier. */
   offset: z.number().optional(),
   /**
    * How long it plays: seconds; `"source"` for the whole trimmed source; `"fill"` to run to the end of the
-   * composition; `{ match: id }` for as long as another element; `{ until: id }` to end when another element ends.
+   * composition; `{ match: id }` for as long as another element; `{ until: id }` to end when another element ends,
+   * or `{ until: id, at: "word:54.end" }` when it plays that word, shot, silence or beat of its source.
    */
   duration: durationSchema.optional(),
 };

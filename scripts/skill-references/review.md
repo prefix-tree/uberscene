@@ -73,7 +73,7 @@ Render only after the person has seen the sheet, unless they asked for the file 
 |---|---|
 | A stretch where nothing moves (`--check-motion` lists them) | Look at it on a `--motion` strip; give it a move from [motion.md](motion.md), or cut it shorter |
 | The hero is small | Frame tighter: scale or crop the clip (`transform.scale` with an `anchor` on the subject) until it fills 15 % of the width or more (`where` measures a graphic; look at a `--still` for footage) |
-| A title gone before it's read | Hold it 0.5 s plus 0.3 s per word; cut words before shortening the hold |
+| A title gone before it's read | Hold it 0.5 s plus 0.3 s per word; cut words before shortening the hold. End it on a later word (`duration={{ until: "talk", at: "word:N" }}`) rather than in seconds, so it follows the cut |
 | A sound early or late | Anchor it to its picture element, one frame after (`offset={0.033}` at 30 fps) |
 | The music ends mid-phrase | End the bed on its own end, or fade it over 1-2 s to the last frame |
 | A cut feels like a stop | Key both sides moving the same way through the cut ([motion.md](motion.md)) |

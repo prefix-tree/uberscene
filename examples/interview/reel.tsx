@@ -56,8 +56,22 @@ export default function Reel() {
       {/* The cards: a full frame of white or blue over the speaker. */}
       <Track id="cards" layout="free">
         <Clip id="card-craft" src="asset:blue" anchor="talk" at="word:33" duration={3.48} fit="cover" />
-        <Clip id="card-quote" src="asset:white" anchor="talk" at="word:42" duration={4.16} fit="cover" />
-        <Clip id="card-planets" src="asset:blue" anchor="talk" at="word:55" offset={0.36} duration={4.9} fit="cover" />
+        <Clip
+          id="card-quote"
+          src="asset:white"
+          anchor="talk"
+          at="word:42"
+          duration={{ until: "talk", at: "word:57.end" }}
+          fit="cover"
+        />
+        <Clip
+          id="card-planets"
+          src="asset:blue"
+          anchor="talk"
+          at="word:57.end"
+          duration={{ until: "talk", at: "word:75" }}
+          fit="cover"
+        />
         <Clip id="card-farther" src="asset:white" anchor="talk" at="word:82" duration={5.98} fit="cover" />
       </Track>
 
@@ -88,7 +102,7 @@ export default function Reel() {
           src="asset:cutout"
           anchor="talk"
           at="word:42"
-          duration={4.16}
+          duration={{ until: "talk", at: "word:57.end" }}
           fit="cover"
           volume={0}
           in="word:42"
@@ -100,9 +114,8 @@ export default function Reel() {
           id="saturn"
           src="asset:saturn"
           anchor="talk"
-          at="word:55"
-          offset={0.36}
-          duration={4.9}
+          at="word:57.end"
+          duration={{ until: "talk", at: "word:75" }}
           fit="cover"
           volume={0}
           in={0}
@@ -121,9 +134,8 @@ export default function Reel() {
           id="cut-planets"
           src="asset:cutout"
           anchor="talk"
-          at="word:55"
-          offset={0.36}
-          duration={4.9}
+          at="word:57.end"
+          duration={{ until: "talk", at: "word:75" }}
           fit="cover"
           volume={0}
           in="word:57.end"
@@ -436,7 +448,7 @@ export default function Reel() {
           id="quote-1"
           anchor="talk"
           at="word:42"
-          duration={4.16}
+          duration={{ until: "talk", at: "word:57.end" }}
           style={{ font: light, size: 80, weight: 400, color: INK, align: "left", letterSpacing: -4 }}
           animation={{ type: "typewriter", in: 0.3 }}
           box={{ x: 120, y: 300, width: 840, height: 100, origin: "topLeft" }}
@@ -449,7 +461,7 @@ export default function Reel() {
           id="quote-2"
           anchor="talk"
           at="word:46"
-          duration={3.4}
+          duration={{ until: "talk", at: "word:57.end" }}
           style={{ font: light, size: 80, weight: 400, color: INK, align: "left", letterSpacing: -4 }}
           animation={{ type: "typewriter", in: 0.3 }}
           box={{ x: 120, y: 400, width: 840, height: 100, origin: "topLeft" }}
@@ -462,7 +474,7 @@ export default function Reel() {
           id="quote-3"
           anchor="talk"
           at="word:50"
-          duration={2.18}
+          duration={{ until: "talk", at: "word:57.end" }}
           style={{ font: light, size: 80, weight: 400, color: BLUE, align: "left", letterSpacing: -4 }}
           animation={{ type: "typewriter", in: 0.3 }}
           box={{ x: 120, y: 500, width: 840, height: 100, origin: "topLeft" }}
@@ -475,7 +487,7 @@ export default function Reel() {
           id="quote-4"
           anchor="talk"
           at="word:52"
-          duration={1.74}
+          duration={{ until: "talk", at: "word:57.end" }}
           style={{ font: light, size: 80, weight: 400, color: INK, align: "left", letterSpacing: -4 }}
           animation={{ type: "typewriter", in: 0.3 }}
           box={{ x: 120, y: 600, width: 840, height: 100, origin: "topLeft" }}

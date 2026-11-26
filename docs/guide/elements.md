@@ -62,6 +62,7 @@ Five props place an element in time. You rarely need more than two of them.
 | `"fill"` | To the end of the video, however long it becomes. |
 | `{ match: "card" }` | As long as `card`. |
 | `{ until: "card" }` | Until `card` ends, wherever this one starts. |
+| `{ until: "talk", at: "word:54.end" }` | Until `talk` says word 54 (or plays a shot, silence or beat). |
 
 On a sequence track an element needs none of these: it starts where the one before it ends, and a clip lasts as
 long as its trim. [Timing](./time) covers each prop in depth.

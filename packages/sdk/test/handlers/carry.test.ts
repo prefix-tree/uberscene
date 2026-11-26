@@ -149,6 +149,37 @@ describe("splitting a clip", () => {
   });
 });
 
+describe("a length until a word of a clip", () => {
+  // tw lasts from a's start until a says word 6, 3.2 s in.
+  const tw = h(Title, { id: "tw", anchor: "a", duration: { until: "a", at: "word:6" } }, "until word 6");
+  const length = (exec: Executor) => exec.state().items.get("tw")!.duration;
+
+  it("follows the word to the second half of a split, or stays when the first half still says it", () => {
+    const later = executor([], [tw]);
+    expect(length(later)).toBeCloseTo(3.2, 3);
+    carried(later, { type: "clip/split", params: { id: "a", at: 2, newId: "a2" } }, () => {
+      expect(props(later, "tw")).toMatchObject({ duration: { until: "a2", at: "word:6" } });
+      expect(length(later)).toBeCloseTo(3.2, 3);
+    });
+    const earlier = executor([], [tw]);
+    carried(earlier, { type: "clip/split", params: { id: "a", at: 3.5, newId: "a2" } }, () => {
+      expect(props(earlier, "tw")).toMatchObject({ duration: { until: "a", at: "word:6" } });
+    });
+  });
+
+  it("keeps its seconds when the word is trimmed away, and the word when it is still said", () => {
+    const cut = executor([], [tw]);
+    carried(cut, { type: "clip/trim", params: { id: "a", edge: "in", value: 3.3 } }, () => {
+      expect(props(cut, "tw")).toMatchObject({ duration: 3.2 });
+    });
+    const kept = executor([], [tw]);
+    carried(kept, { type: "clip/trim", params: { id: "a", edge: "in", value: 1 } }, () => {
+      expect(props(kept, "tw")).toMatchObject({ duration: { until: "a", at: "word:6" } });
+      expect(length(kept)).toBeCloseTo(2.2, 3);
+    });
+  });
+});
+
 describe("trimming a clip", () => {
   it("keeps a title whose word is trimmed away at its time, held inside the clip", () => {
     const exec = executor();

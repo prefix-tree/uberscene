@@ -14,8 +14,9 @@ interviews in general, see [kinds.md](kinds.md).
    seconds is not a hook.
 3. **Get word times.** Subtitle files give estimated word times; for titles that land on words, transcribe with word
    timestamps and put the JSON beside the clip before `uberscene add`.
-4. **Anchor everything to words**: `anchor="talk" at="word:N"`. Nothing is timed in seconds except how long a card
-   stays.
+4. **Anchor everything to words**: start on one (`anchor="talk" at="word:N"`) and end on one
+   (`duration={{ until: "talk", at: "word:M.end" }}`), so nothing moves when the cut does. Give seconds only for a hold
+   past the last word, so it can be read.
 5. **Stills of every card before any render**, then the checks, then the render, then measure the file's sound.
 
 ## By capability

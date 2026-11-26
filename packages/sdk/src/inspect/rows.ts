@@ -29,6 +29,8 @@ export interface ElementRow {
   readonly anchor?: string;
   readonly at?: string | number;
   readonly offset?: number;
+  /** Where its length comes from, when another element gives it: `{ until, at? }` or `{ match }`, as the file writes it. */
+  readonly follows?: { readonly until: string; readonly at?: string } | { readonly match: string };
   /** A transition's type and the two clips it joins. */
   readonly type?: string;
   readonly from?: string;
@@ -270,6 +272,7 @@ function elementRow(state: ResolvedState, p: Placement, frame: (t: number) => nu
     ...(typeof props.anchor === "string" ? { anchor: props.anchor } : {}),
     ...(typeof props.at === "string" || typeof props.at === "number" ? { at: props.at } : {}),
     ...(typeof props.offset === "number" ? { offset: props.offset } : {}),
+    ...followsOf(props.duration),
     ...(p.kind === "transition" && typeof props.type === "string" ? { type: props.type } : {}),
     ...(p.kind === "transition" && typeof props.type !== "string" ? { type: shaderName(props.type) } : {}),
     ...(p.between ? { from: p.between[0], to: p.between[1] } : {}),
@@ -285,4 +288,13 @@ function elementRow(state: ResolvedState, p: Placement, frame: (t: number) => nu
 function shaderName(type: unknown): string {
   const name = (type as { name?: unknown } | null)?.name;
   return typeof name === "string" ? name : "custom";
+}
+
+/** The `follows` of a row: the element (and moment) a `duration={{ until }}` or `{{ match }}` takes its length from. */
+function followsOf(duration: unknown): Pick<ElementRow, "follows"> {
+  if (typeof duration !== "object" || duration === null) return {};
+  const d = duration as { until?: unknown; at?: unknown; match?: unknown };
+  if (typeof d.until === "string")
+    return { follows: { until: d.until, ...(typeof d.at === "string" ? { at: d.at } : {}) } };
+  return typeof d.match === "string" ? { follows: { match: d.match } } : {};
 }

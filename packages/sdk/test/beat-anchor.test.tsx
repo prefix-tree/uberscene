@@ -47,4 +47,35 @@ describe("beat references", () => {
     const trimmed = resolve(collect(edit("beat:4")), manifest);
     expect(trimmed.items.get("a")?.start).toBeCloseTo(2, 6);
   });
+
+  it("end a shot on a beat, which follows the music when it is trimmed", () => {
+    const edit = (songIn: string) =>
+      h(
+        Composition,
+        { fps: 30, width: 1920, height: 1080 },
+        h(
+          Track,
+          { id: "music", layout: "free" },
+          h(Audio, { id: "s", src: "asset:song", start: 0, in: songIn, out: "beat:31.end" }),
+        ),
+        h(
+          Track,
+          { id: "shots", layout: "free" },
+          h(Clip, {
+            id: "a",
+            src: "asset:pour",
+            anchor: "s",
+            at: "beat:8",
+            in: 2,
+            duration: { until: "s", at: "beat:16" },
+          }),
+        ),
+      );
+    const first = resolve(collect(edit("beat:0")), manifest);
+    expect(first.errors).toEqual([]);
+    // Beats 8 to 16 at 120 BPM: 4 s, from 4 s to 8 s.
+    expect(first.items.get("a")).toMatchObject({ start: 4, duration: 4 });
+    const trimmed = resolve(collect(edit("beat:4")), manifest);
+    expect(trimmed.items.get("a")).toMatchObject({ start: 2, duration: 4 });
+  });
 });

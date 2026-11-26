@@ -212,6 +212,12 @@ export function formatTimeline(file: string, rows: TimelineRows): string {
     if (e.label) parts.push(`"${e.label}"`);
     if (e.anchor)
       parts.push(`anchor ${e.anchor}${e.at !== undefined ? ` at ${e.at}` : ""}${e.offset ? ` +${e.offset}` : ""}`);
+    if (e.follows)
+      parts.push(
+        "match" in e.follows
+          ? `as long as ${e.follows.match}`
+          : `until ${e.follows.until}${e.follows.at !== undefined ? ` ${e.follows.at}` : " ends"}`,
+      );
     const said = words.get(e.id);
     if (said?.length) {
       const first = said[0] as (typeof said)[number],
