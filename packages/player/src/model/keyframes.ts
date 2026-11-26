@@ -1,4 +1,6 @@
 import {
+  blendFor,
+  type CurveBlend,
   type CurveKey,
   clamp01,
   curveAt,
@@ -39,10 +41,16 @@ function generatorWhere(children: readonly Placement[], match: (k: Placement) =>
 }
 
 /** The value from keys, then through its generator when it has one: a wobble or a drift on top, or a loop of it. */
-function animated<T>(children: readonly Placement[], match: (k: Placement) => boolean, rel: number, fallback: T): T {
+function animated<T>(
+  children: readonly Placement[],
+  match: (k: Placement) => boolean,
+  rel: number,
+  fallback: T,
+  blend: CurveBlend = "number",
+): T {
   const keys = keysWhere(children, match);
   const generator = generatorWhere(children, match);
-  if (!generator) return valueAt(keys, rel, fallback);
+  if (!generator) return valueAt(keys, rel, fallback, blend);
   // A generator is over a number: its keys when it has them, else the constant, else nothing to add to.
   const base = (t: number): number => {
     const v = Number(valueAt<unknown>(keys, t, fallback));
@@ -53,11 +61,11 @@ function animated<T>(children: readonly Placement[], match: (k: Placement) => bo
 
 /**
  * The value of `property` at element-relative time `rel`: its keys, and its generator when it has one. Keys hold
- * before the first and after the last; the segment between two keys uses the easing of the key it leaves.
- * Non-numeric values step.
+ * before the first and after the last; the segment between two keys uses the easing of the key it leaves. A shape's
+ * colours move through OKLab and its points point by point (`blendFor`); other values that are not numbers step.
  */
 export function keyframedValue<T>(children: readonly Placement[], property: string, rel: number, fallback: T): T {
-  return animated(children, (k) => k.props.property === property, rel, fallback);
+  return animated(children, (k) => k.props.property === property, rel, fallback, blendFor(property));
 }
 
 /** The value of an effect's `param` at element-relative `rel`, from the keys and the generator inside the effect. */
@@ -66,6 +74,6 @@ export function keyframedParam<T>(keys: readonly Placement[], param: string, rel
 }
 
 /** The kit's curve (`curveAt`), with this player's easing, which warns once on a name it does not know. */
-function valueAt<T>(keys: readonly CurveKey[], rel: number, fallback: T): T {
-  return keys.length === 0 ? fallback : (curveAt(keys, rel, ease) as T);
+function valueAt<T>(keys: readonly CurveKey[], rel: number, fallback: T, blend: CurveBlend = "number"): T {
+  return keys.length === 0 ? fallback : (curveAt(keys, rel, ease, blend) as T);
 }
