@@ -5,7 +5,7 @@ import { join } from "node:path";
 
 import { mixColor, parseColor } from "@uberscene/kit/schema";
 
-import { loadVideo, renderStill } from "../../src";
+import { directoryResolver, loadVideo, renderStill } from "../../src";
 import { readImage } from "../helpers/output";
 
 const scratch = join(import.meta.dirname, "..", ".tmp", "shape-keys");
@@ -35,7 +35,13 @@ export default function Video() {
   const loaded = await loadVideo(file);
   expect(loaded.state.errors).toEqual([]);
   const out = join(dir, `${name}-${time}.png`);
-  await renderStill({ state: loaded.state, out, time, source: loaded.source });
+  await renderStill({
+    state: loaded.state,
+    media: directoryResolver(dir, loaded.manifest),
+    out,
+    time,
+    source: loaded.source,
+  });
   const img = readImage(out);
   return {
     bytes: readFileSync(out),
