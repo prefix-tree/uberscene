@@ -51,7 +51,8 @@ const USAGE = `Usage: uberscene <file.tsx> --out <video.mp4|.webm|.mp3|.wav> [--
 
   Every export draws its frames in Chrome. The first one downloads Chrome for Testing ${CHROME_MILESTONE} into
   ~/.cache/uberscene/browsers (or UBERSCENE_BROWSER_CACHE); UBERSCENE_CHROMIUM names a Chrome ${CHROME_MILESTONE} to use
-  instead. The export runs on Chrome ${CHROME_MILESTONE} only. UBERSCENE_CODECS=native (experimental) decodes and
+  instead. The export runs on Chrome ${CHROME_MILESTONE} only; UBERSCENE_ANY_CHROME=1 lets it draw on another, with a
+  warning, where that one cannot be had. UBERSCENE_CODECS=native (experimental) decodes and
   encodes with UberScene's own codecs instead; the first such export downloads them into ~/.cache/uberscene/codecs
   (or UBERSCENE_CODEC_CACHE).
   UBERSCENE_CODECS=native (or native-decode, native-encode) decodes footage and encodes the export with UberScene's
