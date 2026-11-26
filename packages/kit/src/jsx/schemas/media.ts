@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { isScene, type Scene } from "../scene3d";
-import { animatable, assetRefSchema, audioProps, timedProps, timeRefSchema, visualProps } from "./common";
+import { assetRefSchema, audioProps, keyed, timedProps, timeRefSchema, visualProps } from "./common";
 
 /** A hold: the source frame at `source` seconds stays on screen from `start` seconds into the element for `duration`. */
 const freezeSpecSchema = z.strictObject({
@@ -21,7 +21,7 @@ const sourceProps = {
   /** Where in the source it ends, as `in`; `word:40.end` ends after the word is said. */
   out: timeRefSchema.optional(),
   /** Playback rate: 2 plays twice as fast and half as long; keys ramp it. */
-  speed: animatable(z.number().min(0.1).max(20)).default(1),
+  speed: keyed(z.number().min(0.1).max(20)).default(1),
   /** Frames held on screen while the clip's time stands still. */
   freezes: z.array(freezeSpecSchema).optional(),
   /** Plays the trimmed source backwards. */

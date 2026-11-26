@@ -37,6 +37,7 @@ export * from "./jsx/effect-params";
 export * from "./jsx/elements";
 export * from "./jsx/engines";
 export * from "./jsx/enums";
+export * from "./jsx/generators";
 export { knobsOf } from "./jsx/knobs";
 export * from "./jsx/read-time";
 export * from "./jsx/rendering";
