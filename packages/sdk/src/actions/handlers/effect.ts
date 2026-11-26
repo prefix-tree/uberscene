@@ -14,6 +14,7 @@ import {
 import type { Json } from "../../patches/types";
 import { isKeyList } from "../../resolve/expand";
 import type { ResolvedState } from "../../resolve/resolve";
+import { SHAPE_KEY_PATHS, shapeKeyProblem } from "../../resolve/shape-keys";
 import { define, makePropHandler, onElement, rawNode, rawProp } from "../handler-kit";
 import { invalid, type KeyJson, ok, type ValidationResult } from "../types";
 
@@ -55,9 +56,13 @@ function pathProblem(state: ResolvedState, id: string, path: string): string | n
     return path in CAMERA_FIELDS
       ? null
       : `"${path}" cannot hold keys on a camera; use one of ${Object.keys(CAMERA_FIELDS).join(", ")}`;
+  // A shape's own values (its size, colours, outline and points) take keys on a shape only.
+  if (path in SHAPE_KEY_PATHS)
+    return target?.kind === "shape" ? null : `"${path}" holds keys only on a shape; "${id}" is a ${target?.kind}`;
+  const shapePaths = target?.kind === "shape" ? Object.keys(SHAPE_KEY_PATHS) : [];
   return KEY_PATHS.has(path)
     ? null
-    : `"${path}" cannot hold keys; use one of ${[...KEY_PATHS].join(", ")}, or effects.<n>.<param>`;
+    : `"${path}" cannot hold keys; use one of ${[...KEY_PATHS, ...shapePaths].join(", ")}, or effects.<n>.<param>`;
 }
 
 /** The value at a dotted path inside an element's raw props; a number segment indexes a list. */
@@ -154,8 +159,13 @@ function checkPath(state: ResolvedState, id: string, path: string): ValidationRe
   return problem ? invalid({ code: "INVALID_PARAMS", message: problem, path: "path" }) : ok;
 }
 
-/** A value an effect's param takes, when `path` is one. */
+/** A value an effect's param or a shape's keyed value takes, when `path` is one. */
 function checkValue(state: ResolvedState, id: string, path: string, value: Json | undefined): ValidationResult {
+  const property = SHAPE_KEY_PATHS[path];
+  if (property && value !== undefined && state.items.get(id)?.kind === "shape") {
+    const problem = shapeKeyProblem(property, value);
+    return problem ? invalid({ code: "INVALID_PARAMS", message: problem, path: "value" }) : ok;
+  }
   const fx = EFFECT_PARAM.exec(path);
   if (!fx || value === undefined) return ok;
   const effect = effectsOf(state, id)[Number(fx[1])];

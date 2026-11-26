@@ -3,6 +3,7 @@ import { z } from "zod";
 import { zBlendMode, zShapeType, zTextAnimationType } from "../enums";
 import {
   adjustmentEffectsProp,
+  animatable,
   assetRefSchema,
   colorSchema,
   entranceProps,
@@ -11,6 +12,7 @@ import {
   gradientSchema,
   groundProp,
   idSchema,
+  keyed,
   overlayProps,
   placedProps,
   shadowSchema,
@@ -89,7 +91,7 @@ export const titleSchema = z.strictObject({
 });
 
 const fillSchema = z.union([
-  colorSchema,
+  keyed(colorSchema),
   z.strictObject({
     type: z.enum(["solid", "gradient", "none"]),
     color: colorSchema.optional(),
@@ -99,11 +101,14 @@ const fillSchema = z.union([
 ]);
 
 const strokeSchema = z.strictObject({
-  color: colorSchema,
-  thickness: z.number().nonnegative(),
+  /** The outline's colour, or keys to change it (moved in OKLab). */
+  color: keyed(colorSchema),
+  /** The outline's thickness in pixels, or keys or a generator. */
+  thickness: animatable(z.number().nonnegative()),
   opacity: z.number().min(0).max(1).optional(),
   dashArray: z.array(z.number().nonnegative()).optional(),
-  dashOffset: z.number().optional(),
+  /** How far along the dashes start, in pixels, or keys: from the dash length to 0 draws a line on. */
+  dashOffset: animatable(z.number()).optional(),
   lineCap: z.enum(["butt", "round", "square"]).optional(),
   lineJoin: z.enum(["miter", "round", "bevel"]).optional(),
   gradient: gradientSchema.optional(),
@@ -118,13 +123,16 @@ export const shapeSchema = z.strictObject({
   style: idSchema.optional(),
   /** Which shape it draws. */
   type: zShapeType,
-  /** The shape's box, in pixels; left out, 200. */
-  width: z.number().positive().optional(),
-  /** The shape's box height, in pixels; left out, 200. */
-  height: z.number().positive().optional(),
-  /** A polygon's or path's corners, as fractions of the box from its top left. */
-  points: z.array(vec2Schema).optional(),
-  /** A colour, or `{ type, color, gradient, opacity }` for a gradient or no fill. */
+  /** The shape's box width, in pixels, or keys or a generator; left out, 200. */
+  width: animatable(z.number().positive()).optional(),
+  /** The shape's box height, in pixels, or keys or a generator; left out, 200. */
+  height: animatable(z.number().positive()).optional(),
+  /**
+   * A polygon's or path's corners, as fractions of the box from its top left, or keys of such lists: two keys with
+   * as many points move point by point (a morph); otherwise the shape changes at the key.
+   */
+  points: keyed(z.array(vec2Schema)).optional(),
+  /** A colour, or keys of colours (moved in OKLab), or `{ type, color, gradient, opacity }` for a gradient or no fill. */
   fill: fillSchema.optional(),
   /** The outline: colour, thickness in pixels, opacity, dashes, caps and joins. */
   stroke: strokeSchema.optional(),

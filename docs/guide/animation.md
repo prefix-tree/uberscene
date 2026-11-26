@@ -68,8 +68,35 @@ The title fades in over its first 0.4 seconds, fast at first and slowing down at
 | `volume`, `pan` | Its sound. |
 | `speed` | A clip's playback rate. |
 | Every param of every effect | A blur that clears, a LUT that comes in. |
+| A shape's `width`, `height`, `fill`, `points`, `stroke.color`, `stroke.thickness`, `stroke.dashOffset` | Its size, colour, outline and corners. See [Shapes that change](#shapes). |
 
-Anything else is a constant: a font, a colour, a fit.
+Anything else is a constant: a font, a title's colour, a fit.
+
+### Shapes that change {#shapes}
+
+A [`<Shape>`](/reference/elements/shape) takes keys on its own values, so it can grow, change colour, draw its line on
+and change shape.
+
+<Example src="previews/guide/shape-keys" alt="An orange dot that grows and turns violet, a teal line drawing itself on, and a red pentagon turning into a yellow house">
+
+<<< @/../examples/showcase/guide/shape-keys.tsx
+
+</Example>
+
+- **Size.** `width` and `height` take keys and generators, as `transform` does. The shape grows from its box's
+  `origin`, so a box with `origin: "center"` grows from the middle.
+- **Colour.** `fill` (a colour, not a gradient) and `stroke.color` take keys of colours: hex, `rgb()`, `hsl()`, a
+  CSS name, or a theme token such as `$primary`. The colour moves through OKLab, a space where equal steps look equal,
+  so red to blue passes through a clear purple and not a muddy grey.
+- **Drawing a line on.** Give the stroke one dash as long as the line (`dashArray: [700]`) and key `dashOffset` from
+  that length to 0. `stroke.thickness` takes keys and generators too.
+- **Changing shape.** `points` takes keys of point lists. Two keys with as many points move point by point; with a
+  different number of points the shape changes at the key.
+
+```tsx
+<Shape id="dot" type="circle" width={[{ at: 0, value: 60 }, { at: 1.6, value: 180 }]}
+  fill={[{ at: 0, value: "$primary" }, { at: 1.6, value: "#7b5cff" }]} />
+```
 
 ### Easing
 
@@ -108,8 +135,9 @@ transform={{ rotation: { type: "wiggle", amount: 3, base: [{ at: 0, value: 0 }, 
 - **Seeds.** Left out, a wiggle's seed comes from the element's id and the prop, so no two elements wobble alike.
   Give several elements the same `seed`, `amount` and `frequency` to move them together: a card's frame, its picture
   and its label on one seed bob as one.
-- **Where.** Everything keys can move in `transform` and `box`, every numeric param of an effect, and a camera's
-  `x`, `y`, `zoom` and `rotation`. Not `speed`, `volume` or `pan`: those take a number or keys.
+- **Where.** Everything keys can move in `transform` and `box`, every numeric param of an effect, a camera's
+  `x`, `y`, `zoom` and `rotation`, and a shape's `width`, `height`, `stroke.thickness` and `stroke.dashOffset`.
+  Not `speed`, `volume` or `pan`: those take a number or keys.
 - **On `box.x` and `box.y`** a wiggle or a drift needs a `base`, the place it is added to; without one the element
   is centred and there is nothing to add to, which is an error that says so.
 - **On a pushed camera** a generator goes on top of the moves the push makes: a `drift` on `zoom` beside `push`

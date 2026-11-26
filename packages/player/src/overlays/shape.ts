@@ -1,5 +1,6 @@
 import { round3 } from "@uberscene/kit/schema";
 
+import { keyframedValue } from "../model/keyframes";
 import { type ElementProps, type OverlayLayout, overlayLayout } from "./layout";
 import { type PreparedSvg, prepareSvg } from "./svg";
 
@@ -52,9 +53,41 @@ interface ShapeMarkup {
   readonly warnings: readonly string[];
 }
 
+/**
+ * A shape's props at its time: its size, colours, outline and points as their keys and generators put them (the
+ * constants written there stand when none are), everything else as written.
+ */
+function shapeProps(p: ElementProps): Readonly<Record<string, unknown>> {
+  const props = p.placement.props;
+  const rel = p.time - p.placement.start;
+  const at = <T>(property: string, written: T): T => keyframedValue(p.children, property, rel, written);
+  const out: Record<string, unknown> = { ...props };
+  const width = at("shape.width", props.width);
+  const height = at("shape.height", props.height);
+  if (width !== undefined) out.width = width;
+  if (height !== undefined) out.height = height;
+  if (props.fill === undefined || typeof props.fill === "string") {
+    const fill = at("shape.fill", props.fill);
+    if (fill !== undefined) out.fill = fill;
+  }
+  const points = at("shape.points", props.points);
+  if (points !== undefined) out.points = points;
+  const stroke = props.stroke as Stroke | undefined;
+  if (stroke) {
+    const dashOffset = at("shape.stroke.dashOffset", stroke.dashOffset);
+    out.stroke = {
+      ...stroke,
+      color: at("shape.stroke.color", stroke.color),
+      thickness: Math.max(0, Number(at("shape.stroke.thickness", stroke.thickness))),
+      ...(dashOffset !== undefined ? { dashOffset } : {}),
+    };
+  }
+  return out;
+}
+
 /** The size a shape draws at, before layout. */
-function shapeSize(p: ElementProps): { width: number; height: number } {
-  return { width: Number(p.placement.props.width ?? 200), height: Number(p.placement.props.height ?? 200) };
+function shapeSize(props: Readonly<Record<string, unknown>>): { width: number; height: number } {
+  return { width: Math.max(0, Number(props.width ?? 200)), height: Math.max(0, Number(props.height ?? 200)) };
 }
 
 function shapeMarkup(props: Readonly<Record<string, unknown>>, size: { width: number; height: number }): ShapeMarkup {
@@ -116,9 +149,10 @@ export interface ShapeDrawing {
 
 /** How a `<Shape>` element draws at its time: its layout, and the markup with entrance drawing applied. */
 export function shapeDrawing(p: ElementProps, tokens?: Readonly<Record<string, string>>): ShapeDrawing {
-  const size = shapeSize(p);
+  const props = shapeProps(p);
+  const size = shapeSize(props);
   const layout = overlayLayout(p, size, "none", true);
-  const shape = shapeMarkup(p.placement.props, size);
+  const shape = shapeMarkup(props, size);
   const prepared = prepareSvg(shape.markup, {
     box: { width: layout.rect.w, height: layout.rect.h },
     idPrefix: p.placement.id,
