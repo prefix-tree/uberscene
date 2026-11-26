@@ -74,14 +74,14 @@ import { withBase } from "vitepress";
 
 <section class="home-why">
 
-## Why UberScene
+## Three tools, as code
 
-<p class="home-why-lead">An agent writes code better than it drives a timeline. The picture, the 3D and the music are one file, so the model can change all three.</p>
+<p class="home-why-lead">What you would open an editor, an animation studio and a compositor for, written as one file. An agent writes code better than it drives a timeline, so it can do all three.</p>
 
 <ul class="home-why-list">
-<li><span><strong>Edit the video in code</strong> The cut, the titles and the effects are the file. Change one value and the picture changes.</span></li>
-<li><span><strong>Build the 3D in code</strong> A three.js scene and its camera sit on the same clock as the edit, and render from that file.</span></li>
-<li><span><strong>Write the music in code</strong> The score is a track in the file, so the sound stays aligned with the picture.</span></li>
+<li><span><strong>An editor, as code</strong> Clips on tracks, cuts on words, trims, roll, slip and slide, transitions and multicam. The player is your monitor, and a drag on the timeline writes one value back into the file.</span></li>
+<li><span><strong>An animation studio, as code</strong> Shapes, SVG and masks on the stage, any prop keyed over time with easing, and Motion or canvas on the video's clock, frame-exact when you scrub.</span></li>
+<li><span><strong>A compositor, as code</strong> Layers and keys, 45 effects and transitions running as shaders or your own GLSL, a three.js scene with its camera and lights, and an export from the same file.</span></li>
 </ul>
 
 </section>
