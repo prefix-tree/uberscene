@@ -294,8 +294,17 @@ export const fitProp = {
   fit: zFitMode.optional(),
 };
 
+const parentProp = {
+  /**
+   * Another overlay's id: this one moves with it. Its `box` is then read in the parent's box (pixels from the
+   * parent box's top left, centred in it when `x` or `y` is left out), and the parent's transform and entrance
+   * carry it, up the chain. Its opacity, crop and corners stay its own.
+   */
+  parent: idSchema.optional(),
+};
+
 /** What everything drawn over the picture takes: where it sits, how it mixes with what is under it, its effects. */
-export const overlayProps = { ...transformProp, ...blendProp, ...effectsProp };
+export const overlayProps = { ...transformProp, ...parentProp, ...blendProp, ...effectsProp };
 
 /** For graphics other things sit on. */
 export const groundProp = {
@@ -308,7 +317,7 @@ export const groundProp = {
 };
 
 /** Where an element sits and how it is turned, with its effects, without `fit` or blending: a layer's. */
-export const placedProps = { ...transformProp, ...effectsProp };
+export const placedProps = { ...transformProp, ...parentProp, ...effectsProp };
 
 /** An adjustment's effects: drawn over everything beneath it. */
 export const adjustmentEffectsProp = effectsProp;
