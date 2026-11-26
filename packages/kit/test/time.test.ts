@@ -2,6 +2,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  elapsedSeconds,
   frameAt,
   frameAtSeconds,
   frameStart,
@@ -17,6 +18,7 @@ import {
   samplesUntil,
   TICKS_PER_SECOND,
   ticksPerFrame,
+  tidySeconds,
   timecode,
 } from "@uberscene/kit/schema";
 
@@ -134,5 +136,19 @@ describe("timecode", () => {
     expect(timecode(12, r)).toBe("00:00:00:12");
     expect(timecode(13, r)).toBe("00:00:01:00");
     expect(timecode(12.5 * 3600, r)).toBe("01:00:00:00");
+  });
+});
+
+describe("tidySeconds and elapsedSeconds", () => {
+  it("drops float noise and keeps a time that is off the ms grid on purpose", () => {
+    expect(tidySeconds(0.1 + 0.2)).toBe(0.3);
+    expect(tidySeconds(0.40000000000000036)).toBe(0.4);
+    expect(tidySeconds(121 / 24)).toBe(121 / 24);
+    expect(framesUntil(tidySeconds(121 / 24), parseRate(24))).toBe(121);
+  });
+
+  it("subtracts in ticks", () => {
+    expect(0.4 - (0.1 + 0.2)).toBeLessThan(0.1);
+    expect(elapsedSeconds(0.4, 0.1 + 0.2)).toBe(0.1);
   });
 });

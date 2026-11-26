@@ -1,3 +1,5 @@
+import { tidySeconds } from "@uberscene/kit/schema";
+
 import { asJson } from "../patches/log";
 import type { Json, PatchLog } from "../patches/types";
 import type { Placement as ResolvedPlacement, ResolvedState } from "../resolve/resolve";
@@ -179,12 +181,24 @@ export function uniqueId(state: ResolvedState, base: string, taken: ReadonlySet<
   return id;
 }
 
+/** The props that hold seconds on the timeline or in a source: what an edit works out by adding and subtracting. */
+const TIME_PROPS = new Set(["start", "duration", "in", "out", "offset"]);
+
+/**
+ * A time prop as written to the file: without float noise (3.3 - 1.1 is 2.1999999999999997), and still on the frame
+ * it was worked out on (see `tidySeconds`).
+ */
+function tidyTime(prop: string, value: Json | undefined): Json | undefined {
+  return TIME_PROPS.has(prop) && typeof value === "number" && Number.isFinite(value) ? tidySeconds(value) : value;
+}
+
 export function setProps(log: PatchLog, id: string, props: Readonly<Record<string, Json | undefined>>): void {
-  for (const [prop, value] of Object.entries(props)) log.append({ op: "set", id, prop, value });
+  for (const [prop, value] of Object.entries(props)) log.append({ op: "set", id, prop, value: tidyTime(prop, value) });
 }
 
 export function insertNode(log: PatchLog, parent: string, after: string | null, spec: NodeSpec): void {
-  log.append({ op: "insert", id: spec.id, parent, after, node: nodeOfSpec(spec, parent) });
+  const props = Object.fromEntries(Object.entries(spec.props).map(([k, v]) => [k, tidyTime(k, v as Json)]));
+  log.append({ op: "insert", id: spec.id, parent, after, node: nodeOfSpec({ ...spec, props }, parent) });
 }
 
 export function placeNode(

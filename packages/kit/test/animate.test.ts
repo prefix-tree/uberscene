@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { interpolate, random, spring, stepAt } from "@uberscene/kit";
-import { EASING_FN } from "@uberscene/kit/schema";
+import { EASING_FN, secondsToTicks } from "@uberscene/kit/schema";
 
 describe("interpolate", () => {
   it("maps across a range, piecewise", () => {
@@ -104,6 +104,11 @@ describe("stepAt", () => {
   it("agrees with counting, on a long list", () => {
     const many = Array.from({ length: 500 }, (_, i) => i * 0.07);
     for (const t of [0, 0.069, 0.07, 3.33, 17.2, 34.93, 40])
-      expect(stepAt(many, t)).toBe(many.filter((at) => at <= t).length - 1);
+      expect(stepAt(many, t)).toBe(many.filter((at) => secondsToTicks(at) <= secondsToTicks(t)).length - 1);
+  });
+
+  it("reaches a step at a sum of seconds on the frame it names", () => {
+    // 0.2 + 0.1 is 0.30000000000000004, a hair after the frame at 0.3.
+    expect(stepAt([0, 0.2 + 0.1], 0.3)).toBe(1);
   });
 });

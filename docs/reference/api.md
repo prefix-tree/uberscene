@@ -534,7 +534,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/kit/schema`
 
-291 exports.
+293 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -608,6 +608,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `EFFECTS` | const |  |
 | `EFFECTS_NOT_RENDERED` | const |  |
 | `EffectSpec` | type | One entry of an element's `effects`. |
+| `elapsedSeconds` | const | `t - start` as an exact difference. |
 | `ElementBox` | type |  |
 | `ElementCapabilities` | interface |  |
 | `ElementDefinition` | interface |  |
@@ -784,6 +785,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `TICKS_PER_SECOND` | const | Ticks in one second. |
 | `ticksPerFrame` | const | Ticks in one frame. |
 | `ticksToSeconds` | const |  |
+| `tidySeconds` | function | A computed time without its float noise, keeping where it really falls. |
 | `timecode` | function | SMPTE timecode of a frame, `HH:MM:SS:FF`. |
 | `Title` | const | The `<Title>` element ([reference](/reference/elements/title)). |
 | `titleWords` | function | The words of a title's text, as the player reveals them word by word. |

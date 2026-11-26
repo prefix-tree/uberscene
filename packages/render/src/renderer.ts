@@ -3,7 +3,7 @@ import { join, parse } from "node:path";
 
 import { EncodedVideoPacketSource, FilePathTarget, Output } from "mediabunny";
 
-import { framesUntil, nearestFrame, rateValue } from "@uberscene/kit/schema";
+import { frameStartSeconds, framesUntil, nearestFrame, rateValue } from "@uberscene/kit/schema";
 import type { MediaResolver } from "@uberscene/player/engine";
 import type { AssetManifest, ResolvedState } from "@uberscene/sdk";
 
@@ -194,6 +194,10 @@ export async function renderVideo(options: RenderOptions): Promise<RenderResult>
   const last = framesUntil(to, outRate);
   const total = Math.max(0, last - first);
   if (total === 0) throw new Error("nothing to render: the range holds no frames");
+  // The sound covers the frames drawn, not the times asked: `--from 0.02` at 30 fps draws from frame 1 (0.0333 s), and
+  // sound from 0.02 s would play 13 ms early. Sound alone keeps the times asked.
+  const soundFrom = audioOnly ? from : frameStartSeconds(first, outRate);
+  const soundTo = audioOnly ? to : Math.min(state.composition.duration, frameStartSeconds(last, outRate));
   const keyFrameInterval = options.keyFrameInterval ?? 2;
   const gopFrames = Math.max(1, Math.round(keyFrameInterval * outFps));
   const tabs = Math.max(1, Math.floor(options.tabs ?? 1));
@@ -228,15 +232,15 @@ export async function renderVideo(options: RenderOptions): Promise<RenderResult>
             state,
             media: options.media,
             decode: codecs.decode,
-            from,
-            to,
+            from: soundFrom,
+            to: soundTo,
             container: container as SoundContainer,
             bitrate: audioBitrate,
             ...(missing ? { missing } : {}),
           })
         : await engine.audio({
-            from,
-            to,
+            from: soundFrom,
+            to: soundTo,
             container: audioOnly ? container : videoContainer === "mov" ? "mp4" : videoContainer,
             bitrate: audioBitrate,
             ...(missing ? { missing } : {}),

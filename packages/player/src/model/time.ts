@@ -1,5 +1,6 @@
 import type { LayerClock } from "@uberscene/kit";
 import {
+  elapsedSeconds,
   frameAtSeconds,
   frameStartSeconds,
   isDropFrame,
@@ -41,7 +42,7 @@ export function localT(p: Placement, t: number): number {
 /** What `useLayer()` returns inside a Layer: progress plus real seconds. */
 export function layerClock(p: Placement, t: number, fps: number): LayerClock {
   const duration = Math.max(0, p.duration);
-  const elapsed = Math.min(duration, Math.max(0, t - p.start));
+  const elapsed = Math.min(duration, Math.max(0, elapsedSeconds(t, p.start)));
   return { t: localT(p, t), elapsed, remaining: duration - elapsed, duration, time: t, fps };
 }
 
@@ -54,7 +55,7 @@ export function layerClock(p: Placement, t: number, fps: number): LayerClock {
 export function placementSourceTime(p: Placement, children: readonly Placement[], t: number): number {
   const src = p.source;
   if (!src) return Math.max(0, t - p.start);
-  const shifted = freezeShift(freezeHoldsOf(children), Math.max(0, t - p.start));
+  const shifted = freezeShift(freezeHoldsOf(children), Math.max(0, elapsedSeconds(t, p.start)));
   if ("held" in shifted) return clampSource(shifted.held, src);
   const keys = speedKeysOf(children);
   const advance = keys.length > 0 ? rampAdvance(keys, shifted.rel) : shifted.rel * src.speed;

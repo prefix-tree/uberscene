@@ -1,3 +1,4 @@
+import { elapsedSeconds } from "@uberscene/kit/schema";
 import type { Placement } from "@uberscene/sdk/resolver";
 
 import {
@@ -347,7 +348,9 @@ export class ClipDecoder {
       let best: Frame | null = null;
       let index = -1;
       for (let i = 0; i < this.queue.length; i++) {
-        if (this.queue[i]!.timestamp <= st) {
+        // The same slack as forward: a container's ms-rounded stamp (0.067 for 0.0667) would otherwise lose its turn,
+        // and the frame before it would show twice.
+        if (this.queue[i]!.timestamp <= st + PICK_EPS) {
           best = this.queue[i]!;
           index = i;
         }
@@ -410,7 +413,7 @@ export class ClipDecoder {
   }
 
   private activeFreeze(t: number): Placement | null {
-    const rel = t - this.placement.start;
+    const rel = elapsedSeconds(t, this.placement.start);
     for (const c of this.children) {
       if (c.kind !== "freeze") continue;
       const fs = Number(c.props.start ?? 0),

@@ -1,6 +1,6 @@
 // The resolved timeline as flat rows: one array per kind of thing, each row with its id, its seconds and its frames.
 // Flat rows are what jq, a short script or a SQL table take as they are.
-import { framesUntil, nearestFrame, type Rate, round3 } from "@uberscene/kit/schema";
+import { framesUntil, type Rate, round3 } from "@uberscene/kit/schema";
 
 import type { ResolveError } from "../resolve/errors";
 import { derivedOrigin } from "../resolve/expand";
@@ -155,7 +155,8 @@ const NOT_ELEMENTS = new Set([
 /** The flat rows of a resolved timeline. */
 export function timelineRows(state: ResolvedState): TimelineRows {
   const { rate } = state.composition;
-  const frame = (t: number): number => nearestFrame(t, rate);
+  // The first frame that shows it: an element, word or cut at 0.51 s is first seen on frame 16 at 30 fps, not 15.
+  const frame = (t: number): number => framesUntil(t, rate);
   const elements: ElementRow[] = [];
   const effects: EffectRow[] = [];
   const keyframes: KeyframeRow[] = [];

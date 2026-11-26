@@ -1,4 +1,5 @@
 import type { FitMode, ResolvedTheme } from "@uberscene/kit/schema";
+import { elapsedSeconds } from "@uberscene/kit/schema";
 
 import { type ElementProps, type OverlayLayout, overlayLayout } from "./layout";
 import { overlaySize } from "./size";
@@ -24,7 +25,13 @@ export function svgDrawing(
 ): SvgDrawing {
   const props = p.placement.props as Record<string, unknown>;
   const viewBox = props.viewBox as SvgViewBox | undefined;
-  const { size, fit } = overlaySize(p.state, p.placement, p.children, p.time - p.placement.start, markup);
+  const { size, fit } = overlaySize(
+    p.state,
+    p.placement,
+    p.children,
+    elapsedSeconds(p.time, p.placement.start),
+    markup,
+  );
   const layout = overlayLayout(p, size, fit, true);
   const prepared = prepareSvg(markup, {
     box: { width: layout.rect.w, height: layout.rect.h },
@@ -35,7 +42,7 @@ export function svgDrawing(
     idPrefix: p.placement.id,
     draw: layout.draw,
     // SMIL plays on the element's own clock; markup without it is prepared once for every frame.
-    ...(svgAnimated(markup) ? { time: p.time - p.placement.start } : {}),
+    ...(svgAnimated(markup) ? { time: elapsedSeconds(p.time, p.placement.start) } : {}),
   });
   return { size, fit, layout, prepared };
 }

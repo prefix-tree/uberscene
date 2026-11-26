@@ -1,6 +1,7 @@
 import { type ReactElement, type ReactNode, useEffect } from "react";
 
 import { Editor as Parts, useEdit, useEditor, useSelection } from "@uberscene/editor";
+import { frameStartSeconds, nearestFrame } from "@uberscene/kit/schema";
 import { usePlayer } from "@uberscene/player";
 import type { Executor } from "@uberscene/sdk";
 
@@ -126,11 +127,12 @@ function Shortcuts() {
         if (result.ok) select(null);
       } else if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && item) {
         e.preventDefault();
-        // In whole frames, so steps add up exactly: three frames from 1 s at 30 fps is 1.1 s, not 1.099.
-        const fps = state.composition.fps;
-        const frames = (e.shiftKey ? fps : 1) * (e.key === "ArrowLeft" ? -1 : 1);
-        const start = Math.max(0, Math.round(item.start * fps) + frames) / fps;
-        edit.execute({ type: "clip/move", params: { id: item.id, place: { start: Math.round(start * 1e6) / 1e6 } } });
+        // In whole frames, on each frame's exact start: three frames from 1 s at 30 fps is 1.1 s, not 1.099, and frame 2
+        // is 0.0666…, not 0.066667, which is in frame 3. The edit writes it to the file without float noise.
+        const { fps, rate } = state.composition;
+        const frames = Math.round(e.shiftKey ? fps : 1) * (e.key === "ArrowLeft" ? -1 : 1);
+        const start = frameStartSeconds(Math.max(0, nearestFrame(item.start, rate) + frames), rate);
+        edit.execute({ type: "clip/move", params: { id: item.id, place: { start } } });
       }
     };
     window.addEventListener("keydown", onKey);

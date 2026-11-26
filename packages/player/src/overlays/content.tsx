@@ -4,7 +4,7 @@
 import { Children, type CSSProperties, cloneElement, isValidElement, type ReactNode } from "react";
 
 import { fontFamily } from "@uberscene/kit";
-import { TEXT_ANIMATION_TYPES, type TextRun, themedRuns, titleWords } from "@uberscene/kit/schema";
+import { elapsedSeconds, TEXT_ANIMATION_TYPES, type TextRun, themedRuns, titleWords } from "@uberscene/kit/schema";
 import type { Placement } from "@uberscene/sdk/resolver";
 
 import { isVisibleAt } from "../model/visible";
@@ -28,7 +28,7 @@ export function titleContent(
   const text = p.text;
   // The words its <Mark>s draw their own way, with theme tokens made the theme's colours.
   const runs = p.runs?.length ? (p.state.theme ? themedRuns(p.runs, p.state.theme).runs : p.runs) : NO_RUNS;
-  const rel = p.time - p.placement.start;
+  const rel = elapsedSeconds(p.time, p.placement.start);
   const anim = own.animation as { type: string; in: number; out: number } | undefined;
   const { effect, visibleChars } = animation(anim, rel, p.placement.duration, text.length, p.placement.id);
   const weight = props.weight;

@@ -73,7 +73,8 @@ define({
           code: "UNSUPPORTED_ON_LAYOUT",
           message: "between-transitions need a sequence track; use on/edge",
         });
-      if (a.params.duration > left.duration || a.params.duration > right.duration)
+      // With slack, as the resolver checks: in 1.1 to out 2.3 is 1.1999999999999997 s, and 1.2 s fits it.
+      if (a.params.duration > left.duration + 1e-9 || a.params.duration > right.duration + 1e-9)
         return invalid({ code: "INSUFFICIENT_HANDLES", message: "transition is longer than one of its clips" });
       return ok;
     }
@@ -82,7 +83,7 @@ define({
     if (isError(target)) return invalid(target);
     const locked = requireUnlocked(state, target);
     if (locked) return invalid(locked);
-    return a.params.duration <= target.duration
+    return a.params.duration <= target.duration + 1e-9
       ? ok
       : invalid({ code: "INSUFFICIENT_HANDLES", message: "transition is longer than the clip" });
   },

@@ -3,7 +3,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
-import { framesUntil, nearestFrame, round3 } from "@uberscene/kit/schema";
+import { frameStartSeconds, framesUntil, nearestFrame, round3 } from "@uberscene/kit/schema";
 import type { MediaResolver } from "@uberscene/player/engine";
 import {
   aroundMoments,
@@ -247,7 +247,7 @@ export async function renderLook(options: LookOptions): Promise<LookResult> {
             : { overlay: out.overlay }
           : null;
       cells.push({
-        t: m.frame / state.composition.fps,
+        t: frameStartSeconds(m.frame, state.composition.rate),
         label: stamp(m),
         ...(strip ? {} : { sub: variant ? `${variant} ${options.without}` : m.about }),
         ...(without ? { without } : {}),
