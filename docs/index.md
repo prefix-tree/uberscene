@@ -90,7 +90,7 @@ import { withBase } from "vitepress";
 
 ## Features
 
-<p class="home-chapter-lead">Everything a video needs, from the first cut to the export, in the order you use it.</p>
+<p class="home-chapter-lead">What works today, from the first cut to the export, in the order you use it. Under it, the roadmap: what is being built now and what is planned next. <a href="https://github.com/prefix-tree/uberscene/blob/main/BACKLOG.md">The backlog →</a></p>
 
 <FeatureGroups />
 

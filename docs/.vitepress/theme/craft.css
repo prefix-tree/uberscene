@@ -2511,18 +2511,26 @@ html:has(.VPContent.has-sidebar) .VPSidebar {
   line-height: 1.55;
   color: var(--cc-ink-2);
 }
-/* The roadmap row: one wide card, its icon beside the words. */
-.cc-features-group.wide a.cc-feature {
-  display: grid;
-  grid-template-columns: 40px minmax(0, 1fr);
-  column-gap: 18px;
-  row-gap: 4px;
+/* The roadmap: under a rule of its own, dashed cards on no ground, so nothing planned reads as shipped. */
+.vp-doc p.cc-features-divider {
+  grid-column: 1 / -1;
+  margin: 16px 0 -16px;
+  padding-top: 28px;
+  border-top: 1px dashed var(--cc-rule);
+  font-family: var(--cc-mono);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cc-ink);
+}
+.cc-features-group.roadmap a.cc-feature {
   border-style: dashed;
   background: transparent;
 }
-.cc-features-group.wide .cc-feature-icon {
-  grid-row: span 2;
-  margin: 0;
+.cc-features-group.roadmap .cc-feature-icon {
+  background: transparent;
+  border: 1px dashed currentColor;
 }
 @media (max-width: 960px) {
   .cc-features {
