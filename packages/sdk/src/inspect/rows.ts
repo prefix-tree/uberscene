@@ -42,6 +42,8 @@ export interface ElementRow {
   readonly label?: string;
   /** A layer, shape, SVG or sticker the file marks as a ground for other things. */
   readonly ground?: true;
+  /** The overlay it moves with, its `parent` prop (not `parent` above, the node it is written in). */
+  readonly movesWith?: string;
 }
 
 export interface EffectRow {
@@ -281,6 +283,7 @@ function elementRow(state: ResolvedState, p: Placement, frame: (t: number) => nu
       : {}),
     ...(typeof props.label === "string" ? { label: props.label } : {}),
     ...(props.ground === true ? { ground: true as const } : {}),
+    ...(typeof props.parent === "string" ? { movesWith: props.parent } : {}),
   };
 }
 

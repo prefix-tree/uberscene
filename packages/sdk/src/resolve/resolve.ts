@@ -582,6 +582,7 @@ function compute(
   errors.push(...textureErrors(items, manifest));
   errors.push(...keyframeErrors(items));
   errors.push(...generatorErrors(items));
+  errors.push(...parentErrors(items, tracks));
   const rate = rateOf(compParsed.fps, root.id, errors);
   if (duration > MAX_SECONDS)
     errors.push({
@@ -1110,6 +1111,71 @@ function generatorErrors(items: ReadonlyMap<string, Placement>): ResolveError[] 
         prop: `box.${axis}`,
         message: `a ${String(g.props.type)} on box.${axis} is added to where the element sits: give it a \`base\` (a number of pixels, or keys)`,
       });
+  }
+  return out;
+}
+
+/** The kinds that take a `parent`, and the kinds a parent may be: the overlays. */
+const PARENT_KINDS: ReadonlySet<string> = new Set(["title", "shape", "svg", "sticker", "layer"]);
+
+/**
+ * A `parent` names another overlay in the file, on the same side of the camera, and no chain comes back to where it
+ * started.
+ */
+function parentErrors(items: ReadonlyMap<string, Placement>, tracks: readonly ResolvedTrack[]): ResolveError[] {
+  const out: ResolveError[] = [];
+  const cameraOf = (p: Placement): string | undefined => tracks.find((t) => t.id === p.track)?.camera;
+  const inCycle = new Set<string>();
+  for (const child of items.values()) {
+    const ref = child.props.parent;
+    if (typeof ref !== "string" || !PARENT_KINDS.has(child.kind)) continue;
+    const parent = items.get(ref);
+    if (!parent) {
+      out.push({
+        code: "UNKNOWN_REF",
+        id: child.id,
+        prop: "parent",
+        message: `parent names "${ref}", which does not exist`,
+      });
+      continue;
+    }
+    if (!PARENT_KINDS.has(parent.kind)) {
+      out.push({
+        code: "SCHEMA",
+        id: child.id,
+        prop: "parent",
+        message: `parent names "${ref}", a ${parent.kind}: a parent is a title, shape, svg, sticker or layer`,
+      });
+      continue;
+    }
+    if (cameraOf(child) !== cameraOf(parent)) {
+      const inside = cameraOf(child) !== undefined ? child.id : parent.id;
+      out.push({
+        code: "SCHEMA",
+        id: child.id,
+        prop: "parent",
+        message: `"${inside}" is under the camera and the other is not: put "${child.id}" and its parent "${ref}" on tracks on the same side of the camera`,
+      });
+      continue;
+    }
+    if (inCycle.has(child.id)) continue;
+    const chain = [child.id];
+    for (let at = items.get(ref); at && !inCycle.has(at.id); at = items.get(String(at.props.parent ?? ""))) {
+      const i = chain.indexOf(at.id);
+      if (i >= 0) {
+        const loop = chain.slice(i);
+        for (const id of loop) inCycle.add(id);
+        out.push({
+          code: "CYCLE",
+          id: loop[0]!,
+          prop: "parent",
+          message: `parents go round in a circle: ${[...loop, loop[0]].map((id) => `"${id}"`).join(" → ")}; remove one of these parents`,
+        });
+        break;
+      }
+      chain.push(at.id);
+      if (typeof at.props.parent !== "string") break;
+    }
   }
   return out;
 }

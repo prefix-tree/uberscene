@@ -92,7 +92,7 @@ function clipBefore(state: ResolvedState, id: string): Placement | undefined {
  * Removing a clip: what starts from it moves to the clip before it on its track, keeping its time on the timeline
  * where that clip is still playing, and otherwise held inside it; with no clip before, it is removed too. A transition
  * left with nothing on one side is removed; one that still has a clip on each side stays. A length that follows the
- * clip becomes the seconds it was.
+ * clip becomes the seconds it was. An overlay that had it as its `parent` takes its parent's own parent, or none.
  */
 export function carryRemoval(id: string, before: ResolvedState): Carry | null {
   const deps = dependentsOf(before, id);
@@ -106,6 +106,11 @@ export function carryRemoval(id: string, before: ResolvedState): Carry | null {
     if (d.kind !== "match" && d.kind !== "until") continue;
     const p = before.items.get(d.id);
     if (p && !removed.has(d.id)) pre.push(setProps(d.id, { duration: round3(p.duration) }));
+  }
+  const grandparent = before.items.get(id)?.props.parent;
+  for (const d of deps) {
+    if (d.kind === "parent" && !removed.has(d.id))
+      pre.push(setProps(d.id, { parent: typeof grandparent === "string" ? grandparent : undefined }));
   }
   for (const d of anchored) {
     const p = before.items.get(d.id);
