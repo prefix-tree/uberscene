@@ -36,12 +36,12 @@ days, L a week or more.
     `box`.
   - Done when: each is reported at its line with a fix, like the other layout rules, with tests.
 
-- [x] **5. Which matting model** (S) (#PR)
+- [x] **5. Which matting model** (S) (#244)
   - The default is named in decision 0039: RobustVideoMatting ResNet-50 (GPL-3.0), fetched from its own release on
     first use after its licence is shown, never shipped; U²-Net (Apache-2.0) by name for teams that cannot use GPL.
   - Left for later (below): MODNet, and BiRefNet on a GPU.
 
-- [x] **6. Cut-out, step 2: `uberscene matte`** (L) (#PR)
+- [x] **6. Cut-out, step 2: `uberscene matte`** (L) (#244)
   - The command runs a matting model frame by frame in the export's Chrome (ONNX Runtime for the web), writes the
     matte, its manifest entry, `matte`, `matteModel` and `subjects`, and prints seconds a frame, soft edge, change
     between frames and coverage.
