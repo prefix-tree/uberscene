@@ -155,8 +155,8 @@ const GROUPS: Group[] = [
     features: [
       {
         icon: "agent",
-        title: "Agent skill",
-        text: "For Claude Code, Codex, Cursor, Gemini CLI and others: the agent writes the file, checks it with frame sheets and renders it.",
+        title: "Agent skills",
+        text: "For Claude Code, Codex, Cursor, Gemini CLI and others: one skill sets UberScene up, the other knows the whole language, writes the file, checks it with frame sheets and renders it.",
         link: "/guide/agents",
       },
     ],
