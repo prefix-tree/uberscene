@@ -190,8 +190,10 @@ Scale the check to the change: a one-word trim needs no still; new graphics alwa
 
 ## The file
 
+<!-- sync: example the-file.tsx -->
 ```tsx
 import { z } from "zod";
+
 import { Captions, Clip, Composition, LowerThird, Title, Track, Transition } from "@uberscene/kit";
 
 // What a person may change without touching the edit.
@@ -214,8 +216,21 @@ export default function Video({ product, who }: z.infer<typeof schema>) {
           in="shot:1"
           out="shot:1.end"
           fit="cover"
-          transform={{ scale: [{ at: 0, value: 1, easing: "easeInOutSine" }, { at: 5, value: 1.1 }] }}
-          effects={[{ type: "vibrance", amount: [{ at: 0, value: 0 }, { at: 1, value: 0.3 }] }]}
+          transform={{
+            scale: [
+              { at: 0, value: 1, easing: "easeInOutSine" },
+              { at: 5, value: 1.1 },
+            ],
+          }}
+          effects={[
+            {
+              type: "vibrance",
+              amount: [
+                { at: 0, value: 0 },
+                { at: 1, value: 0.3 },
+              ],
+            },
+          ]}
         />
       </Track>
       <Track id="text">
@@ -229,6 +244,7 @@ export default function Video({ product, who }: z.infer<typeof schema>) {
   );
 }
 ```
+<!-- /sync -->
 
 - The default export returns one `<Composition fps width height>`. There is no duration: the video lasts until its
   last element ends.

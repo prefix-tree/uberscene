@@ -33,6 +33,16 @@ Never stretch or squeeze a voice to fit a slot: change the picture.
 | Effects | a free track, `role="effects"` | 0.4-0.8 | on visible actions only |
 | Ambience | a free track, `role="ambience"` | 0.1-0.3 | room tone, a city, under a quiet stretch |
 
+The props of `<Audio>` that set a layer's level:
+
+<!-- sync: props Audio volume fade duck -->
+| prop | type | default | what it is |
+|---|---|---|---|
+| `volume` | number (0..4) \| { at, value, easing }[] |  | A gain: 1 plays the source as it is, 0 mutes it, 2 is twice as loud; keys change it over time. |
+| `fade` | { in, out } |  | Seconds the sound fades in at the start and out at the end. |
+| `duck` | { under, to, attack, release } |  | Turns this sound down while another plays: `under` is a track id or a track role (`dialogue`), `to` the volume it falls to, `attack` and `release` the seconds it takes to fall and recover. |
+<!-- /sync -->
+
 - **Duck by role, not by hand**: `duck={{ under: "dialogue", to: 0.15, attack: 0.2, release: 0.6 }}` follows every
   edit of the voice. Keys on `volume` are for a moment the music must swell or drop.
 - **End the music on its end**, or fade it over 1 to 2 s on the last frame. Music cut off mid-phrase is the most heard

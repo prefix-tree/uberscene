@@ -77,6 +77,7 @@ from. A folder someone edited is left alone; say so to the person rather than ad
 Write a three second test file, read it back, and draw one sheet. This touches every part: the packages, the command
 line and Chrome. The file carries an empty manifest, so it needs no media and no `uberscene.json`.
 
+<!-- sync: example setup-check.tsx -->
 ```tsx
 // setup-check.tsx
 import { Composition, Title, Track } from "@uberscene/kit";
@@ -87,12 +88,15 @@ export default function Video() {
   return (
     <Composition fps={30} width={1080} height={1920}>
       <Track id="text">
-        <Title id="hello" duration={3} style="h1">UberScene works</Title>
+        <Title id="hello" duration={3} style="h1">
+          UberScene works
+        </Title>
       </Track>
     </Composition>
   );
 }
 ```
+<!-- /sync -->
 
 ```sh
 npx uberscene inspect setup-check.tsx

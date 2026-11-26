@@ -73,6 +73,10 @@
       // Cut files, loaded by path with loadVideo; the blocks are copies whose meta and schema the CLI reads.
       "entry": ["*.tsx", "cards/*.tsx", "blocks/*.tsx", "test/**/*.ts"]
     },
+    "examples/skill": {
+      // The skill's examples: copied into its pages by scripts/gen-docs.ts and resolved by scripts/skill.test.ts.
+      "entry": ["*.tsx"]
+    },
     "examples/tiktok": {
       // Cut files, loaded by path with loadVideo from render.ts.
       "entry": ["*.tsx", "*.ts"]
