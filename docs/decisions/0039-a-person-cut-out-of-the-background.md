@@ -95,9 +95,14 @@ footage's manifest entry:
 "talk": {
   "kind": "video",
   "duration": 36.62,
-  "matte": { "file": "talk.matte.webm", "model": "rvm-resnet50", "made": "uberscene 0.7.0" }
-}
+  "matte": "talk.matte",
+  "matteModel": { "name": "rvm-resnet50", "sha256": "25db300f…" }
+},
+"talk.matte": { "kind": "video", "duration": 36.62, "fps": 23.98, "width": 1920, "height": 1080 }
 ```
+
+As shipped (#199 and the `uberscene matte` change), `matte` names another video asset rather than holding a file
+path: the resolver, the export and the media resolver already work by asset id. `matteModel` records what made it.
 
 A file, and not a step of the render, for the reasons the transcript and the beats are files: it is made once, it can
 be looked at and replaced, the preview and the export read the same thing, and a render stays as fast and as
@@ -126,20 +131,30 @@ repeatable as before. A matte made by any other tool (a paid service, a roto art
 ```sh
 npx uberscene matte talk.mp4                 # writes talk.matte.webm and the manifest entry
 npx uberscene matte talk.mp4 --model rvm-resnet50
-npx uberscene look video.tsx --matte speaker  # the clip's matte beside its picture, to judge the edge
+npx uberscene matte models                    # the registry: name, licence, size, downloaded or not
 ```
 
 - The command decodes the footage, runs a matting model on each frame in order, and encodes the matte. It prints the
   model, the seconds per frame and the two numbers above (background in the cut-out where it can be told, change
   between frames), so an agent has something to read.
-- Models run through ONNX Runtime in Node, an optional dependency fetched on first use, as Chrome and the native
-  codecs are. RobustVideoMatting publishes ONNX exports; the others tested here ran through ONNX already.
-- **UberScene ships the runner, not the models.** A small registry lists each model: its name, where its file comes
-  from, its SHA-256, its licence, and whether it keeps state between frames. The first use of a model prints its
-  licence and fetches it from its own source. So a GPL-3.0 model is the user's download and choice, and is never in
-  UberScene's package. Whether this is enough for RobustVideoMatting needs a legal read before it is offered by name.
-- The default is the best permissive model we have validated. Today that is U²-Net human segmentation, which is
-  visibly softer than RobustVideoMatting; testing MODNet, and BiRefNet on a GPU, comes before choosing.
+- **Models run in the export's headless Chrome**, through ONNX Runtime for the web (WASM, on the page's threads),
+  an optional peer dependency the project installs. The page decodes the footage with the same library the export
+  uses and encodes the matte to VP9, one frame for each frame of the footage at its time, so no frames cross between
+  processes and it runs wherever an export runs. ONNX Runtime in Node was the first idea; Node has no video decoder
+  of its own, and the native codecs are published for five platforms only. Measured on 4 cores at 1080p:
+  RobustVideoMatting ResNet-50 about 0.6 s a frame (0.22 s in PyTorch), MobileNetV3 about 0.25 s, U²-Net 1.5 s.
+- **UberScene ships the runner, not the models.** A registry (`models.json` in `@uberscene/render`) lists each model:
+  its name, where its file comes from, its SHA-256, its size, its licence, how to feed it, and the state it carries
+  from frame to frame. The first use of a model prints its licence and fetches it from its own source into a cache,
+  once accepted (asked on a terminal; `--accept-licence` for scripts and agents). `UBERSCENE_MODEL_REGISTRY` adds a
+  user's own models.
+- **The default is RobustVideoMatting ResNet-50 (GPL-3.0)**, the best edges measured here. GPL-3.0 sets conditions on
+  conveying the program, not on running it (its section 9), and a matte is the program's output, not the program.
+  UberScene does not convey the model: the registry names the authors' own release, the user's machine downloads it,
+  and nothing of it is in UberScene's package. So the conditions are the user's to meet only if they pass the model
+  file on. A team whose policy rules out GPL tools sees the licence before anything is downloaded and picks
+  `u2net-human` (Apache-2.0) with `--model`. This is our reading of the licence, not legal advice; a legal read is
+  still welcome before the default is relied on commercially.
 - The matte also gives the subject's box over time, which `--check-layout` and `frame={{ focus }}` read from the
   manifest today. `uberscene matte` writes `subjects` from it, so "text over the face" is checked without the
   `--subject` flag.
@@ -149,11 +164,11 @@ npx uberscene look video.tsx --matte speaker  # the clip's matte beside its pict
 1. **The matte as an input.** The manifest field, `cutout` on a clip, the second source and the compositor pass, in
    the player and the export. With this alone, a matte made by hand (as in this edit) works, with no model in the
    repository.
-2. **The command.** `uberscene matte`, the runner, the registry with one permissive model, `subjects` from the matte,
-   `look --matte`.
+2. **The command.** `uberscene matte`, the runner, the registry (RobustVideoMatting the default, U²-Net by name),
+   `subjects` from the matte. `look --matte` moves to step 4.
 3. **The interview edit as an example**, rebuilt on `cutout` with shapes for its cards, and a section in the agent
    skill: when a cut-out earns its place, how to check its edge.
-4. **Quality.** `despill` for models without a colour estimate, smoothing over time for models that work one frame
+4. **Quality.** `look --matte`, `despill` for models without a colour estimate, smoothing over time for models that work one frame
    at a time, a GPU provider, more models in the registry.
 
 ## Also missing
@@ -201,7 +216,7 @@ change.
 
 ## Not decided yet
 
-- The default model, pending MODNet and a GPU run of BiRefNet, and the legal read on offering a GPL model by name.
+- Whether the default changes after MODNet and a GPU run of BiRefNet are measured.
 - Whether `cutout` should also take a matte for things other than people (a product, a car): the models differ.
 - The matte's codec and bit depth. Eight-bit VP9 was enough here; fine hair over a bright card may want ten.
 
