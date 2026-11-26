@@ -62,9 +62,9 @@ export default function Video() {
       {/* The cards: a full frame of white or blue over the speaker. */}
       <Track id="cards" layout="free">
         <Clip id="card-craft" src="asset:blue" anchor="talk" at="word:33" duration={3.48} fit="cover" />
-        <Clip id="card-quote" src="asset:white" anchor="talk" at="word:42" duration={3.8} fit="cover" />
-        <Clip id="card-planets" src="asset:blue" anchor="talk" at="word:55" duration={5.26} fit="cover" />
-        <Clip id="card-farther" src="asset:white" anchor="talk" at="word:82" duration={5.26} fit="cover" />
+        <Clip id="card-quote" src="asset:white" anchor="talk" at="word:42" duration={4.16} fit="cover" />
+        <Clip id="card-planets" src="asset:blue" anchor="talk" at="word:55" offset={0.36} duration={4.9} fit="cover" />
+        <Clip id="card-farther" src="asset:white" anchor="talk" at="word:82" duration={5.98} fit="cover" />
       </Track>
 
       {/* What sits on the cards: the b-roll, and the speaker cut out of his background. */}
@@ -94,7 +94,7 @@ export default function Video() {
           src="asset:cutout"
           anchor="talk"
           at="word:42"
-          duration={3.8}
+          duration={4.16}
           fit="cover"
           volume={0}
           in="word:42"
@@ -107,7 +107,8 @@ export default function Video() {
           src="asset:saturn"
           anchor="talk"
           at="word:55"
-          duration={5.26}
+          offset={0.36}
+          duration={4.9}
           fit="cover"
           volume={0}
           in={0}
@@ -127,10 +128,11 @@ export default function Video() {
           src="asset:cutout"
           anchor="talk"
           at="word:55"
-          duration={5.26}
+          offset={0.36}
+          duration={4.9}
           fit="cover"
           volume={0}
-          in="word:55"
+          in="word:57.end"
           effects={[KEY]}
           box={{ x: 220, y: 40, width: 1920, height: 1080 }}
           transform={{ scale: 1.15, anchor: { x: 0.47, y: 1 } }}
@@ -157,7 +159,7 @@ export default function Video() {
           src="asset:cutout"
           anchor="talk"
           at="word:82"
-          duration={5.26}
+          duration={5.98}
           fit="cover"
           volume={0}
           in="word:82"
@@ -189,13 +191,13 @@ export default function Video() {
             anchor: { x: 0.47, y: 1 },
           }}
         />
-        <Clip id="hook-blue" src="asset:blue" anchor="hook" at="word:47" duration={1.88} fit="cover" />
+        <Clip id="hook-blue" src="asset:blue" anchor="hook" at="word:47" duration={2.46} fit="cover" />
         <Clip
           id="hook-craft"
           src="asset:voyager"
           anchor="hook"
           at="word:47"
-          duration={1.88}
+          duration={2.46}
           fit="cover"
           volume={0}
           in={0.9}
@@ -242,7 +244,7 @@ export default function Video() {
           id="hook-3"
           anchor="hook"
           at="word:47"
-          duration={1.88}
+          duration={2.46}
           style={{ font: caps, size: 140, weight: 700, color: WHITE, align: "left" }}
           box={{ x: 124, y: 110, width: 1100, height: 170, origin: "topLeft" }}
           enter={{ type: "slideUp", duration: 0.22, easing: "easeOutQuart" }}
@@ -254,7 +256,7 @@ export default function Video() {
           id="hook-4"
           anchor="hook"
           at="word:50"
-          duration={1.26}
+          duration={1.84}
           style={{ font: caps, size: 220, weight: 700, color: BLUE, align: "left", background: WHITE }}
           box={{ x: 120, y: 300, width: 1010, height: 264, origin: "topLeft" }}
           enter={{ type: "slideUp", duration: 0.22, easing: "easeOutQuart" }}
@@ -266,7 +268,7 @@ export default function Video() {
           id="hook-5"
           anchor="hook"
           at="word:52"
-          duration={0.82}
+          duration={1.4}
           style={{ font: caps, size: 220, weight: 700, color: WHITE, align: "left" }}
           box={{ x: 124, y: 600, width: 1300, height: 270, origin: "topLeft" }}
           enter={{ type: "slideUp", duration: 0.22, easing: "easeOutQuart" }}
@@ -440,7 +442,7 @@ export default function Video() {
           id="quote-1"
           anchor="talk"
           at="word:42"
-          duration={3.8}
+          duration={4.16}
           style={{ font: light, size: 98, weight: 400, color: INK, align: "left", letterSpacing: -4 }}
           animation={{ type: "typewriter", in: 0.3 }}
           box={{ x: 930, y: 250, width: 880, height: 110, origin: "topLeft" }}
@@ -453,7 +455,7 @@ export default function Video() {
           id="quote-2"
           anchor="talk"
           at="word:46"
-          duration={3.04}
+          duration={3.4}
           style={{ font: light, size: 98, weight: 400, color: INK, align: "left", letterSpacing: -4 }}
           animation={{ type: "typewriter", in: 0.3 }}
           box={{ x: 930, y: 358, width: 880, height: 110, origin: "topLeft" }}
@@ -466,7 +468,7 @@ export default function Video() {
           id="quote-3"
           anchor="talk"
           at="word:50"
-          duration={1.82}
+          duration={2.18}
           style={{ font: light, size: 98, weight: 400, color: BLUE, align: "left", letterSpacing: -4 }}
           animation={{ type: "typewriter", in: 0.3 }}
           box={{ x: 930, y: 466, width: 880, height: 110, origin: "topLeft" }}
@@ -479,7 +481,7 @@ export default function Video() {
           id="quote-4"
           anchor="talk"
           at="word:52"
-          duration={1.38}
+          duration={1.74}
           style={{ font: light, size: 98, weight: 400, color: INK, align: "left", letterSpacing: -4 }}
           animation={{ type: "typewriter", in: 0.3 }}
           box={{ x: 930, y: 574, width: 880, height: 110, origin: "topLeft" }}
@@ -581,7 +583,7 @@ export default function Video() {
           id="far-1"
           anchor="talk"
           at="word:82"
-          duration={1.96}
+          duration={2.84}
           style={{ font: light, size: 96, weight: 400, color: INK, align: "left", letterSpacing: -3 }}
           animation={{ type: "typewriter", in: 0.3 }}
           box={{ x: 940, y: 190, width: 960, height: 108, origin: "topLeft" }}
@@ -594,7 +596,7 @@ export default function Video() {
           id="far-2"
           anchor="talk"
           at="word:84"
-          duration={1.0}
+          duration={1.88}
           style={{ font: light, size: 132, weight: 400, color: BLUE, align: "left", letterSpacing: -5 }}
           animation={{ type: "typewriter", in: 0.3 }}
           box={{ x: 940, y: 310, width: 960, height: 148, origin: "topLeft" }}
@@ -607,7 +609,7 @@ export default function Video() {
           id="far-3"
           anchor="talk"
           at="word:86"
-          duration={0.52}
+          duration={1.4}
           style={{ font: light, size: 176, weight: 400, color: BLUE, align: "left", letterSpacing: -7 }}
           animation={{ type: "typewriter", in: 0.3 }}
           box={{ x: 940, y: 480, width: 980, height: 197, origin: "topLeft" }}
@@ -620,7 +622,8 @@ export default function Video() {
           id="beyond-1"
           anchor="talk"
           at="word:88"
-          duration={3.3}
+          offset={0.88}
+          duration={3.14}
           style={{ font: light, size: 100, weight: 400, color: INK, align: "left", letterSpacing: -4 }}
           animation={{ type: "typewriter", in: 0.3 }}
           box={{ x: 940, y: 250, width: 960, height: 112, origin: "topLeft" }}
@@ -633,7 +636,7 @@ export default function Video() {
           id="beyond-2"
           anchor="talk"
           at="word:91"
-          duration={1.66}
+          duration={2.38}
           style={{ font: light, size: 100, weight: 400, color: INK, align: "left", letterSpacing: -4 }}
           animation={{ type: "typewriter", in: 0.3 }}
           box={{ x: 940, y: 362, width: 1000, height: 112, origin: "topLeft" }}
@@ -646,7 +649,7 @@ export default function Video() {
           id="beyond-3"
           anchor="talk"
           at="word:94"
-          duration={0.68}
+          duration={1.4}
           style={{ font: light, size: 100, weight: 400, color: BLUE, align: "left", letterSpacing: -4 }}
           animation={{ type: "typewriter", in: 0.3 }}
           box={{ x: 940, y: 474, width: 1000, height: 112, origin: "topLeft" }}
@@ -663,6 +666,7 @@ export default function Video() {
           id="end-card"
           type="rectangle"
           anchor="talk.end"
+          offset={0.72}
           duration={2.2}
           width={1920}
           height={1080}
@@ -674,6 +678,7 @@ export default function Video() {
         <Title
           id="end-name"
           anchor="talk.end"
+          offset={0.72}
           duration={2.2}
           style={{ font: light, size: 190, weight: 400, color: WHITE, align: "center", letterSpacing: -9 }}
           box={{ x: 960, y: 520, width: 1400, height: 230, origin: "center" }}
@@ -685,6 +690,7 @@ export default function Video() {
         <Title
           id="end-credit"
           anchor="talk.end"
+          offset={0.72}
           duration={2.2}
           style={{ font: light, size: 40, weight: 400, color: WHITE, align: "center" }}
           box={{ x: 960, y: 668, width: 600, height: 50, origin: "center" }}
