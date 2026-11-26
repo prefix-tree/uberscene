@@ -1,6 +1,7 @@
 import { round3 } from "@uberscene/kit/schema";
 
 import { type ElementProps, type OverlayLayout, overlayLayout } from "./layout";
+import { shapeSizeOf } from "./size";
 import { type PreparedSvg, prepareSvg } from "./svg";
 
 /**
@@ -50,11 +51,6 @@ interface ShapeMarkup {
   /** Pixels the stroke and shadows reach past the box on any side. */
   readonly bleed: number;
   readonly warnings: readonly string[];
-}
-
-/** The size a shape draws at, before layout. */
-function shapeSize(p: ElementProps): { width: number; height: number } {
-  return { width: Number(p.placement.props.width ?? 200), height: Number(p.placement.props.height ?? 200) };
 }
 
 function shapeMarkup(props: Readonly<Record<string, unknown>>, size: { width: number; height: number }): ShapeMarkup {
@@ -116,7 +112,7 @@ export interface ShapeDrawing {
 
 /** How a `<Shape>` element draws at its time: its layout, and the markup with entrance drawing applied. */
 export function shapeDrawing(p: ElementProps, tokens?: Readonly<Record<string, string>>): ShapeDrawing {
-  const size = shapeSize(p);
+  const size = shapeSizeOf(p.placement.props);
   const layout = overlayLayout(p, size, "none", true);
   const shape = shapeMarkup(p.placement.props, size);
   const prepared = prepareSvg(shape.markup, {

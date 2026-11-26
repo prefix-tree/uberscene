@@ -10,6 +10,7 @@ import { frameIndex } from "../model/time";
 import type { Matrix2D } from "../model/transform";
 import { type VisibleItem, visiblePlacements } from "../model/visible";
 import { type ElementProps, OVERLAY_KINDS } from "../overlays/layout";
+import { spaceOf } from "../overlays/space";
 import { devWarn } from "../warn";
 import { Adjustment } from "./elements/Adjustment";
 import { Captions } from "./elements/Captions";
@@ -228,6 +229,8 @@ export function sameElement(a: ElementCellProps, b: ElementCellProps): boolean {
     return false;
   // A camera moves an overlay that has no keys of its own, at times its own frame does not change.
   if (!sameMatrix(trackCamera(a.state, p.track, a.time), trackCamera(b.state, q.track, b.time))) return false;
+  // A parent carries it at times its own frame does not change, and an edit to the parent moves it too.
+  if (!sameMatrix(spaceOf(a.state, p, a.time).matrix, spaceOf(b.state, q, b.time).matrix)) return false;
   return (a.item.transition?.progress ?? -1) === (b.item.transition?.progress ?? -1);
 }
 

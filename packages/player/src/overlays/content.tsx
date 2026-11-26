@@ -19,21 +19,6 @@ import type { ElementProps } from "./layout";
 
 const SUPPORTED: ReadonlySet<string> = new Set(TEXT_ANIMATION_TYPES);
 
-/**
- * A title's text box: its `box`'s width and height, each the frame's when left out. A title has no `fit`, so its
- * content is drawn at this size and `placeBox` never scales it.
- */
-export function titleBox(
-  props: Readonly<Record<string, unknown>>,
-  comp: { width: number; height: number },
-): { width: number; height: number } {
-  const box = (props.box ?? {}) as { width?: unknown; height?: unknown };
-  return {
-    width: typeof box.width === "number" ? box.width : comp.width,
-    height: typeof box.height === "number" ? box.height : comp.height,
-  };
-}
-
 /** Text title: the file's text content in its `style`; entrance/exit presets as CSS transforms. */
 export function titleContent(
   p: ElementProps & { readonly text: string; readonly runs?: readonly TextRun[] | undefined },
@@ -350,9 +335,4 @@ export function stickerPlaceholder(label: string): ReactNode {
       {label}
     </div>
   );
-}
-
-/** Side length of the box a sticker is drawn in. */
-export function stickerSize(p: ElementProps): number {
-  return Math.round(Math.min(p.state.composition.width, p.state.composition.height) / 4);
 }

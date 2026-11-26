@@ -11,6 +11,7 @@ import {
   animatedBox,
   animatedTransform,
   type Box,
+  IDENTITY,
   layoutRect,
   type Matrix2D,
   matrixToCss,
@@ -20,6 +21,7 @@ import {
 import { transitionLook } from "../model/transition";
 import type { TransitionRole } from "../model/visible";
 import { htmlInCanvas } from "../react/html-in-canvas";
+import { spaceOf } from "./space";
 
 /** Placement kinds drawn above the canvas plane, besides captions. */
 export { OVERLAY_KINDS } from "../model/backdrop";
@@ -58,7 +60,9 @@ export function overlayLayout(p: ElementProps, size: Box, fit: FitMode = "none",
   const rel = p.time - p.placement.start;
   const transform = animatedTransform(p.placement.props.transform as Transform | undefined, p.children, rel);
   const box = animatedBox(p.placement.props.box as ElementBox | undefined, p.children, rel);
-  const layout = layoutRect(p.state.composition, size, fit, transform, box);
+  // With a `parent`, the box is read in the parent's box and the parent's place carries it (overlays/space.ts).
+  const space = spaceOf(p.state, p.placement, p.time);
+  const layout = layoutRect(space.frame, size, fit, transform, box);
   // With HTML-in-Canvas and a shader effect, every effect runs through the shader box in file order and the DOM
   // carries none; without it, the effects draw as CSS here (react/DomLayer.tsx).
   const { filter } = effectPipeline(p.state, p.children, p.placement.id, rel, { shaders: htmlInCanvas() });
@@ -70,10 +74,12 @@ export function overlayLayout(p: ElementProps, size: Box, fit: FitMode = "none",
   );
   const fadeForDraw = !drawable && motion.draw !== null ? motion.draw : 1;
   const view = trackCamera(p.state, p.placement.track, p.time);
+  const own = multiply(layout.matrix, motion.matrix);
+  const placed = space.matrix === IDENTITY ? own : multiply(space.matrix, own);
   return {
     rect: { w: layout.rect.w, h: layout.rect.h },
     // Under a camera, the view goes on last: the element's own place and its entrance both follow it.
-    matrix: view ? multiply(view, multiply(layout.matrix, motion.matrix)) : multiply(layout.matrix, motion.matrix),
+    matrix: view ? multiply(view, placed) : placed,
     opacity: (transform.opacity ?? 1) * motion.opacity * fadeForDraw,
     filter: filter || null,
     blend: blend && blend !== "normal" ? blendOf(blend) : null,
