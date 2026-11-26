@@ -15,7 +15,11 @@ import {
 } from "@uberscene/player/engine";
 import {
   type ElementRow,
+  EVENT_KINDS,
+  type EventKind,
+  type EventRow,
   followOf,
+  listenRange,
   lookupAsset,
   type Moment,
   parseMoments,
@@ -23,6 +27,7 @@ import {
   resolveMoments,
   spokenWords,
   type TimelineRows,
+  timelineEvents,
   timelineRows,
 } from "@uberscene/sdk";
 
@@ -221,6 +226,8 @@ export function formatTimeline(file: string, rows: TimelineRows): string {
   const words = new Map<string, TimelineRows["words"][number][]>();
   for (const w of rows.words) words.set(w.clip, [...(words.get(w.clip) ?? []), w]);
 
+  const music = new Map(rows.music.map((m) => [m.clip, m]));
+
   const line = (e: ElementRow): string => {
     const when =
       e.end > e.start
@@ -234,6 +241,8 @@ export function formatTimeline(file: string, rows: TimelineRows): string {
       parts.push(
         `asset:${e.asset} ${seconds(e.in ?? 0)}–${seconds(e.out ?? 0)}${e.speed !== 1 ? ` at ${e.speed}x` : ""}`,
       );
+    const m = music.get(e.id);
+    if (m) parts.push(`${m.tempo !== undefined ? `${round3(m.tempo)} BPM  ` : ""}beat:${m.first}–${m.last}`);
     if (e.text) parts.push(quote(e.text));
     if (e.label) parts.push(`"${e.label}"`);
     if (e.anchor)
@@ -259,7 +268,11 @@ export function formatTimeline(file: string, rows: TimelineRows): string {
 
   for (const track of [...rows.tracks].sort((a, b) => a.order - b.order)) {
     const flags = [track.hidden && "hidden", track.muted && "muted", track.solo && "solo"].filter(Boolean);
-    lines.push(`track ${track.id} (${track.layout}${flags.length ? `, ${flags.join(", ")}` : ""})`);
+    lines.push(
+      `track ${track.id} (${[track.layout, track.role === "general" ? undefined : track.role, ...flags]
+        .filter((part) => part !== undefined)
+        .join(", ")})`,
+    );
     for (const e of rows.elements) if (e.track === track.id && e.parent === track.id) lines.push(line(e));
   }
   const loose = rows.elements.filter((e) => e.track === null && e.kind !== "caption");
@@ -273,6 +286,10 @@ export function formatTimeline(file: string, rows: TimelineRows): string {
   if (rows.cuts.length > 0)
     lines.push(
       `cuts: ${rows.cuts.map((cut) => `${seconds(cut.time)} ${cut.from}→${cut.to}${cut.transition ? ` (${cut.transition})` : ""}`).join(", ")}`,
+    );
+  for (const m of rows.music)
+    lines.push(
+      `music: ${m.clip}  ${m.tempo !== undefined ? `${round3(m.tempo)} BPM  ` : ""}a beat every ${seconds(m.beatSeconds)} s  beat:${m.first} at ${seconds(rows.beats.find((b) => b.clip === m.clip)?.time ?? m.from)} s to beat:${m.last}  (beats ${m.grid})`,
     );
   return `${lines.join("\n")}\n`;
 }
@@ -343,6 +360,12 @@ export interface InspectOptions {
   readonly json?: boolean;
   /** The file's `schema` values, listed before the timeline (and as `knobs` in the JSON). */
   readonly knobs?: readonly Knob[];
+  /** Every moment of the video in one list, in time order, instead of the timeline. */
+  readonly events?: boolean;
+  /** (events) only a stretch: `all`, a range such as `2..6`, or an element's id. */
+  readonly in?: string;
+  /** (events) only these kinds, comma-separated: beat, word, cut, start, end, marker, shot, silence. */
+  readonly kinds?: string;
 }
 
 export interface InspectResult {
@@ -354,6 +377,9 @@ export interface InspectResult {
 
 /** The timeline of a resolved file, or its moments, as text or JSON. `file` is the name printed. */
 export function inspect(file: string, state: ResolvedState, options: InspectOptions = {}): InspectResult {
+  if (options.events) return inspectEvents(state, options);
+  if (options.in !== undefined || options.kinds !== undefined)
+    return { output: "", errors: ["--in and --kinds go with --events"] };
   const rows = timelineRows(state);
   const knobs = options.knobs ?? [];
   if (options.at === undefined)
@@ -369,4 +395,46 @@ export function inspect(file: string, state: ResolvedState, options: InspectOpti
     output: options.json ? `${JSON.stringify({ ...rows, at: views }, null, 2)}\n` : formatAt(views),
     errors,
   };
+}
+
+function inspectEvents(state: ResolvedState, options: InspectOptions): InspectResult {
+  if (options.at !== undefined) return { output: "", errors: ["--events lists moments itself; leave out --at"] };
+  let range: { from?: number; to?: number } = {};
+  if (options.in !== undefined) {
+    const found = listenRange(state, options.in, "list the events of");
+    if ("error" in found) return { output: "", errors: [found.error] };
+    range = found;
+  }
+  const kinds = options.kinds?.split(",").map((k) => k.trim());
+  const unknown = kinds?.filter((k) => !(EVENT_KINDS as readonly string[]).includes(k)) ?? [];
+  if (unknown.length > 0)
+    return { output: "", errors: [`--kinds: "${unknown.join('", "')}" is not one of ${EVENT_KINDS.join(", ")}`] };
+  const events = timelineEvents(state, { ...range, ...(kinds ? { kinds: kinds as EventKind[] } : {}) });
+  return { output: options.json ? `${JSON.stringify({ events }, null, 2)}\n` : formatEvents(events), errors: [] };
+}
+
+/** Each event on a line: its second, its frame, its kind, what it belongs to, and the beat it is nearest. */
+export function formatEvents(events: readonly EventRow[]): string {
+  if (events.length === 0) return "no events\n";
+  return events
+    .map((e) => {
+      const what = e.kind === "word" ? quote(e.label ?? "") : (e.label ?? "");
+      const parts = [
+        seconds(e.time).padStart(7),
+        `f${e.frame}`.padEnd(6),
+        e.kind.padEnd(7),
+        `${e.of}${e.i !== undefined ? ` ${e.i}` : ""}`,
+      ];
+      if (what) parts.push(what);
+      if (e.nearestBeat) {
+        const { clip, i, offsetMs } = e.nearestBeat;
+        parts.push(
+          offsetMs === 0
+            ? `on ${clip}@beat:${i}`
+            : `${Math.abs(offsetMs)} ms ${offsetMs > 0 ? "after" : "before"} ${clip}@beat:${i}`,
+        );
+      }
+      return `${parts.join("  ")}\n`;
+    })
+    .join("");
 }

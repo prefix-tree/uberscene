@@ -82,6 +82,7 @@ export default defineConfig({
         text: "Check and export",
         items: [
           { text: "Checking a cut", link: "/guide/checking" },
+          { text: "Sync with the music", link: "/guide/sync" },
           { text: "Exporting", link: "/guide/exporting" },
         ],
       },

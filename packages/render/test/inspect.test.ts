@@ -125,6 +125,8 @@ cuts: 3.40 hook→broll (x1)
       "generators",
       "words",
       "cuts",
+      "music",
+      "beats",
       "errors",
     ]);
     expect(rows.elements.find((e: { id: string }) => e.id === "broll")).toMatchObject({ start: 3.4, startFrame: 102 });

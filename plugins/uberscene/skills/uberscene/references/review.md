@@ -12,6 +12,7 @@ npx uberscene lint video.tsx                      # exits 0
 npx uberscene video.tsx --check-layout            # exits 0, or 3 for issues you keep and name
 npx uberscene video.tsx --check-motion            # every stretch where nothing moves for a second or more
 npx uberscene inspect video.tsx                   # the timeline: lengths, cuts, words
+npx uberscene video.tsx --check-sync              # with music: every cut and start against its beat (sync.md)
 npx uberscene look video.tsx --at <beats> --listen all --out review.png
 ```
 
@@ -37,7 +38,7 @@ what they see first, what they read. Then ask:
 | Is there one thing to look at in each frame? | two titles fighting, the accent on everything |
 | Does each cut carry motion? | a scene that stops, then the next starts from rest ([motion.md](motion.md)) |
 | Can every word be read in time, at phone size? | a line gone before it's read; text on a busy sky |
-| Does the sound do something? | music under it, nothing landing on a hit |
+| Does the sound do something? | music under it, nothing landing on a hit; `--check-sync` shows cuts `near` a beat or none `on` one |
 | Does it end on the payoff? | a long logo spin after the point |
 | Does anything look like a default? | the theme's palette as it is, every title the same fade ([look.md](look.md)) |
 

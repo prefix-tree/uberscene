@@ -23,6 +23,7 @@ import { installCodec } from "./native/codecs";
 import { draftPath, renderVideo } from "./renderer";
 import { installSkills } from "./skills";
 import { renderStill } from "./still";
+import { checkSync, formatSync } from "./sync-check";
 import { CHROME_MILESTONE, cachedChrome, installChrome } from "./web/chrome";
 import { formatWhere, whereThings } from "./where";
 
@@ -34,7 +35,9 @@ const USAGE = `Usage: uberscene <file.tsx> --out <video.mp4|.webm|.mp3|.wav> [--
        uberscene <file.tsx> --check-layout [--safe-zone <zone>] [--subject <x,y,w,h>] [--json] [options]
        uberscene <file.tsx> --check-motion [--min <s>] [--step <s>] [--from <s> --to <s>] [--json] [options]
        uberscene <file.tsx> --srt <captions.srt> | --vtt <captions.vtt> [--from <s> --to <s>]
+       uberscene <file.tsx> --check-sync [--json] [options]
        uberscene inspect <file.tsx> [--at <moments>] [--json] [--manifest <file>] [--props <json>]
+       uberscene inspect <file.tsx> --events [--in <stretch>] [--kinds <kinds>] [--json]
        uberscene lint <file.tsx>... [--fix] [--json] [--manifest <file>]
        uberscene look <file.tsx> [--at <moments> | --around <id>] [--without <id>] [--listen <stretch>]
                     [--zones <zone>] [--out look.png] [options]
@@ -66,6 +69,11 @@ const USAGE = `Usage: uberscene <file.tsx> --out <video.mp4|.webm|.mp3|.wav> [--
                         the words each clip plays, effects, keyframes and cuts; --json prints flat rows instead
   --at <moments>        (inspect) what is on screen and heard at each moment, comma-separated. A moment is one of:
                         ${MOMENT_FORMS}
+  --events              (inspect) every moment of the video in one list, in time order: beats, words, cuts,
+                        elements starting and ending, markers, shots and silences; a cut, a start or an end says
+                        which beat it is nearest and by how many milliseconds. --json prints { events: [...] }
+  --in <stretch>        (inspect --events) only a stretch: all, a range such as 2..6, or an element's id
+  --kinds <kinds>       (inspect --events) only these kinds, comma-separated: beat,cut
   look                  draw many frames in one browser start, as one contact sheet (--out, default look.png), and
                         print what each cell is as JSON. Without --at or --around: the first frame of each clip,
                         both sides of every cut and each overlay, as an editor skims a cut
@@ -146,7 +154,11 @@ const USAGE = `Usage: uberscene <file.tsx> --out <video.mp4|.webm|.mp3|.wav> [--
                         frames every --step seconds (default 0.2), each compared with the next, as the export draws
                         them; writes no file, and exits 3 when it finds one
   --min <s>             (check-motion) the shortest still stretch it reports
-  --json                print the layout or motion check as JSON instead
+  --check-sync          print how the picture sits on the music, without a browser: each cut and each start on
+                        screen with its nearest beat and its distance from it, the ones that miss a beat by a
+                        little, and music that stops mid-beat with no fade; writes no file, and exits 3 when it
+                        finds issues
+  --json                print the layout, motion or sync check as JSON instead
   where                 print where each thing on screen is at each moment of --at: its box in pixels, whether it
                         is in the frame and in each safe zone (tiktok, reels and shorts for a portrait video,
                         or the one --safe-zone names), and what it overlaps. A part a layer's code names with
@@ -208,6 +220,10 @@ async function main(): Promise<number> {
       from: { type: "string" },
       min: { type: "string" },
       "check-motion": { type: "boolean" },
+      "check-sync": { type: "boolean" },
+      events: { type: "boolean" },
+      in: { type: "string" },
+      kinds: { type: "string" },
       to: { type: "string" },
       codec: { type: "string" },
       bitrate: { type: "string" },
@@ -341,6 +357,9 @@ async function main(): Promise<number> {
       knobs: video.knobs,
       ...(values.at !== undefined ? { at: values.at } : {}),
       ...(values.json ? { json: true } : {}),
+      ...(values.events ? { events: true } : {}),
+      ...(values.in !== undefined ? { in: values.in } : {}),
+      ...(values.kinds !== undefined ? { kinds: values.kinds } : {}),
     });
     process.stdout.write(result.output);
     for (const e of result.errors) process.stderr.write(`error: ${e}\n`);
@@ -447,7 +466,7 @@ async function main(): Promise<number> {
     return result.errors.length > 0 ? 1 : 0;
   }
   const [file] = positionals;
-  const checking = Boolean(values["check-layout"] || values["check-motion"]);
+  const checking = Boolean(values["check-layout"] || values["check-motion"] || values["check-sync"]);
   const subtitlesOnly = !values.out && !checking && Boolean(values.srt || values.vtt);
   if (values.help || !file || (!values.out && !checking && !subtitlesOnly)) {
     process.stderr.write(USAGE);
@@ -472,6 +491,13 @@ async function main(): Promise<number> {
     process.stderr.write(`${path}: ${format === "srt" ? "SRT" : "WebVTT"} captions\n`);
   }
   if (subtitlesOnly) return 0;
+  if (values["check-sync"]) {
+    if (values["check-layout"] || values["check-motion"])
+      throw new Error("--check-sync is a check of its own; run the checks one at a time");
+    const report = checkSync(loaded.state);
+    process.stdout.write(values.json ? `${JSON.stringify(report, null, 2)}\n` : formatSync(file, report));
+    return report.issues.length > 0 ? EXIT_LAYOUT_ISSUES : 0;
+  }
   const fonts = (values.font ?? []).map(readFont);
   const common = {
     state: loaded.state,

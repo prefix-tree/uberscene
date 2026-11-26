@@ -180,7 +180,7 @@ on that beat when the music is trimmed or moved.
 `in="beat:0"` starts the song on its first beat and `out="beat:63.end"` ends it on a whole bar of four. Each shot
 starts on its beat. Beats are never exactly a whole number of frames apart, so give a shot a little more than its
 beats (at 120 BPM four beats is 2 s: `duration={2.1}`) and write the shots in order on one track: the next one covers
-the last, and no frame is left empty at a cut. `inspect` and `look` take `song@beat:16` as a moment.
+the last, and no frame is left empty at a cut. `inspect` and `look` take `song@beat:16` as a moment. `--check-sync` then says, without a browser, whether every cut and start is on its beat ([Sync](./sync)).
 [Cut on the beat](/examples/beats) is a whole film made this way.
 
 ::: warning Limits of `at`
