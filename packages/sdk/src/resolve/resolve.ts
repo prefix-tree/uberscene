@@ -54,6 +54,7 @@ import { derivedOrigin, expandKeys } from "./expand";
 import { overlay } from "./overlay";
 import { type PushSpec, pushKeys } from "./push";
 import { placeScene, type SceneUse, sceneAssetId, withSceneAssets } from "./scene3d";
+import { shapeKeyProblem } from "./shape-keys";
 import { freezeHoldsOf, heldWithin, holdTotal, rampAdvance, rampInverse, reachedHolds, speedKeysOf } from "./speed";
 import type { CollectedNode, CollectedTree, Editable, LayerInterior } from "./tree";
 
@@ -1119,6 +1120,12 @@ function keyframeErrors(items: ReadonlyMap<string, Placement>): ResolveError[] {
   for (const k of items.values()) {
     if (k.kind !== "keyframe") continue;
     const parent = k.parent ? items.get(k.parent) : undefined;
+    const property = k.props.property;
+    if (typeof property === "string" && property.startsWith("shape.")) {
+      const problem = shapeKeyProblem(property, k.props.value);
+      if (problem) out.push({ code: "SCHEMA", id: k.id, prop: "value", message: problem });
+      continue;
+    }
     const param = k.props.param;
     if (typeof param !== "string" || parent?.kind !== "effect") continue;
     const problem = effectParamProblem(parent.props.type, fileShaders, param, k.props.value);

@@ -1,10 +1,11 @@
-import { type CurveKey, capabilitiesOf, curveAt } from "@uberscene/kit/schema";
+import { blendFor, type CurveBlend, type CurveKey, capabilitiesOf, curveAt } from "@uberscene/kit/schema";
 
 import { parseTimeRef } from "../../manifest/timeref";
 import { lookupAsset } from "../../manifest/types";
 import type { Json } from "../../patches/types";
 import { isKeyList } from "../../resolve/expand";
 import type { Placement as ResolvedPlacement, ResolvedState } from "../../resolve/resolve";
+import { SHAPE_KEY_PATHS } from "../../resolve/shape-keys";
 import { carry, carryRemoval, carrySplit, carryTrim } from "../carry";
 import {
   define,
@@ -358,8 +359,8 @@ interface SplitPlan {
  * The value of a curve at `rel`, as the player draws it: the kit's `curveAt`, with numbers rounded to six places so a
  * key written at the cut reads back as written.
  */
-function curveValue(keys: readonly CurveKey[], rel: number): unknown {
-  const v = curveAt(keys, rel);
+function curveValue(keys: readonly CurveKey[], rel: number, blend: CurveBlend = "number"): unknown {
+  const v = curveAt(keys, rel, undefined, blend);
   if (typeof v === "number") return round(v);
   return Array.isArray(v) && v.every((x) => typeof x === "number") ? v.map(round) : v;
 }
@@ -380,12 +381,16 @@ function keyPathsOf(value: unknown, path = ""): string[] {
  * the cut; the second starts with the keys at or after it, shifted, and a key at 0 with the value there when the cut
  * fell mid-curve, easing on as the cut segment did.
  */
-function splitKeys(keys: readonly KeyJson[], atRel: number): { left: KeyJson[]; right: KeyJson[] } {
+function splitKeys(
+  keys: readonly KeyJson[],
+  atRel: number,
+  blend: CurveBlend = "number",
+): { left: KeyJson[]; right: KeyJson[] } {
   const sorted = [...keys].sort((a, b) => a.at - b.at);
   const curve: CurveKey[] = sorted.map((k) => ({ at: k.at, value: k.value, easing: k.easing as never }));
   const before = sorted.filter((k) => k.at < atRel);
   const after = sorted.filter((k) => k.at >= atRel);
-  const value = curveValue(curve, atRel) as Json;
+  const value = curveValue(curve, atRel, blend) as Json;
   const left = [...before];
   if (after.length > 0) left.push({ at: round(atRel), value });
   const right = after.map((k) => ({ ...k, at: round(k.at - atRel) }));
@@ -416,7 +421,9 @@ function splitAt(node: NodeSpec, atRel: number, taken: Set<string>): SplitPlan {
   let rightAll: Record<string, unknown> = { ...props };
   const touched = new Set<string>();
   for (const path of keyPathsOf(props)) {
-    const { left, right: r } = splitKeys(readPath(props, path) as unknown as KeyJson[], atRel);
+    // A shape's colours and points cut at the colour or the shape drawn there (under a generator, at its base's path).
+    const shapeProperty = node.kind === "shape" ? SHAPE_KEY_PATHS[path.replace(/\.(base|keys)$/, "")] : undefined;
+    const { left, right: r } = splitKeys(readPath(props, path) as unknown as KeyJson[], atRel, blendFor(shapeProperty));
     const l = writePath(leftAll, path, canonicalKeys(left));
     leftAll = { ...leftAll, [l.prop]: l.value };
     const w = writePath(rightAll, path, canonicalKeys(r));
