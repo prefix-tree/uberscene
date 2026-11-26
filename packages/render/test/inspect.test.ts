@@ -122,6 +122,7 @@ cuts: 3.40 hook→broll (x1)
       "elements",
       "effects",
       "keyframes",
+      "generators",
       "words",
       "cuts",
       "errors",
