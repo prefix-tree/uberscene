@@ -2511,18 +2511,26 @@ html:has(.VPContent.has-sidebar) .VPSidebar {
   line-height: 1.55;
   color: var(--cc-ink-2);
 }
-/* The roadmap row: one wide card, its icon beside the words. */
-.cc-features-group.wide a.cc-feature {
-  display: grid;
-  grid-template-columns: 40px minmax(0, 1fr);
-  column-gap: 18px;
-  row-gap: 4px;
+/* The roadmap: under a rule of its own, dashed cards on no ground, so nothing planned reads as shipped. */
+.vp-doc p.cc-features-divider {
+  grid-column: 1 / -1;
+  margin: 16px 0 -16px;
+  padding-top: 28px;
+  border-top: 1px dashed var(--cc-rule);
+  font-family: var(--cc-mono);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cc-ink);
+}
+.cc-features-group.roadmap a.cc-feature {
   border-style: dashed;
   background: transparent;
 }
-.cc-features-group.wide .cc-feature-icon {
-  grid-row: span 2;
-  margin: 0;
+.cc-features-group.roadmap .cc-feature-icon {
+  background: transparent;
+  border: 1px dashed currentColor;
 }
 @media (max-width: 960px) {
   .cc-features {
@@ -2629,10 +2637,9 @@ html:has(.VPContent.has-sidebar) .VPSidebar {
 .vp-doc a.home-link:hover::after {
   transform: translateX(3px);
 }
-.vp-doc p.home-run {
-  margin: 40px 0 10px;
-  font-size: 15px;
-  color: var(--cc-grey);
+/* The agent picker under the hero's buttons: the main way in. */
+.home-hero .cc-agents {
+  margin-top: 36px;
 }
 /* The command as a light pill, like a key on the page, not a terminal. */
 .home-hero .cc-command {
@@ -2696,4 +2703,30 @@ html:has(.VPContent.has-sidebar) .VPSidebar {
   .vp-doc a.home-link::after {
     transition: none;
   }
+}
+
+/* The mission, at the top of the hero: a label key, then one line of what UberScene is for. */
+.vp-doc p.home-mission {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 12px;
+  max-width: 640px;
+  margin: 0 0 18px;
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--cc-ink);
+}
+.vp-doc p.home-mission span {
+  flex: none;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--cc-ink);
+  color: var(--cc-paper);
+  font-family: var(--cc-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }

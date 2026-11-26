@@ -1230,7 +1230,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/render`
 
-92 exports.
+95 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -1278,6 +1278,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `InspectResult` | interface |  |
 | `installChrome` | function | Downloads Chrome for Testing of `CHROME_MILESTONE` into the cache and returns its binary. |
 | `installSkill` | function | Writes the skill into a project. |
+| `installSkills` | function | Writes both skills. |
 | `LayoutCheckOptions` | interface |  |
 | `LayoutCheckResult` | interface |  |
 | `LayoutIssue` | interface | One element breaking one rule over a run of consecutive samples, described for a reader who cannot see the frame. |
@@ -1312,6 +1313,8 @@ Every name each entry exports, read from the code. The sections above explain th
 | `SAFE_ZONES` | const | Where a platform's own UI covers the picture. |
 | `SafeZoneName` | type |  |
 | `SeenElement` | interface | One element on screen at a moment, with its values there. |
+| `SETUP_SKILL` | const |  |
+| `SKILL` | const | The skills this package ships. |
 | `SkillInstallOptions` | interface |  |
 | `SkillInstallResult` | interface |  |
 | `snippetOf` | function | The element that plays the asset, to paste into the video. |

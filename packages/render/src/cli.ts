@@ -20,7 +20,7 @@ import { directoryResolver } from "./media";
 import { checkMotion, formatMotion } from "./motion-check";
 import { installCodec } from "./native/codecs";
 import { draftPath, renderVideo } from "./renderer";
-import { installSkill } from "./skills";
+import { installSkills } from "./skills";
 import { renderStill } from "./still";
 import { CHROME_MILESTONE, cachedChrome, installChrome } from "./web/chrome";
 import { formatWhere, whereThings } from "./where";
@@ -107,9 +107,10 @@ const USAGE = `Usage: uberscene <file.tsx> --out <video.mp4|.webm|.mp3|.wav> [--
                         video is read back; if it has new errors it is left as it was
   blocks update         replace each recorded copy (or the ones named) with this version's block when nobody has
                         edited it; an edited copy is left alone and what differs is printed, unless --force
-  skills install        write the agent skill that ships with this CLI into .claude/skills/uberscene (or --dir
-                        <folder>), so the agent learns this version's commands. Again after an upgrade, it replaces
-                        the folder it wrote; a folder with edits, or one it did not write, wants --force
+  skills install        write the agent skills that ship with this CLI: uberscene into .claude/skills/uberscene (or
+                        --dir <folder>), so the agent learns this version's commands, and uberscene-setup beside it,
+                        so it can install, check and upgrade UberScene. Again after an upgrade, it replaces the
+                        folders it wrote; a folder with edits, or one it did not write, wants --force
   add                   write each media file's entry into the manifest (default: the nearest uberscene.json): its
                         kind, length, size, frame rate and sound, read from the file, and its words from the
                         transcript beside it (talk.json from Whisper or ElevenLabs, talk.vtt or talk.srt)
@@ -243,14 +244,19 @@ async function main(): Promise<number> {
       process.stderr.write(USAGE);
       return 2;
     }
-    const result = installSkill({
+    const results = installSkills({
       ...(values.dir === undefined ? {} : { dir: values.dir }),
       ...(values.force ? { force: true } : {}),
     });
-    const from = result.previous && result.previous !== result.version ? ` (was ${result.previous})` : "";
-    process.stderr.write(
-      `the UberScene skill ${result.version}${from} → ${result.dir} (${result.files.length} files)\n`,
-    );
+    for (const [i, result] of results.entries()) {
+      const from = result.previous && result.previous !== result.version ? ` (was ${result.previous})` : "";
+      const name = i === 0 ? "the UberScene skill" : "the setup skill";
+      process.stderr.write(`${name} ${result.version}${from} → ${result.dir} (${result.files.length} files)\n`);
+    }
+    if (results.length === 1)
+      process.stderr.write(
+        "the setup skill was left out: --dir is not a folder named uberscene, so there is no skills folder to put it beside\n",
+      );
     return 0;
   }
   const limit = values["frame-timeout"] === undefined ? undefined : Number(values["frame-timeout"]);

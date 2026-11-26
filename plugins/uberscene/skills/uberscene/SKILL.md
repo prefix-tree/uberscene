@@ -94,6 +94,8 @@ Work in this order, and check after each stage.
    ```sh
    npm install uberscene @uberscene/kit react zod
    ```
+   When a command is not found, Node is too old, Chrome will not download, or after an upgrade, follow the
+   `uberscene-setup` skill.
 2. **Add each media file to the manifest.** Put a transcript next to a recording with the same name (`talk.json` from
    Whisper or ElevenLabs, or `talk.srt`, `talk.vtt`) to get its words:
    ```sh

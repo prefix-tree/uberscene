@@ -1,6 +1,6 @@
 <!-- The landing page's install: pick your coding agent, or By hand, and copy the lines. Claude Code takes the plugin;
      the agents that read the shared Agent Skills folder (.agents/skills) take the CLI's `skills install`, which writes
-     the skill that matches the installed version; By hand is the npm install and the loop of commands. The hero shows
+     the two skills (uberscene, and uberscene-setup beside it) that match the installed version; By hand is the npm install and the loop of commands. The hero shows
      the lines; with `full`, as in the Install section, an agent's panel also gives a brief to paste. -->
 <script setup lang="ts">
 import { withBase } from "vitepress";
@@ -135,7 +135,7 @@ function pick(id: string): void {
       </div>
       <p v-if="agent.note" class="cc-agents-note">{{ agent.note }}</p>
       <template v-if="props.full && agent.briefs">
-        <p class="cc-agents-where cc-agents-then">Then put your footage in the folder, a transcript beside each recording, and ask:</p>
+        <p class="cc-agents-where cc-agents-then">Then ask it to set UberScene up, put your footage in the folder with a transcript beside each recording, and ask:</p>
         <div class="cc-agents-brief">
           <p>{{ BRIEF }}</p>
           <button type="button" :aria-label="copied === BRIEF ? 'Copied' : 'Copy the brief'" @click="copy(BRIEF)">

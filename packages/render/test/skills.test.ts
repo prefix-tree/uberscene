@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { installSkill } from "../src";
+import { installSkill, installSkills } from "../src";
 
 const scratch = join(import.meta.dirname, ".tmp", "skills");
 let project = "";
@@ -106,5 +106,34 @@ describe("installSkill", () => {
       installSkill({ cwd: other, force: true });
       expect(readFileSync(join(other, "keep.txt"), "utf8")).toBe("mine\n");
     });
+  });
+});
+
+describe("installSkills", () => {
+  it("writes the setup skill beside the main one, each with its own record", () => {
+    const other = mkdtempSync(join(scratch, "b-"));
+    const [main, setup] = installSkills({ cwd: other });
+    expect(main?.dir).toBe(join(other, ".claude", "skills", "uberscene"));
+    expect(setup?.dir).toBe(join(other, ".claude", "skills", "uberscene-setup"));
+    expect(readFileSync(join(setup!.dir, "SKILL.md"), "utf8")).toMatch(/^---\nname: uberscene-setup\n/);
+    expect(existsSync(join(setup!.dir, ".uberscene-skill.json"))).toBe(true);
+    // Again after an upgrade, both folders are replaced as they were left.
+    expect(installSkills({ cwd: other }).map((r) => r.previous)).toEqual([main?.version, main?.version]);
+  });
+
+  it("follows dir to another agent's skills folder", () => {
+    const other = mkdtempSync(join(scratch, "a-"));
+    const results = installSkills({ cwd: other, dir: ".agents/skills/uberscene" });
+    expect(results.map((r) => r.dir)).toEqual([
+      join(other, ".agents", "skills", "uberscene"),
+      join(other, ".agents", "skills", "uberscene-setup"),
+    ]);
+  });
+
+  it("leaves the setup skill out when dir is not a folder named uberscene", () => {
+    const other = mkdtempSync(join(scratch, "n-"));
+    const results = installSkills({ cwd: other, dir: "skills/video", force: true });
+    expect(results).toHaveLength(1);
+    expect(existsSync(join(other, "skills", "uberscene-setup"))).toBe(false);
   });
 });

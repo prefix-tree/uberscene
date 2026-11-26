@@ -1,15 +1,19 @@
-// `uberscene skills install`: the agent skill that ships inside this package, written into a project, so an agent is
-// taught the commands of the CLI that is installed and not those of another version. The plugin marketplace stays a
-// way to get the skill too; this one cannot drift from the CLI.
+// `uberscene skills install`: the agent skills that ship inside this package, written into a project, so an agent is
+// taught the commands of the CLI that is installed and not those of another version. Two skills: `uberscene` (how to
+// write, check and render a video) and `uberscene-setup` (how to install, check and upgrade UberScene itself), written
+// side by side. The plugin marketplace stays a way to get them too; these cannot drift from the CLI.
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 /** Where an install records what it wrote, inside the skill's folder. */
 const MARKER = ".uberscene-skill.json";
 /** Claude Code reads a project's skills from here; other agents take `--dir`. */
 export const DEFAULT_SKILL_DIR = join(".claude", "skills", "uberscene");
+/** The skills this package ships: the one that makes videos, and the one that sets UberScene up. */
+export const SKILL = "uberscene";
+export const SETUP_SKILL = "uberscene-setup";
 
 interface Marker {
   readonly version: string;
@@ -25,6 +29,8 @@ export interface SkillInstallOptions {
   readonly cwd?: string;
   /** Where the skill is read from; default the one shipped with this package. */
   readonly source?: string;
+  /** Which shipped skill to write: `uberscene` (the default) or `uberscene-setup`. */
+  readonly skill?: typeof SKILL | typeof SETUP_SKILL;
 }
 
 export interface SkillInstallResult {
@@ -35,14 +41,14 @@ export interface SkillInstallResult {
   readonly files: readonly string[];
 }
 
-/** The skill shipped with this package: copied into `dist/skill` at build, read from the repository when run from source. */
-function skillSource(): string {
+/** A skill shipped with this package: copied into `dist/skill` at build, read from the repository when run from source. */
+function skillSource(name: string = SKILL): string {
   const here = dirname(fileURLToPath(import.meta.url));
-  const built = join(here, "skill", "uberscene");
+  const built = join(here, "skill", name);
   if (existsSync(join(built, "SKILL.md"))) return built;
-  const repo = resolve(here, "..", "..", "..", "plugins", "uberscene", "skills", "uberscene");
+  const repo = resolve(here, "..", "..", "..", "plugins", "uberscene", "skills", name);
   if (existsSync(join(repo, "SKILL.md"))) return repo;
-  throw new Error(`the UberScene skill is not in this package (looked in ${built} and ${repo})`);
+  throw new Error(`the ${name} skill is not in this package (looked in ${built} and ${repo})`);
 }
 
 /** This package's version, which every UberScene package shares. */
@@ -83,7 +89,7 @@ const sha256 = (bytes: Buffer | string): string => createHash("sha256").update(b
 export function installSkill(options: SkillInstallOptions = {}): SkillInstallResult {
   const cwd = options.cwd ?? process.cwd();
   const dir = resolve(cwd, options.dir ?? DEFAULT_SKILL_DIR);
-  const source = options.source ?? skillSource();
+  const source = options.source ?? skillSource(options.skill);
   const version = packageVersion();
   const markerPath = join(dir, MARKER);
   let previous: Marker | undefined;
@@ -117,6 +123,19 @@ export function installSkill(options: SkillInstallOptions = {}): SkillInstallRes
   }
   writeFileSync(markerPath, `${JSON.stringify({ version, files: written } satisfies Marker, null, 2)}\n`);
   return { dir, version, ...(previous ? { previous: previous.version } : {}), files };
+}
+
+/**
+ * Writes both skills: `uberscene` into `dir` (default `.claude/skills/uberscene`), and `uberscene-setup` beside it, in
+ * the same skills folder. The setup skill is written only when `dir` is a folder named `uberscene`, so that "beside it"
+ * is a skills folder; with any other `dir` (the skills folder itself, the project) it is left out rather than written
+ * somewhere nobody asked for, and the result says so by holding one skill.
+ */
+export function installSkills(options: Omit<SkillInstallOptions, "skill"> = {}): SkillInstallResult[] {
+  const main = installSkill({ ...options, skill: SKILL });
+  if (basename(main.dir) !== SKILL) return [main];
+  const { source: _source, ...rest } = options;
+  return [main, installSkill({ ...rest, dir: join(dirname(main.dir), SETUP_SKILL), skill: SETUP_SKILL })];
 }
 
 /**

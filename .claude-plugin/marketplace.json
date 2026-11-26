@@ -7,7 +7,7 @@
     {
       "name": "uberscene",
       "source": "./plugins/uberscene",
-      "description": "Make and edit videos as code with UberScene: cut on words, add titles, captions, effects and motion graphics, check and render from the command line."
+      "description": "Make and edit videos as code with UberScene: cut on words, add titles, captions, effects and motion graphics, check and render from the command line. With a setup skill that installs and upgrades UberScene."
     }
   ]
 }
