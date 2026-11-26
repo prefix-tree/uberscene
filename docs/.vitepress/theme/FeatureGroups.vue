@@ -69,7 +69,7 @@ const GROUPS: Group[] = [
       {
         icon: "effects",
         title: "Effects and transitions",
-        text: "45 of them, from exposure, curves and LUTs to keying and film burn, run as shaders in the preview and the export. Or your own in GLSL.",
+        text: "46 of them, from exposure, curves and LUTs to keying and film burn, run as shaders in the preview and the export. Or your own in GLSL.",
         link: "/reference/effects/",
       },
       {

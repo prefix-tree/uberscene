@@ -49,7 +49,7 @@ npx uberscene add talk.matte.webm
 </Track>
 <Track id="speaker" layout="free">
   <Clip id="talk-cut" src="asset:talk" start={0} in="word:12" out="word:30.end" cutout
-    effects={[{ type: "grayscale" }, { type: "contrast", amount: 1.2 }]} />
+    effects={[{ type: "grayscale" }, { type: "contrast", amount: 0.2 }]} />
 </Track>
 ```
 

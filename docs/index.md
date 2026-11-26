@@ -21,7 +21,7 @@ import { withBase } from "vitepress";
 
 <h1 class="home-title">The whole studio, as code.</h1>
 
-<p class="home-lead">An <strong>editor</strong>, an <strong>animation studio</strong> and a <strong>compositor</strong>, with 3D and sound, in one React file. Play it in the browser, fine-tune it on a timeline and export it to MP4. <strong>Your coding agent</strong> can do all of it.</p>
+<p class="home-lead">We're turning <strong>editing</strong>, <strong>animation</strong> and <strong>compositing</strong> into code, so AI can drive them natively. One React file holds all three, with 3D and sound: play it in the browser, fine-tune it on a timeline, export it to MP4.</p>
 
 <div class="home-actions">
 <a class="home-button primary" :href="withBase('/guide/getting-started')">Get started</a>
@@ -63,7 +63,7 @@ import { withBase } from "vitepress";
 <ul class="home-why-list">
 <li><span><strong>An editor, as code</strong> Clips on tracks, cuts on words, trims, roll, slip and slide, transitions and multicam. The player is your monitor, and a drag on the timeline writes one value back into the file.</span></li>
 <li><span><strong>An animation studio, as code</strong> Shapes, SVG and masks on the stage, any prop keyed over time with easing, and Motion or canvas on the video's clock, frame-exact when you scrub.</span></li>
-<li><span><strong>A compositor, as code</strong> Layers and keys, 45 effects and transitions running as shaders or your own GLSL, a three.js scene with its camera and lights, and an export from the same file.</span></li>
+<li><span><strong>A compositor, as code</strong> Layers and keys, 46 effects and transitions running as shaders or your own GLSL, a three.js scene with its camera and lights, and an export from the same file.</span></li>
 </ul>
 
 </section>

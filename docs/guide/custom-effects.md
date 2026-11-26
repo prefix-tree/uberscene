@@ -131,7 +131,7 @@ effect from it to change a pass and keep the params:
 ```tsx
 import { builtInShader, effect } from "@uberscene/kit";
 
-const base = builtInShader("halftone");
+const base = builtInShader("halftone")!; // undefined for a name that is not drawn by a shader
 const dots = effect({ name: "dots", params: base.params, shader: base.passes[0] });
 ```
 

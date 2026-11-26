@@ -173,8 +173,8 @@ on that beat when the music is trimmed or moved.
 <Track id="shots" layout="free">
   <Clip id="s1" src="asset:pour" anchor="song" at="beat:0" in={2} duration={2.1} fit="cover" />
   <Clip id="s2" src="asset:steam" anchor="song" at="beat:4" in={0.5} duration={2.1} fit="cover" />
+  <Title id="drop" anchor="song" at="beat:32" duration={1.5}>Now.</Title>
 </Track>
-<Title id="drop" anchor="song" at="beat:32" duration={1.5}>Now.</Title>
 ```
 
 `in="beat:0"` starts the song on its first beat and `out="beat:63.end"` ends it on a whole bar of four. Each shot
