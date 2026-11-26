@@ -1236,7 +1236,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `FrameSourceFactory` | type |  |
 | `FrameSourceInfo` | interface |  |
 | `GainPoint` | type | A gain breakpoint in composition seconds. |
-| `isVisibleAt` | function |  |
+| `isVisibleAt` | function | Whether a placement shows at `t`. |
 | `makeNestedResolver` | function | Resolves `<Nested of={Helper}>` through the kit's `resolveScene`, once per helper. |
 | `ManualClock` | class |  |
 | `mediabunnyFrameSourceFactory` | function |  |
