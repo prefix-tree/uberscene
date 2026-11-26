@@ -24,7 +24,7 @@ import { type PageServer, servePage } from "./server";
 const PLAYER_WARNING = "[uberscene] ";
 /** Bytes read from the page per call: base64 over the DevTools protocol, so kept well under its message limit. */
 const READ_CHUNK = 4 * 1024 * 1024;
-const FLAGS = [
+export const FLAGS = [
   // HTML-in-Canvas: the export captures the page's DOM, WebGL and canvases with drawElementImage.
   "--enable-features=CanvasDrawElement",
   // A paint is not held back to the display's refresh rate.

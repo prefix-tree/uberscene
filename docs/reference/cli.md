@@ -1,7 +1,7 @@
 # CLI
 
 `uberscene` exports a file to video, audio, a still or subtitles, checks its layout, reads its timeline back as text,
-draws a sheet of its frames to look at, and adds media to the manifest.
+draws a sheet of its frames to look at, adds media to the manifest, and makes the matte that cuts a person out.
 
 ```sh
 npm install uberscene
@@ -22,6 +22,9 @@ npx uberscene blocks update [<name>...] [--dir <folder>] [--force]
 npx uberscene add <media file>... [--manifest <file>] [--id <id>] [--transcript <file>] [--beats | --no-beats] [--bpm <n> [--first-beat <s>]]
 npx uberscene browser install
 npx uberscene codecs install
+npx uberscene matte <footage> [--model <name>] [--accept-licence] [--id <id>] [--manifest <file>] [--force] [--json]
+npx uberscene matte models [--json]
+npx uberscene matte install [<model>] [--accept-licence]
 npx uberscene skills install [--dir <folder>] [--force]
 ```
 
@@ -521,6 +524,30 @@ A sound file with no transcript is taken to be music, and `add` finds its beats 
 `anchor="song" at="beat:16"` ([Cut on the beat](/guide/time#cut-on-the-beat)). Check them by looking: `look --at
 song@beat:16,song@beat:32 --listen all` draws those moments over the sound. A fast song may come out at half its
 tempo, every other beat; set it with `--bpm`.
+
+## Making a matte
+
+`uberscene matte talk.mp4` makes the matte a clip with `cutout` reads: `talk.matte.webm` beside the footage, one
+greyscale frame for each of its frames, white where the person is. It adds the matte to the manifest as `talk.matte`
+and sets `matte`, `matteModel` and `subjects` on the footage's entry, adding the footage first when it is not there.
+The model runs in headless Chrome with ONNX Runtime for the web, which the project installs (`npm i -D
+onnxruntime-web`). See [Cut out a person](/guide/footage-tools#cut-out-a-person).
+
+| Option | |
+|---|---|
+| `--model <name>` | The model. Default `rvm-resnet50` (RobustVideoMatting, GPL-3.0). `matte models` lists them. |
+| `--accept-licence` | Accept the model's licence without being asked (scripts, agents, CI). `UBERSCENE_ACCEPT_LICENCE=<name>,…` does the same. |
+| `--id <id>` | The footage's asset id. Default: its file name without the extension. The matte is `<id>.matte`. |
+| `--manifest <file>` | The manifest to write, found as `add` finds it. |
+| `--force` | Make the matte again when `<id>.matte.webm` is there. |
+| `--json` | Print the result as data: frames, size, seconds a frame, soft edge, change between frames, subject. |
+
+UberScene lists models and does not ship them. The first use of one shows its licence and downloads it from its own
+source into `~/.cache/uberscene/models` (`UBERSCENE_MODEL_CACHE` moves it), checked against its SHA-256; without a
+terminal to ask on and without `--accept-licence`, it prints the licence and exits with 2. `matte install <model>`
+downloads one ahead of time. `UBERSCENE_MODEL_REGISTRY` names a JSON file of models of your own, in the shape of the
+package's `models.json`: each with its source, SHA-256, size, licence, input and output names, and for a model that
+carries state from frame to frame, the inputs and outputs of that state.
 
 ## The agent skill
 
