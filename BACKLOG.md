@@ -59,7 +59,7 @@ days, L a week or more.
   - Done when: one title draws words in different colours, an editor can still change its text, and it is in the
     reference.
 
-- [ ] **8. A duration that ends on a word or a beat** (S to M)
+- [x] **8. A duration that ends on a word or a beat** (S to M) (#214)
   - `duration={{ until: "talk@word:39" }}`, and beats too. Today `until` takes only an element.
   - Done when: an overlay ends on the moment named and follows it when the cut changes, with tests.
 

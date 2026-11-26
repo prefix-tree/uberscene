@@ -9,8 +9,13 @@ export const timingSchema = z.object({
   anchor: z.string().optional(),
   at: z.string().optional(),
   offset: z.number().optional(),
-  /** Seconds, `"fill"`, or `{ until: id }`: every part then ends when that element ends, a clip for one. */
-  duration: z.union([z.number().positive(), z.literal("fill"), z.object({ until: z.string() })]).optional(),
+  /**
+   * Seconds, `"fill"`, or `{ until: id }`: every part then ends when that element ends, a clip for one; with `at`
+   * (`{ until: "talk", at: "word:54.end" }`), when it plays that word, shot, silence or beat.
+   */
+  duration: z
+    .union([z.number().positive(), z.literal("fill"), z.object({ until: z.string(), at: z.string().optional() })])
+    .optional(),
 });
 export type Timing = z.infer<typeof timingSchema>;
 

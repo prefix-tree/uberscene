@@ -23,7 +23,7 @@ The coffee footage is Pixabay videos [209419](https://pixabay.com/videos/id-2094
 | `anchor` | "start" \| string |  |  | Overlays: start relative to another element's start, or to its end with `id.end`. |
 | `at` | string |  |  | With `anchor`: a word, shot, silence or beat of the anchor's source (`word:14655`, `beat:16`); the start is where the anchor plays it, plus `offset`. |
 | `offset` | number |  |  | Seconds added to the start that `anchor` and `at` give; negative starts earlier. |
-| `duration` | number (> 0) \| "fill" \| "source" \| { match } \| { until } |  |  | How long it plays: seconds; `"source"` for the whole trimmed source; `"fill"` to run to the end of the composition; `{ match: id }` for as long as another element; `{ until: id }` to end when another element ends. |
+| `duration` | number (> 0) \| "fill" \| "source" \| { match } \| { until, at } |  |  | How long it plays: seconds; `"source"` for the whole trimmed source; `"fill"` to run to the end of the composition; `{ match: id }` for as long as another element; `{ until: id }` to end when another element ends, or `{ until: id, at: "word:54.end" }` when it plays that word, shot, silence or beat of its source. |
 | `effects` | { type, enabled }[] |  |  | Effects drawn on it, in order: each `{ type, ...params }`, a param written as keys to animate it. |
 | `opacity` | number (0..1) | `1` |  | How much of its effects to mix over the picture beneath. |
 | `blend` | "normal" \| "multiply" \| "screen" \| "overlay" \| "darken" \| … 13 more | `"normal"` |  | How the filtered picture mixes with the one beneath, as CSS `mix-blend-mode` does. |
