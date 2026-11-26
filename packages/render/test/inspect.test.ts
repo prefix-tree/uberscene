@@ -323,3 +323,38 @@ export default function Video() {
     expect(output).not.toMatch(/shape\s+note\s+ground/);
   });
 });
+
+describe("inspect, an overlay with a parent", () => {
+  it("says which it moves with and where its parents carry it", async () => {
+    const file = join(dir, "parent.tsx");
+    writeFileSync(
+      file,
+      `import { Composition, Shape, Track } from "@uberscene/kit";
+export const manifest = { assets: {} };
+export default function Video() {
+  return (
+    <Composition fps={30} width={640} height={360}>
+      <Track id="rig" layout="free">
+        <Shape id="arm" start={0} duration={2} type="rectangle" width={40} height={100}
+          box={{ x: 100, y: 40, width: 40, height: 100 }} transform={{ anchor: { x: 0.5, y: 0 }, rotation: 90 }} />
+        <Shape id="hand" parent="arm" start={0} duration={2} type="rectangle" width={20} height={20}
+          box={{ x: 20, y: 100, width: 20, height: 20, origin: "center" }} />
+      </Track>
+    </Composition>
+  );
+}
+`,
+    );
+    const video = await loadVideo(file);
+    expect(video.state.errors).toEqual([]);
+    const [view] = resolveMoments(video.state, parseMoments("1")).moments;
+    const seen = describeAt(video.state, view!).seen;
+    // The hand's (20, 100) in the turned arm is (20, 40) on screen.
+    expect(seen.find((s) => s.id === "hand")).toMatchObject({ parent: "arm", placedAt: { x: 20, y: 40 } });
+    expect(seen.find((s) => s.id === "arm")?.parent).toBeUndefined();
+    const { output } = inspect(file, video.state, { at: "1" });
+    expect(output).toContain(`in "arm" (at x 20, y 40)`);
+    const rows = JSON.parse(inspect(file, video.state, { json: true }).output) as { elements: { id: string }[] };
+    expect(rows.elements.find((e) => e.id === "hand")).toMatchObject({ movesWith: "arm" });
+  });
+});

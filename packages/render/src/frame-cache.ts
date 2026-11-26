@@ -67,13 +67,18 @@ function stable(value: unknown, flags: { free: boolean }, seen = new Set<object>
   }
 }
 
-/** The placements that can draw at `t`: the ones on the timeline there, with everything inside them. */
+/**
+ * The placements that can draw at `t`: the ones on the timeline there, with everything inside them, and the parents
+ * they move with, which place them even while not on screen themselves.
+ */
 function drawnAt(state: ResolvedState, t: number): Placement[] {
   const out = new Map<string, Placement>();
   const covers = (p: Placement): boolean => t >= p.start - 1e-6 && t <= p.end + 1e-6;
   const add = (p: Placement): void => {
     if (out.has(p.id)) return;
     out.set(p.id, p);
+    const moves = typeof p.props.parent === "string" ? state.items.get(p.props.parent) : undefined;
+    if (moves) add(moves);
     for (const id of p.children) {
       const child = state.items.get(id);
       // Captions hold a cue for every line said; only the one on screen draws.

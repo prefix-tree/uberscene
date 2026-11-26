@@ -7,6 +7,7 @@ import {
   type DrawOp,
   type DrawRect,
   type MediaResolver,
+  spaceOf,
   trackCamera,
 } from "@uberscene/player/engine";
 import { buildSourceIndex, lookupAsset, type ResolvedState, type SourceIndex, type SubjectBox } from "@uberscene/sdk";
@@ -362,17 +363,26 @@ export const rect = (r: DrawRect): string => `x ${r.x}..${r.x + r.w}, y ${r.y}..
 const SIDE = { left: "on the left", top: "at the top", right: "on the right", bottom: "at the bottom" } as const;
 const signed = (v: number): string => (v > 0 ? `+${v}` : `${v}`);
 
-/** Where an element is placed now: its `box` as written, which axes keyframes move, and the frame's size. */
+/**
+ * Where an element is placed now: its `box` as written, which axes keyframes move, and the size of the frame its box
+ * is read in (its parent's box when it has a `parent`).
+ */
 interface Placed {
   readonly box: { readonly x?: unknown; readonly y?: unknown; readonly origin?: unknown } | undefined;
   readonly keyed: { readonly x: boolean; readonly y: boolean };
   readonly W: number;
   readonly H: number;
-  /** The camera over the element when the issue was at its worst: how its own pixels become the screen's. */
+  /**
+   * The camera and the parents over the element when the issue was at its worst: how its own pixels become the
+   * screen's.
+   */
   readonly view?: { readonly a: number; readonly b: number; readonly c: number; readonly d: number };
 }
 
-/** A move of (dx, dy) screen pixels in the numbers of an element under a camera: the camera's zoom and turn undone. */
+/**
+ * A move of (dx, dy) screen pixels in the numbers of an element under a camera or a parent: their zoom, scale and turn
+ * undone.
+ */
 function throughCamera(view: NonNullable<Placed["view"]>, dx: number, dy: number): [number, number] {
   const det = view.a * view.d - view.b * view.c;
   if (Math.abs(det) < 1e-9) return [dx, dy];
@@ -429,13 +439,27 @@ function placedOf(state: ResolvedState, id: string, t: number): Placed | undefin
   const written = item.props.box as Placed["box"];
   // The captions' box is the lower safe area, each field written replacing that one.
   const box = item.kind === "captions" ? { ...captionBox(state.composition), ...written } : written;
-  const view = trackCamera(state, item.track, t);
+  const camera = trackCamera(state, item.track, t);
+  const space = spaceOf(state, item, t);
+  const parented = typeof item.props.parent === "string";
+  const s = space.matrix;
+  // The camera goes on last, after the parent chain, as the player draws it.
+  const view = !parented
+    ? camera
+    : camera
+      ? {
+          a: camera.a * s.a + camera.c * s.b,
+          b: camera.b * s.a + camera.d * s.b,
+          c: camera.a * s.c + camera.c * s.d,
+          d: camera.b * s.c + camera.d * s.d,
+        }
+      : s;
   return {
     box,
     keyed: { x: keyed("x"), y: keyed("y") },
-    W: state.composition.width,
-    H: state.composition.height,
-    ...(view ? { view } : {}),
+    W: space.frame.width,
+    H: space.frame.height,
+    ...(view ? { view: { a: view.a, b: view.b, c: view.c, d: view.d } } : {}),
   };
 }
 
