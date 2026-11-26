@@ -216,6 +216,46 @@ One PR each, from fresh `main`, each with its decision section moved to accepted
 
 Steps 1 to 4 give most of the look; 5 makes it judgeable in the preview.
 
+## What the first film on the seams showed
+
+`examples/interview/cards.tsx` is 17 seconds of the NASA interview in the style of the edit in the Context: the
+speaker cut out on blue with a sticker edge, a word behind him, a card for each of his three lines, the camera
+making room for each, the cards bobbing and the view drifting. It was written after the camera, its push and the
+generators were built, to find what is still awkward.
+
+**Worked the first time, as designed:**
+
+- The camera's push: three cards, three moves, no pan worked out by hand. Changing a card's place or its word moved
+  the camera with it.
+- Never still: a `wiggle` on each card and on the camera's rotation, a `drift` on its zoom, and not one idle key.
+- A word behind the speaker: a title on the track before his (#192). The sticker edge: `outline` after the key.
+- Everything on his words: `anchor` and `at="word:N"`.
+
+**Awkward, in order of what it cost:**
+
+1. **A push holds what it keeps inside the margin on every side.** The speaker stands on the frame's bottom edge, so
+   keeping him lifted him 54 px off it. The film keeps the word behind him instead. A push needs to know which
+   sides of what it keeps matter, or that an element stands on an edge.
+2. **A camera that pulls back lifts whatever stands on the bottom edge.** With three cards on screen the push zoomed
+   out and the speaker's cut torso floated. The film has each card leave as the next lands, so the camera only
+   swings. That is also what the reference does, but it was found by rendering, not said by any check.
+3. **A card is three elements that cannot move as one.** Frame, picture and label share a wiggle seed and repeat
+   each other's place by hand (three `y`s a card, kept in step), and cannot tilt about one pivot. This is `follow`
+   from seam 3 (one element pinned to another), or a group inside the camera.
+4. **A duration cannot end on a word** (BACKLOG item 8). The first two cards' lengths are seconds worked out from
+   the words, and the push depends on them: a card that outlives the next one's start by a frame makes the camera
+   pull back.
+5. **Footage has no entrance or exit.** A card's frame and label `pop` and fade; its picture is a clip, so its pop
+   and its fade are keys written beside it.
+6. **B-roll shorter than its card** is slowed by a `speed` chosen by hand for each clip. Footage has no "last as long
+   as this" (hold the last frame, or loop).
+7. **A push counts a clip's whole box**, not the person in it. The speaker's box is the picture's frame, far wider
+   than he is. A matte (seam 2) knows his outline.
+8. **One colour to a title** (BACKLOG item 7): the blue word in the caps stack is a title of its own.
+
+Items 1, 2 and 7 are the camera's; 3 is `follow`; the rest were known. None stopped the film, and each is written
+where the file works around it.
+
 ## Consequences
 
 - One new value form (a generator) and two new props (`matte`, `follow`) and one new tag (`<Camera>`) cover what
