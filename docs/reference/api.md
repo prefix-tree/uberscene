@@ -532,7 +532,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/kit/schema`
 
-274 exports.
+276 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -645,6 +645,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `generatedValue` | function | A generated value at `t` seconds into its element. |
 | `Generator` | interface | A generator as the resolver hands it to whatever draws. |
 | `GENERATOR_TYPES` | const | The generators a value can be written as. |
+| `GeneratorOf` | type | A generator written in place of a value of type `V`. |
 | `generatorSeed` | function | The seed a wiggle has when the file gives none. |
 | `GeneratorType` | type |  |
 | `googleFont` | function | Declares a Google Fonts family, in each weight and style given (default 400, normal), and returns it (a `FontRef`). |
@@ -662,6 +663,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `isVocabulary` | function |  |
 | `Key` | interface | One key of a value that changes over time. |
 | `KEYFRAME_PROPERTIES` | const |  |
+| `KeyOf` | interface | One key of a value, as a generator's `base` or a loop's `keys` hold it. |
 | `KIND_CAPABILITIES` | const | What each element kind can do. |
 | `kindOf` | function |  |
 | `knobsOf` | function | The knobs of a file's `schema`, in the order it lists them, with the value each has in `values` (the file's `defaults` merged with any props given). |
