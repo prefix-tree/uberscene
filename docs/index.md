@@ -54,12 +54,6 @@ import { withBase } from "vitepress";
 
 </section>
 
-<section class="home-live" aria-label="Try it">
-
-<Playground compact />
-
-</section>
-
 <section class="home-install" id="install">
 
 ## Install
