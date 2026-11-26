@@ -55,6 +55,11 @@ differently. A binary of any other version is refused before the export starts.
 | Download it ahead of time, for a Docker image or a CI cache | `npx uberscene browser install` |
 | Keep the cache somewhere else | `UBERSCENE_BROWSER_CACHE` |
 | Use your own Chrome 157 instead of downloading one | `UBERSCENE_CHROMIUM` |
+| Draw on another Chrome anyway, where Chrome 157 cannot be had | `UBERSCENE_CHROMIUM` and `UBERSCENE_ANY_CHROME=1` |
+
+`UBERSCENE_ANY_CHROME=1` is for a machine that cannot download Chrome for Testing, such as a sandbox with a fixed
+Chromium. The export warns, then draws: text may differ a little from the tests and from other machines, so do not
+use it for goldens or for an export that must match another one.
 
 The capture uses HTML-in-Canvas (`drawElementImage`), which Chrome ships behind a flag the export turns on.
 
