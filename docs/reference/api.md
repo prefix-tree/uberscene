@@ -534,7 +534,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/kit/schema`
 
-282 exports.
+291 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -545,6 +545,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `applyTheme` | function | An element's raw props with its theme applied, before the schema parses them. |
 | `Audio` | const | The `<Audio>` element ([reference](/reference/elements/audio)). |
 | `BLEND_MODES` | const |  |
+| `blendFor` | function | How a key list on `property` moves. |
 | `BlendMode` | type |  |
 | `BLOCK_ASPECTS` | const | The frame shapes a block can be laid out for. |
 | `Box` | interface | A size in pixels. |
@@ -575,6 +576,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `Composition` | const | The `<Composition>` element ([reference](/reference/elements/composition)). |
 | `cssOf` | function | The CSS filter a built-in effect draws as. |
 | `curveAt` | function | The value of a curve at `t`, keys sorted by `at`. |
+| `CurveBlend` | type | How the values of a curve move between two keys. |
 | `CurveKey` | interface | One key of a curve. |
 | `CurvePoint` | type | A point of a curve. |
 | `Cut` | const | The `<Cut>` element ([reference](/reference/elements/cut)). |
@@ -630,12 +632,14 @@ Every name each entry exports, read from the code. The sections above explain th
 | `fontsFor` | function | The catalogue, narrowed to a role, a category, or both. |
 | `FontSource` | type | Where a declared face's file comes from. |
 | `FontStyle` | type |  |
+| `formatColor` | function | A colour as CSS. |
 | `frameAt` | const | The frame a tick falls in. |
 | `frameAtSeconds` | const | The frame a time in seconds falls in, never below 0. |
 | `FrameRate` | type | What `fps` may be. |
 | `frameStart` | const | The first tick of a frame. |
 | `frameStartSeconds` | const | When a frame starts, in seconds. |
 | `framesUntil` | const | The first frame that starts at or after a time. |
+| `fromOklab` | function | An OKLab colour back in sRGB, each channel clamped to 0..1, with alpha `alpha`. |
 | `fusedColourSource` | function | One effect pass that draws a run of colour transforms in order. |
 | `Gap` | const | The `<Gap>` element ([reference](/reference/elements/gap)). |
 | `GaussOutside` | type | Past the frame's edge. |
@@ -684,6 +688,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `MASK_TYPES` | const |  |
 | `MASKED_KINDS` | const | Masks render on these kinds, one per element. |
 | `MAX_SECONDS` | const | The longest time ticks hold exactly as a JavaScript number. |
+| `mixColor` | function | The colour `t` of the way from `from` to `to` (0 is `from`, 1 is `to`), moved in OKLab, with alpha moved in a straight line and the colour weighted by it, so a fade to `transparent` keeps its hue instead of passing through black. |
 | `monotoneCurve` | function | The curve through `points` (x strictly increasing) as a function on 0..1, clamped to 0..1. |
 | `Motion` | const | The `<Motion>` element ([reference](/reference/elements/motion)). |
 | `MOTION_NAMES` | const |  |
@@ -703,8 +708,10 @@ Every name each entry exports, read from the code. The sections above explain th
 | `NOT_RENDERED` | const |  |
 | `NotRendered` | interface | Accepted but not rendered. |
 | `NTSC_RATES` | const | The NTSC rates, written as the strings people say them as. |
+| `Oklab` | interface | A colour in OKLab. |
 | `OldEasing` | type | An easing name spelled the way it was before 0.6, which free code still takes. |
 | `PALETTE_KEYS` | const | The palette names every built-in theme fills. |
+| `parseColor` | function | A CSS colour as sRGB with alpha. |
 | `parseRate` | function | A frame rate as an exact fraction. |
 | `placeAxis` | function | Where a box starts on one axis. |
 | `placeBox` | function | The one rule every element that draws is placed by. |
@@ -726,6 +733,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `ResolvedTheme` | interface | A file's theme with its base theme merged in. |
 | `resolveTheme` | function | The theme a composition's raw `theme` prop describes. |
 | `RESPELLED_VALUES` | const | Values spelled in kebab-case before 0.6 and in camelCase since, old to new. |
+| `Rgba` | interface | A colour in sRGB, each channel 0 to 1, with its alpha. |
 | `round3` | const | `x` rounded to three decimals (milliseconds, for seconds), with -0 written as 0. |
 | `sampleAt` | const | The audio sample a tick falls in. |
 | `sampleAtSeconds` | const | The audio sample a time in seconds falls in. |
@@ -781,6 +789,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `titleWords` | function | The words of a title's text, as the player reveals them word by word. |
 | `TOKEN_PATTERN` | const | A whole prop value naming a theme value. |
 | `tokenSchema` | const |  |
+| `toOklab` | function | An sRGB colour in OKLab (Björn Ottosson's matrices), alpha left aside. |
 | `Track` | const | The `<Track>` element ([reference](/reference/elements/track)). |
 | `TRACK_FLAGS` | const |  |
 | `TRACK_LAYOUTS` | const |  |

@@ -160,6 +160,8 @@ function expandNode(node: CollectedNode): Expansion | null {
     return derived.length === 0 ? null : { props, derived };
   }
 
+  if (node.kind === "shape") shapeKeys(props, settle, take);
+
   const transform = props.transform;
   if (transform && typeof transform === "object" && !Array.isArray(transform)) {
     const t: Record<string, unknown> = { ...(transform as Record<string, unknown>) };
@@ -332,6 +334,44 @@ function expandNode(node: CollectedNode): Expansion | null {
   }
 
   return derived.length === 0 ? null : { props, derived };
+}
+
+/**
+ * A shape's own values that change: its size, its colours, its outline's thickness and dash offset, and its points.
+ * Each one's first key stays written as the constant, so a theme preset's `fill` or `stroke` never shows through a
+ * keyed one, and a stroke keeps the `color` and `thickness` it must have. Properties are named `shape.<path>`.
+ */
+function shapeKeys(
+  props: Record<string, unknown>,
+  settle: (value: unknown, path: string, property: string) => unknown,
+  take: (value: unknown, path: string, property: string) => unknown,
+): void {
+  /** A number that takes generators and keys, at `field` of `holder` (written at `path`). */
+  const numeric = (holder: Record<string, unknown>, field: string, path: string, missing?: number): void => {
+    if (isGenerator(holder[field])) {
+      const over = settle(holder[field], path, `shape.${path}`) ?? missing;
+      if (over === undefined) delete holder[field];
+      else holder[field] = over;
+    }
+    if (isKeyList(holder[field])) holder[field] = take(holder[field], path, `shape.${path}`);
+  };
+  /** A value that takes keys only (a colour, a list of points). */
+  const keyedOnly = (holder: Record<string, unknown>, field: string, path: string): void => {
+    if (isKeyList(holder[field])) holder[field] = take(holder[field], path, `shape.${path}`);
+  };
+  numeric(props, "width", "width");
+  numeric(props, "height", "height");
+  keyedOnly(props, "fill", "fill");
+  keyedOnly(props, "points", "points");
+  const stroke = props.stroke;
+  if (stroke && typeof stroke === "object" && !Array.isArray(stroke)) {
+    const s: Record<string, unknown> = { ...(stroke as Record<string, unknown>) };
+    keyedOnly(s, "color", "stroke.color");
+    // A thickness must be written: a wobble with no `base` is around 0.
+    numeric(s, "thickness", "stroke.thickness", 0);
+    numeric(s, "dashOffset", "stroke.dashOffset");
+    props.stroke = s;
+  }
 }
 
 /**

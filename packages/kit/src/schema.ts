@@ -2,6 +2,7 @@
 // registries, themes and fonts as the resolver reads them, the easing curves, and the hooks a host installs to draw
 // free code. A video file imports `@uberscene/kit`; this entry is for the resolver, the player and editors.
 
+export * from "./color";
 export { COMPONENT_NAMES, COMPONENTS, type ComponentEntry } from "./components/index";
 export * from "./easing";
 export { type GaussOutside, type GaussWhat, gaussScale, gaussSources, gaussSteps } from "./effects/gauss";

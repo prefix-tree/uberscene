@@ -20,7 +20,7 @@ export function titleBox(
 
 /** The size a shape draws at, before layout: its `width` and `height`, 200 pixels each when left out. */
 export function shapeSizeOf(props: Readonly<Record<string, unknown>>): Box {
-  return { width: Number(props.width ?? 200), height: Number(props.height ?? 200) };
+  return { width: Math.max(0, Number(props.width ?? 200)), height: Math.max(0, Number(props.height ?? 200)) };
 }
 
 /** A sticker's size: a square a quarter of the frame's shorter side. */

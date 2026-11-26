@@ -160,6 +160,13 @@ export const KEYFRAME_PROPERTIES = [
   "camera.y",
   "camera.zoom",
   "camera.rotation",
+  "shape.width",
+  "shape.height",
+  "shape.fill",
+  "shape.points",
+  "shape.stroke.color",
+  "shape.stroke.thickness",
+  "shape.stroke.dashOffset",
 ] as const;
 
 /** What a `<Camera>` animates, and its value when the file writes none. */
