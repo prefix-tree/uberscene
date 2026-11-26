@@ -1,6 +1,7 @@
 import { type DrawRect, type ElementBox, type FitMode, placeBox } from "@uberscene/kit/schema";
 
 import { type AssetManifest, lookupAsset } from "../manifest/types";
+import { followOf } from "./follow";
 import type { Placement, ResolvedTrack } from "./resolve";
 
 /** A camera's `push` as the schema parses it. */
@@ -42,25 +43,26 @@ const round = (v: number): number => Math.round(v * 1000) / 1000;
  * Where an element stands when it starts, in composition pixels, by the rule every element is placed by. Footage is
  * its asset fitted into its `box`; a shape is its `width` and `height`; anything else is its `box` when that has a
  * size, and the point at its `box.x`, `box.y` when it does not (its real size is only known once it is drawn).
- * Its own keys, scale and rotation are not followed. An overlay with a `parent` stands in its parent's rest box.
+ * Its own keys, scale and rotation are not followed. An overlay with a `follow` stands in the rest box of the one it
+ * follows.
  */
-function restBox(
+export function restBox(
   item: Placement,
   frame: Frame,
   manifest: AssetManifest,
   items: ReadonlyMap<string, Placement>,
   seen: ReadonlySet<string> = new Set(),
 ): DrawRect {
-  const parent = typeof item.props.parent === "string" ? items.get(item.props.parent) : undefined;
-  if (parent && !seen.has(parent.id)) {
-    const space = restBox(parent, frame, manifest, items, new Set([...seen, item.id]));
+  const leader = items.get(followOf(item) ?? "");
+  if (leader && !seen.has(leader.id)) {
+    const space = restBox(leader, frame, manifest, items, new Set([...seen, item.id]));
     const own = ownRestBox(item, { width: space.w, height: space.h }, manifest);
     return { ...own, x: own.x + space.x, y: own.y + space.y };
   }
   return ownRestBox(item, frame, manifest);
 }
 
-function ownRestBox(item: Placement, frame: Frame, manifest: AssetManifest): DrawRect {
+export function ownRestBox(item: Placement, frame: Frame, manifest: AssetManifest): DrawRect {
   const box = item.props.box as ElementBox | undefined;
   const sized = (width: number, height: number, fit: FitMode): DrawRect =>
     placeBox(frame, { width, height }, fit, box).rect;

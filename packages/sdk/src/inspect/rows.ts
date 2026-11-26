@@ -4,6 +4,7 @@ import { framesUntil, nearestFrame, type Rate, round3 } from "@uberscene/kit/sch
 
 import type { ResolveError } from "../resolve/errors";
 import { derivedOrigin } from "../resolve/expand";
+import { followOf } from "../resolve/follow";
 import type { Placement, ResolvedState } from "../resolve/resolve";
 import { spokenWords } from "./plays";
 
@@ -42,8 +43,8 @@ export interface ElementRow {
   readonly label?: string;
   /** A layer, shape, SVG or sticker the file marks as a ground for other things. */
   readonly ground?: true;
-  /** The overlay it moves with, its `parent` prop (not `parent` above, the node it is written in). */
-  readonly movesWith?: string;
+  /** The overlay it moves with, its `follow` prop (`follows` above is where its length comes from). */
+  readonly follow?: string;
 }
 
 export interface EffectRow {
@@ -255,6 +256,7 @@ export function timelineRows(state: ResolvedState): TimelineRows {
 
 function elementRow(state: ResolvedState, p: Placement, frame: (t: number) => number): ElementRow {
   const props = p.props;
+  const follow = followOf(p);
   // A title's words are the element's children, kept on its node; a caption's are a prop.
   const text = p.kind === "title" ? state.tree.byId.get(p.id)?.text : p.kind === "caption" ? props.text : undefined;
   return {
@@ -283,7 +285,7 @@ function elementRow(state: ResolvedState, p: Placement, frame: (t: number) => nu
       : {}),
     ...(typeof props.label === "string" ? { label: props.label } : {}),
     ...(props.ground === true ? { ground: true as const } : {}),
-    ...(typeof props.parent === "string" ? { movesWith: props.parent } : {}),
+    ...(follow !== undefined ? { follow } : {}),
   };
 }
 
