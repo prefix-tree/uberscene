@@ -15,6 +15,7 @@ import {
 } from "@uberscene/player/engine";
 import {
   type ElementRow,
+  followOf,
   lookupAsset,
   type Moment,
   parseMoments,
@@ -34,11 +35,11 @@ export interface SeenElement {
   readonly track: string;
   /** Set when the track is inside the camera: `box` and `transform` are then the element's own, before the camera. */
   readonly camera?: true;
-  /** The overlay it moves with (`parent`): `box` is then read in that parent's box, before the parent's transform. */
-  readonly parent?: string;
+  /** The overlay it moves with (`follow`): `box` is then read in that element's box, before its transform. */
+  readonly follow?: string;
   /**
-   * With a `parent`: where the point its `box.x` and `box.y` name lands in composition pixels, carried by its parents
-   * (a coordinate left out is its parent's centre), before its own transform and the camera.
+   * With a `follow`: where the point its `box.x` and `box.y` name lands in composition pixels, carried by what it
+   * follows (a coordinate left out is that element's centre), before its own transform and the camera.
    */
   readonly placedAt?: { readonly x: number; readonly y: number };
   /** 0..1 through the element. */
@@ -84,7 +85,7 @@ export interface MomentView extends Moment {
 const typeName = (type: unknown): string =>
   typeof type === "string" ? type : String((type as { name?: unknown } | null)?.name ?? "custom");
 
-/** Where the point an element's `box.x`, `box.y` name lands once its parents carry it. */
+/** Where the point an element's `box.x`, `box.y` name lands once what it follows carries it. */
 function placedAt(
   state: ResolvedState,
   p: Parameters<typeof spaceOf>[1],
@@ -110,13 +111,13 @@ export function describeAt(state: ResolvedState, moment: Moment): MomentView {
     const transform = restless(animatedTransform(p.props.transform as never, children, rel) as Record<string, unknown>);
     const box = placed(animatedBox(p.props.box as never, children, rel));
     const text = p.kind === "title" ? state.tree.byId.get(p.id)?.text : undefined;
-    const parent = typeof p.props.parent === "string" ? p.props.parent : undefined;
+    const follow = followOf(p);
     seen.push({
       id: p.id,
       kind: p.kind,
       track: track.id,
       ...(track.camera !== undefined ? { camera: true as const } : {}),
-      ...(parent !== undefined ? { parent, placedAt: placedAt(state, p, children, t) } : {}),
+      ...(follow !== undefined ? { follow, placedAt: placedAt(state, p, children, t) } : {}),
       progress: round3(p.duration > 0 ? Math.min(1, Math.max(0, rel / p.duration)) : 0),
       ...(p.source ? { sourceTime: round3(placementSourceTime(p, children, t)) } : {}),
       ...(text ? { text } : {}),
@@ -310,8 +311,8 @@ export function formatAt(views: readonly MomentView[]): string {
           `${s.transition.role === "in" ? "coming in" : "going out"} through ${s.transition.id} at ${Math.round(s.transition.progress * 100)}%`,
         );
       if (s.box) parts.push(`box ${paramList(s.box)}`);
-      if (s.parent !== undefined)
-        parts.push(`in "${s.parent}"${s.placedAt ? ` (at x ${s.placedAt.x}, y ${s.placedAt.y})` : ""}`);
+      if (s.follow !== undefined)
+        parts.push(`follows "${s.follow}"${s.placedAt ? ` (at x ${s.placedAt.x}, y ${s.placedAt.y})` : ""}`);
       if (s.transform) parts.push(`transform ${paramList(flat(s.transform))}`);
       for (const fx of s.effects)
         parts.push(`${fx.id}(${fx.type}${Object.keys(fx.params).length ? ` ${paramList(fx.params)}` : ""})`);

@@ -441,10 +441,9 @@ function placedOf(state: ResolvedState, id: string, t: number): Placed | undefin
   const box = item.kind === "captions" ? { ...captionBox(state.composition), ...written } : written;
   const camera = trackCamera(state, item.track, t);
   const space = spaceOf(state, item, t);
-  const parented = typeof item.props.parent === "string";
   const s = space.matrix;
-  // The camera goes on last, after the parent chain, as the player draws it.
-  const view = !parented
+  // The camera goes on last, after the chain of what it follows, as the player draws it.
+  const view = space.isRoot
     ? camera
     : camera
       ? {

@@ -1,4 +1,4 @@
-// An overlay with a `parent` is placed in its parent's box and carried by its parent's transform, in the export as in
+// An overlay with a `follow` is placed in the followed element's box and carried by its transform, in the export as in
 // the player. Needs Chrome 157: the cached Chrome for Testing, UBERSCENE_CHROMIUM, or UBERSCENE_ANY_CHROME=1.
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { checkLayout, directoryResolver, loadVideo, renderStill } from "../../src";
 import { readImage } from "../helpers/output";
 
-const scratch = join(import.meta.dirname, "..", ".tmp", "parent");
+const scratch = join(import.meta.dirname, "..", ".tmp", "follow");
 let dir = "";
 
 beforeAll(() => {
@@ -47,13 +47,13 @@ const isRed = ([r, g, b]: Rgb) => r > 200 && g < 60 && b < 60;
 const isBlue = ([r, g, b]: Rgb) => b > 200 && r < 60 && g < 60;
 const isGround = ([r, g, b]: Rgb) => r + g + b < 60;
 
-it("draws a two-level chain where its parents carry it", async () => {
+it("draws a two-level chain where what it follows carries it", async () => {
   const { loaded } = await load(
     "chain",
     `${arm}
-        <Shape id="hand" parent="arm" start={0} duration={1} type="rectangle" fill="#ff0000" width={20} height={20}
+        <Shape id="hand" follow="arm" start={0} duration={1} type="rectangle" fill="#ff0000" width={20} height={20}
           box={{ x: 20, y: 100, width: 20, height: 20, origin: "center" }} />
-        <Shape id="nail" parent="hand" start={0} duration={1} type="rectangle" fill="#0000ff" width={6} height={6}
+        <Shape id="nail" follow="hand" start={0} duration={1} type="rectangle" fill="#0000ff" width={6} height={6}
           box={{ x: 10, y: 0, width: 6, height: 6, origin: "center" }} />`,
   );
   const out = join(dir, "chain.png");
@@ -76,12 +76,12 @@ it("draws a two-level chain where its parents carry it", async () => {
   expect(isGround(px(120, 120))).toBe(true);
 });
 
-it("has the layout check measure after the parents, and give the fix in the child's own numbers", async () => {
+it("has the layout check measure after the chain, and give the fix in the follower's own numbers", async () => {
   // The hand's box, 125 px down the arm, turns with it to sit across the frame's left edge, centred at x -5.
   const { loaded, file } = await load(
     "check",
     `${arm}
-        <Shape id="hand" parent="arm" start={0} duration={1} type="rectangle" fill="#ff0000" width={20} height={20}
+        <Shape id="hand" follow="arm" start={0} duration={1} type="rectangle" fill="#ff0000" width={20} height={20}
           box={{ x: 20, y: 125, width: 20, height: 20, origin: "center" }} />`,
   );
   const { issues } = await checkLayout({

@@ -114,12 +114,12 @@ describe("frame keys", () => {
     expect(await changed(pushed(700), pushed(800))).toEqual(FRAMES);
   });
 
-  it("a parent's edit changes the frames its child is on, though the parent is not on screen then", async () => {
+  it("an edit to a followed element changes the frames its follower is on, though it is not on screen then", async () => {
     // The arm shows only before frame 30 (0.9 s); the hand that moves with it shows only at frame 90.
     const rig = (x: number) =>
       video({
         more: `<Title id="arm" start={0} duration={0.9} box={{ x: ${x}, y: 100, width: 100, height: 40 }}>Arm</Title>
-        <Title id="hand" parent="arm" start={2.5} duration={1} box={{ x: 0, y: 40, width: 100, height: 40 }}>Hand</Title>`,
+        <Title id="hand" follow="arm" start={2.5} duration={1} box={{ x: 0, y: 40, width: 100, height: 40 }}>Hand</Title>`,
       });
     expect(await changed(rig(100), rig(100))).toEqual([]);
     expect(await changed(rig(100), rig(200))).toEqual([6, 90]);
