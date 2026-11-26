@@ -1,4 +1,4 @@
-import { spaceOf } from "../src/overlays/space";
+import { spaceOf, spacesAt } from "../src/overlays/space";
 import { mountPlayer } from "./helpers/react";
 import { type ItemSpec, makeState } from "./helpers/state";
 import { type ElementCellProps, type Matrix2D, sameElement, visiblePlacements } from "./internal";
@@ -22,12 +22,12 @@ const shape = (id: string, props: Record<string, unknown>, extra: Partial<ItemSp
 const arm = (extra: Partial<ItemSpec> = {}, transform: Record<string, unknown> = { anchor: { x: 0.5, y: 0 } }) =>
   shape("arm", { width: 40, height: 200, box: { x: 300, y: 100, width: 40, height: 200 }, transform }, extra);
 const hand = shape("hand", {
-  parent: "arm",
+  follow: "arm",
   width: 20,
   height: 20,
   box: { x: 20, y: 200, origin: "center", width: 20, height: 20 },
 });
-const nail = shape("nail", { parent: "hand", width: 4, height: 4, box: { x: 10, y: 0, width: 4, height: 4 } });
+const nail = shape("nail", { follow: "hand", width: 4, height: 4, box: { x: 10, y: 0, width: 4, height: 4 } });
 
 const rig = (armSpec: ItemSpec, ...rest: ItemSpec[]) =>
   makeState({ tracks: [{ id: "rig", layout: "free", items: [armSpec, hand, nail, ...rest] }] });
@@ -39,7 +39,7 @@ const at = (m: Matrix2D, x: number, y: number): [number, number] => [
 
 const placementOf = (state: ReturnType<typeof makeState>, id: string) => state.items.get(id)!;
 
-describe("an overlay's parent", () => {
+describe("an overlay that follows another", () => {
   it("places the child's box in the parent's box", () => {
     const state = rig(arm());
     const space = spaceOf(state, placementOf(state, "hand"), 1);
@@ -80,7 +80,7 @@ describe("an overlay's parent", () => {
     expect(handAt(3)).toEqual([120, 100]);
   });
 
-  it("still places its children before it starts and after it ends, held there", () => {
+  it("still places its followers before it starts and after it ends, held there", () => {
     const keyed = arm({
       start: 1,
       duration: 2,
@@ -105,6 +105,41 @@ describe("an overlay's parent", () => {
     expect(handAt(2)).toEqual([320, 300]);
   });
 
+  it("holds an exit's start after the element ends, so its followers are not left carried off", () => {
+    const leaving = shape("arm", {
+      width: 40,
+      height: 200,
+      box: { x: 300, y: 100, width: 40, height: 200 },
+      enter: { type: "slideUp", duration: 1 },
+      exit: { type: "slideDown", duration: 1 },
+    });
+    const state = makeState({
+      tracks: [
+        {
+          id: "rig",
+          layout: "free",
+          items: [
+            { ...leaving, duration: 2 },
+            { ...hand, duration: 4 },
+          ],
+        },
+      ],
+    });
+    const handAt = (t: number) => at(spaceOf(state, placementOf(state, "hand"), t).matrix, 20, 200);
+    // Mid exit it is carried down; once the arm has ended it stands where the arm stood before leaving.
+    expect(handAt(1.5)).not.toEqual([320, 300]);
+    expect(handAt(3)).toEqual([320, 300]);
+  });
+
+  it("is the same worked out once for every follower as one at a time", () => {
+    const state = rig(arm({}, { anchor: { x: 0.5, y: 0 }, rotation: 30 }));
+    const all = spacesAt(state, 1);
+    expect([...all.keys()].sort()).toEqual(["hand", "nail"]);
+    for (const id of ["hand", "nail"]) expect(all.get(id)).toEqual(spaceOf(state, placementOf(state, id), 1));
+    expect(spaceOf(state, placementOf(state, "arm"), 1).isRoot).toBe(true);
+    expect(all.get("hand")?.isRoot).toBe(false);
+  });
+
   it("ends the chain at a cycle instead of looping", () => {
     const state = makeState({
       tracks: [
@@ -112,8 +147,8 @@ describe("an overlay's parent", () => {
           id: "rig",
           layout: "free",
           items: [
-            shape("a", { parent: "b", box: { x: 10, y: 10 } }),
-            shape("b", { parent: "a", box: { x: 20, y: 20 } }),
+            shape("a", { follow: "b", box: { x: 10, y: 10 } }),
+            shape("b", { follow: "a", box: { x: 20, y: 20 } }),
           ],
         },
       ],
@@ -122,11 +157,11 @@ describe("an overlay's parent", () => {
   });
 });
 
-describe("a child drawn in the player", () => {
+describe("a follower drawn in the player", () => {
   const styleOf = (root: Element, id: string): CSSStyleDeclaration =>
     (root.querySelector(`[data-el="${id}"]`) as HTMLElement).style;
 
-  it("is drawn where its parent carries it, keeping its own opacity", async () => {
+  it("is drawn where the element it follows carries it, keeping its own opacity", async () => {
     const faded = arm({}, { anchor: { x: 0.5, y: 0 }, rotation: 90, opacity: 0.25 });
     const m = await mountPlayer(rig(faded));
     await m.seek(1);
@@ -137,26 +172,30 @@ describe("a child drawn in the player", () => {
     await m.unmount();
   });
 
-  it("is redrawn when only its parent moves", () => {
+  it("is redrawn when only the element it follows moves, once a frame", () => {
     const keyed = arm({ children: [key("x0", "box.x", 0, 300), key("x1", "box.x", 4, 400)] });
     const still = shape(
       "hand",
-      { parent: "arm", width: 20, height: 20, box: { x: 0, y: 0, width: 20, height: 20 } },
+      { follow: "arm", width: 20, height: 20, box: { x: 0, y: 0, width: 20, height: 20 } },
       {
         duration: 4,
       },
     );
     const state = makeState({ tracks: [{ id: "rig", layout: "free", items: [keyed, still] }] });
-    const cell = (time: number): ElementCellProps => ({
+    const cell = (time: number, spaceTime = time): ElementCellProps => ({
       item: visiblePlacements(state, time).find((v) => v.placement.id === "hand")!,
       state,
       time,
       interior: null,
       exact: true,
+      space: spaceOf(state, state.items.get("hand")!, spaceTime),
     });
     expect(sameElement(cell(1), cell(1))).toBe(true);
-    // The hand's own frame index is the same within one frame; its parent still moved.
-    const plain = (time: number): ElementCellProps => ({ ...cell(time), exact: false });
-    expect(sameElement(plain(1), plain(1.001))).toBe(false);
+    // The player works the space out at the frame's own time: within one frame nothing is redrawn, at the next the
+    // arm moved and the hand is.
+    const plain = (time: number, spaceTime: number): ElementCellProps => ({ ...cell(time, spaceTime), exact: false });
+    const frame = 1 / state.composition.fps;
+    expect(sameElement(plain(1, 1), plain(1.001, 1))).toBe(true);
+    expect(sameElement(plain(1, 1), plain(1 + frame, 1 + frame))).toBe(false);
   });
 });

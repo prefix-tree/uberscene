@@ -27,7 +27,7 @@ export { animatedBox, animatedTransform, boundsOf, type DrawRect } from "./model
 export { isVisibleAt, visiblePlacements } from "./model/visible";
 export { makeNestedResolver } from "./nested";
 export { captionBox } from "./overlays/caption-placement";
-export { type Space, spaceOf } from "./overlays/space";
+export { rootSpace, type Space, spaceOf, spacesAt } from "./overlays/space";
 export { Compositor } from "./render/compositor";
 export { CanvasPainter, coversCanvas } from "./render/painter";
 export type {

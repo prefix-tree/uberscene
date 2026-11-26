@@ -11,7 +11,6 @@ import {
   animatedBox,
   animatedTransform,
   type Box,
-  IDENTITY,
   layoutRect,
   type Matrix2D,
   matrixToCss,
@@ -21,7 +20,7 @@ import {
 import { transitionLook } from "../model/transition";
 import type { TransitionRole } from "../model/visible";
 import { htmlInCanvas } from "../react/html-in-canvas";
-import { spaceOf } from "./space";
+import { type Space, spaceOf } from "./space";
 
 /** Placement kinds drawn above the canvas plane, besides captions. */
 export { OVERLAY_KINDS } from "../model/backdrop";
@@ -34,6 +33,11 @@ export interface ElementProps {
   readonly time: number;
   /** The transition the element is in, if any. */
   readonly transition?: TransitionRole | undefined;
+  /**
+   * The space its `box` is read in (overlays/space.ts), worked out once per frame by the player for every element it
+   * draws; left out, it is worked out here.
+   */
+  readonly space?: Space | undefined;
 }
 
 /** Where and how an overlay of `size` composition pixels is drawn: its box, matrix, opacity, filter, blend and corner radius. */
@@ -60,8 +64,8 @@ export function overlayLayout(p: ElementProps, size: Box, fit: FitMode = "none",
   const rel = p.time - p.placement.start;
   const transform = animatedTransform(p.placement.props.transform as Transform | undefined, p.children, rel);
   const box = animatedBox(p.placement.props.box as ElementBox | undefined, p.children, rel);
-  // With a `parent`, the box is read in the parent's box and the parent's place carries it (overlays/space.ts).
-  const space = spaceOf(p.state, p.placement, p.time);
+  // With a `follow`, the box is read in the followed element's box and its place carries it (overlays/space.ts).
+  const space = p.space ?? spaceOf(p.state, p.placement, p.time);
   const layout = layoutRect(space.frame, size, fit, transform, box);
   // With HTML-in-Canvas and a shader effect, every effect runs through the shader box in file order and the DOM
   // carries none; without it, the effects draw as CSS here (react/DomLayer.tsx).
@@ -75,7 +79,7 @@ export function overlayLayout(p: ElementProps, size: Box, fit: FitMode = "none",
   const fadeForDraw = !drawable && motion.draw !== null ? motion.draw : 1;
   const view = trackCamera(p.state, p.placement.track, p.time);
   const own = multiply(layout.matrix, motion.matrix);
-  const placed = space.matrix === IDENTITY ? own : multiply(space.matrix, own);
+  const placed = space.isRoot ? own : multiply(space.matrix, own);
   return {
     rect: { w: layout.rect.w, h: layout.rect.h },
     // Under a camera, the view goes on last: the element's own place and its entrance both follow it.

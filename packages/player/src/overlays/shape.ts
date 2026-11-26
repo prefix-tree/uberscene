@@ -2,7 +2,7 @@ import { round3 } from "@uberscene/kit/schema";
 
 import { keyframedValue } from "../model/keyframes";
 import { type ElementProps, type OverlayLayout, overlayLayout } from "./layout";
-import { shapeSizeOf } from "./size";
+import { overlaySize } from "./size";
 import { type PreparedSvg, prepareSvg } from "./svg";
 
 /**
@@ -146,7 +146,7 @@ export interface ShapeDrawing {
 /** How a `<Shape>` element draws at its time: its layout, and the markup with entrance drawing applied. */
 export function shapeDrawing(p: ElementProps, tokens?: Readonly<Record<string, string>>): ShapeDrawing {
   const props = shapeProps(p);
-  const size = shapeSizeOf(props);
+  const { size } = overlaySize(p.state, p.placement, p.children, p.time - p.placement.start);
   const layout = overlayLayout(p, size, "none", true);
   const shape = shapeMarkup(props, size);
   const prepared = prepareSvg(shape.markup, {

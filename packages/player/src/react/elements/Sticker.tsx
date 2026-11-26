@@ -1,6 +1,6 @@
 import { stickerPlaceholder } from "../../overlays/content";
 import { dataAttrs, type ElementProps, overlayStyle } from "../../overlays/layout";
-import { stickerSizeOf } from "../../overlays/size";
+import { overlaySize } from "../../overlays/size";
 import { useMediaUrl } from "./Svg";
 
 /**
@@ -11,8 +11,8 @@ export function Sticker(p: ElementProps) {
   const props = p.placement.props as Record<string, unknown>;
   const src = String(props.src ?? "");
   const url = useMediaUrl(src.startsWith("asset:") ? src : null);
-  const size = stickerSizeOf(p.state.composition);
-  const style = overlayStyle(p, { width: size, height: size });
+  const { size } = overlaySize(p.state, p.placement, p.children, p.time - p.placement.start);
+  const style = overlayStyle(p, size);
   return (
     <div
       {...dataAttrs(p.placement)}
