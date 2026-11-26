@@ -1,4 +1,4 @@
-import { capabilitiesOf } from "@uberscene/kit/schema";
+import { capabilitiesOf, secondsToTicks } from "@uberscene/kit/schema";
 import type { Placement, ResolvedState, ResolvedTrack } from "@uberscene/sdk/resolver";
 
 import { ease } from "./keyframes";
@@ -40,9 +40,17 @@ export function visiblePlacements(state: ResolvedState, t: number): VisibleItem[
   return out;
 }
 
+/**
+ * Whether a placement shows at `t`: from its start up to, not including, its end. The times are compared in ticks, not
+ * as doubles, because a sequence adds its lengths up in seconds: clips of 0.1 s and 0.2 s end at 0.30000000000000004,
+ * which as a double is after frame 9's start at 30 fps, and the old clip would show for one frame more at the cut.
+ */
 export function isVisibleAt(p: Placement, t: number, compositionDuration: number): boolean {
-  if (t >= p.start && t < p.end) return true;
-  return t === compositionDuration && p.end === t && p.end > p.start;
+  const at = secondsToTicks(t);
+  const start = secondsToTicks(p.start);
+  const end = secondsToTicks(p.end);
+  if (at >= start && at < end) return true;
+  return at === secondsToTicks(compositionDuration) && end === at && end > start;
 }
 
 /** Placements that sit on a track, in track order; a multicam's generated clips follow their parent. */
@@ -68,7 +76,8 @@ function transitionRoles(state: ResolvedState, track: ResolvedTrack, t: number):
   for (const id of track.items) {
     const x = state.items.get(id);
     if (x?.kind !== "transition" || x.duration <= 0) continue;
-    if (t < x.start || t >= x.end) continue;
+    const at = secondsToTicks(t);
+    if (at < secondsToTicks(x.start) || at >= secondsToTicks(x.end)) continue;
     const params = (x.props.params ?? {}) as Record<string, unknown>;
     const progress = ease(typeof params.curve === "string" ? params.curve : "linear", (t - x.start) / x.duration);
     if (x.between) {

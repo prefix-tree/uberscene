@@ -1,10 +1,12 @@
 <!-- The live playground: an editor beside the player, and the starter files above them. The editor and the player load
      only in the browser and only once the playground is near the screen (one lazy chunk). Without WebCodecs, the
-     starter's rendered video shows instead. `share` keeps the file in the URL so a link reopens it. -->
+     starter's rendered video shows instead. `share` keeps the file in the URL so a link reopens it; a link copied while
+     the player is paused also keeps the frame (`&frame=60`) and opens paused there, for review. -->
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from "vue";
 import { withBase } from "vitepress";
 import Preview from "./Preview.vue";
+import type { Playground } from "./playground/mount";
 import { STARTERS } from "./playground/starters";
 
 const props = defineProps<{ compact?: boolean; share?: boolean }>();
@@ -14,8 +16,10 @@ const player = ref<HTMLElement | null>(null);
 const active = ref(0);
 const error = ref<string | null>(null);
 const state = ref<"waiting" | "loading" | "live" | "fallback">("waiting");
-const copied = ref(false);
-let playground: { setCode(code: string): void; destroy(): void } | null = null;
+const copied = ref<string | false>(false);
+let playground: Playground | null = null;
+/** The file as it now reads: what a copied link carries, even before the URL catches up with the last keystroke. */
+let current = STARTERS[0]!.code;
 let observer: IntersectionObserver | null = null;
 let shareTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -36,6 +40,7 @@ async function unpack(text: string): Promise<string> {
 }
 
 function remember(code: string): void {
+  current = code;
   if (!props.share) return;
   clearTimeout(shareTimer);
   shareTimer = setTimeout(async () => {
@@ -53,10 +58,12 @@ async function start(): Promise<void> {
   let code = STARTERS[0]!.code;
   const shared = props.share ? /#code=([\w-]+)/.exec(location.hash)?.[1] : undefined;
   if (shared) code = await unpack(shared).catch(() => code);
+  const frame = shared ? Number(/[#&]frame=(\d+)/.exec(location.hash)?.[1] ?? Number.NaN) : Number.NaN;
   try {
     const { mountPlayground, upgraded } = await import("./playground/mount");
     // A link shared before a respelling opens in the current spelling, as `uberscene lint --fix` writes it.
     if (shared) code = upgraded(code);
+    current = code;
     playground = mountPlayground({
       editor: editor.value!,
       player: player.value!,
@@ -64,6 +71,7 @@ async function start(): Promise<void> {
       base: withBase("/"),
       onError: (message) => (error.value = message),
       onChange: remember,
+      ...(Number.isInteger(frame) && frame > 0 ? { frame } : {}),
     });
     state.value = "live";
   } catch (e) {
@@ -78,9 +86,14 @@ function choose(i: number): void {
   remember(STARTERS[i]!.code);
 }
 
+/** The link to this file; while the player is paused past the start, it opens paused on that frame. */
 async function copyLink(): Promise<void> {
-  await navigator.clipboard.writeText(location.href).catch(() => undefined);
-  copied.value = true;
+  const player = playground?.player();
+  const frame = player && !player.isPlaying() ? player.getCurrentFrame() : 0;
+  const url = new URL(location.href);
+  url.hash = `code=${await pack(current)}${frame > 0 ? `&frame=${frame}` : ""}`;
+  await navigator.clipboard.writeText(url.href).catch(() => undefined);
+  copied.value = frame > 0 ? `Link copied at ${player!.getCurrentTime().toFixed(2)} s` : "Link copied";
   setTimeout(() => (copied.value = false), 1600);
 }
 
@@ -107,7 +120,7 @@ onBeforeUnmount(() => {
       <button v-for="(s, i) in STARTERS" :key="s.name" type="button" role="tab" :aria-selected="i === active"
         :class="{ active: i === active }" :disabled="state !== 'live'" @click="choose(i)">{{ s.name }}</button>
       <button v-if="props.share && state === 'live'" type="button" class="cc-playground-share" @click="copyLink">
-        {{ copied ? "Link copied" : "Copy link" }}
+        {{ copied || "Copy link" }}
       </button>
     </div>
     <div v-if="state !== 'fallback'" class="cc-playground-body">

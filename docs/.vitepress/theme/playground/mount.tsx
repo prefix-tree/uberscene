@@ -5,7 +5,7 @@ import { javascript } from "@codemirror/lang-javascript";
 import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
 import { tags as t } from "@lezer/highlight";
 import { basicSetup, EditorView } from "codemirror";
-import { createRef, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 import { Player, type PlayerRef } from "@uberscene/player";
@@ -24,6 +24,8 @@ export interface PlaygroundOptions {
   readonly onError: (message: string | null) => void;
   /** The file as it now reads, for the share link. */
   readonly onChange?: (code: string) => void;
+  /** Opens paused on this frame instead of playing from the start: a link copied while paused, for review. */
+  readonly frame?: number;
 }
 
 export interface Playground {
@@ -69,7 +71,16 @@ export function mountPlayground(options: PlaygroundOptions): Playground {
     product: `${options.base}playground/product.webm`,
   };
   const root: Root = createRoot(options.player);
-  const ref = createRef<PlayerRef>();
+  const ref: { current: PlayerRef | null } = { current: null };
+  // The frame a review link opens on, sought once the player is there.
+  let pending = options.frame;
+  const autoPlay = pending === undefined;
+  const attach = (player: PlayerRef | null): void => {
+    ref.current = player;
+    if (!player || pending === undefined) return;
+    void player.seekToFrame(pending);
+    pending = undefined;
+  };
   let timer: ReturnType<typeof setTimeout> | undefined;
   let shown = false;
 
@@ -90,7 +101,9 @@ export function mountPlayground(options: PlaygroundOptions): Playground {
       if (shown) return;
     } else options.onError(null);
     shown = true;
-    root.render(<Player ref={ref} state={state} element={element} media={media} controls loop autoPlay />);
+    root.render(
+      <Player ref={attach} state={state} element={element} media={media} controls loop autoPlay={autoPlay} />,
+    );
   }
 
   const view = new EditorView({
