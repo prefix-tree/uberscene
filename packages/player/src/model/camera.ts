@@ -31,7 +31,7 @@ function cameraUse(state: ResolvedState): CameraUse | null {
         placement,
         keys: placement.children.flatMap((c) => {
           const k = state.items.get(c);
-          return k?.kind === "keyframe" ? [k] : [];
+          return k?.kind === "keyframe" || k?.kind === "generator" ? [k] : [];
         }),
         tracks: new Set(state.tracks.filter((t) => t.camera === placement.id).map((t) => t.id)),
       }
