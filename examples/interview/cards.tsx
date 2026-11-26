@@ -50,11 +50,22 @@ const CRAFT = [{ type: "exposure", stops: 2 }, ...PRINT] as const;
 const MESSAGE = 4.26;
 const PLANETS = 5.72;
 const OUT = { type: "fade", duration: 0.2 } as const;
-/** A picture is footage, which has no exit: it fades over its last fifth of a second by keys. */
-const leave = (length: number) => [
-  { at: length - 0.2, value: 1 },
-  { at: length, value: 0 },
-];
+/**
+ * A picture is footage, which has no entrance or exit: it comes in with its frame (up from four fifths of its size
+ * as it fades in) and, when the card leaves, fades over its last fifth of a second, by keys.
+ */
+const arrive = {
+  scale: [
+    { at: 0, value: 0.8, easing: "snappy" },
+    { at: 0.28, value: 1 },
+  ],
+  borderRadius: 12,
+} as const;
+const appear = [
+  { at: 0, value: 0, easing: "easeOut" },
+  { at: 0.15, value: 1 },
+] as const;
+const leave = (length: number) => [...appear, { at: length - 0.2, value: 1 }, { at: length, value: 0 }];
 
 /** A card is never quite still: its frame, picture and label bob together, on one seed. */
 const bob = (y: number, seed: number) => ({ type: "wiggle", base: y, amount: 10, frequency: 0.4, seed }) as const;
@@ -176,7 +187,7 @@ export default function Video() {
             duration={MESSAGE}
             fit="cover"
             box={{ x: 130, y: bob(628, 1), width: 332, height: 332, origin: "center" }}
-            transform={{ borderRadius: 12, opacity: leave(MESSAGE) }}
+            transform={{ ...arrive, opacity: leave(MESSAGE) }}
             effects={CRAFT}
           />
           <Clip
@@ -188,7 +199,7 @@ export default function Video() {
             duration={PLANETS}
             fit="cover"
             box={{ x: 1790, y: bob(628, 2), width: 332, height: 332, origin: "center" }}
-            transform={{ borderRadius: 12, opacity: leave(PLANETS) }}
+            transform={{ ...arrive, opacity: leave(PLANETS) }}
             effects={PRINT}
           />
           <Clip
@@ -201,7 +212,7 @@ export default function Video() {
             duration="fill"
             fit="cover"
             box={{ x: 130, y: bob(628, 3), width: 332, height: 332, origin: "center" }}
-            transform={{ borderRadius: 12 }}
+            transform={{ ...arrive, opacity: appear }}
             effects={CRAFT}
           />
         </Track>
