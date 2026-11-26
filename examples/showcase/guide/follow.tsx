@@ -30,7 +30,7 @@ export default function Video() {
         {/* The forearm's box is read in the arm's box: its elbow sits at the arm's lower end, and it bends there. */}
         <Shape
           id="forearm"
-          parent="arm"
+          follow="arm"
           type="rectangle"
           start={0}
           duration={4}
@@ -51,10 +51,10 @@ export default function Video() {
             },
           }}
         />
-        {/* The hand moves with the forearm, so with the arm too: two parents up. */}
+        {/* The hand follows the forearm, so the arm too: two links up the chain. */}
         <Shape
           id="hand"
-          parent="forearm"
+          follow="forearm"
           type="ellipse"
           start={0}
           duration={4}
@@ -63,10 +63,10 @@ export default function Video() {
           fill="#ffffff"
           box={{ x: 15, y: 150, origin: "center" }}
         />
-        {/* A label rides on the hand, and fades on its own: a parent's opacity is not handed down. */}
+        {/* A label rides on the hand, and fades on its own: opacity is not handed down the chain. */}
         <Title
           id="tag"
-          parent="hand"
+          follow="hand"
           start={1}
           duration={3}
           box={{ x: 64, y: 28, width: 120, height: 40, origin: "left" }}
