@@ -29,7 +29,8 @@ npx uberscene skills install [--dir <folder>] [--force]
 
 Every export draws its frames in headless Chrome. The first one downloads Chrome for Testing into
 `~/.cache/uberscene/browsers` (`UBERSCENE_BROWSER_CACHE` moves it); `uberscene browser install` downloads it ahead of
-time. `UBERSCENE_CHROMIUM` names a Chrome 157, the only version the export runs on, to use instead. `UBERSCENE_CODECS`
+time. `UBERSCENE_CHROMIUM` names a Chrome 157, the only version the export runs on, to use instead;
+`UBERSCENE_ANY_CHROME=1` lets the export draw on another, with a warning, where Chrome 157 cannot be had. `UBERSCENE_CODECS`
 (`native`, `native-decode` or `native-encode`) hands decoding and encoding to the experimental native codecs
 ([The browser it runs in](/guide/exporting#the-browser-it-runs-in)).
 

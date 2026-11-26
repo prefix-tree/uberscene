@@ -1,7 +1,7 @@
 // The export runs on one Chrome milestone: any other is refused before a page opens, with what to do instead.
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
-import { CHROME_MILESTONE, wrongChrome } from "../src/web/chrome";
+import { anyChrome, CHROME_MILESTONE, otherChromeWarning, wrongChrome } from "../src/web/chrome";
 
 describe("wrongChrome", () => {
   it("accepts any build of the pinned milestone", () => {
@@ -20,5 +20,32 @@ describe("wrongChrome", () => {
 
   it("refuses a version it cannot read", () => {
     expect(wrongChrome("unknown", "/opt/chrome")).toContain("is Chrome unknown");
+  });
+
+  it("names the way to draw on it anyway", () => {
+    expect(wrongChrome("153.0.8010.12", "/opt/chrome")).toContain("UBERSCENE_ANY_CHROME=1");
+  });
+});
+
+describe("UBERSCENE_ANY_CHROME", () => {
+  const before = process.env.UBERSCENE_ANY_CHROME;
+  afterEach(() => {
+    if (before === undefined) delete process.env.UBERSCENE_ANY_CHROME;
+    else process.env.UBERSCENE_ANY_CHROME = before;
+  });
+
+  it("is off unless set to 1", () => {
+    delete process.env.UBERSCENE_ANY_CHROME;
+    expect(anyChrome()).toBe(false);
+    process.env.UBERSCENE_ANY_CHROME = "true";
+    expect(anyChrome()).toBe(false);
+    process.env.UBERSCENE_ANY_CHROME = "1";
+    expect(anyChrome()).toBe(true);
+  });
+
+  it("warns with the version it draws on and the one the export is tested on", () => {
+    const warning = otherChromeWarning("153.0.8010.12", "/opt/chrome");
+    expect(warning).toContain("Chrome 153.0.8010.12 (/opt/chrome)");
+    expect(warning).toContain(`tested on Chrome ${CHROME_MILESTONE}`);
   });
 });
