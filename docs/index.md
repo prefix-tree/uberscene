@@ -64,7 +64,7 @@ import { withBase } from "vitepress";
 
 ## Install
 
-<p class="home-chapter-lead">UberScene is built for a coding agent to drive: give it the skill, then ask for a video in plain words. It adds your footage, writes <code>video.tsx</code>, checks it with sheets of frames and renders <code>video.mp4</code>. Or pick By hand and run the commands yourself. Either way you need Node 22.19 or later, and no ffmpeg.</p>
+<p class="home-chapter-lead">UberScene is built for a coding agent to drive: give it the two skills, one to set UberScene up and one that knows the whole language, then ask for a video in plain words. It adds your footage, writes <code>video.tsx</code>, checks it with sheets of frames and renders <code>video.mp4</code>. Or pick By hand and run the commands yourself. Either way you need Node 22.19 or later, and no ffmpeg.</p>
 
 <AgentPicker full />
 
@@ -90,7 +90,7 @@ import { withBase } from "vitepress";
 
 ## Features
 
-<p class="home-chapter-lead">Everything a video needs, from the first cut to the export, in the order you use it.</p>
+<p class="home-chapter-lead">What works today, from the first cut to the export, in the order you use it. Under it, the roadmap: what is being built now and what is planned next. <a href="https://github.com/prefix-tree/uberscene/blob/main/BACKLOG.md">The backlog →</a></p>
 
 <FeatureGroups />
 

@@ -2,38 +2,44 @@
 
 UberScene was built for a model to write: a cut names words and shots instead of seconds, every element has an id a
 tool can find, and the command line checks the file like a compiler. The **UberScene skill** puts all of that in front
-of your coding agent, so you can ask for a video in plain words and get a file, stills and a render back.
+of your coding agent, so you can ask for a video in plain words and get a file, stills and a render back. A second
+skill, **uberscene-setup**, teaches the agent to install UberScene itself: check Node, install the packages, fetch
+Chrome, prove it works and upgrade it later.
 
 ## Install it
 
-**In Claude Code**, add the repository as a plugin marketplace, then install the plugin:
+**In Claude Code**, add the repository as a plugin marketplace, then install the plugin. It carries both skills:
 
 ```
 /plugin marketplace add prefix-tree/uberscene
 /plugin install uberscene@prefix-tree
 ```
 
-**From the command line**, in your project, write the skill that comes with the installed CLI:
+**From the command line**, in your project, write the skills that come with the installed CLI. The setup skill goes
+beside the main one, in the same skills folder:
 
 ```sh
-npx uberscene skills install                          # into .claude/skills/uberscene
+npx uberscene skills install                          # .claude/skills/uberscene and .claude/skills/uberscene-setup
 npx uberscene skills install --dir .agents/skills/uberscene
 ```
 
-This skill always matches the CLI you have, so it never teaches a command your version lacks. Run it again after
+These skills always match the CLI you have, so they never teach a command your version lacks. Run it again after
 upgrading UberScene: it replaces the files it wrote, and keeps a folder you have edited unless you add `--force`. It never
 deletes a file it did not write.
 
-**In another agent**, or in Claude Code without the plugin, you can also copy the skill's folder,
-[`plugins/uberscene/skills/uberscene`](https://github.com/prefix-tree/uberscene/tree/main/plugins/uberscene/skills/uberscene),
-to where the agent reads skills: for Claude Code that is `.claude/skills/uberscene/` in a project, or
-`~/.claude/skills/uberscene/` for all of them. It follows the open [Agent Skills](https://agentskills.io) format: one
-`SKILL.md` and the reference files it links.
+**In another agent**, or in Claude Code without the plugin, you can also copy the skills' folders,
+[`plugins/uberscene/skills/uberscene`](https://github.com/prefix-tree/uberscene/tree/main/plugins/uberscene/skills/uberscene)
+and [`plugins/uberscene/skills/uberscene-setup`](https://github.com/prefix-tree/uberscene/tree/main/plugins/uberscene/skills/uberscene-setup),
+to where the agent reads skills: for Claude Code that is `.claude/skills/` in a project, or `~/.claude/skills/` for
+all of them. They follow the open [Agent Skills](https://agentskills.io) format: one `SKILL.md` each, and the
+reference files it links.
 
-The skill's first step installs UberScene in the project:
+Then ask the agent to set UberScene up. The setup skill installs it in the project, fetches Chrome for Testing for
+exports, and renders a test sheet to prove it works:
 
 ```sh
 npm install uberscene @uberscene/kit react zod
+npx uberscene browser install
 ```
 
 ## What it teaches

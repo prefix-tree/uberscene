@@ -123,3 +123,32 @@ test("the marketplace lists the plugin, and both name it the same", () => {
   assert.ok(!String(entry.source).includes(".."));
   assert.ok(existsSync(join(root, entry.source, ".claude-plugin", "plugin.json")));
 });
+
+// The setup skill beside it: how an agent installs, checks and upgrades UberScene before it makes a video.
+const setup = join(plugin, "skills", "uberscene-setup");
+const setupText = readFileSync(join(setup, "SKILL.md"), "utf8");
+
+test("the setup skill has the Agent Skills frontmatter, its folder's name, and stays short", () => {
+  const fm = frontmatter(setupText);
+  assert.equal(fm.name, "uberscene-setup");
+  assert.equal(fm.name, setup.split("/").at(-1), "the name is the folder's");
+  assert.ok((fm.description ?? "").length > 0 && (fm.description ?? "").length <= 1024);
+  assert.ok(setupText.split("\n").length < 500);
+});
+
+test("the setup skill's check file resolves with no errors and no media", () => {
+  const files = [...setupText.matchAll(/```tsx\n([\s\S]*?)```/g)]
+    .map((m) => m[1] as string)
+    .filter((code) => code.includes("export default"));
+  assert.equal(files.length, 1, "the setup skill shows one whole file");
+  const state = resolve(collectModule(loadModule(files[0] as string) as never), { assets: {} } as never);
+  assert.deepEqual(state.errors, []);
+});
+
+test("the setup skill installs what the main skill's loop needs, and names commands the CLI has", () => {
+  assert.ok(text.includes("npm install uberscene @uberscene/kit react zod"));
+  assert.ok(setupText.includes("npm install uberscene @uberscene/kit react zod"));
+  const cli = readFileSync(join(root, "packages", "render", "src", "cli.ts"), "utf8");
+  for (const command of ["browser install", "skills install", "codecs install", "blocks update", "inspect", "look"])
+    assert.ok(cli.includes(`uberscene ${command}`), `the CLI has uberscene ${command}`);
+});
