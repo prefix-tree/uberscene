@@ -41,8 +41,8 @@ npx uberscene matte talk.mp4 --accept-licence
 
 ```text
 talk.matte.webm: 878 frames, 1920x1080, matte of talk as talk.matte in uberscene.json
-  rvm-resnet50 (GPL-3.0), wasm (4 threads): 0.58 s a frame, 512 s in all
-  soft edge 0.9% (most 1.4%), change between frames 0.1% (most 0.9% at 12.41 s), subject 27.8% of the picture
+  rvm-resnet50 (GPL-3.0), wasm (4 threads): 0.72 s a frame, 706 s in all
+  soft edge 1.2% (most 1.6%), change between frames 0.1% (most 27.9% at 1.67 s), subject 27.2% of the picture
 ```
 
 ```tsx
@@ -88,7 +88,8 @@ models` lists them, `--model <name>` picks one, and `UBERSCENE_MODEL_REGISTRY` a
 same shape as the package's `models.json`.
 
 What it prints says what it cannot show you: a **soft edge** above about 5% is a blurry matte; a large **change between
-frames** at one moment is a flicker to look at there; a **subject** under 1% of the picture means it found no one.
+frames** at one moment is a flicker to look at there, or a cut in the footage (above, the take cuts from a title
+card to the speaker at 1.67 s); a **subject** under 1% of the picture means it found no one.
 What makes a good matte, and the faults to look for on white and on a colour, is in the skill's interview reference.
 
 ## Hiding a face, a plate or a screen
