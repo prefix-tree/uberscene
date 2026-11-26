@@ -4,7 +4,7 @@ editLink: false
 
 # Actions
 
-Generated from the registered handlers (100). Do not edit by hand; run `pnpm docs:gen`.
+Generated from the registered handlers (101). Do not edit by hand; run `pnpm docs:gen`.
 
 Every action has `validate`, `apply`, `invert` and `fold`; the inverse is never null. Each runs as `{ type, params }`; the params and notes here are read from `packages/sdk/src/actions/types/index.ts`.
 
@@ -116,6 +116,12 @@ Every action has `validate`, `apply`, `invert` and `fold`; the inverse is never 
 | action | params | what it does |
 |---|---|---|
 | `freeze/setAll` | `{ id, freezes }` | Replaces the element's holds: each keeps the source frame at `source` on screen from `at` for `duration`. |
+
+## `generator/`
+
+| action | params | what it does |
+|---|---|---|
+| `generator/set` | `{ id, path, generator }` | Writes a generator at `path` in place of the value (`{ type: "wiggle", amount: 2 }`), or (`null`) takes it off. The number or keys already there become what it is added to (its `base`), and stay as the value when it is taken off. The key actions then work on those keys as before. |
 
 ## `key/`
 

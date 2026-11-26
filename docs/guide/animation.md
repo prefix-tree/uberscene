@@ -77,6 +77,44 @@ The easing names are CSS's, in camelCase (`linear`, `ease`, `easeIn`, `easeOut`,
 (`easeInOutSine`, `easeOutBack`, `easeInOutQuad`…), and `spring`. The [`<Clip>`](/reference/elements/clip) reference
 lists them all. For a move that needs more, draw it yourself in a [`<Layer>`](./free-code).
 
+## Motion without keys {#generators}
+
+Some movement is not a move from here to there: a card that is never quite still, a frame that closes in slowly, a
+light that pulses. Keys for those are busywork, and they are the same on every element. In place of a number or a
+list of keys, a value can be a generator: an object with a `type`.
+
+<Example src="previews/guide/generated" alt="Three cards: an orange one wobbling and bobbing, a teal one growing steadily, a red one fading in and out">
+
+<<< @/../examples/showcase/guide/generated.tsx
+
+</Example>
+
+| `type` | What it does | Its params |
+|---|---|---|
+| `wiggle` | A smooth wobble **added** to the value. It never repeats exactly. | `amount`: the most it adds or takes away, in the value's own units (degrees for a rotation, pixels for `box.x`). `frequency`: wobbles a second, 1 when left out. `seed`: which wobble. |
+| `drift` | A steady change **added** to the value, from the element's start. | `speed`: how much it adds each second. |
+| `loop` | A key list played again and again. | `keys`: two or more. `mode`: `repeat` (the default) starts over, `pingpong` plays back and forth. |
+
+A `wiggle` and a `drift` are added to a `base`: a number, or a list of keys, so a wobble goes on top of a keyed move.
+
+```tsx
+transform={{ rotation: { type: "wiggle", amount: 2 } }}                       // about the default, 0
+transform={{ scale: { type: "drift", base: 0.8, speed: 0.06 } }}              // from 0.8, growing
+transform={{ rotation: { type: "wiggle", amount: 3, base: [{ at: 0, value: 0 }, { at: 1, value: 90 }] } }}
+```
+
+- **The same every time.** A generator is worked out from the time and its params alone, so a frame is the same in
+  the preview and the export, and scrubbing back shows what was there before.
+- **Seeds.** Left out, a wiggle's seed comes from the element's id and the prop, so no two elements wobble alike.
+  Give several elements the same `seed`, `amount` and `frequency` to move them together: a card's frame, its picture
+  and its label on one seed bob as one.
+- **Where.** Everything keys can move in `transform` and `box`, every numeric param of an effect, and a camera's
+  `x`, `y`, `zoom` and `rotation`. Not `speed`, `volume` or `pan`: those take a number or keys.
+- **On `box.x` and `box.y`** a wiggle or a drift needs a `base`, the place it is added to; without one the element
+  is centred and there is nothing to add to, which is an error that says so.
+- **On a pushed camera** a generator goes on top of the moves the push makes: a `drift` on `zoom` beside `push`
+  closes in slowly while the camera still makes room. See [the camera](./camera).
+
 ## Effects {#effects}
 
 A look on an element is an entry of its `effects` list: its `type`, then its params by name.
@@ -175,6 +213,9 @@ The editor reads keys and effects where they are written. Dragging a key in the 
 value in the inspector writes it into the list. The [actions](/reference/actions) find a key by the element's id, the
 path of the prop and its time (`key/add`, `key/move`…), and an effect by its place in the list (`effect/update`,
 `effect/toggle`…).
+
+`generator/set` writes a generator at a path, or takes it off. The number or keys that were there become its `base`
+and stay as the value when it comes off, and the key actions go on working on those keys underneath it.
 
 A list written by code, such as a variable or a `.map`, cannot be edited key by key: the editor locks the whole prop,
 as it does any prop the file computes.
