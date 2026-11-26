@@ -21,7 +21,7 @@ import { withBase } from "vitepress";
 
 <h1 class="home-title">The whole studio, as code.</h1>
 
-<p class="home-lead">An <strong>editor</strong>, an <strong>animation studio</strong> and a <strong>compositor</strong>, with 3D and sound, in one React file. Play it in the browser, fine-tune it on a timeline and export it to MP4. <strong>Your coding agent</strong> can do all of it.</p>
+<p class="home-lead">We’re turning <strong>editing</strong>, <strong>animation</strong> and <strong>compositing</strong> into code, so AI can drive them natively.</p>
 
 <div class="home-actions">
 <a class="home-button primary" :href="withBase('/guide/getting-started')">Get started</a>
