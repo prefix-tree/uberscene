@@ -22,11 +22,12 @@ import {
 } from "../packages/kit/src/schema";
 import { type BlockInfo, listBlocks } from "../packages/render/src/blocks";
 import { listHandlers } from "../packages/sdk/src/index";
-import { readApiExports } from "./api-exports";
+import { readApiExports, readDeclaration } from "./api-exports";
 import { EFFECT_DEMOS, effectExample, TRANSITION_TEXT, transitionExample } from "./effect-example";
 import { syncGeneratedFiles } from "./generated-files";
 import { motionEntries, motionIndex, motionPage, motionReference, motionSidebar } from "./motion-catalog";
 import { readPropDocs, STYLED } from "./prop-docs";
+import { fence, fillSections, type SyncGenerator } from "./skill-sync";
 
 /**
  * Generated reference pages: the element table from the Zod schemas and the
@@ -833,9 +834,58 @@ write(
 );
 write(join(skillRefs, "rendering.md"), `${forAgent(renderingPage(), false)}\n`);
 write(join(skillRefs, "motion-catalog.md"), `${forAgent(motionReference(), false)}\n`);
-// Written by hand (scripts/skill-references/), and copied in: this folder holds only what this script writes.
-for (const name of readdirSync(join(root, "scripts", "skill-references")))
-  write(join(skillRefs, name), readFileSync(join(root, "scripts", "skill-references", name), "utf8"));
+// The skill's pages written by hand: both SKILL.md files, and the references in scripts/skill-references/, which are
+// copied in (that folder holds only what this script writes). Their synced sections are filled from the code first.
+const skillSyncProblems: string[] = [];
+const usedExamples = new Set<string>();
+const SKILL_EXAMPLES = join(root, "examples", "skill");
+const skillSync: Record<string, SyncGenerator> = {
+  /** `example <file>`: a file of examples/skill/, which is typechecked there and resolved by scripts/skill.test.ts. */
+  example([file, ...rest]) {
+    if (!file || rest.length) throw new Error("takes one file of examples/skill/");
+    const path = join(SKILL_EXAMPLES, file);
+    if (!existsSync(path)) throw new Error(`examples/skill/${file} does not exist`);
+    usedExamples.add(file);
+    return fence(file, readFileSync(path, "utf8"));
+  },
+  /** `api <specifier> <export>...`: each export's declaration and JSDoc as its source writes them. */
+  api([specifier, ...names]) {
+    if (!specifier || !names.length) throw new Error("takes an entry and one or more of its exports");
+    return fence("api.ts", names.map((name) => readDeclaration(specifier, name)).join("\n\n"));
+  },
+  /** `props <Element> <prop>...`: those props of an element, with type, default and JSDoc, as the reference has them. */
+  props([name, ...props]) {
+    const component = name ? { ...ELEMENTS, ...ENGINE_LAYERS }[name as keyof typeof ELEMENTS] : undefined;
+    if (!component || !props.length) throw new Error("takes an element and one or more of its props");
+    const schema = z.toJSONSchema(component.schema as z.ZodType, { unrepresentable: "any", io: "input" }) as JsonSchema;
+    const rows = props.map((prop) => {
+      const s = schema.properties?.[prop];
+      if (!s) throw new Error(`<${name}> has no prop ${prop}`);
+      return `| \`${prop}\` | ${typeOf(s, 6)} | ${defaultOf(s.default)} | ${describe(`element:${name}`, prop)} |`;
+    });
+    return ["| prop | type | default | what it is |", "|---|---|---|---|", ...rows].join("\n");
+  },
+};
+const skillPage = (path: string): string => {
+  const synced = fillSections(relative(root, path), readFileSync(path, "utf8"), skillSync);
+  skillSyncProblems.push(...synced.problems);
+  return synced.text;
+};
+for (const skillName of ["uberscene", "uberscene-setup"]) {
+  const path = join(root, "plugins", "uberscene", "skills", skillName, "SKILL.md");
+  write(path, skillPage(path));
+}
+for (const name of readdirSync(join(root, "scripts", "skill-references"))) {
+  const source = join(root, "scripts", "skill-references", name);
+  const text = skillPage(source);
+  write(source, text);
+  write(join(skillRefs, name), text);
+}
+for (const file of readdirSync(SKILL_EXAMPLES))
+  if (/\.tsx?$/.test(file) && !usedExamples.has(file))
+    skillSyncProblems.push(
+      `examples/skill/${file} is in no synced section; show it with <!-- sync: example ${file} -->`,
+    );
 // The CLI page's synopsis is the `--help` text's usage lines, so the two cannot differ; the rest of the page is
 // written by hand, and the check fails on a flag the help names that the page never mentions.
 const cliPage = join(out, "cli.md");
@@ -945,7 +995,7 @@ const problems: string[] = syncGeneratedFiles(root, generated, {
   ],
   obsolete: ["docs/reference/elements.md", "docs/reference/effects.md", "docs/reference/graphics"],
 });
-problems.push(...apiProblems);
+problems.push(...apiProblems, ...skillSyncProblems);
 problems.push(...[...new Set(undocumented)].map((u) => `no JSDoc: ${u}`));
 if (problems.length) {
   console.error(

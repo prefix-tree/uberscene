@@ -50,6 +50,60 @@ Most short videos have the same three parts. Give each a share of the length:
 - **Real things.** Real product screens, names, numbers and logos from the person or the source. A screen you don't
   have becomes a labelled placeholder, never an invented one.
 
+### Timing a script with `narrate`
+
+`narrate` turns the script into times: every word's start and end, subtitle lines, and cues by name. Give it the
+voice's transcript once there is a recording, and every time follows the voice.
+
+<!-- sync: api @uberscene/kit narrate NarrateOptions Narration -->
+```ts
+/**
+ * Times a narration from its script.
+ *
+ * In the script, a word in `[brackets]` is a cue at the start of that word, named by the word; `(1.5)` is a pause
+ * of that many seconds with nothing said; `{name}` is a cue at that moment with no word.
+ *
+ *   const story = narrate("A game has [no] real light. (0.5) {lamp} So it [cheats].");
+ *   story.at("cheats"); // seconds
+ *   story.lines;        // the subtitles
+ */
+function narrate(script: string, options: NarrateOptions = {}): Narration
+
+interface NarrateOptions {
+  /** Seconds before the first word. Default 0.3. */
+  readonly start?: number;
+  /** The speaking pace, for the parts given; the rest keep their defaults (0.09, 0.04, 0.11, 0.25). */
+  readonly pace?: Partial<NarrationPace>;
+  /** The most characters on a subtitle line. Default 44. */
+  readonly lineLength?: number;
+  /** Seconds a subtitle stays after its last word, never into the next line. Default 0.12. */
+  readonly hold?: number;
+  /**
+   * The words of a recorded voice with their times (an asset's `transcript` in the manifest). The script's words
+   * are matched to them in order, ignoring case and punctuation, and take their times; the pace is not used.
+   */
+  readonly transcript?: {
+    readonly words: readonly { readonly text: string; readonly start: number; readonly end: number }[];
+  };
+}
+
+interface Narration {
+  /** Every word said, in order. */
+  readonly words: readonly NarratedWord[];
+  /** The subtitles, a phrase at a time. */
+  readonly lines: readonly NarratedLine[];
+  /** The cues by name, in seconds. */
+  readonly cues: Readonly<Record<string, number>>;
+  /** The time of a cue. A name the script does not have is an error, with the names it does have. */
+  at(name: string): number;
+  /** When the narration is over: the end of the last word, or a pause or a cue after it. */
+  readonly duration: number;
+  /** What could not be done as asked: a word of the script the transcript does not have. */
+  readonly warnings: readonly string[];
+}
+```
+<!-- /sync -->
+
 ## Write the plan into the file
 
 Put the plan in a comment at the top of `video.tsx`, so it travels with the video and the next edit can check against

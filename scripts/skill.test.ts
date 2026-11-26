@@ -26,6 +26,27 @@ function frontmatter(md: string): Record<string, string> {
   );
 }
 
+const words = Array.from({ length: 40 }, (_, i) => ({ i, text: `w${i}`, start: i * 0.4, end: i * 0.4 + 0.3 }));
+/** Media for the examples that use footage: a talk with a transcript, and b-roll in three shots. */
+const MANIFEST = {
+  assets: {
+    talk: { id: "talk", kind: "video", duration: 20, fps: 30, width: 1920, height: 1080, transcript: { words } },
+    broll: {
+      id: "broll",
+      kind: "video",
+      duration: 12,
+      fps: 30,
+      width: 1920,
+      height: 1080,
+      shots: [
+        { i: 0, start: 0, end: 4 },
+        { i: 1, start: 4, end: 9 },
+        { i: 2, start: 9, end: 12 },
+      ],
+    },
+  },
+};
+
 test("SKILL.md has the frontmatter the Agent Skills format asks for, and only its portable keys", () => {
   const fm = frontmatter(text);
   assert.equal(fm.name, "uberscene");
@@ -54,32 +75,26 @@ test("every relative link in the skill resolves", () => {
 });
 
 test("the whole files in SKILL.md resolve with no errors", () => {
-  const words = Array.from({ length: 40 }, (_, i) => ({ i, text: `w${i}`, start: i * 0.4, end: i * 0.4 + 0.3 }));
-  const manifest = {
-    assets: {
-      talk: { id: "talk", kind: "video", duration: 20, fps: 30, width: 1920, height: 1080, transcript: { words } },
-      broll: {
-        id: "broll",
-        kind: "video",
-        duration: 12,
-        fps: 30,
-        width: 1920,
-        height: 1080,
-        shots: [
-          { i: 0, start: 0, end: 4 },
-          { i: 1, start: 4, end: 9 },
-          { i: 2, start: 9, end: 12 },
-        ],
-      },
-    },
-  };
   const files = [...text.matchAll(/```tsx\n([\s\S]*?)```/g)]
     .map((m) => m[1] as string)
     .filter((code) => code.includes("export default"));
   assert.ok(files.length > 0, "SKILL.md shows at least one whole file");
   for (const code of files) {
-    const state = resolve(collectModule(loadModule(code) as never), manifest as never);
+    const state = resolve(collectModule(loadModule(code) as never), MANIFEST as never);
     assert.deepEqual(state.errors, []);
+  }
+});
+
+test("every example the skill shows from examples/skill resolves with no errors", () => {
+  // These are the files the synced sections copy in (`<!-- sync: example ... -->`); a file that carries its own
+  // manifest uses it, the rest get the one above.
+  const dir = join(root, "examples", "skill");
+  const files = readdirSync(dir).filter((f) => f.endsWith(".tsx"));
+  assert.ok(files.length > 0);
+  for (const file of files) {
+    const mod = loadModule(readFileSync(join(dir, file), "utf8")) as { manifest?: unknown };
+    const state = resolve(collectModule(mod as never), (mod.manifest ?? MANIFEST) as never);
+    assert.deepEqual(state.errors, [], file);
   }
 });
 
