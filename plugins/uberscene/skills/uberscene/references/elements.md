@@ -266,6 +266,23 @@ A theme preset's name, or an object of these fields. `preset` names the preset t
 | `letterSpacing` | number (-100..100) | `0` | Extra space between letters, in pixels. |
 | `decoration` | "none" \| "underline" \| "lineThrough" \| "overline" |  | A line under, over or through the letters. |
 
+#### Coloured words: `<Mark>`
+
+Words inside a title drawn their own way, as part of its text:
+
+```tsx
+<Title id="q" style={{ color: "$text" }}>into the <Mark color="$accent">stars</Mark></Title>
+```
+
+| prop | type | description |
+|---|---|---|
+| `color` | string | The words' colour: a colour, or a theme token such as `"$accent"`. |
+| `weight` | number, `"normal"` or `"bold"` | Their weight. |
+| `italic` | boolean | Set them in italics. |
+| `background` | string | A colour behind them: a highlight. |
+
+A `<Mark>` has no id and no time of its own, and holds text only (marks do not nest). Typewriter and word-by-word animations count its words with the rest. Editing the title's text keeps a mark on its words while they are still there.
+
 Timed, visual, transformable. Children: `mask`. [All elements](https://uberscene.prefixtree.xyz/reference/elements/)
 
 ## `<Captions>`

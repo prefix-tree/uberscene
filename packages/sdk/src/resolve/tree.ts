@@ -1,4 +1,4 @@
-import type { DeclaredFont, ShaderDefinition } from "@uberscene/kit/schema";
+import type { DeclaredFont, ShaderDefinition, TextRun } from "@uberscene/kit/schema";
 
 import type { ResolveError } from "./errors";
 
@@ -19,6 +19,8 @@ export interface CollectedNode {
   readonly children: readonly CollectedNode[];
   /** Text content for elements whose children are text (Title). */
   readonly text?: string;
+  /** Stretches of `text` drawn their own way, from `<Mark>`s inside a title. */
+  readonly runs?: readonly TextRun[];
   readonly parent: string | null;
   readonly editable: Editable;
   /** Props whose source value is an expression the editor cannot write (known only when a SourceIndex was supplied). */

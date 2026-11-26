@@ -7,10 +7,13 @@ import {
   engineOf,
   fontFaces,
   isShaderRef,
+  isTextMark,
   isVocabulary,
   MAIN_TRACK_ID,
   MAIN_TRACK_KINDS,
+  markSchema,
   type ShaderDefinition,
+  type TextRun,
 } from "@uberscene/kit/schema";
 
 import type { ResolveError } from "./errors";
@@ -253,6 +256,8 @@ function collectChildren(
       out.push(node);
       return;
     }
+    // A <Mark> is part of its title's text, read with it (`textOf`), not a helper to expand.
+    if (isTextMark(type)) return;
     if (typeof type === "function") {
       const helper = type as (props: Record<string, unknown>) => ReactNode;
       const name = helper.name || "anonymous";
@@ -366,7 +371,10 @@ function makeNode(
   if (walker.byId.has(id)) {
     walker.errors.push({ code: "DUPLICATE_ID", id, message: `id "${id}" is used more than once` });
   }
-  const text = textOf(rawChildren as ReactNode);
+  const { text, runs, problems } = textOf(rawChildren as ReactNode);
+  // A title's children are its words: what is not text or a <Mark> would otherwise leave it silently empty.
+  if (kind === "title")
+    for (const message of problems) walker.errors.push({ code: "SCHEMA", id, prop: "children", message });
   const indexed = walker.index?.elements.get(id);
   let editable: Editable = "literal";
   if (walker.index && (!indexed || indexed.generated)) editable = "generated";
@@ -382,6 +390,7 @@ function makeNode(
     lockedProps,
     boundProps,
     ...(text !== undefined ? { text } : {}),
+    ...(runs.length > 0 ? { runs } : {}),
     ...(origin ? { origin } : {}),
   };
   if (opaqueInterior) {
@@ -394,17 +403,60 @@ function makeNode(
   return node;
 }
 
-function textOf(children: ReactNode): string | undefined {
+/**
+ * An element's text, from its children: the strings and numbers it holds, in order, with the words inside each
+ * `<Mark>` read as part of it, and each mark's stretch of the text and look (`runs`). A timeline child (a `<Mask>`) is
+ * collected on its own and is not part of the text. Anything else leaves no text, and `problems` says what it was.
+ */
+function textOf(children: ReactNode): { text?: string; runs: TextRun[]; problems: string[] } {
   const parts: string[] = [];
+  const runs: TextRun[] = [];
+  const problems: string[] = [];
+  let length = 0;
   let onlyText = true;
+  const plain = (node: ReactNode): string | null => {
+    const words: string[] = [];
+    let ok = true;
+    Children.forEach(node, (c) => {
+      if (typeof c === "string" || typeof c === "number") words.push(String(c));
+      else if (c !== null && c !== undefined && typeof c !== "boolean") ok = false;
+    });
+    return ok ? words.join("") : null;
+  };
   Children.forEach(children, (child) => {
-    if (typeof child === "string" || typeof child === "number") parts.push(String(child));
-    // A timeline child (a <Mask>) is collected on its own; it is not part of the text.
-    else if (isValidElement(child) && isVocabulary(child.type)) return;
-    else if (child !== null && child !== undefined && typeof child !== "boolean") onlyText = false;
+    if (typeof child === "string" || typeof child === "number") {
+      parts.push(String(child));
+      length += String(child).length;
+    } else if (isValidElement(child) && isVocabulary(child.type)) return;
+    else if (isValidElement(child) && isTextMark(child.type)) {
+      const { children: inner, ...look } = child.props as Record<string, unknown>;
+      const words = plain(inner as ReactNode);
+      if (words === null) {
+        problems.push("a <Mark> holds text only: marks do not nest, and other elements cannot go inside one");
+        onlyText = false;
+        return;
+      }
+      const parsed = markSchema.safeParse(look);
+      if (!parsed.success)
+        problems.push(
+          `<Mark> ${parsed.error.issues.map((i) => `${i.path.join(".") || "props"}: ${i.message}`).join("; ")}`,
+        );
+      if (words.length > 0)
+        runs.push({ ...(parsed.success ? parsed.data : {}), from: length, to: length + words.length });
+      parts.push(words);
+      length += words.length;
+    } else if (child !== null && child !== undefined && typeof child !== "boolean") {
+      onlyText = false;
+      const name = isValidElement(child)
+        ? typeof child.type === "string"
+          ? `<${child.type}>`
+          : `<${(child.type as { name?: string } | null | undefined)?.name || "component"}>`
+        : String(child);
+      problems.push(`a title's children are its words and <Mark>s; ${name} cannot go inside one`);
+    }
   });
-  if (!onlyText || parts.length === 0) return undefined;
-  return parts.join("");
+  if (!onlyText || parts.length === 0) return { runs: [], problems };
+  return { text: parts.join(""), runs, problems };
 }
 
 /** The element with its engine named in its props, where the resolver, the Player and the export read it. */

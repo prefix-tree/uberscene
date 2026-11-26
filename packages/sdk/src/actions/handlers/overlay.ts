@@ -1,4 +1,4 @@
-import { capabilitiesOf } from "@uberscene/kit/schema";
+import { capabilitiesOf, moveRuns } from "@uberscene/kit/schema";
 
 import type { Json } from "../../patches/types";
 import type { Placement, ResolvedState } from "../../resolve/resolve";
@@ -109,11 +109,18 @@ define({
       ? ok
       : invalid({ code: "INVALID_PARAMS", message: "only titles have text content" });
   },
-  apply: (a, log) => log.append({ op: "text", id: a.params.id, text: a.params.text }),
-  invert: (a, before) => ({
-    type: "text/setContent",
-    params: { id: a.params.id, text: rawNode(before, a.params.id)?.text ?? "" },
-  }),
+  apply: (a, log, ctx) => {
+    const was = rawNode(ctx.before, a.params.id);
+    const runs = a.params.runs ?? moveRuns(was?.text ?? "", was?.runs ?? [], a.params.text);
+    log.append({ op: "text", id: a.params.id, text: a.params.text, runs });
+  },
+  invert: (a, before) => {
+    const was = rawNode(before, a.params.id);
+    return {
+      type: "text/setContent",
+      params: { id: a.params.id, text: was?.text ?? "", runs: (was?.runs ?? []).map((r) => ({ ...r })) },
+    };
+  },
   fold: () => [],
 });
 

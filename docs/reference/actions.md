@@ -190,7 +190,7 @@ Every action has `validate`, `apply`, `invert` and `fold`; the inverse is never 
 
 | action | params | what it does |
 |---|---|---|
-| `text/setContent` | `{ id, text }` | Replaces a title's text. |
+| `text/setContent` | `{ id, text, runs? }` | A title's text. With `runs`, its marked words (`<Mark>`) as ranges of the new text; without, the marks it had are carried onto the new text where their words still are. |
 
 ## `theme/`
 

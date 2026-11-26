@@ -4,7 +4,7 @@
 import { Children, type CSSProperties, cloneElement, isValidElement, type ReactNode } from "react";
 
 import { fontFamily } from "@uberscene/kit";
-import { TEXT_ANIMATION_TYPES, titleWords } from "@uberscene/kit/schema";
+import { TEXT_ANIMATION_TYPES, type TextRun, themedRuns, titleWords } from "@uberscene/kit/schema";
 import type { Placement } from "@uberscene/sdk/resolver";
 
 import { isVisibleAt } from "../model/visible";
@@ -35,10 +35,14 @@ export function titleBox(
 }
 
 /** Text title: the file's text content in its `style`; entrance/exit presets as CSS transforms. */
-export function titleContent(p: ElementProps & { readonly text: string }): ReactNode {
+export function titleContent(
+  p: ElementProps & { readonly text: string; readonly runs?: readonly TextRun[] | undefined },
+): ReactNode {
   const own = p.placement.props as Record<string, unknown>;
   const props = (typeof own.style === "object" && own.style !== null ? own.style : {}) as Record<string, unknown>;
   const text = p.text;
+  // The words its <Mark>s draw their own way, with theme tokens made the theme's colours.
+  const runs = p.runs?.length ? (p.state.theme ? themedRuns(p.runs, p.state.theme).runs : p.runs) : NO_RUNS;
   const rel = p.time - p.placement.start;
   const anim = own.animation as { type: string; in: number; out: number } | undefined;
   const { effect, visibleChars } = animation(anim, rel, p.placement.duration, text.length, p.placement.id);
@@ -74,9 +78,9 @@ export function titleContent(p: ElementProps & { readonly text: string }): React
       {anim?.type === "wordByWord" ? (
         // One flex item for the whole text: the words then flow and wrap inside it as ordinary text does, instead of
         // each word being an item of a line that never wraps, with the spaces between them lost.
-        <span>{words(text, rel, anim, p.placement.duration)}</span>
+        <span>{words(text, rel, anim, p.placement.duration, runs)}</span>
       ) : (
-        shown
+        marked(shown, 0, runs)
       )}
     </div>
   );
@@ -115,19 +119,66 @@ function animation(
   return { effect: { opacity: k }, visibleChars: null };
 }
 
-function words(text: string, rel: number, anim: { in: number; stagger?: number }, duration: number) {
+const NO_RUNS: readonly TextRun[] = [];
+
+/** How a run's words differ from the title's: its colour, weight, italics and highlight. */
+function runStyle(run: TextRun): CSSProperties {
+  const w = run.weight;
+  return {
+    ...(run.color !== undefined ? { color: run.color } : {}),
+    ...(w !== undefined ? { fontWeight: typeof w === "number" ? w : w === "normal" ? 400 : 700 } : {}),
+    ...(run.italic !== undefined ? { fontStyle: run.italic ? "italic" : "normal" } : {}),
+    ...(run.background !== undefined ? { background: run.background } : {}),
+  };
+}
+
+/**
+ * `part`, the stretch of the title's text from character `offset`, cut where a run starts or ends: the plain pieces
+ * as text, the marked ones as spans in their run's look. The text alone when no run touches it.
+ */
+function marked(part: string, offset: number, runs: readonly TextRun[]): ReactNode {
+  const end = offset + part.length;
+  const touching = runs.filter((r) => r.from < end && r.to > offset);
+  if (touching.length === 0) return part;
+  const out: ReactNode[] = [];
+  let at = offset;
+  for (const r of touching) {
+    const from = Math.max(r.from, offset);
+    const to = Math.min(r.to, end);
+    if (from > at) out.push(part.slice(at - offset, from - offset));
+    out.push(
+      <span key={from} style={runStyle(r)}>
+        {part.slice(from - offset, to - offset)}
+      </span>,
+    );
+    at = to;
+  }
+  if (at < end) out.push(part.slice(at - offset));
+  return out;
+}
+
+function words(
+  text: string,
+  rel: number,
+  anim: { in: number; stagger?: number },
+  duration: number,
+  runs: readonly TextRun[] = NO_RUNS,
+) {
   const parts = text.split(/(\s+)/);
   const wordCount = titleWords(text).length;
   const stagger = anim.stagger ?? (wordCount > 0 ? anim.in / wordCount : 0);
   let i = 0;
+  let offset = 0;
   return parts.map((part, idx) => {
+    const at = offset;
+    offset += part.length;
     if (part.trim().length === 0)
       return (
         <span
           // biome-ignore lint/suspicious/noArrayIndexKey: the parts of one fixed string, never reordered.
           key={idx}
         >
-          {part}
+          {marked(part, at, runs)}
         </span>
       );
     const start = i++ * stagger;
@@ -138,7 +189,7 @@ function words(text: string, rel: number, anim: { in: number; stagger?: number }
         key={idx}
         style={{ opacity: shown ? 1 : 0 }}
       >
-        {part}
+        {marked(part, at, runs)}
       </span>
     );
   });

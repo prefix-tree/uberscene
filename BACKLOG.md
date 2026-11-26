@@ -54,7 +54,7 @@ days, L a week or more.
 
 ## Then, in any order
 
-- [ ] **7. Coloured words inside a title** (M)
+- [x] **7. Coloured words inside a title** (M) (#PR)
   - A mark inside the text, `<Title>into the <Mark color="$accent">stars</Mark></Title>`, or style ranges by word.
   - Done when: one title draws words in different colours, an editor can still change its text, and it is in the
     reference.

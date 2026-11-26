@@ -94,6 +94,7 @@ export function reduceInto(
       const e = entry(net, patch.id);
       if (e.presence === "removed") throw new Error(`patch text on removed element ${patch.id}`);
       e.text = patch.text;
+      e.runs = patch.runs ?? [];
       return;
     }
     case "move": {
@@ -113,6 +114,7 @@ export function reduceInto(
       r.presence = "removed";
       r.props.clear();
       delete r.text;
+      delete r.runs;
       delete r.place;
       delete r.node;
       delete r.within;
@@ -127,6 +129,7 @@ export function reduceInto(
         e.presence = "present";
         e.props.clear();
         delete e.text;
+        delete e.runs;
         delete e.node;
         delete e.within;
         changedProps(e, source, patch.node);
@@ -178,6 +181,7 @@ function dropPlacedWithin(
       e.presence = "removed";
       e.props.clear();
       delete e.text;
+      delete e.runs;
       delete e.place;
       delete e.node;
       delete e.within;
@@ -202,6 +206,7 @@ function revive(
         e.presence = "present";
         e.props.clear();
         delete e.text;
+        delete e.runs;
         delete e.place;
         delete e.node;
         e.within = holder;
@@ -229,7 +234,13 @@ function changedProps(e: NetPatch, source: CollectedNode, node: CollectedNode): 
   };
   differ(source.props, node.props, "");
   if (source.interior && node.interior) differ(source.interior.props, node.interior.props, INTERIOR_PREFIX);
-  if (node.text !== source.text && node.text !== undefined) e.text = node.text;
+  if (
+    (node.text !== source.text || stableJson(node.runs ?? []) !== stableJson(source.runs ?? [])) &&
+    node.text !== undefined
+  ) {
+    e.text = node.text;
+    e.runs = node.runs ?? [];
+  }
 }
 
 /** The source descendants of a node put back as the source has them are the source's again. */
@@ -246,6 +257,7 @@ export function nodesEqual(a: CollectedNode, b: CollectedNode): boolean {
     a.kind === b.kind &&
     stableJson(a.props) === stableJson(b.props) &&
     a.text === b.text &&
+    stableJson(a.runs ?? []) === stableJson(b.runs ?? []) &&
     a.children.length === b.children.length &&
     a.children.every((c, i) => nodesEqual(c, b.children[i] as CollectedNode))
   );

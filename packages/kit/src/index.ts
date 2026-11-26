@@ -48,6 +48,7 @@ export {
 } from "./jsx/elements";
 export { holdLayerFrame } from "./jsx/engines";
 export { type Knob, type KnobKind, knob } from "./jsx/knobs";
+export { Mark, type MarkProps } from "./jsx/mark";
 export * from "./jsx/narrate";
 export {
   isScene,

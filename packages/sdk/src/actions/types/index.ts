@@ -1,4 +1,4 @@
-import type { TrackFlag, TrackLayout, TrackRole, TransitionType } from "@uberscene/kit/schema";
+import type { TextRun, TrackFlag, TrackLayout, TrackRole, TransitionType } from "@uberscene/kit/schema";
 
 import type { TimeRef } from "../../manifest/timeref";
 import type { Json } from "../../patches/types";
@@ -336,7 +336,11 @@ export interface OverlayActions {
   /** Sets literal props on a title, shape, svg, sticker, adjustment layer, nested scene or layer. */
   "element/update": Overlay["update"];
   /** Replaces a title's text. */
-  "text/setContent": { id: Id; text: string };
+  /**
+   * A title's text. With `runs`, its marked words (`<Mark>`) as ranges of the new text; without, the marks it had are
+   * carried onto the new text where their words still are.
+   */
+  "text/setContent": { id: Id; text: string; runs?: TextRun[] };
   /**
    * Replaces a <Nested> scene by its contents: one free track per inner track, inserted below, every item at the time
    * it played; on a sequence a <Gap> keeps its slot.
