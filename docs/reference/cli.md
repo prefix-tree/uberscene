@@ -10,7 +10,9 @@ npx uberscene <file.tsx> --still <seconds> --out <image.png|.jpg> [options]
 npx uberscene <file.tsx> --check-layout [--safe-zone <zone>] [--subject <x,y,w,h>] [--json] [options]
 npx uberscene <file.tsx> --check-motion [--min <s>] [--step <s>] [--from <s> --to <s>] [--json] [options]
 npx uberscene <file.tsx> --srt <captions.srt> | --vtt <captions.vtt> [--from <s> --to <s>]
+npx uberscene <file.tsx> --check-sync [--json] [options]
 npx uberscene inspect <file.tsx> [--at <moments>] [--json] [--manifest <file>] [--props <json>]
+npx uberscene inspect <file.tsx> --events [--in <stretch>] [--kinds <kinds>] [--json]
 npx uberscene lint <file.tsx>... [--fix] [--json] [--manifest <file>]
 npx uberscene look <file.tsx> [--at <moments> | --around <id>] [--without <id>] [--listen <stretch>] [--zones <zone>] [--out look.png] [options]
 npx uberscene look <file.tsx> --motion <stretch> [--step <s>] [--listen <stretch>] [--out look.png] [options]
@@ -102,6 +104,20 @@ at a stretch with `look --motion 2..4`.
 
 Its frames are kept in `.uberscene/cache` like `look`'s, so checking again after an edit only draws what changed.
 
+## Sync check
+
+| Option | |
+|---|---|
+| `--check-sync` | Report how the picture sits on the music, without a browser: each cut between two clips of a sequence and each element starting on screen, with its nearest beat and its distance from it in milliseconds and frames. A point within a frame of a beat is `on`; one off it by less than a quarter of a beat is `near`, an issue (`near-beat`) with the `beat:N` to tie it to; one further is `off`, a choice. Music that stops between beats with no fade is `music-cut-off`. Writes no file, and exits with code 3 when it finds issues. |
+| `--json` | Print the report as JSON: `music`, `points`, `summary` and `issues`. |
+
+```sh
+npx uberscene video.tsx --check-sync
+npx uberscene video.tsx --check-sync --json | jq '.summary'
+```
+
+[Sync: the music against the picture](/guide/sync) explains the statuses, the rules and every field.
+
 ## Where
 
 `uberscene where video.tsx --at <moments>` prints where each thing on screen is at each moment: every overlay, the
@@ -157,8 +173,14 @@ word:14  1.00 s  frame 30  (word 14 "still" in hook)
 | Option | |
 |---|---|
 | `--at <moments>` | The moments to describe, comma-separated. Without it, the whole timeline. |
-| `--json` | Flat rows instead of text: `knobs` (each with `key`, `kind`, `description`, `value`, and `options`, `min` and `max` where it has them), `composition`, `tracks`, `elements`, `effects`, `keyframes`, `generators`, `words`, `cuts` and `errors`, each row with its seconds and its frames; with `--at`, an `at` array too. Made for `jq` or a short script: `uberscene inspect video.tsx --json \| jq '.cuts'`. |
+| `--json` | Flat rows instead of text: `knobs` (each with `key`, `kind`, `description`, `value`, and `options`, `min` and `max` where it has them), `composition`, `tracks` (with each one's `role`), `elements`, `effects`, `keyframes`, `generators`, `words`, `cuts`, `music`, `beats` and `errors`, each row with its seconds and its frames; with `--at`, an `at` array too. Made for `jq` or a short script: `uberscene inspect video.tsx --json \| jq '.cuts'`. |
+| `--events` | Every moment of the video in one list, in time order, instead of the timeline: beats, words, cuts, elements starting and ending, markers, shots and silences. A cut, a start or an end says which beat it is nearest (`nearestBeat`, with `offsetMs` and `offsetFrames`) while music plays. With `--json`: `{ "events": [...] }`. Not with `--at`. |
+| `--in <stretch>` | With `--events`: only a stretch, `all`, a range such as `2..6`, or an element's id. |
+| `--kinds <kinds>` | With `--events`: only these kinds, comma-separated: `beat`, `word`, `cut`, `start`, `end`, `marker`, `shot`, `silence`. |
 | `--manifest`, `--props`, `--import` | As for an export. |
+
+The timeline shows each track's role and, for music whose asset has beats, its tempo and the beats it plays. The JSON
+has them as `music` and `beats` rows ([Sync](/guide/sync)).
 
 A moment is written the way the file is written, or as plain time:
 
@@ -171,6 +193,7 @@ A moment is written the way the file is written, or as plain time:
 | `x1` | A transition by its id: the last frame before it and the first after it. |
 | `word:14`, `word:14.end` | Where the finished video says that word. When two clips play it, name one: `hook@word:14`. |
 | `shot:1`, `silence:2` | The same for a shot or a silence, with `.end` and `clip@` too. |
+| `beat:16`, `song@beat:16` | A beat of the music, where the finished video plays it, with `.end` too. |
 | `marker:intro` | A marker. |
 
 Every answer gives the seconds, the frame and what the moment is, so a moment found by time leads back to the element
@@ -471,7 +494,7 @@ what differs from this version's block is printed as a diff; the command then ex
 | 0 | Done. |
 | 1 | An error, such as a missing asset, a file that doesn't load, a moment `inspect` or `look` cannot find, or an error `lint` found. |
 | 2 | Wrong arguments; the usage text is printed. |
-| 3 | The layout check found issues, or the motion check found a still stretch. |
+| 3 | The layout check or the sync check found issues, or the motion check found a still stretch. |
 
 ## Where the manifest and the media are found
 
@@ -521,7 +544,7 @@ is added as a LUT (kind `lut`) after it is checked, for the [`lut` effect](/guid
 
 A sound file with no transcript is taken to be music, and `add` finds its beats and its tempo
 (for example `song: audio, 92.4 s, 184 beats at 119.98 BPM`). A clip or an overlay then cuts on them as it cuts on words:
-`anchor="song" at="beat:16"` ([Cut on the beat](/guide/time#cut-on-the-beat)). Check them by looking: `look --at
+`anchor="song" at="beat:16"` ([Cut on the beat](/guide/time#cut-on-the-beat)). Check them in numbers with `--check-sync` ([Sync](/guide/sync)), and by looking: `look --at
 song@beat:16,song@beat:32 --listen all` draws those moments over the sound. A fast song may come out at half its
 tempo, every other beat; set it with `--bpm`.
 

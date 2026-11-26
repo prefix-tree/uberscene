@@ -157,6 +157,28 @@ describe("lint", () => {
     expect(lint(wrap(`<Track id="t"><Clip id="c" src="asset:interview" in={${inside}} /></Track>`))).toEqual([]);
   });
 
+  it("warns on a numeric trim that is a beat of the music, and names the beat", () => {
+    const beats = Array.from({ length: 8 }, (_, i) => ({ i, start: 0.3 + i * 0.5, end: 0.8 + i * 0.5 }));
+    const withSong = {
+      assets: { ...manifest.assets, song: { id: "song", kind: "audio" as const, duration: 9, beats } },
+    };
+    const d = lint(
+      wrap(`<Track id="t" layout="free"><Clip id="s" src="asset:song" start={0} in={0.3} out={3.8} /></Track>`),
+      {
+        manifest: withSong,
+        rules: ["numeric-on-beat"],
+      },
+    );
+    expect(d.map((x) => `${x.id}.${x.prop}`)).toEqual(["s.in", "s.out"]);
+    expect(d[0]!.message).toContain('in="beat:0"');
+    expect(d[1]!.message).toContain('out="beat:6.end"');
+    const off = lint(wrap(`<Track id="t" layout="free"><Clip id="s" src="asset:song" start={0} in={0.4} /></Track>`), {
+      manifest: withSong,
+      rules: ["numeric-on-beat"],
+    });
+    expect(off).toEqual([]);
+  });
+
   it("warns on a cut a few frames off a source shot change, on the side that flashes the other shot", () => {
     // interview shots: 0–9.5, 9.5–21, 21–26, 26–60
     const near = (body: string) =>

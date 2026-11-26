@@ -19,6 +19,7 @@ export {
 export {
   describeAt,
   formatAt,
+  formatEvents,
   formatTimeline,
   type HeardElement,
   type InspectOptions,
@@ -79,6 +80,7 @@ export {
   type SkillInstallResult,
 } from "./skills";
 export { renderStill, type StillOptions, type StillResult } from "./still";
+export { checkSync, formatSync, type SyncIssue, type SyncPoint, type SyncReport } from "./sync-check";
 export { browserCacheDir, CHROME_MILESTONE, findChrome, installChrome } from "./web/chrome";
 export {
   describeThings,

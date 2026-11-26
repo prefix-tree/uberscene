@@ -74,7 +74,7 @@ look, and fix before going on:
 For a small edit (a trim, a word, a colour), skip to the loop: make it, check it, look at that moment, report.
 
 **Done** means the full video renders, every check passes and you can say its number (the exit codes, the loudness,
-the sizes), and your report says what changed. Until then keep going: a failed render, a warning or a missing font is
+the sizes, and with music how many cuts are on the beat), and your report says what changed. Until then keep going: a failed render, a warning or a missing font is
 an ordinary obstacle, so fix it and go on rather than asking whether to continue. Stop only for what the person alone
 can give (footage, the brand, a decision on the story), and then say exactly what you need.
 
@@ -85,6 +85,7 @@ can give (footage, the brand, a decision on the story), and then say exactly wha
 | More than one scene, transitions, any animation | [motion.md](references/motion.md), then [motion-catalog.md](references/motion-catalog.md) for a technique by name |
 | Titles, labels, captions | [text.md](references/text.md) |
 | Music, a voice-over, sound effects | [sound.md](references/sound.md) |
+| Cutting to music, or checking that cuts are on the beat | [sync.md](references/sync.md) |
 | An interview in the kinetic-type style: caps, flash cards, a cut-out speaker | [interview-edit.md](references/interview-edit.md) |
 | The pass before you hand it over | [review.md](references/review.md) |
 
@@ -114,8 +115,13 @@ Work in this order, and check after each stage.
    ```
    `--at` says what is on screen and heard at each moment, with effect values after keyframes and the word being said.
    A moment is an element's id (with `.start`, `.mid` or `.end`), a transition's id (both sides of the cut), `word:14`
-   (or `hook@word:14`), `shot:1`, `marker:intro`, seconds (`4.5`), a frame (`90f`) or a range (`2..6/0.5`). `--json`
-   prints flat rows for `jq`.
+   (or `hook@word:14`), `shot:1`, `silence:2`, `beat:16` (or `song@beat:16`), `marker:intro`, seconds (`4.5`), a
+   frame (`90f`) or a range (`2..6/0.5`). `--json` prints flat rows for `jq`, with the music's `beats` among them.
+   With music, read the sync in numbers, since you cannot hear it ([sync.md](references/sync.md)):
+   ```sh
+   npx uberscene inspect video.tsx --events --in 2..6   # every beat, word, cut, start and end, in time order
+   npx uberscene video.tsx --check-sync                 # each cut and start against its nearest beat; exits 3 on a miss
+   ```
 5. **Check it.** Every command prints `warning: <id>: <message>` for each problem in the file; fix them all. `lint`
    reads the file's text for what breaks editing or an export (ids, timing, assets, free code off the clock, props
    spelled an older way); it exits 1 on an error, and `--fix` writes the fixes that have one right answer. The
@@ -362,6 +368,8 @@ What each element and prop actually draws, and the few it does not:
 
 - Every command runs with no `warning:` lines, `lint` exits 0, and `--check-layout` and `--check-motion` exit 0, or
   3 only for issues and holds you chose to keep and said so.
+- With music: `--check-sync` exits 0, and you can say how many cuts and starts are on the beat and why each of the
+  others is where it is ([sync.md](references/sync.md)).
 - Ids are literal and unique, no sequence track has `start`, there is at most one `<Captions>`, and every `src` is in
   the manifest.
 - Each clip has `in`/`out` or `duration`, not both. Every `$token` and `style` exists in the theme.
@@ -385,6 +393,8 @@ What each element and prop actually draws, and the few it does not:
   avoid.
 - [references/text.md](references/text.md): sizes, read times, placement and captions.
 - [references/sound.md](references/sound.md): what sets the clock, the layers, effects on actions, and levels.
+- [references/sync.md](references/sync.md): the music against the picture in numbers: `--check-sync`,
+  `inspect --events`, the `beats` rows, every JSON field, and the loop for cutting on the beat.
 - [references/review.md](references/review.md): the pass before you hand it over, and the report.
 - [references/motion.md](references/motion.md): how scenes hand over at a cut and keep moving; read it before
   animating a video of more than one scene.

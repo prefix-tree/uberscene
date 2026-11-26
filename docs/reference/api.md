@@ -832,7 +832,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/sdk`
 
-217 exports.
+235 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -862,6 +862,8 @@ Every name each entry exports, read from the code. The sections above explain th
 | `AUTO_GROUP_TYPES` | const | Rapid repeats of these on the same target collapse into one undo step (OpenReel's rule). |
 | `bake` | function | Replace the helper call that produced a generated element with the literal elements that call produced, so the editor can address them. |
 | `Beat` | interface | A beat of music. |
+| `BeatRow` | interface | A beat at the time it plays. |
+| `beatRows` | function | The beats the timeline plays, as rows. |
 | `buildSourceIndex` | function | Index every vocabulary JSX element with a literal id so patches can be written back as text edits. |
 | `CameraActions` | interface |  |
 | `CameraPush` | interface | A camera's `push` as a file writes it. |
@@ -898,6 +900,10 @@ Every name each entry exports, read from the code. The sections above explain th
 | `ElementSite` | interface |  |
 | `EMPTY_MANIFEST` | const |  |
 | `entriesOf` | function | An asset's list of words, shots, silences or beats. |
+| `EVENT_KINDS` | const |  |
+| `EventKind` | type |  |
+| `EventOptions` | interface |  |
+| `EventRow` | interface | One moment of the video. |
 | `Executor` | class | Runs actions against `{ tree, patches }`. |
 | `ExecutorOptions` | interface |  |
 | `findParentOf` | function |  |
@@ -958,7 +964,11 @@ Every name each entry exports, read from the code. The sections above explain th
 | `movePropInto` | function | Moves one prop into an object prop, under `key` (its own name when left out). |
 | `movePropsInto` | function | Moves props into an object prop. |
 | `MulticamActions` | interface |  |
+| `MusicRow` | interface | A clip or audio whose asset has beats. |
+| `musicRows` | function | The music the timeline plays. |
 | `Namespace` | type |  |
+| `nearestBeat` | function | The beat nearest a time, among music that is playing then (or within a beat of it); undefined when none is. |
+| `NearestBeat` | interface | The beat nearest a moment, and how far the moment is from it. |
 | `NetPatch` | interface | The reduced effect of every patch on one element. |
 | `nodeOfSpec` | function |  |
 | `nodesEqual` | function |  |
@@ -1032,9 +1042,17 @@ Every name each entry exports, read from the code. The sections above explain th
 | `SubjectBox` | interface | A subject's box at source second `t`, as fractions of the source picture (0..1 from its top left). |
 | `SubtitleOptions` | interface |  |
 | `subtitles` | function | The captions the cut plays, as an SRT or WebVTT file. |
+| `SyncIssue` | interface |  |
+| `SyncPoint` | interface | A cut, or something starting on screen, against the music. |
+| `syncReport` | function | How the picture sits on the music. |
+| `SyncReport` | interface |  |
 | `tagName` | function | The tag's name as written. |
 | `TARGET_PARAM_KEYS` | const |  |
 | `targetIdOf` | function |  |
+| `timelineBeats` | const | Every beat of music the timeline plays, at the time it plays. |
+| `timelineEntries` | function | Every beat, shot or silence the timeline plays, at the time it plays, in timeline order. |
+| `TimelineEntry` | interface | A beat, shot or silence of an asset at the time the timeline plays it. |
+| `timelineEvents` | function | Every moment of the video in one list, in time order. |
 | `timelineRows` | function | The flat rows of a resolved timeline. |
 | `TimelineRows` | interface |  |
 | `TimelineWord` | interface | A transcript word at the composition time it plays. |
@@ -1257,7 +1275,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/render`
 
-95 exports.
+101 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -1272,6 +1290,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `checkLayout` | function | Samples the composition and reports every overlay (titles, shapes, SVG, stickers, layers, and captions), and every part a layer's code named with `data-name`, that leaves the frame, leaves the safe zone, covers captions (not captions themselves), or covers the subject, as runs of consecutive offending samples. |
 | `checkMotion` | function |  |
 | `checkReadTime` | function | Every title whose time on screen is shorter, by more than a frame, than 0.5 s plus 0.3 s a word, plus the time its words take to type in or appear one by one. |
+| `checkSync` | function | Every cut and every start on screen against its nearest beat, and the ones that miss. |
 | `CHROME_MILESTONE` | const | The Chrome milestone UberScene downloads. |
 | `codecModes` | function | The codecs `UBERSCENE_CODECS` asks for; unset or empty is the browser's. |
 | `CodecModes` | interface |  |
@@ -1291,10 +1310,12 @@ Every name each entry exports, read from the code. The sections above explain th
 | `FontSheetResult` | interface |  |
 | `formatAt` | function | Each moment as text. |
 | `formatBlocks` | function | The blocks as text to read. |
+| `formatEvents` | function | Each event on a line. |
 | `formatFonts` | function | The catalogue as a table to read. |
 | `formatLayout` | function | The result as a compiler prints it. |
 | `formatLint` | function | One line per diagnostic, as a compiler prints them. |
 | `formatMotion` | function | The result as lines to read. |
+| `formatSync` | function | The report as text. |
 | `formatTimeline` | function | The timeline as text. |
 | `formatWhere` | function | The report as text. |
 | `FoundManifest` | interface |  |
@@ -1349,6 +1370,9 @@ Every name each entry exports, read from the code. The sections above explain th
 | `StillOptions` | interface |  |
 | `StillResult` | interface |  |
 | `StillStretch` | interface | A stretch where the picture does not change. |
+| `SyncIssue` | interface |  |
+| `SyncPoint` | interface | A cut, or something starting on screen, against the music. |
+| `SyncReport` | interface |  |
 | `VideoCodec` | type | H.264 (MP4), VP9 (WebM) and AV1 (either). |
 | `WhereMoment` | interface |  |
 | `WhereOptions` | interface |  |

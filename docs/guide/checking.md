@@ -113,6 +113,19 @@ after an edit only the frames that changed are drawn again: an agent can look af
 
 The [CLI reference](/reference/cli#look) has every option.
 
+## Check the sync with the music
+
+`--check-sync` reads the timeline, with no browser, and prints each cut and each start on screen against its nearest
+beat of the music: on the beat, just off it (an issue, with the `beat:N` to tie it to), or elsewhere. `inspect
+--events` lists every moment of the video in one list, beats included, as text or JSON.
+
+```sh
+npx uberscene video.tsx --check-sync
+npx uberscene inspect video.tsx --events --in 2..6
+```
+
+[Sync: the music against the picture](./sync) explains the output and every field.
+
 ## Check the layout
 
 `--check-layout` finds anything drawn over the picture that leaves the frame, leaves a platform's safe zone, or

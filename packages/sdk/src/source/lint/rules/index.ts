@@ -282,6 +282,43 @@ const cutInsideWord: Rule = {
   },
 };
 
+/**
+ * A numeric `in` or `out` that is a beat of the music it trims, to within 5 ms: the number was read off the beats,
+ * and `beat:N` says the same and follows the music when the track is added again or swapped.
+ */
+const numericOnBeat: Rule = {
+  name: "numeric-on-beat",
+  check: (index, options) => {
+    if (!options.manifest) return [];
+    const out: Diagnostic[] = [];
+    for (const site of index.elements.values()) {
+      if (site.kind !== "clip" && site.kind !== "audio") continue;
+      const src = site.props.get("src")?.literal;
+      if (typeof src !== "string") continue;
+      const beats = lookupAsset(options.manifest, src)?.beats;
+      if (!beats || beats.length === 0) continue;
+      for (const prop of ["in", "out"] as const) {
+        const p = site.props.get(prop);
+        if (typeof p?.literal !== "number") continue;
+        const t = p.literal;
+        const starts = beats.find((b) => Math.abs(b.start - t) <= 0.005);
+        const ends = prop === "out" ? beats.find((b) => Math.abs(b.end - t) <= 0.005) : undefined;
+        const ref = ends ? `beat:${ends.i}.end` : starts ? `beat:${starts.i}` : undefined;
+        if (!ref) continue;
+        out.push({
+          rule: "numeric-on-beat",
+          severity: "warning",
+          message: `"${site.id}.${prop}" = ${t} is ${ref} of the music; write ${prop}="${ref}" so it stays on the beat when the track changes`,
+          range: p.range,
+          id: site.id,
+          prop,
+        });
+      }
+    }
+    return out;
+  },
+};
+
 /** `cutout` on a clip whose asset names no matte, or names one the manifest does not have. */
 const cutoutWithoutMatte: Rule = {
   name: "cutout-without-matte",
@@ -331,6 +368,7 @@ export const rules: readonly Rule[] = [
   cutoutWithoutMatte,
   sequenceGap,
   cutInsideWord,
+  numericOnBeat,
   cutNearShot,
   shotChangeInsideCrop,
   repeatedSource,

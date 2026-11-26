@@ -6,7 +6,8 @@ import type { ResolveError } from "../resolve/errors";
 import { derivedOrigin } from "../resolve/expand";
 import { followOf } from "../resolve/follow";
 import type { Placement, ResolvedState } from "../resolve/resolve";
-import { spokenWords } from "./plays";
+import { type BeatRow, beatRows, type MusicRow, musicRows } from "./music";
+import { spokenWords, timelineBeats } from "./plays";
 
 export interface ElementRow {
   readonly id: string;
@@ -103,6 +104,8 @@ export interface TimelineRows {
   readonly tracks: readonly {
     readonly id: string;
     readonly layout: string;
+    /** What the track is for, when the file says: `music`, `dialogue`, `effects`… */
+    readonly role?: string;
     readonly order: number;
     readonly hidden: boolean;
     readonly muted: boolean;
@@ -118,6 +121,10 @@ export interface TimelineRows {
   readonly generators: readonly GeneratorRow[];
   readonly words: readonly WordRow[];
   readonly cuts: readonly CutRow[];
+  /** The music the timeline plays: each clip or audio whose asset has beats. */
+  readonly music: readonly MusicRow[];
+  /** Every beat of that music, at the time it plays. */
+  readonly beats: readonly BeatRow[];
   readonly errors: readonly ResolveError[];
 }
 
@@ -219,6 +226,7 @@ export function timelineRows(state: ResolvedState): TimelineRows {
     }
   }
   cuts.sort((a, b) => a.time - b.time);
+  const played = timelineBeats(state);
 
   return {
     composition: {
@@ -229,6 +237,7 @@ export function timelineRows(state: ResolvedState): TimelineRows {
     tracks: state.tracks.map((t) => ({
       id: t.id,
       layout: t.layout,
+      ...(t.role !== undefined ? { role: t.role } : {}),
       order: t.order,
       hidden: t.hidden,
       muted: t.muted,
@@ -250,6 +259,8 @@ export function timelineRows(state: ResolvedState): TimelineRows {
       startFrame: frame(w.start),
     })),
     cuts,
+    music: musicRows(state, played),
+    beats: beatRows(state, played),
     errors: state.errors,
   };
 }
