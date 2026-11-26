@@ -1,7 +1,8 @@
 # 0041. Motion design on the timeline: four seams that DaVinci-style edits plug into
 
 > Status: proposed, built in steps. The camera of seam 3 is built (`<Camera>`, its keys, its `push`, the tools and the
-> editing actions; see [the guide](../guide/camera.md)); `follow` and the other seams are not. Builds on [0039](./0039-a-person-cut-out-of-the-background.md) (the matte beside the footage),
+> editing actions; see [the guide](../guide/camera.md)), and so are the generators of seam 4 (`wiggle`, `drift`, `loop`; see
+> [the guide](../guide/animation.md#generators)); `follow` and seams 1 and 2 are not. Builds on [0039](./0039-a-person-cut-out-of-the-background.md) (the matte beside the footage),
 > which becomes the first case of seam 1 and seam 2 here, and on [0035](./0035-everything-is-a-prop.md) (a value is a
 > constant or a key list), which seam 4 extends with a third kind of value. 3D stays with
 > [0040](./0040-a-3d-scene-is-a-clip-source.md).
@@ -154,17 +155,26 @@ A rig moves things it does not own. Two forms, both literal props the editor can
 
 ```tsx
 transform={{ rotation: { type: "wiggle", amount: 2, frequency: 1.5, seed: 3 } }}
-box={{ x: { type: "drift", from: 540, speed: 8 } }}
-transform={{ scale: { type: "keys", keys: [...], then: { type: "wiggle", amount: 0.01 } } }}
+transform={{ scale: { type: "drift", base: 0.8, speed: 0.06 } }}
+transform={{ rotation: { type: "wiggle", amount: 3, base: [{ at: 0, value: 0 }, { at: 1, value: 90 }] } }}
+transform={{ opacity: { type: "loop", mode: "pingpong", keys: [{ at: 0, value: 1 }, { at: 0.6, value: 0.25 }] } }}
 ```
 
 - Generators are pure functions of time and their params, seeded, so a frame is the same in the preview, the export
-  and the cache. No expressions and no code in props: a generator is a registry entry with a params schema, which
-  keeps files readable by a model and editable by the inspector.
-- First generators: `wiggle` (smooth noise, Fusion's Perturb and Shake), `drift` (constant speed), `overshoot`
-  (spring settle after the value changes), `loop` (repeats a key list). `then` layers one on top of keys.
-- The camera's `drift` is the same generators applied to its fields.
-- Anything that takes keys takes a generator, including effect params (a light leak's position, a glitch amount).
+  and the cache. No expressions and no code in props: a generator is data with a params schema, which keeps files
+  readable by a model and editable by the inspector.
+- As built: `wiggle` (smooth seeded noise, Fusion's Perturb and Shake) and `drift` (a steady change) are added to a
+  `base`, a number or keys, so one goes on top of a keyed move; `loop` plays a key list again, or back and forth.
+  `base` replaces the `then` first written here: the generator wraps the value, which reads better than keys that
+  carry a generator. A wiggle's seed, left out, comes from the element and the prop.
+- `overshoot` is not a generator: a settle after a move is how a value leaves a key, and the easings already have
+  springs.
+- The resolver makes a `generator` item beside the keys of the value it is written at, and the player's one
+  function for an animated value applies it. So the tools that read keys (the layout check, `inspect`, the frame
+  cache, motion blur) follow without knowing.
+- The camera's `drift` is a `drift` on its `zoom`; on a pushed camera a generator goes on top of the push's keys.
+- Anything keys can move takes a generator, including numeric effect params, except `speed` (it bends time) and
+  `volume` and `pan` (the mixer builds its envelope from key times; a generated one needs sampling of its own).
 - Free code (`<Layer>`, `<Motion>`) remains the way to anything a generator cannot express.
 
 ### Outside the seams, needed by the same edits
@@ -196,7 +206,7 @@ One PR each, from fresh `main`, each with its decision section moved to accepted
 2. **`analyze matte`** makes the matte `cutout` already reads (#199); then **`matte`** with the `element` source,
    `cutout` as the short form of the `asset` source; the text behind a person recipe and test.
 3. **`<Camera>`** around tracks, with keys, the layout check after the camera, and `push` (done).
-4. **Generators**: `wiggle`, `drift`, `overshoot`, `loop`, `then`; the camera's `drift` on top.
+4. **Generators**: `wiggle`, `drift` and `loop`, over a `base`; the camera's drift is one (done).
 5. **Preview motion blur** (a).
 6. **Styled runs and word-ended durations** (b, c).
 7. **`tracking` analysis and `follow`**, from `subjects` first, a point and planar tracker after.

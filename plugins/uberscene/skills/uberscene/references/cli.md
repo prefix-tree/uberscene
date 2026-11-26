@@ -153,7 +153,7 @@ word:14  1.00 s  frame 30  (word 14 "still" in hook)
 | Option | |
 |---|---|
 | `--at <moments>` | The moments to describe, comma-separated. Without it, the whole timeline. |
-| `--json` | Flat rows instead of text: `knobs` (each with `key`, `kind`, `description`, `value`, and `options`, `min` and `max` where it has them), `composition`, `tracks`, `elements`, `effects`, `keyframes`, `words`, `cuts` and `errors`, each row with its seconds and its frames; with `--at`, an `at` array too. Made for `jq` or a short script: `uberscene inspect video.tsx --json \| jq '.cuts'`. |
+| `--json` | Flat rows instead of text: `knobs` (each with `key`, `kind`, `description`, `value`, and `options`, `min` and `max` where it has them), `composition`, `tracks`, `elements`, `effects`, `keyframes`, `generators`, `words`, `cuts` and `errors`, each row with its seconds and its frames; with `--at`, an `at` array too. Made for `jq` or a short script: `uberscene inspect video.tsx --json \| jq '.cuts'`. |
 | `--manifest`, `--props`, `--import` | As for an export. |
 
 A moment is written the way the file is written, or as plain time:

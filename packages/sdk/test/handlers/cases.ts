@@ -157,6 +157,10 @@ export const CASES: Partial<Record<ActionType, ActionInput>> = {
   },
   "key/move": { type: "key/move", params: { id: "c1", path: "transform.opacity", at: 0.5, to: 1 } },
   "key/remove": { type: "key/remove", params: { id: "c1", path: "transform.opacity", at: 0 } },
+  "generator/set": {
+    type: "generator/set",
+    params: { id: "c3", path: "transform.rotation", generator: { type: "wiggle", amount: 2 } },
+  },
   "key/setAll": {
     type: "key/setAll",
     params: {

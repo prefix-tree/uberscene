@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { zEasing, zKeyframeProperty, zVideoEffectType } from "../enums";
+import { GENERATOR_TYPES } from "../generators";
 import { idSchema, paramValue, vec2Schema } from "./common";
 import { zMaskType } from "./enums-local";
 
@@ -25,6 +26,33 @@ export const keyframeSchema = z
     easing: zEasing.default("linear"),
   })
   .refine((k) => (k.property === undefined) !== (k.param === undefined));
+
+/**
+ * A generator on a property of its element or a param of its effect: what a value written as `{ type: "wiggle", … }`
+ * becomes. Its `base` and a loop's `keys` are keys beside it.
+ */
+export const generatorItemSchema = z
+  .strictObject({
+    property: zKeyframeProperty.optional(),
+    param: z.string().optional(),
+    type: z.enum(GENERATOR_TYPES),
+    amount: z.number().optional(),
+    frequency: z.number().positive().max(60).default(1),
+    seed: z.number().int().optional(),
+    speed: z.number().optional(),
+    mode: z.enum(["repeat", "pingpong"]).default("repeat"),
+    span: z.tuple([z.number(), z.number()]).optional(),
+  })
+  .refine((g) => (g.property === undefined) !== (g.param === undefined))
+  .refine((g) => g.type !== "wiggle" || g.amount !== undefined, {
+    message: "a wiggle needs an `amount`",
+    path: ["amount"],
+  })
+  .refine((g) => g.type !== "drift" || g.speed !== undefined, { message: "a drift needs a `speed`", path: ["speed"] })
+  .refine((g) => g.type !== "loop" || g.span !== undefined, {
+    message: "a loop needs two `keys` or more",
+    path: ["keys"],
+  });
 
 /** One key of a speed ramp: the rate reached at `at`. */
 export const speedKeySchema = z.strictObject({

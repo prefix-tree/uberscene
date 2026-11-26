@@ -422,7 +422,7 @@ Every name each entry exports, read from the code. The sections above explain th
 |---|---|---|
 | `Adjustment` | const | The `<Adjustment>` element ([reference](/reference/elements/adjustment)). |
 | `Angle` | const | The `<Angle>` element ([reference](/reference/elements/angle)). |
-| `Animatable` | type | A value written as a constant, or as keys over time. |
+| `Animatable` | type | A value written as a constant, as keys over time, or, for a number, as a generator. |
 | `AnyEffectSpec` | type | Any effect a file may write. |
 | `Audio` | const | The `<Audio>` element ([reference](/reference/elements/audio)). |
 | `Badge` | function | A short word on a pill that pops in. |
@@ -532,13 +532,13 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/kit/schema`
 
-266 exports.
+276 exports.
 
 | Export | Kind | |
 |---|---|---|
 | `Adjustment` | const | The `<Adjustment>` element ([reference](/reference/elements/adjustment)). |
 | `Angle` | const | The `<Angle>` element ([reference](/reference/elements/angle)). |
-| `Animatable` | type | A value written as a constant, or as keys over time. |
+| `Animatable` | type | A value written as a constant, as keys over time, or, for a number, as a generator. |
 | `AnyEffectSpec` | type | Any effect a file may write. |
 | `applyTheme` | function | An element's raw props with its theme applied, before the schema parses them. |
 | `Audio` | const | The `<Audio>` element ([reference](/reference/elements/audio)). |
@@ -641,6 +641,13 @@ Every name each entry exports, read from the code. The sections above explain th
 | `gaussSources` | function | Every source a blur of this kind can use, for a definition's `passes`. |
 | `gaussSteps` | function | The steps of a blur of σ frame pixels, read from the `param` param. |
 | `GaussWhat` | type | What a blur blurs. |
+| `Generated` | type | Motion that is computed, in place of a number. |
+| `generatedValue` | function | A generated value at `t` seconds into its element. |
+| `Generator` | interface | A generator as the resolver hands it to whatever draws. |
+| `GENERATOR_TYPES` | const | The generators a value can be written as. |
+| `GeneratorOf` | type | A generator written in place of a value of type `V`. |
+| `generatorSeed` | function | The seed a wiggle has when the file gives none. |
+| `GeneratorType` | type |  |
 | `googleFont` | function | Declares a Google Fonts family, in each weight and style given (default 400, normal), and returns it (a `FontRef`). |
 | `holdLayerFrame` | function | Hold the frame until the returned release is called (once; later calls do nothing). |
 | `installLayerClock` | function |  |
@@ -649,12 +656,14 @@ Every name each entry exports, read from the code. The sections above explain th
 | `isBuiltInTransition` | function |  |
 | `isBundledFont` | function |  |
 | `isDropFrame` | const | Whether a rate is shown in drop-frame timecode. |
+| `isGenerator` | function | Whether a value written in a prop is a generator. |
 | `isKeyframeProperty` | function | A property a key list can animate, as the resolver names it (`transform.opacity` for <code v-pre>transform={{ opacity: […] }}</code>). |
 | `isNeutral` | function | Whether a built-in effect changes nothing with these params. |
 | `isShaderRef` | function | Whether a value is an effect or transition a file declared. |
 | `isVocabulary` | function |  |
 | `Key` | interface | One key of a value that changes over time. |
 | `KEYFRAME_PROPERTIES` | const |  |
+| `KeyOf` | interface | One key of a value, as a generator's `base` or a loop's `keys` hold it. |
 | `KIND_CAPABILITIES` | const | What each element kind can do. |
 | `kindOf` | function |  |
 | `knobsOf` | function | The knobs of a file's `schema`, in the order it lists them, with the value each has in `values` (the file's `defaults` merged with any props given). |
@@ -731,6 +740,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `Shape` | const | The `<Shape>` element ([reference](/reference/elements/shape)). |
 | `SHAPE_TYPES` | const |  |
 | `shutterTimes` | function | The composition seconds a frame at `t` averages. |
+| `smoothNoise` | function | Smooth noise from -1 to 1 along `x`. |
 | `springAt` | function | Where a spring released at rest from `from` toward `to` is after `time` seconds. |
 | `SpringConfig` | interface | A spring's physics. |
 | `Sticker` | const | The `<Sticker>` element ([reference](/reference/elements/sticker)). |
@@ -805,7 +815,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/sdk`
 
-213 exports.
+215 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -886,6 +896,8 @@ Every name each entry exports, read from the code. The sections above explain th
 | `freezeUnshift` | function | Element-relative time of clip time `u`. |
 | `gatherLocalFiles` | function | The texts of every local module a video file imports, and of the modules they import in turn, keyed by path from the video file's folder. |
 | `GatherOptions` | interface |  |
+| `GeneratorJson` | type | A generator as a file writes it, in place of a number or a key list. |
+| `GeneratorRow` | interface | A generator on a value. |
 | `heldWithin` | function | Seconds of holds inside the first `length` seconds of a clip. |
 | `HelperCallSite` | interface |  |
 | `HelperSite` | interface |  |
@@ -1153,7 +1165,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | Export | Kind | |
 |---|---|---|
 | `animatedBox` | function | The box with `box.x` and `box.y` evaluated at element-relative time `rel`; an axis with no value and no keys stays out. |
-| `animatedTransform` | function | The transform with its keyframed properties evaluated at element-relative time `rel`. |
+| `animatedTransform` | function | The transform with its keyed and generated properties evaluated at element-relative time `rel`. |
 | `AssetSources` | class | One FrameSource per asset, shared by every clip of that asset and by nested compositors. |
 | `AUDIO_PREROLL_SECONDS` | const | How much earlier than a range decoding starts, the start then dropped. |
 | `AudioOccurrence` | interface |  |

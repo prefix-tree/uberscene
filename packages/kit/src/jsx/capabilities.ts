@@ -132,6 +132,7 @@ export const KIND_CAPABILITIES: Readonly<Record<string, ElementCapabilities>> = 
   }),
   effect: with_({ container: true, childKinds: ["keyframe"], placementScope: "child" }),
   keyframe: with_({ placementScope: "child" }),
+  generator: with_({ placementScope: "child" }),
   speedKey: with_({ placementScope: "child" }),
   freeze: with_({ placementScope: "child" }),
 };

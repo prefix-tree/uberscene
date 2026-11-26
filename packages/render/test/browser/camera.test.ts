@@ -193,3 +193,22 @@ it("draws a pushed camera as it draws the keys the push makes", async () => {
   expect(isCard(pushed(280, 90))).toBe(true);
   expect(isGround(pushed(230, 90))).toBe(true);
 });
+
+it("draws a generated value the same each time, and differently from moment to moment", async () => {
+  // A bar that a wiggle moves up and down, by up to 40 px about the middle.
+  const scene = `<Track id="cards" layout="free">
+        <Shape id="bar" start={0} duration={1} type="rectangle" fill="#00ff00" width={200} height={20}
+          box={{ x: 160, y: { type: "wiggle", base: 90, amount: 40, frequency: 3, seed: 4 }, origin: "center" }} />
+      </Track>`;
+  /** The rows of the frame's middle column the bar covers. */
+  const rows = (at: (x: number, y: number) => Rgb) =>
+    Array.from({ length: 180 }, (_, y) => y).filter((y) => isCard(at(160, y)));
+  const once = rows(await still("wiggle-a", scene, 0.5));
+  const again = rows(await still("wiggle-b", scene, 0.5));
+  const later = rows(await still("wiggle-c", scene, 0.8));
+  expect(once.length).toBeGreaterThan(15);
+  expect(again).toEqual(once);
+  expect(later).not.toEqual(once);
+  // Never further than its amount from where it is written.
+  for (const set of [once, later]) expect(Math.abs((set[0]! + set[set.length - 1]!) / 2 - 90)).toBeLessThanOrEqual(41);
+});

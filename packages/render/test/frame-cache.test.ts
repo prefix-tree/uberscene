@@ -114,6 +114,16 @@ describe("frame keys", () => {
     expect(await changed(pushed(700), pushed(800))).toEqual(FRAMES);
   });
 
+  it("a generator's params change the frames its element is on, and no others", async () => {
+    const wobbly = (amount: number) =>
+      video({
+        more: `<Title id="late" start={2.5} duration={1} transform={{ rotation: { type: "wiggle", amount: ${amount} } }}>Late</Title>`,
+      });
+    expect(await changed(wobbly(2), wobbly(2))).toEqual([]);
+    // The title is on screen at frame 90 only.
+    expect(await changed(wobbly(2), wobbly(5))).toEqual([90]);
+  });
+
   it("a comment or a helper nobody draws changes nothing, until free code is on screen", async () => {
     const helper = "const unused = 1;";
     expect(await changed(video(), video({ top: helper }))).toEqual([]);

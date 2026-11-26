@@ -6,7 +6,14 @@ import { capabilitiesOf } from "./capabilities";
 import { defineElement, type VocabularyComponent, type VocabularyMeta, type VocabularyProps } from "./define";
 import type { Easing, TransitionType, VideoEffectType } from "./enums";
 import { captionSchema, captionsSchema } from "./schemas/captions";
-import { effectSchema, freezeSchema, keyframeSchema, maskSchema, speedKeySchema } from "./schemas/children";
+import {
+  effectSchema,
+  freezeSchema,
+  generatorItemSchema,
+  keyframeSchema,
+  maskSchema,
+  speedKeySchema,
+} from "./schemas/children";
 import { cameraSchema, compositionSchema, gapSchema, markerSchema, trackSchema } from "./schemas/composition";
 import { audioSchema, clipSchema } from "./schemas/media";
 import { angleSchema, cutSchema, multicamSchema } from "./schemas/multicam";
@@ -127,8 +134,20 @@ export interface Key<V> {
   readonly easing?: Easing;
 }
 
-/** A value written as a constant, or as keys over time. */
-export type Animatable<V> = V | readonly Key<V>[];
+/** Motion that is computed, in place of a number: a wobble or a drift added to a `base`, or keys played again. */
+export type Generated =
+  | {
+      readonly type: "wiggle";
+      readonly base?: number | readonly Key<number>[];
+      readonly amount: number;
+      readonly frequency?: number;
+      readonly seed?: number;
+    }
+  | { readonly type: "drift"; readonly base?: number | readonly Key<number>[]; readonly speed: number }
+  | { readonly type: "loop"; readonly keys: readonly Key<number>[]; readonly mode?: "repeat" | "pingpong" };
+
+/** A value written as a constant, as keys over time, or, for a number, as a generator. */
+export type Animatable<V> = V | readonly Key<V>[] | (V extends number ? Generated : never);
 
 /** One entry of an element's `effects`: its type, then each of that type's params, a constant or keys. */
 export type EffectSpec<T> = { readonly type: T; readonly enabled?: boolean } & (string extends keyof EffectParamsOf<T>
@@ -193,6 +212,7 @@ export const ELEMENTS = {
 export const DERIVED_SCHEMAS = {
   effect: effectSchema,
   keyframe: keyframeSchema,
+  generator: generatorItemSchema,
   speedKey: speedKeySchema,
   freeze: freezeSchema,
 } as const;

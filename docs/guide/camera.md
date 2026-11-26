@@ -98,7 +98,9 @@ Move a card and the camera's move follows, because the moves are worked out from
 | `easing` | How each move goes. `snappy` when left out. |
 
 With `push`, the camera's `x`, `y` and `zoom` are numbers: where the view starts. Keys on them beside a push are an
-error, since two things cannot both set them. `rotation` is free.
+error, since two things cannot both set them. `rotation` is free, and a [generator](./animation#generators) on any
+of the four goes on top: a `drift` on `zoom` closes in slowly while the camera still makes room, so the frame is
+never still.
 
 The camera makes room for an element's box: a shape's `width` and `height`, footage as it is fitted into its `box`,
 a title or layer's `box.width` and `box.height`. A title with no size in its `box` counts as the point it is placed
