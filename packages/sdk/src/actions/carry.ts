@@ -2,11 +2,13 @@
 // titles anchored to it, transitions beside it, lengths that follow it. Left alone, those point at nothing or at a word
 // the clip no longer plays. A carried action repairs them with ordinary actions of its own, run before or after the
 // edit, so the patches, the write-back and the undo of the repairs are those of the actions they are.
-import { round3 } from "@uberscene/kit/schema";
+import { BOX_ORIGIN_POINT, type BoxOrigin, type CurveKey, curveAt, round3 } from "@uberscene/kit/schema";
 
 import { createPatchLog } from "../patches/log";
 import type { Json } from "../patches/types";
 import { type Dependent, dependentsOf } from "../resolve/dependents";
+import { followOf } from "../resolve/follow";
+import { ownRestBox, restBox } from "../resolve/push";
 import { type Placement, type ResolvedState, resolve } from "../resolve/resolve";
 import { type ActionHandler, type ApplyContext, getHandler, inverseOf } from "./registry";
 import type { Action, ActionInput, ActionType } from "./types";
@@ -92,7 +94,8 @@ function clipBefore(state: ResolvedState, id: string): Placement | undefined {
  * Removing a clip: what starts from it moves to the clip before it on its track, keeping its time on the timeline
  * where that clip is still playing, and otherwise held inside it; with no clip before, it is removed too. A transition
  * left with nothing on one side is removed; one that still has a clip on each side stays. A length that follows the
- * clip becomes the seconds it was.
+ * clip becomes the seconds it was. An overlay that followed it follows what it followed, or nothing, and stays where it
+ * was drawn (`unfollow`).
  */
 export function carryRemoval(id: string, before: ResolvedState): Carry | null {
   const deps = dependentsOf(before, id);
@@ -107,6 +110,7 @@ export function carryRemoval(id: string, before: ResolvedState): Carry | null {
     const p = before.items.get(d.id);
     if (p && !removed.has(d.id)) pre.push(setProps(d.id, { duration: round3(p.duration) }));
   }
+  for (const d of deps) if (d.kind === "follow" && !removed.has(d.id)) pre.push(unfollow(d.id, id, before));
   for (const d of anchored) {
     const p = before.items.get(d.id);
     if (!p) continue;
@@ -231,4 +235,139 @@ export function carryTrim(id: string, before: ResolvedState): Carry | null {
 /** Whether `id` names a word (in `at`, or in its duration's `until`) that the element it follows no longer plays. */
 function lostWord(state: ResolvedState, id: string, prop: "at" | "duration" = "at"): boolean {
   return state.items.get(id)?.errors.some((e) => e.code === "INVALID_ANCHOR" && e.prop === prop) ?? false;
+}
+
+/**
+ * `child` no longer following `leader` (which is removed): it follows what `leader` followed, or nothing, and its
+ * numbers are written again in that space so it stays where it was drawn. Its anchor point goes where `leader` put it;
+ * `leader`'s rotation is added to its own and `leader`'s scale multiplied into it. That is exact while `leader`'s
+ * values are constants and its scale is the same on both axes; a keyed value is taken where it stands when `child`
+ * starts, and a scale that differs by axis is kept by axis, which a turned element only approximates.
+ */
+function unfollow(child: string, leader: string, before: ResolvedState): ActionInput {
+  const c = before.items.get(child);
+  const l = before.items.get(leader);
+  const next = l ? followOf(l) : undefined;
+  if (!c || !l) return setProps(child, { follow: next });
+  const own = (before.tree.byId.get(child)?.props ?? {}) as Record<string, unknown>;
+  const lead = (before.tree.byId.get(leader)?.props ?? {}) as Record<string, unknown>;
+  const rel = c.start - l.start;
+  const comp = { width: before.composition.width, height: before.composition.height };
+  const outer = next ? restBox(before.items.get(next) ?? l, comp, before.manifest, before.items) : null;
+  const outerFrame = outer && next && before.items.has(next) ? { width: outer.w, height: outer.h } : comp;
+  // Where the leader stands in the space the child moves to, and how it is turned and scaled there.
+  const at = ownRestBox(l, outerFrame, before.manifest);
+  const lt = (lead.transform ?? {}) as Record<string, unknown>;
+  const la = (lt.anchor ?? { x: 0.5, y: 0.5 }) as { x: number; y: number };
+  const turn = restNumber(lt.rotation, rel, 0);
+  const [sx, sy] = scalePair(lt.scale, rel);
+  const ox = at.x + la.x * at.w,
+    oy = at.y + la.y * at.h;
+  const cos = Math.cos((turn * Math.PI) / 180),
+    sin = Math.sin((turn * Math.PI) / 180);
+  /** A point of the leader's own box (pixels from its top left) where the leader's place puts it. */
+  const carry = (x: number, y: number): [number, number] => {
+    const dx = (at.x + x - ox) * sx,
+      dy = (at.y + y - oy) * sy;
+    return [ox + dx * cos - dy * sin, oy + dx * sin + dy * cos];
+  };
+  // The child's own place in the leader's box, its anchor point, and where that point lands.
+  const rect = ownRestBox(c, { width: at.w, height: at.h }, before.manifest);
+  const ct = (own.transform ?? {}) as Record<string, unknown>;
+  const ca = (ct.anchor ?? { x: 0.5, y: 0.5 }) as { x: number; y: number };
+  const box = (own.box ?? {}) as Record<string, unknown>;
+  const origin = BOX_ORIGIN_POINT[((box.origin as BoxOrigin | undefined) ?? "topLeft") as BoxOrigin];
+  const [ax, ay] = carry(rect.x + ca.x * rect.w, rect.y + ca.y * rect.h);
+  // The box goes where its origin point must be for its anchor point to land there, the turn and scale about it.
+  const x = round3(ax - (ca.x - origin.x) * rect.w);
+  const y = round3(ay - (ca.y - origin.y) * rect.h);
+  const transform: Record<string, unknown> = { ...ct };
+  if (turn !== 0) transform.rotation = addTo(ct.rotation, turn);
+  if (sx !== 1 || sy !== 1) transform.scale = scaleTo(ct.scale, sx, sy, rel);
+  const props: Record<string, Json | undefined> = {
+    follow: next,
+    box: {
+      ...(box as Record<string, Json>),
+      x: shiftTo(box.x, x, restNumber(box.x, 0, rect.x + origin.x * rect.w)),
+      y: shiftTo(box.y, y, restNumber(box.y, 0, rect.y + origin.y * rect.h)),
+    },
+  };
+  if (turn !== 0 || sx !== 1 || sy !== 1) props.transform = transform as Json;
+  return setProps(child, props);
+}
+
+/** A number as it stands at `rel`: itself, its keys read there, or a generator's `base`; `fallback` otherwise. */
+function restNumber(v: unknown, rel: number, fallback: number): number {
+  if (typeof v === "number") return v;
+  if (Array.isArray(v)) {
+    const keys = [...(v as CurveKey[])].sort((a, b) => a.at - b.at);
+    const r = curveAt(keys, rel);
+    return typeof r === "number" ? r : fallback;
+  }
+  if (v && typeof v === "object" && "base" in v) return restNumber((v as { base: unknown }).base, rel, fallback);
+  return fallback;
+}
+
+/** A scale as it stands at `rel`, by axis. */
+function scalePair(v: unknown, rel: number): [number, number] {
+  if (v && typeof v === "object" && !Array.isArray(v) && "x" in v && "y" in v) {
+    const s = v as { x: unknown; y: unknown };
+    return [restNumber(s.x, rel, 1), restNumber(s.y, rel, 1)];
+  }
+  if (Array.isArray(v) && v.some((k) => typeof (k as CurveKey).value === "object")) {
+    const r = curveAt(
+      [...(v as CurveKey[])].sort((a, b) => a.at - b.at),
+      rel,
+    ) as { x?: number; y?: number };
+    return [r?.x ?? 1, r?.y ?? 1];
+  }
+  const n = restNumber(v, rel, 1);
+  return [n, n];
+}
+
+/** `v` with `d` added: to a number, to each key, or to a generator's base (a generator with none adds to 0). */
+function addTo(v: unknown, d: number): Json {
+  if (v === undefined) return round3(d);
+  if (typeof v === "number") return round3(v + d);
+  if (Array.isArray(v))
+    return (v as { value: unknown }[]).map((k) => ({ ...(k as Record<string, Json>), value: addTo(k.value, d) }));
+  if (v && typeof v === "object") {
+    const g = v as Record<string, Json>;
+    return { ...g, base: addTo(g.base ?? 0, d) };
+  }
+  return v as Json;
+}
+
+/** A scale multiplied by (`sx`, `sy`): one number stays one number while both are the same. */
+function scaleTo(v: unknown, sx: number, sy: number, rel: number): Json {
+  const times = (n: unknown, k: number): Json => {
+    if (n === undefined) return round3(k);
+    if (typeof n === "number") return round3(n * k);
+    if (Array.isArray(n))
+      return (n as { value: unknown }[]).map((key) => ({
+        ...(key as Record<string, Json>),
+        value: times(key.value, k),
+      }));
+    if (n && typeof n === "object") {
+      const g = n as Record<string, Json>;
+      return "base" in g ? { ...g, base: times(g.base, k) } : g;
+    }
+    return n as Json;
+  };
+  if (v && typeof v === "object" && !Array.isArray(v) && "x" in v && "y" in v) {
+    const s = v as { x: unknown; y: unknown };
+    return { x: times(s.x, sx), y: times(s.y, sy) };
+  }
+  if (sx === sy) return times(v, sx);
+  const [x, y] = scalePair(v, rel);
+  return { x: round3(x * sx), y: round3(y * sy) };
+}
+
+/**
+ * A `box` axis moved so it stands at `to`, from where it stood (`was`): a number becomes `to`, each key moves by the
+ * same amount, a generator's base moves with it.
+ */
+function shiftTo(v: unknown, to: number, was: number): Json {
+  if (v === undefined || typeof v === "number") return to;
+  return addTo(v, round3(to - was));
 }

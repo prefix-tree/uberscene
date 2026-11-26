@@ -832,7 +832,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/sdk`
 
-215 exports.
+217 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -906,6 +906,8 @@ Every name each entry exports, read from the code. The sections above explain th
 | `fold` | function | Turn the patch log's net effect into text edits against the index. |
 | `FoldResult` | interface |  |
 | `foldToSource` | function | Fold with baking. |
+| `FOLLOW_KINDS` | const | The kinds that take a `follow`, and the kinds one may follow. |
+| `followOf` | function | The id an element follows (its `follow` prop), if it names one. |
 | `FreezeActions` | interface |  |
 | `FreezeHold` | interface | A hold. |
 | `freezeHoldsOf` | function | A clip's holds (from `freezes`), sorted by `start`. |
@@ -1054,7 +1056,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/sdk/resolver`
 
-81 exports.
+83 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -1080,6 +1082,8 @@ Every name each entry exports, read from the code. The sections above explain th
 | `EMPTY_MANIFEST` | const |  |
 | `entriesOf` | function | An asset's list of words, shots, silences or beats. |
 | `findParentOf` | function |  |
+| `FOLLOW_KINDS` | const | The kinds that take a `follow`, and the kinds one may follow. |
+| `followOf` | function | The id an element follows (its `follow` prop), if it names one. |
 | `FreezeHold` | interface | A hold. |
 | `freezeHoldsOf` | function | A clip's holds (from `freezes`), sorted by `start`. |
 | `freezeShift` | function | Element-relative `rel` with the holds before it taken out, or the held source second when `rel` is inside a hold. |
@@ -1177,7 +1181,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/player/engine`
 
-47 exports.
+51 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -1225,7 +1229,11 @@ Every name each entry exports, read from the code. The sections above explain th
 | `paramsAt` | function | An effect's params, with the ones its keys animate evaluated at element-relative `rel`. |
 | `PICK_EPS` | const | Container timestamps are often rounded to the millisecond, so the frame for the exact time n/fps can sit a fraction of a millisecond after it. |
 | `placementSourceTime` | function | Source seconds a media placement shows at composition time `t`. |
+| `rootSpace` | function | The composition as a space. |
 | `SETTLE_MS` | const | Quiet time after the last setState before a paused preview fetches its exact frame. |
+| `Space` | interface | Where an overlay is placed from. |
+| `spaceOf` | function | The space `p` is placed in at composition time `t`, for a caller that places one element. |
+| `spacesAt` | function | The space of every overlay that follows another, at composition time `t`, worked out once. |
 | `trackCamera` | function | The camera's matrix for something on `track` at `t`. |
 | `visiblePlacements` | function | Visual, timed placements that show at `t`. |
 

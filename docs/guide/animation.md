@@ -143,6 +143,44 @@ transform={{ rotation: { type: "wiggle", amount: 3, base: [{ at: 0, value: 0 }, 
 - **On a pushed camera** a generator goes on top of the moves the push makes: a `drift` on `zoom` beside `push`
   closes in slowly while the camera still makes room. See [the camera](./camera).
 
+## Following another element {#follow}
+
+A hand moves with its forearm, and the forearm with the arm. Keys copied from one to the next drift apart as soon as
+one of them changes. Give an overlay a `follow` and it moves with that one instead.
+
+<Example src="previews/guide/follow" alt="An orange upper arm swings from its shoulder; a teal forearm bends at its lower end, a white hand at the forearm's end, and the word hello riding beside the hand">
+
+<<< @/../examples/showcase/guide/follow.tsx
+
+</Example>
+
+```tsx
+<Shape id="arm" ... box={{ x: 480, y: 110, width: 36, height: 170, origin: "top" }} transform={{ rotation: 20 }} />
+<Shape id="hand" follow="arm" ... box={{ x: 18, y: 170, origin: "center" }} />
+```
+
+- **Its box is read in the box of what it follows.** `box.x` and `box.y` are pixels from that box's top left, before
+  it turns or scales; a coordinate left out centres it there. Above, the hand sits at the bottom middle of the arm.
+- **What it takes from what it follows:** where that element is, its rotation and scale (about that element's own
+  `anchor`), and its `enter` and `exit` moves, so a card that slides in brings its label with it. Each link up the
+  chain adds its own.
+- **What stays its own:** opacity, crop and corner rounding. Fading the arm does not fade the hand; fade both, or
+  give the hand the same keys.
+- **Time.** Each element plays its keys on its own clock. An element places its followers even outside its own start
+  and duration: before it starts, where its entrance leaves it; after it ends, where it stood before its exit began,
+  so a follower is not left carried off screen. The follower's own timing decides when it shows.
+- **What can follow and be followed:** titles, shapes, SVG, stickers and layers. Both sit on the same side of a
+  [camera](./camera): on tracks inside it, or outside. An SVG read from a file (`src`) can't be followed yet, since
+  its size is only known once it is drawn; write its markup in `content`.
+- **Mistakes the resolver names:** a `follow` that does not exist, one that is not an overlay, an SVG read from a
+  file, two elements on different sides of the camera, and a chain that comes back to where it started (it names
+  every element in the circle).
+- **Removing an element others follow** hands its followers to what it followed, or to none, in the same edit, and
+  writes their numbers again so they stay where they were drawn: its rotation is added to theirs and its scale
+  multiplied in. A keyed value is taken where it stands when the follower starts. Undo puts it back.
+- The [layout check](./checking) and `uberscene inspect` report where a follower really is, after the chain, and a
+  fix the layout check suggests is in the follower's own numbers.
+
 ## Effects {#effects}
 
 A look on an element is an entry of its `effects` list: its `type`, then its params by name.

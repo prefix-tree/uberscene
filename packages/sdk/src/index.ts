@@ -21,6 +21,7 @@ export * from "./resolve/collect";
 export * from "./resolve/dependents";
 export * from "./resolve/errors";
 export { withoutEffects } from "./resolve/expand";
+export * from "./resolve/follow";
 export * from "./resolve/resolve";
 export * from "./resolve/scene";
 export { isSceneAsset, type SceneUse } from "./resolve/scene3d";

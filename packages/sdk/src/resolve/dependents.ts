@@ -7,14 +7,16 @@ import type { ResolvedState } from "./resolve";
  *   is set;
  * - `on`: a transition placed on one of its edges;
  * - `match` / `until`: lasts as long as it, or until it ends (or, with `at`, until it plays that moment);
- * - `beside`: a transition between it and its neighbour on a sequence track.
+ * - `beside`: a transition between it and its neighbour on a sequence track;
+ * - `follow`: an overlay that moves with it (`follow="id"`).
  */
 export type Dependent =
   | { readonly kind: "anchor"; readonly id: string; readonly edge?: "end"; readonly at?: string }
   | { readonly kind: "on"; readonly id: string; readonly edge: "in" | "out" }
   | { readonly kind: "match"; readonly id: string }
   | { readonly kind: "until"; readonly id: string; readonly at?: string }
-  | { readonly kind: "beside"; readonly id: string; readonly side: "before" | "after" };
+  | { readonly kind: "beside"; readonly id: string; readonly side: "before" | "after" }
+  | { readonly kind: "follow"; readonly id: string };
 
 /** The elements that depend on `id`, in timeline order of the file, each once per way it depends. */
 export function dependentsOf(state: ResolvedState, id: string): Dependent[] {
@@ -26,6 +28,7 @@ export function dependentsOf(state: ResolvedState, id: string): Dependent[] {
       const edge = props.anchor === `${id}.end` ? ({ edge: "end" } as const) : {};
       out.push({ kind: "anchor", id: node.id, ...edge, ...(typeof props.at === "string" ? { at: props.at } : {}) });
     }
+    if (props.follow === id) out.push({ kind: "follow", id: node.id });
     if (node.kind === "transition" && props.on === id)
       out.push({ kind: "on", id: node.id, edge: props.edge === "in" ? "in" : "out" });
     const duration = props.duration;

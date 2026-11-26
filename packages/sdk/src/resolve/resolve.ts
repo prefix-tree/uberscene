@@ -51,6 +51,7 @@ import {
 } from "./captions";
 import type { ResolveError } from "./errors";
 import { derivedOrigin, expandKeys } from "./expand";
+import { FOLLOW_KINDS, followOf } from "./follow";
 import { overlay } from "./overlay";
 import { type PushSpec, pushKeys } from "./push";
 import { placeScene, type SceneUse, sceneAssetId, withSceneAssets } from "./scene3d";
@@ -583,6 +584,7 @@ function compute(
   errors.push(...textureErrors(items, manifest));
   errors.push(...keyframeErrors(items));
   errors.push(...generatorErrors(items));
+  errors.push(...followErrors(items, tracks));
   const rate = rateOf(compParsed.fps, root.id, errors);
   if (duration > MAX_SECONDS)
     errors.push({
@@ -1111,6 +1113,71 @@ function generatorErrors(items: ReadonlyMap<string, Placement>): ResolveError[] 
         prop: `box.${axis}`,
         message: `a ${String(g.props.type)} on box.${axis} is added to where the element sits: give it a \`base\` (a number of pixels, or keys)`,
       });
+  }
+  return out;
+}
+
+/**
+ * A `follow` names another overlay in the file, on the same side of the camera, whose size is known before it is
+ * drawn, and no chain comes back to where it started.
+ */
+function followErrors(items: ReadonlyMap<string, Placement>, tracks: readonly ResolvedTrack[]): ResolveError[] {
+  const out: ResolveError[] = [];
+  const cameraOf = (p: Placement): string | undefined => tracks.find((t) => t.id === p.track)?.camera;
+  const problem = (id: string, code: ResolveError["code"], message: string): void => {
+    out.push({ code, id, prop: "follow", message });
+  };
+  const inCycle = new Set<string>();
+  for (const child of items.values()) {
+    const ref = followOf(child);
+    if (ref === undefined || !FOLLOW_KINDS.has(child.kind)) continue;
+    const leader = items.get(ref);
+    if (!leader) {
+      problem(child.id, "UNKNOWN_REF", `follow names "${ref}", which does not exist`);
+      continue;
+    }
+    if (!FOLLOW_KINDS.has(leader.kind)) {
+      problem(
+        child.id,
+        "SCHEMA",
+        `follow names "${ref}", a ${leader.kind}: an element follows a title, shape, svg, sticker or layer`,
+      );
+      continue;
+    }
+    if (leader.kind === "svg" && typeof leader.props.content !== "string") {
+      problem(
+        child.id,
+        "SCHEMA",
+        `follow names "${ref}", an SVG read from a file: its size is only known once it is drawn, so it can't be followed yet; write its markup in \`content\`, or follow a shape`,
+      );
+      continue;
+    }
+    if (cameraOf(child) !== cameraOf(leader)) {
+      const inside = cameraOf(child) !== undefined ? child.id : leader.id;
+      problem(
+        child.id,
+        "SCHEMA",
+        `"${inside}" is under the camera and the other is not: put "${child.id}" and "${ref}", which it follows, on tracks on the same side of the camera`,
+      );
+      continue;
+    }
+    if (inCycle.has(child.id)) continue;
+    const chain = [child.id];
+    for (let at = items.get(ref); at && !inCycle.has(at.id); at = items.get(followOf(at) ?? "")) {
+      const i = chain.indexOf(at.id);
+      if (i >= 0) {
+        const loop = chain.slice(i);
+        for (const id of loop) inCycle.add(id);
+        problem(
+          loop[0]!,
+          "CYCLE",
+          `follows go round in a circle: ${[...loop, loop[0]].map((id) => `"${id}"`).join(" → ")}; remove one of these follows`,
+        );
+        break;
+      }
+      chain.push(at.id);
+      if (followOf(at) === undefined) break;
+    }
   }
   return out;
 }

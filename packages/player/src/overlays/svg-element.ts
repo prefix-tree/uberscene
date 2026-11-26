@@ -1,7 +1,8 @@
 import type { FitMode, ResolvedTheme } from "@uberscene/kit/schema";
 
 import { type ElementProps, type OverlayLayout, overlayLayout } from "./layout";
-import { type PreparedSvg, prepareSvg, type SvgColor, type SvgViewBox, svgAnimated, svgIntrinsicSize } from "./svg";
+import { overlaySize } from "./size";
+import { type PreparedSvg, prepareSvg, type SvgColor, type SvgViewBox, svgAnimated } from "./svg";
 
 export interface SvgDrawing {
   /** The size the SVG asks for, before `fit`. */
@@ -23,8 +24,7 @@ export function svgDrawing(
 ): SvgDrawing {
   const props = p.placement.props as Record<string, unknown>;
   const viewBox = props.viewBox as SvgViewBox | undefined;
-  const size = svgIntrinsicSize(markup, viewBox);
-  const fit = (props.fit as FitMode | undefined) ?? "none";
+  const { size, fit } = overlaySize(p.state, p.placement, p.children, p.time - p.placement.start, markup);
   const layout = overlayLayout(p, size, fit, true);
   const prepared = prepareSvg(markup, {
     box: { width: layout.rect.w, height: layout.rect.h },

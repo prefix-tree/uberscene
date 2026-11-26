@@ -1,4 +1,4 @@
-import { memo, type ReactNode } from "react";
+import { memo, type ReactNode, useMemo } from "react";
 
 import { effectEntry } from "@uberscene/kit/schema";
 import type { Placement, ResolvedState } from "@uberscene/sdk/resolver";
@@ -6,10 +6,11 @@ import type { Placement, ResolvedState } from "@uberscene/sdk/resolver";
 import { trackBands } from "../model/backdrop";
 import { trackCamera } from "../model/camera";
 import { effectPipeline } from "../model/shaders";
-import { frameIndex } from "../model/time";
+import { frameIndex, frameTime } from "../model/time";
 import type { Matrix2D } from "../model/transform";
 import { type VisibleItem, visiblePlacements } from "../model/visible";
 import { type ElementProps, OVERLAY_KINDS } from "../overlays/layout";
+import { rootSpace, type Space, spacesAt } from "../overlays/space";
 import { devWarn } from "../warn";
 import { Adjustment } from "./elements/Adjustment";
 import { Captions } from "./elements/Captions";
@@ -38,6 +39,11 @@ export interface DomLayerProps {
 export function DomLayer({ state, interiors, layer = "front", slot }: DomLayerProps) {
   const time = useCompositionTime();
   const exact = usePlayer().exactTime;
+  // Where the overlays that follow another are placed from, worked out once a frame (at the frame's own time unless
+  // the player draws every moment), and handed to each element.
+  const at = exact ? time : frameTime(frameIndex(time, state.composition.rate), state.composition.rate);
+  const spaces = useMemo(() => spacesAt(state, at), [state, at]);
+  const root = useMemo(() => rootSpace(state), [state]);
   const items = visiblePlacements(state, time).filter((v) => OVERLAY_KINDS.has(v.placement.kind));
   const byTrack = new Map<string, VisibleItem[]>();
   for (const item of items) {
@@ -70,6 +76,7 @@ export function DomLayer({ state, interiors, layer = "front", slot }: DomLayerPr
                 state={state}
                 time={time}
                 exact={exact}
+                space={spaces.get(item.placement.id) ?? root}
                 interior={interiors.get(item.placement.id)}
               />
             ))}
@@ -95,17 +102,20 @@ export interface ElementCellProps {
   interior: ReactNode;
   /** Re-render for any change of time, not only a new frame (the player's `exactTime`). */
   exact?: boolean;
+  /** The space its `box` is read in: the composition's, or that of the element it follows (overlays/space.ts). */
+  space: Space;
 }
 
 /** Re-renders only when the element's own relative frame or placement changes. */
 const Element = memo(
-  function Element({ item, state, time, interior }: ElementCellProps) {
+  function Element({ item, state, time, interior, space }: ElementCellProps) {
     const props: ElementProps = {
       placement: item.placement,
       children: item.children,
       state,
       time,
       transition: item.transition,
+      space,
     };
     const content = elementContent(item, props, state, interior);
     if (item.placement.kind !== "adjustment") warnPostOnOverlay(item.placement.id, item.children);
@@ -228,6 +238,9 @@ export function sameElement(a: ElementCellProps, b: ElementCellProps): boolean {
     return false;
   // A camera moves an overlay that has no keys of its own, at times its own frame does not change.
   if (!sameMatrix(trackCamera(a.state, p.track, a.time), trackCamera(b.state, q.track, b.time))) return false;
+  // What it follows carries it at times its own frame does not change, and an edit to that element moves it too.
+  if (a.space.isRoot !== b.space.isRoot || !sameMatrix(a.space.matrix, b.space.matrix)) return false;
+  if (a.space.frame.width !== b.space.frame.width || a.space.frame.height !== b.space.frame.height) return false;
   return (a.item.transition?.progress ?? -1) === (b.item.transition?.progress ?? -1);
 }
 

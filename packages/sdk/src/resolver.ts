@@ -10,6 +10,7 @@ export * from "./resolve/captions";
 export * from "./resolve/collect";
 export * from "./resolve/dependents";
 export * from "./resolve/errors";
+export * from "./resolve/follow";
 export * from "./resolve/resolve";
 export * from "./resolve/scene";
 export { isSceneAsset, type SceneUse } from "./resolve/scene3d";
