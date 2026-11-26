@@ -448,6 +448,10 @@ function compute(
           const keyProps = parseProps(inner, keyErrors, theme);
           const at = lengthOr(keyProps.at, 0);
           structural.push(place(inner, null, child.id, at, 0, keyProps, keyErrors, undefined, undefined));
+        } else if (inner.kind === "generator") {
+          // A generator on a camera value runs for the whole video; its end is set with the camera's.
+          const own: ResolveError[] = [];
+          structural.push(place(inner, null, child.id, 0, 0, parseProps(inner, own, theme), own, undefined, undefined));
         }
       }
     } else if (child.kind === "marker") {
@@ -505,7 +509,10 @@ function compute(
   const push = pushed?.props.push as PushSpec | undefined;
   if (camera && pushed && push) {
     const keyed = (["x", "y", "zoom"] as const).filter((f) =>
-      pushed.children.some((c) => items.get(c)?.props.property === `camera.${f}`),
+      pushed.children.some((c) => {
+        const item = items.get(c);
+        return item?.kind === "keyframe" && item.props.property === `camera.${f}`;
+      }),
     );
     if (keyed.length > 0) {
       errors.push({
@@ -573,6 +580,7 @@ function compute(
   );
   errors.push(...textureErrors(items, manifest));
   errors.push(...keyframeErrors(items));
+  errors.push(...generatorErrors(items));
   const rate = rateOf(compParsed.fps, root.id, errors);
   if (duration > MAX_SECONDS)
     errors.push({
@@ -1072,6 +1080,30 @@ function framed(
 }
 
 /** Keys on an effect's params: each value one that param's schema takes. */
+/** A wobble or a drift on `box.x` or `box.y` needs a place to be added to: with none, the element is centred. */
+function generatorErrors(items: ReadonlyMap<string, Placement>): ResolveError[] {
+  const out: ResolveError[] = [];
+  for (const g of items.values()) {
+    if (g.kind !== "generator" || g.props.type === "loop") continue;
+    const axis = g.props.property === "box.x" ? "x" : g.props.property === "box.y" ? "y" : null;
+    const parent = g.parent ? items.get(g.parent) : undefined;
+    if (!axis || !parent) continue;
+    const written = (parent.props.box as Record<string, unknown> | undefined)?.[axis];
+    const keyed = parent.children.some((c) => {
+      const k = items.get(c);
+      return k?.kind === "keyframe" && k.props.property === g.props.property;
+    });
+    if (written === undefined && !keyed)
+      out.push({
+        code: "SCHEMA",
+        id: parent.id,
+        prop: `box.${axis}`,
+        message: `a ${String(g.props.type)} on box.${axis} is added to where the element sits: give it a \`base\` (a number of pixels, or keys)`,
+      });
+  }
+  return out;
+}
+
 function keyframeErrors(items: ReadonlyMap<string, Placement>): ResolveError[] {
   const out: ResolveError[] = [];
   for (const k of items.values()) {
@@ -1099,6 +1131,12 @@ function keyframeErrors(items: ReadonlyMap<string, Placement>): ResolveError[] {
 function onElement(error: ResolveError): ResolveError {
   const origin = error.id ? derivedOrigin(error.id) : null;
   if (!origin) return error;
+  if (origin.path.endsWith(".generator")) {
+    // A generator's fields are written inside the value it stands for: `transform.rotation.amount`.
+    const { prop, ...rest } = error;
+    const at = origin.path.slice(0, -".generator".length);
+    return { ...rest, id: origin.id, prop: prop ? `${at}.${prop}` : at };
+  }
   const field = error.prop
     ?.replace(/^params(\.|$)/, "")
     .replace(/^speed$/, "value")
