@@ -159,4 +159,64 @@ describe("a graphic timed by a word of its anchor", () => {
       expect(length({ duration: { until: "nobody" } }).errors).toEqual(["DANGLING_ANCHOR:duration"]);
     });
   });
+
+  describe("duration until another element plays a word", () => {
+    const length = (title: Record<string, unknown>, opts: Parameters<typeof edit>[0] = {}) => {
+      const r = placed(edit({ ...opts, title }));
+      return { start: r.start, duration: r.state.items.get("ten")?.duration, errors: r.errors };
+    };
+
+    it("lasts from its start to where the other plays the word", () => {
+      // Word 9 is said 3 s into the video and ends 0.4 s later; word 13 ends where make-1 ends, at 5 s.
+      expect(length({ duration: { until: "make-1", at: "word:9.end" } })).toEqual({
+        start: 3,
+        duration: 0.4,
+        errors: [],
+      });
+      expect(length({ duration: { until: "make-1", at: "word:13.end" } })).toEqual({
+        start: 3,
+        duration: 2,
+        errors: [],
+      });
+      expect(length({ anchor: "make-1", at: undefined, duration: { until: "make-1", at: "word:9" } })).toEqual({
+        start: 1,
+        duration: 2,
+        errors: [],
+      });
+    });
+
+    it("follows the word when the clip is trimmed, moved or sped up", () => {
+      // in at word 5 (2.7 s): word 9 ends 1.7 s into the clip, which starts at 1 s; the title starts at 2.3 s.
+      expect(length({ duration: { until: "make-1", at: "word:9.end" } }, { clip: { in: "word:5" } })).toEqual({
+        start: 2.3,
+        duration: 0.4,
+        errors: [],
+      });
+      expect(length({ duration: { until: "make-1", at: "word:9.end" } }, { gap: 3 }).duration).toBe(0.4);
+      expect(length({ duration: { until: "make-1", at: "word:9.end" } }, { speed: 2 }).duration).toBe(0.2);
+    });
+
+    it("ends on a word of another element than the one it starts from", () => {
+      // make-2 starts at 5 s and says word 9 2 s later, at 7 s.
+      expect(length({ duration: { until: "make-2", at: "word:9" } })).toEqual({ start: 3, duration: 4, errors: [] });
+    });
+
+    it("has no length, and says so, when the word comes before its start", () => {
+      const r = length({ duration: { until: "make-1", at: "word:3" } });
+      expect(r.duration).toBe(0);
+      expect(r.errors).toEqual(["INVALID_TIME_RANGE:duration"]);
+    });
+
+    it("reports a word the other element trims out, a reversed one, and a missing one, on duration", () => {
+      const ends = { anchor: "make-1", at: undefined, duration: { until: "make-1", at: "word:13.end" } };
+      expect(length(ends, { clip: { out: "word:9.end" } }).errors).toEqual(["INVALID_ANCHOR:duration"]);
+      expect(length(ends, { clip: { reverse: true } }).errors).toEqual(["UNSUPPORTED_ANCHOR:duration"]);
+      expect(length({ duration: { until: "nobody", at: "word:9" } }).errors).toEqual(["DANGLING_ANCHOR:duration"]);
+    });
+
+    it("takes at only with until", () => {
+      expect(length({ duration: { match: "make-1", at: "word:9" } }).errors).toEqual(["SCHEMA:duration"]);
+      expect(length({ duration: { until: "make-1", at: "9" } }).errors[0]).toBe("SCHEMA:duration.at");
+    });
+  });
 });

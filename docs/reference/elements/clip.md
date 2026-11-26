@@ -25,7 +25,7 @@ The coffee footage is Pixabay videos [209419](https://pixabay.com/videos/id-2094
 | `anchor` | "start" \| string |  |  | Overlays: start relative to another element's start, or to its end with `id.end`. |
 | `at` | string |  |  | With `anchor`: a word, shot, silence or beat of the anchor's source (`word:14655`, `beat:16`); the start is where the anchor plays it, plus `offset`. |
 | `offset` | number |  |  | Seconds added to the start that `anchor` and `at` give; negative starts earlier. |
-| `duration` | number (> 0) \| "fill" \| "source" \| { match } \| { until } |  |  | How long it plays: seconds; `"source"` for the whole trimmed source; `"fill"` to run to the end of the composition; `{ match: id }` for as long as another element; `{ until: id }` to end when another element ends. |
+| `duration` | number (> 0) \| "fill" \| "source" \| { match } \| { until, at } |  |  | How long it plays: seconds; `"source"` for the whole trimmed source; `"fill"` to run to the end of the composition; `{ match: id }` for as long as another element; `{ until: id }` to end when another element ends, or `{ until: id, at: "word:54.end" }` when it plays that word, shot, silence or beat of its source. |
 | `src` | string \| any |  | yes | The media, as `asset:<id>` from the manifest, or a 3D scene module (`import * as crossing from "./crossing.scene.js"`), which plays like footage: `in`, `out`, `speed` and trims are in the scene's own seconds. |
 | `in` | number (0..∞) \| string |  |  | Where in the source it starts: seconds, or a word, shot, silence or beat of the source (`word:12`, `beat:16`). |
 | `out` | number (0..∞) \| string |  |  | Where in the source it ends, as `in`; `word:40.end` ends after the word is said. |

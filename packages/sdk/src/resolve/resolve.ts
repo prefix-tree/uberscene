@@ -139,7 +139,7 @@ interface Pending {
   source?: Placement["source"];
   /** Intrinsic length, when it does not depend on other elements. */
   duration?: number;
-  durationDep?: { kind: "match"; id: string } | { kind: "until"; id: string } | { kind: "fill" };
+  durationDep?: { kind: "match"; id: string } | { kind: "until"; id: string; at?: string } | { kind: "fill" };
   start?: number;
   /** `at` is a word, shot or silence of the anchor's source: the start is where the anchor plays it, plus `offset`. */
   anchorDep?: { id: string | "start"; offset: number; edge?: "end"; at?: string };
@@ -382,7 +382,7 @@ function compute(
     }
   }
   // An element that matches a filling one could not take its length until now.
-  settleMatches(pending);
+  settleMatches(pending, manifest);
   for (const p of pending.values()) {
     if (p.start === undefined || p.duration === undefined) {
       p.errors.push({
@@ -1497,7 +1497,7 @@ function iterateDependencies(pending: Map<string, Pending>, manifest: AssetManif
           p.duration = 0;
           delete (p as Pending).durationDep;
           progressed = true;
-        } else if (takeLength(p, target)) progressed = true;
+        } else if (takeLength(p, target, manifest)) progressed = true;
       }
     }
     if (!progressed) break;
@@ -1519,14 +1519,14 @@ function iterateDependencies(pending: Map<string, Pending>, manifest: AssetManif
   }
 }
 
-/** The dependency a `duration={{ match }}` or `duration={{ until }}` names. */
-function otherDep(dur: object): { kind: "match" | "until"; id: string } {
-  return "until" in dur
-    ? { kind: "until", id: String((dur as { until: string }).until) }
-    : { kind: "match", id: String((dur as { match: string }).match) };
+/** The dependency a `duration={{ match }}` or `duration={{ until }}` names, with the moment an until ends on. */
+function otherDep(dur: object): { kind: "match" | "until"; id: string; at?: string } {
+  if (!("until" in dur)) return { kind: "match", id: String((dur as { match: string }).match) };
+  const { until, at } = dur as { until: string; at?: string };
+  return { kind: "until", id: String(until), ...(at !== undefined ? { at } : {}) };
 }
 
-type Following = Pending & { durationDep: { kind: "match" | "until"; id: string } };
+type Following = Pending & { durationDep: { kind: "match" | "until"; id: string; at?: string } };
 
 /** Whether `p`'s length comes from another element: as long as it (`match`), or until it ends (`until`). */
 function follows(p: Pending): p is Following {
@@ -1535,21 +1535,29 @@ function follows(p: Pending): p is Following {
 
 /**
  * Gives `p` its length from `target` once enough is known: the target's length for a match; for an until, the time
- * from `p`'s own start to the target's end. An element that starts after its target has ended has no length, and
- * says so. False while it has to wait.
+ * from `p`'s own start to the target's end, or to where the target plays the moment `at` names. An element that
+ * starts after that end has no length, and says so. False while it has to wait.
  */
-function takeLength(p: Following, target: Pending): boolean {
+function takeLength(p: Following, target: Pending, manifest: AssetManifest): boolean {
   if (target.duration === undefined) return false;
   if (p.durationDep.kind === "match") p.duration = target.duration;
   else {
     if (p.start === undefined || target.start === undefined) return false;
-    const left = round3(target.start + target.duration - p.start);
+    const { at, id } = p.durationDep;
+    // A moment it cannot find (reported) ends it where the target ends, as an until without one does.
+    const said = p.errors.length;
+    const moment = at !== undefined ? playedAt(p, target, at, manifest, "duration") : target.duration;
+    const end = target.start + (p.errors.length > said && moment === 0 ? target.duration : moment);
+    const left = round3(end - p.start);
     if (left <= 0)
       p.errors.push({
         code: "INVALID_TIME_RANGE",
         id: p.node.id,
         prop: "duration",
-        message: `"${p.node.id}" starts at ${round3(p.start)} s, after "${p.durationDep.id}" has ended (${round3(target.start + target.duration)} s), so it has no length`,
+        message:
+          at !== undefined
+            ? `"${p.node.id}" starts at ${round3(p.start)} s, after "${id}" plays ${at} (${round3(end)} s), so it has no length`
+            : `"${p.node.id}" starts at ${round3(p.start)} s, after "${id}" has ended (${round3(end)} s), so it has no length`,
       });
     p.duration = Math.max(0, left);
   }
@@ -1571,13 +1579,13 @@ function waitsForFill(p: Pending, pending: Map<string, Pending>): boolean {
 }
 
 /** Gives each element still waiting on a match its target's length, now that fills have theirs. */
-function settleMatches(pending: Map<string, Pending>): void {
+function settleMatches(pending: Map<string, Pending>, manifest: AssetManifest): void {
   for (let pass = 0; pass <= pending.size; pass++) {
     let progressed = false;
     for (const p of pending.values()) {
       if (!follows(p) || p.duration !== undefined) continue;
       const target = pending.get(p.durationDep.id);
-      if (target && takeLength(p, target)) progressed = true;
+      if (target && takeLength(p, target, manifest)) progressed = true;
     }
     if (!progressed) break;
   }
@@ -1627,10 +1635,17 @@ function cutoutErrors(id: string, asset: AssetEntry, manifest: AssetManifest, sc
  * (source time − source in) / speed. A target that is not footage, plays the moment reversed or through a speed ramp,
  * or has trimmed it out is reported on `p`; then the moment is held to the nearest part the target plays.
  */
-function playedAt(p: Pending, target: Pending, at: string, manifest: AssetManifest): number {
+function playedAt(
+  p: Pending,
+  target: Pending,
+  at: string,
+  manifest: AssetManifest,
+  /** The prop that names the moment: `at` on an anchor, `duration` on an until. */
+  prop: "at" | "duration" = "at",
+): number {
   const src = target.source;
   const fail = (code: "INVALID_ANCHOR" | "UNSUPPORTED_ANCHOR", message: string): number => {
-    p.errors.push({ code, id: p.node.id, prop: "at", message });
+    p.errors.push({ code, id: p.node.id, prop, message });
     return 0;
   };
   if (!src)
@@ -1646,7 +1661,7 @@ function playedAt(p: Pending, target: Pending, at: string, manifest: AssetManife
       `at="${at}" on "${target.node.id}", which has speed keys or freezes, is not supported yet; use offset`,
     );
   }
-  const t = resolveTimeRef(at, lookupAsset(manifest, src.asset), new Map(), { id: p.node.id, prop: "at" });
+  const t = resolveTimeRef(at, lookupAsset(manifest, src.asset), new Map(), { id: p.node.id, prop });
   if (typeof t !== "number") {
     p.errors.push(t);
     return 0;
@@ -1656,7 +1671,7 @@ function playedAt(p: Pending, target: Pending, at: string, manifest: AssetManife
     p.errors.push({
       code: "INVALID_ANCHOR",
       id: p.node.id,
-      prop: "at",
+      prop,
       message: `${at} (${t.toFixed(2)} s) is not in what "${target.node.id}" plays (${src.in.toFixed(2)}–${src.out.toFixed(2)} s of ${src.asset}): it was trimmed out`,
     });
   }

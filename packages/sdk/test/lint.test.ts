@@ -219,6 +219,12 @@ describe("lint", () => {
         '<Track id="t" layout="free"><Clip id="a" src="asset:interview" start={0} in={2} duration={4} /><Clip id="b" src="asset:interview" start={4} in={3} duration={4} /></Track>',
       ),
     ).toEqual(["b"]);
+    // A duration until a word: the clip plays to that word of its own source when it has it (a cut-out of the take).
+    expect(
+      repeated(
+        '<Track id="t" layout="free"><Clip id="a" src="asset:interview" start={0} in="word:3" duration={{ until: "talk", at: "word:9" }} /><Clip id="b" src="asset:interview" start={5} in="word:9" duration={1} /></Track>',
+      ),
+    ).toEqual([]);
   });
 
   describe("not-rendered", () => {

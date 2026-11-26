@@ -152,6 +152,21 @@ describe("components", () => {
     expect(state.items.get("lt-role")!.start).toBeGreaterThan(state.items.get("lt-card")!.start);
   });
 
+  it("last until another element says a word, every part of them", () => {
+    const { state } = resolved(
+      `<LowerThird id="lt" anchor="shot" duration={{ until: "shot", at: "word:2" }} name="Maya" role="Founder" />`,
+    );
+    expect(state.errors).toEqual([]);
+    const ends = ["lt-card", "lt-bar", "lt-name", "lt-role"].map((id) => {
+      const p = state.items.get(id)!;
+      return Math.round((p.start + p.duration) * 1000) / 1000;
+    });
+    const word = state.items.get("lt-card")!;
+    expect(new Set(ends).size).toBe(1);
+    expect(ends[0]).toBeGreaterThan(word.start);
+    expect(ends[0]).toBeLessThan(6);
+  });
+
   it("say which prop is wrong", () => {
     const { state } = resolved('<Badge id="b" start={0} duration={2} text="New" size={-1} />');
     expect(state.errors.map((e) => e.message).join(" ")).toMatch(/Badge: size/);

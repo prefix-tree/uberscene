@@ -172,7 +172,8 @@ function hasClipAfter(state: ResolvedState, id: string): boolean {
 /**
  * Splitting a clip: what belongs to its second half moves to `newId`. A title at a word that now plays in the second
  * half is anchored to it with the same word, an anchor on the clip's end and a length until the clip ends follow the
- * end, and so does a transition on the clip's out edge.
+ * end, and so does a transition on the clip's out edge. A length until a word the second half now plays follows it
+ * there, with the same word.
  */
 export function carrySplit(id: string, newId: string, before: ResolvedState): Carry | null {
   const deps = dependentsOf(before, id).filter((d) => d.kind !== "beside" && d.kind !== "match");
@@ -184,38 +185,50 @@ export function carrySplit(id: string, newId: string, before: ResolvedState): Ca
         if (d.kind === "anchor" && d.edge === "end") post.push(setProps(d.id, { anchor: `${newId}.end` }));
         else if (d.kind === "anchor" && d.at !== undefined && lostWord(after, d.id))
           post.push(setProps(d.id, { anchor: newId }));
-        else if (d.kind === "until") post.push(setProps(d.id, { duration: { until: newId } }));
-        else if (d.kind === "on" && d.edge === "out") post.push(setProps(d.id, { on: newId }));
+        else if (d.kind === "until") {
+          if (d.at === undefined) post.push(setProps(d.id, { duration: { until: newId } }));
+          else if (lostWord(after, d.id, "duration"))
+            post.push(setProps(d.id, { duration: { until: newId, at: d.at } }));
+        } else if (d.kind === "on" && d.edge === "out") post.push(setProps(d.id, { on: newId }));
       }
       return post;
     },
   };
 }
 
-/** Trimming a clip: a title at a word trimmed away keeps the time it had, held inside the clip, as an offset. */
+/**
+ * Trimming a clip: a title at a word trimmed away keeps the time it had, held inside the clip, as an offset; a length
+ * until a word trimmed away keeps the seconds it had.
+ */
 export function carryTrim(id: string, before: ResolvedState): Carry | null {
   const deps = dependentsOf(before, id).filter(
-    (d): d is Extract<Dependent, { kind: "anchor" }> => d.kind === "anchor" && d.at !== undefined,
+    (d) => (d.kind === "anchor" || d.kind === "until") && d.at !== undefined,
   );
   if (deps.length === 0) return null;
   return {
     post: (after) => {
       const clip = after.items.get(id);
       if (!clip) return [];
-      return deps
-        .filter((d) => lostWord(after, d.id))
-        .map((d) => {
-          const was = before.items.get(d.id)?.start ?? clip.start;
-          return setProps(d.id, {
-            at: undefined,
-            offset: round3(Math.min(clip.duration, Math.max(0, was - clip.start))),
-          });
-        });
+      const post: ActionInput[] = [];
+      for (const d of deps) {
+        if (d.kind === "until") {
+          const was = before.items.get(d.id)?.duration;
+          if (lostWord(after, d.id, "duration") && was !== undefined)
+            post.push(setProps(d.id, { duration: round3(was) }));
+          continue;
+        }
+        if (!lostWord(after, d.id)) continue;
+        const was = before.items.get(d.id)?.start ?? clip.start;
+        post.push(
+          setProps(d.id, { at: undefined, offset: round3(Math.min(clip.duration, Math.max(0, was - clip.start))) }),
+        );
+      }
+      return post;
     },
   };
 }
 
-/** Whether `id`'s `at` names a word its anchor no longer plays. */
-function lostWord(state: ResolvedState, id: string): boolean {
-  return state.items.get(id)?.errors.some((e) => e.code === "INVALID_ANCHOR" && e.prop === "at") ?? false;
+/** Whether `id` names a word (in `at`, or in its duration's `until`) that the element it follows no longer plays. */
+function lostWord(state: ResolvedState, id: string, prop: "at" | "duration" = "at"): boolean {
+  return state.items.get(id)?.errors.some((e) => e.code === "INVALID_ANCHOR" && e.prop === prop) ?? false;
 }
