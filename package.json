@@ -2,7 +2,7 @@
   "name": "uberscene-monorepo",
   "version": "0.0.0",
   "private": true,
-  "description": "A video-editing DSL: a model writes a TSX file, the browser renders it, the editor edits the same file.",
+  "description": "Editing, animation and compositing as code, so AI can drive them natively: one TSX file is the video, the browser plays it, an editor edits it.",
   "license": "MIT",
   "homepage": "https://uberscene.prefixtree.xyz/",
   "repository": {

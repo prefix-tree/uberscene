@@ -16,6 +16,7 @@ import { formatLint, lintErrors, lintFiles } from "./lint-files";
 import { loadVideo } from "./load";
 import { renderLook } from "./look";
 import { mediaFolders } from "./manifest-file";
+import { matteCommand } from "./matte/cli";
 import { directoryResolver } from "./media";
 import { checkMotion, formatMotion } from "./motion-check";
 import { installCodec } from "./native/codecs";
@@ -47,6 +48,9 @@ const USAGE = `Usage: uberscene <file.tsx> --out <video.mp4|.webm|.mp3|.wav> [--
        uberscene add <media file>... [--manifest <file>] [--id <id>] [--transcript <file>] [--beats | --no-beats] [--bpm <n> [--first-beat <s>]]
        uberscene browser install
        uberscene codecs install
+       uberscene matte <footage> [--model <name>] [--accept-licence] [--id <id>] [--manifest <file>] [--force] [--json]
+       uberscene matte models [--json]
+       uberscene matte install [<model>] [--accept-licence]
        uberscene skills install [--dir <folder>] [--force]
 
   Every export draws its frames in Chrome. The first one downloads Chrome for Testing ${CHROME_MILESTONE} into
@@ -173,6 +177,15 @@ const USAGE = `Usage: uberscene <file.tsx> --out <video.mp4|.webm|.mp3|.wav> [--
   --import <spec>       a module the file may import beyond react, zod and the kit: three, or name=specifier
                         (a package, or a path relative to the file); the editor must offer the same modules
   --continue            draw the grey placeholder for an asset that cannot be read, instead of failing
+  matte makes the matte of a footage file for <Clip cutout>: <name>.matte.webm beside it, one greyscale frame for
+  each of the footage's, white where the person is, added to the manifest with "matte" on the footage. The model runs
+  in Chrome with ONNX Runtime for the web (\`npm i -D onnxruntime-web\`). UberScene lists models, it does not ship
+  them: the first use of one shows its licence and downloads it from its own source into ~/.cache/uberscene/models
+  (or UBERSCENE_MODEL_CACHE); --accept-licence (or UBERSCENE_ACCEPT_LICENCE=<name>) accepts it without asking.
+  matte models lists them; UBERSCENE_MODEL_REGISTRY adds your own, as a JSON file of the same shape.
+  --model <name>        the model; default rvm-resnet50 (RobustVideoMatting, GPL-3.0)
+  --accept-licence      accept the model's licence, for scripts and agents
+
   --quiet               no progress
 `;
 
@@ -237,6 +250,8 @@ async function main(): Promise<number> {
       into: { type: "string" },
       track: { type: "string" },
       duration: { type: "string" },
+      model: { type: "string" },
+      "accept-licence": { type: "boolean" },
     },
   });
   if (positionals[0] === "add") return add(positionals.slice(1), values);
@@ -356,6 +371,7 @@ async function main(): Promise<number> {
     process.stderr.write(`Chrome is at ${path}${cached ? " (already in the cache)" : ""}\n`);
     return 0;
   }
+  if (positionals[0] === "matte") return matteCommand(positionals.slice(1), values, USAGE);
   if (positionals[0] === "codecs") {
     if (positionals[1] !== "install") {
       process.stderr.write(USAGE);

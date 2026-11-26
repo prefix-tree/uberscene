@@ -34,7 +34,8 @@
   },
   "files": [
     "dist",
-    "codecs.json"
+    "codecs.json",
+    "models.json"
   ],
   "publishConfig": {
     "access": "public",
@@ -52,13 +53,13 @@
     "test:browser": "vitest run -c vitest.browser.config.ts"
   },
   "dependencies": {
-    "@uberscene/graphics": "workspace:*",
-    "@uberscene/kit": "workspace:*",
-    "@uberscene/sdk": "workspace:*",
-    "@uberscene/player": "workspace:*",
     "@mediabunny/aac-encoder": "1.65.2",
     "@mediabunny/mp3-encoder": "1.65.2",
     "@puppeteer/browsers": "^3.2.6",
+    "@uberscene/graphics": "workspace:*",
+    "@uberscene/kit": "workspace:*",
+    "@uberscene/player": "workspace:*",
+    "@uberscene/sdk": "workspace:*",
     "mediabunny": "catalog:",
     "playwright-core": "catalog:",
     "react": "catalog:",
@@ -72,10 +73,19 @@
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "@vitest/coverage-v8": "catalog:",
+    "onnxruntime-web": "1.31.1",
     "react-dom": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "onnxruntime-web": ">=1.20.0"
+  },
+  "peerDependenciesMeta": {
+    "onnxruntime-web": {
+      "optional": true
+    }
   }
 }

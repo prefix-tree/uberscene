@@ -41,6 +41,8 @@ export interface AssetEntry {
    * where it is not. A clip with `cutout` uses it as its alpha.
    */
   readonly matte?: string;
+  /** What made `matte`, when `uberscene matte` did: the model's name and the SHA-256 of its file. */
+  readonly matteModel?: { readonly name: string; readonly sha256: string };
 }
 
 /** A subject's box at source second `t`, as fractions of the source picture (0..1 from its top left). */

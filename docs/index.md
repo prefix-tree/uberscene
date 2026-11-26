@@ -19,7 +19,8 @@ import { withBase } from "vitepress";
 
 <h1 class="p-title">The whole studio, as <em>code</em>.</h1>
 
-<p class="p-lead">We’re turning editing, animation and compositing into code, so AI can drive them natively.</p>
+<p class="home-lead">We're turning <strong>editing</strong>, <strong>animation</strong> and <strong>compositing</strong> into code, so AI can drive them natively. One React file holds all three, with 3D and sound: play it in the browser, fine-tune it on a timeline, export it to MP4.</p>
+
 
 <div class="p-actions">
 <a class="p-btn primary" href="#get">Install</a>
@@ -92,6 +93,12 @@ import { withBase } from "vitepress";
 <p class="p-label"><span>04</span> Get it</p>
 
 ## Give it to your agent.
+
+<ul class="home-why-list">
+<li><span><strong>An editor, as code</strong> Clips on tracks, cuts on words, trims, roll, slip and slide, transitions and multicam. The player is your monitor, and a drag on the timeline writes one value back into the file.</span></li>
+<li><span><strong>An animation studio, as code</strong> Shapes, SVG and masks on the stage, any prop keyed over time with easing, and Motion or canvas on the video's clock, frame-exact when you scrub.</span></li>
+<li><span><strong>A compositor, as code</strong> Layers and keys, 46 effects and transitions running as shaders or your own GLSL, a three.js scene with its camera and lights, and an export from the same file.</span></li>
+</ul>
 
 <p class="p-sub">Two skills: one sets UberScene up, one knows the whole language. Then ask for a video in plain words. Node 22.19 or later, no FFmpeg.</p>
 
