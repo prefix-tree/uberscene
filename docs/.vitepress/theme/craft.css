@@ -2629,10 +2629,9 @@ html:has(.VPContent.has-sidebar) .VPSidebar {
 .vp-doc a.home-link:hover::after {
   transform: translateX(3px);
 }
-.vp-doc p.home-run {
-  margin: 40px 0 10px;
-  font-size: 15px;
-  color: var(--cc-grey);
+/* The agent picker under the hero's buttons: the main way in. */
+.home-hero .cc-agents {
+  margin-top: 36px;
 }
 /* The command as a light pill, like a key on the page, not a terminal. */
 .home-hero .cc-command {

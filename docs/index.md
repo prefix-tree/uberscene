@@ -28,9 +28,7 @@ import { withBase } from "vitepress";
 <a class="home-link" :href="withBase('/examples/')">See the examples</a>
 </div>
 
-<p class="home-run">Or run in your terminal:</p>
-
-<CopyCommand command="npm install uberscene @uberscene/kit react zod" />
+<AgentPicker />
 
 </div>
 <figure class="home-film">
@@ -56,37 +54,6 @@ import { withBase } from "vitepress";
 
 </section>
 
-<section class="home-chapter">
-
-## One file, one coffee
-
-<p class="home-chapter-lead">Four stock shots of coffee, cut in one file: shader transitions, a speed ramp and a held frame, a LUT that comes in while you watch, titles, components, a block and a sound on every beat. <a :href="withBase('/examples/coffee')">The coffee film →</a></p>
-
-<Example src="showcase/coffee" alt="A pour-over and an espresso cut together with transitions, titles, a warm grade and a closing quote">
-
-```tsx
-<Clip id="pour" src="asset:coffee" in={10} out={14} fit="cover"
-  speed={[
-    { at: 0, value: 1 },
-    { at: 1.6, value: 0.4, easing: "easeInOutQuad" },
-  ]}
-  freezes={[{ start: 4.2, duration: 1.4, source: 12.4 }]} />
-<Transition id="x2" type="iris" duration={0.9} />
-<Clip id="shot" src="asset:espresso" in={1} out={9} fit="cover"
-  effects={[{
-    type: "lut",
-    src: "asset:warm",
-    amount: [
-      { at: 3.2, value: 0, easing: "easeInOut" },
-      { at: 4.4, value: 1 },
-    ],
-  }]} />
-```
-
-</Example>
-
-</section>
-
 <section class="home-live" aria-label="Try it">
 
 <Playground compact />
@@ -107,14 +74,14 @@ import { withBase } from "vitepress";
 
 <section class="home-why">
 
-## Why UberScene
+## Three tools, as code
 
-<p class="home-why-lead">An agent writes code better than it drives a timeline. The picture, the 3D and the music are one file, so the model can change all three.</p>
+<p class="home-why-lead">What you would open an editor, an animation studio and a compositor for, written as one file. An agent writes code better than it drives a timeline, so it can do all three.</p>
 
 <ul class="home-why-list">
-<li><span><strong>Edit the video in code</strong> The cut, the titles and the effects are the file. Change one value and the picture changes.</span></li>
-<li><span><strong>Build the 3D in code</strong> A three.js scene and its camera sit on the same clock as the edit, and render from that file.</span></li>
-<li><span><strong>Write the music in code</strong> The score is a track in the file, so the sound stays aligned with the picture.</span></li>
+<li><span><strong>An editor, as code</strong> Clips on tracks, cuts on words, trims, roll, slip and slide, transitions and multicam. The player is your monitor, and a drag on the timeline writes one value back into the file.</span></li>
+<li><span><strong>An animation studio, as code</strong> Shapes, SVG and masks on the stage, any prop keyed over time with easing, and Motion or canvas on the video's clock, frame-exact when you scrub.</span></li>
+<li><span><strong>A compositor, as code</strong> Layers and keys, 45 effects and transitions running as shaders or your own GLSL, a three.js scene with its camera and lights, and an export from the same file.</span></li>
 </ul>
 
 </section>
