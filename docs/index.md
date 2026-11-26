@@ -28,9 +28,7 @@ import { withBase } from "vitepress";
 <a class="home-link" :href="withBase('/examples/')">See the examples</a>
 </div>
 
-<p class="home-run">Or run in your terminal:</p>
-
-<CopyCommand command="npm install uberscene @uberscene/kit react zod" />
+<AgentPicker />
 
 </div>
 <figure class="home-film">
@@ -53,37 +51,6 @@ import { withBase } from "vitepress";
 <figure class="home-film">
 <video :src="withBase('/showcase/recolor.webm')" :poster="withBase('/showcase/recolor.jpg')" autoplay muted loop playsinline aria-label="A short of espresso into a red paper cup; an agent is asked to change red cup color to green and writes one line; the same short plays with the cup green"></video>
 </figure>
-
-</section>
-
-<section class="home-chapter">
-
-## One file, one coffee
-
-<p class="home-chapter-lead">Four stock shots of coffee, cut in one file: shader transitions, a speed ramp and a held frame, a LUT that comes in while you watch, titles, components, a block and a sound on every beat. <a :href="withBase('/examples/coffee')">The coffee film →</a></p>
-
-<Example src="showcase/coffee" alt="A pour-over and an espresso cut together with transitions, titles, a warm grade and a closing quote">
-
-```tsx
-<Clip id="pour" src="asset:coffee" in={10} out={14} fit="cover"
-  speed={[
-    { at: 0, value: 1 },
-    { at: 1.6, value: 0.4, easing: "easeInOutQuad" },
-  ]}
-  freezes={[{ start: 4.2, duration: 1.4, source: 12.4 }]} />
-<Transition id="x2" type="iris" duration={0.9} />
-<Clip id="shot" src="asset:espresso" in={1} out={9} fit="cover"
-  effects={[{
-    type: "lut",
-    src: "asset:warm",
-    amount: [
-      { at: 3.2, value: 0, easing: "easeInOut" },
-      { at: 4.4, value: 1 },
-    ],
-  }]} />
-```
-
-</Example>
 
 </section>
 
