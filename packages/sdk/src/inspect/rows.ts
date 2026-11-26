@@ -109,9 +109,21 @@ export interface TimelineRows {
   readonly elements: readonly ElementRow[];
   readonly effects: readonly EffectRow[];
   readonly keyframes: readonly KeyframeRow[];
+  /** Values that are computed: a wiggle, a drift or a loop, each on one property of one element. */
+  readonly generators: readonly GeneratorRow[];
   readonly words: readonly WordRow[];
   readonly cuts: readonly CutRow[];
   readonly errors: readonly ResolveError[];
+}
+
+/** A generator on a value: what it is, where, and its params (a wiggle's seed filled in). */
+export interface GeneratorRow {
+  readonly id: string;
+  readonly element: string;
+  /** The prop it is written at: `transform.rotation`, `effects.0.radius`, a camera's `zoom`. */
+  readonly property: string;
+  readonly type: string;
+  readonly params: Readonly<Record<string, unknown>>;
 }
 
 /** Children of an element that are rows of their own, or that only shape its timing. */
@@ -120,6 +132,7 @@ const NOT_ELEMENTS = new Set([
   "track",
   "effect",
   "keyframe",
+  "generator",
   "speedKey",
   "freeze",
   "mask",
@@ -134,6 +147,7 @@ export function timelineRows(state: ResolvedState): TimelineRows {
   const elements: ElementRow[] = [];
   const effects: EffectRow[] = [];
   const keyframes: KeyframeRow[] = [];
+  const generators: GeneratorRow[] = [];
   const order = new Map<string, number>();
 
   for (const p of state.items.values()) {
@@ -146,6 +160,16 @@ export function timelineRows(state: ResolvedState): TimelineRows {
         type: typeof p.props.type === "string" ? p.props.type : shaderName(p.props.type),
         params: (p.props.params ?? {}) as Record<string, unknown>,
         order: n,
+      });
+    } else if (p.kind === "generator") {
+      const origin = derivedOrigin(p.id);
+      const { id: _id, property: _p, param: _q, type, ...params } = p.props;
+      generators.push({
+        id: p.id,
+        element: origin?.id ?? p.parent ?? "",
+        property: origin ? origin.path.replace(/\.generator$/, "") : String(p.props.property ?? p.props.param ?? ""),
+        type: String(type),
+        params,
       });
     } else if (p.kind === "keyframe") {
       const origin = derivedOrigin(p.id);
@@ -210,6 +234,7 @@ export function timelineRows(state: ResolvedState): TimelineRows {
     elements,
     effects,
     keyframes: keyframes.sort((a, b) => a.at - b.at),
+    generators,
     words: spokenWords(state).map((w) => ({
       asset: w.asset,
       clip: w.play,

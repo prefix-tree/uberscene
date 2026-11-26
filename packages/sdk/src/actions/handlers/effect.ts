@@ -2,7 +2,14 @@
 // Every action here writes that prop on the element, so its undo is the prop as it was (`source/setProps`), and the
 // fold rewrites one prop.
 
-import { CAMERA_FIELDS, effectParamProblem, shaderFor, VIDEO_EFFECT_TYPES } from "@uberscene/kit/schema";
+import {
+  CAMERA_FIELDS,
+  effectParamProblem,
+  GENERATOR_TYPES,
+  isGenerator,
+  shaderFor,
+  VIDEO_EFFECT_TYPES,
+} from "@uberscene/kit/schema";
 
 import type { Json } from "../../patches/types";
 import { isKeyList } from "../../resolve/expand";
@@ -101,8 +108,17 @@ export function writePath(
 }
 
 /** The keys at `path`: the list written there, or none when it holds a constant or nothing. */
-function keysAt(state: ResolvedState, id: string, path: string): KeyJson[] {
+/**
+ * Where the keys of `path` are written: at the path, or, when a generator is written there, in what it is over (its
+ * `base`, or a loop's `keys`). So keys under a wobble are added, moved and removed as any others.
+ */
+function keyPath(state: ResolvedState, id: string, path: string): string {
   const v = readPath(rawNode(state, id)?.props, path);
+  return isGenerator(v) ? `${path}.${v.type === "loop" ? "keys" : "base"}` : path;
+}
+
+function keysAt(state: ResolvedState, id: string, path: string): KeyJson[] {
+  const v = readPath(rawNode(state, id)?.props, keyPath(state, id, path));
   return isKeyList(v) ? (v as unknown as KeyJson[]).map((k) => ({ ...k })) : [];
 }
 
@@ -114,7 +130,7 @@ export function canonicalKeys(keys: readonly KeyJson[]): Json | undefined {
 }
 
 function writeKeys(state: ResolvedState, id: string, path: string, keys: readonly KeyJson[]) {
-  const { prop, value } = writePath(rawNode(state, id)?.props, path, canonicalKeys(keys));
+  const { prop, value } = writePath(rawNode(state, id)?.props, keyPath(state, id, path), canonicalKeys(keys));
   return { [prop]: value };
 }
 
@@ -156,7 +172,7 @@ define(makePropHandler({
   targets: keyTargets,
   write: (p, state) => {
     // A constant there becomes the first key, at 0, so the value before the new key is what it was.
-    const written = readPath(rawNode(state, p.id)?.props, p.path);
+    const written = readPath(rawNode(state, p.id)?.props, keyPath(state, p.id, p.path));
     const before: KeyJson[] =
       written !== undefined && !isKeyList(written) && p.at > 0 ? [{ at: 0, value: written as Json }] : [];
     const keys = [...before, ...keysAt(state, p.id, p.path)].filter((k) => Math.abs(k.at - p.at) > 1e-9);
@@ -380,3 +396,46 @@ define(makePropHandler({
           path: "freezes",
         }),
 }));
+
+// ── generators ──────────────────────────────────────────────────────────────
+
+/** Paths a generator cannot be written at: values the mixer or the clock reads from keys alone. */
+const NOT_GENERATED = new Set(["speed", "volume", "pan"]);
+
+define(makePropHandler({
+  type: "generator/set",
+  targets: keyTargets,
+  write: (p, state) => {
+    const props = rawNode(state, p.id)?.props;
+    const written = readPath(props, p.path);
+    // What the value is without a generator: what is written there, or what the generator there is over.
+    const under = isGenerator(written) ? (written.type === "loop" ? written.keys : written.base) : written;
+    if (p.generator === null) return one(writePath(props, p.path, under));
+    const next =
+      p.generator.type === "loop" || p.generator.base !== undefined || under === undefined
+        ? p.generator
+        : { ...p.generator, base: under };
+    return one(writePath(props, p.path, next));
+  },
+  validate: (a, state) => {
+    const g = a.params.generator;
+    if (g !== null && !(GENERATOR_TYPES as readonly string[]).includes(g.type))
+      return invalid({
+        code: "INVALID_PARAMS",
+        message: `"${String(g.type)}" is not a generator; use one of ${GENERATOR_TYPES.join(", ")}`,
+        path: "generator",
+      });
+    if (NOT_GENERATED.has(a.params.path))
+      return invalid({
+        code: "INVALID_PARAMS",
+        message: `${a.params.path} cannot be generated: it takes a number or keys`,
+        path: "path",
+      });
+    // A camera's push sets keys on these paths; a generator goes on top of them, so the push does not refuse it.
+    const camera = state.items.get(a.params.id);
+    if (camera?.kind === "camera" && a.params.path in CAMERA_FIELDS) return ok;
+    return checkPath(state, a.params.id, a.params.path);
+  },
+}));
+
+const one = (w: { readonly prop: string; readonly value: Json | undefined }) => ({ [w.prop]: w.value });

@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
 
 import { generatorSeed } from "@uberscene/kit/schema";
-import { buildSourceIndex, collectModule, loadModule, type ResolvedState, resolve } from "@uberscene/sdk";
+import {
+  buildSourceIndex,
+  collectModule,
+  Executor,
+  foldToSource,
+  loadModule,
+  type ResolvedState,
+  resolve,
+} from "@uberscene/sdk";
 
 import { manifest } from "./helpers";
 
@@ -177,5 +185,108 @@ describe("a file without a generator", () => {
   it("has no generator items", () => {
     const state = load(file(shape(`transform={{ rotation: [{ at: 0, value: 0 }, { at: 1, value: 10 }] }}`)));
     expect([...state.items.values()].some((i) => i.kind === "generator")).toBe(false);
+  });
+});
+
+// ── editing ─────────────────────────────────────────────────────────────────
+
+const editor = (text: string): Executor =>
+  new Executor({ tree: collectModule(loadModule(text) as never, {}, { index: buildSourceIndex(text) }), manifest });
+
+const saved = (text: string, exec: Executor): string => {
+  const result = foldToSource(text, exec.log(), exec.state());
+  expect(result.skipped).toEqual([]);
+  return result.text;
+};
+
+const run = (exec: Executor, action: Parameters<Executor["execute"]>[0]): void => {
+  const result = exec.execute(action);
+  expect(result.ok ? [] : result.errors).toEqual([]);
+};
+
+describe("editing a generator", () => {
+  const PLAIN = file(shape(`transform={{ rotation: 10 }}`));
+  const KEYED = file(shape(`transform={{ rotation: [{ at: 0, value: 0 }, { at: 2, value: 90 }] }}`));
+
+  it("is put on a value, which becomes what it is added to, and is written to the file", () => {
+    const exec = editor(PLAIN);
+    run(exec, {
+      type: "generator/set",
+      params: { id: "card", path: "transform.rotation", generator: { type: "wiggle", amount: 2 } },
+    });
+    expect(exec.state().items.get("card.transform.rotation.generator")?.props).toMatchObject({
+      type: "wiggle",
+      amount: 2,
+    });
+    expect(exec.state().items.get("card")?.props.transform).toEqual({ rotation: 10 });
+    const text = saved(PLAIN, exec);
+    expect(text).toContain(`rotation: { type: "wiggle", amount: 2, base: 10 }`);
+    expect(load(text).errors).toEqual([]);
+    exec.undo();
+    expect(saved(PLAIN, exec)).toBe(PLAIN);
+  });
+
+  it("goes over keys, and comes off leaving them", () => {
+    const exec = editor(KEYED);
+    run(exec, {
+      type: "generator/set",
+      params: { id: "card", path: "transform.rotation", generator: { type: "drift", speed: 5 } },
+    });
+    expect(under(exec.state(), "card").map((r) => r[0])).toEqual([
+      "card.transform.rotation.generator",
+      "card.transform.rotation.0",
+      "card.transform.rotation.1",
+    ]);
+    run(exec, { type: "generator/set", params: { id: "card", path: "transform.rotation", generator: null } });
+    expect(under(exec.state(), "card").map((r) => r[0])).toEqual([
+      "card.transform.rotation.0",
+      "card.transform.rotation.1",
+    ]);
+    // The file holds the keys alone again (the fold may break the prop's lines differently).
+    const text = saved(KEYED, exec);
+    expect(text).toContain("rotation: [{ at: 0, value: 0 }, { at: 2, value: 90 }]");
+    expect(text).not.toContain("drift");
+  });
+
+  it("goes on a value that was not written, with nothing to be added to but the default", () => {
+    const BARE = file(shape(`fill="#ff0000"`));
+    const exec = editor(BARE);
+    run(exec, {
+      type: "generator/set",
+      params: { id: "card", path: "transform.rotation", generator: { type: "wiggle", amount: 3 } },
+    });
+    expect(saved(BARE, exec)).toContain(`transform={{ rotation: { type: "wiggle", amount: 3 } }}`);
+  });
+
+  it("lets the key actions change the keys under it", () => {
+    const exec = editor(KEYED);
+    run(exec, {
+      type: "generator/set",
+      params: { id: "card", path: "transform.rotation", generator: { type: "wiggle", amount: 2 } },
+    });
+    run(exec, { type: "key/add", params: { id: "card", path: "transform.rotation", at: 3, value: 45 } });
+    run(exec, { type: "key/update", params: { id: "card", path: "transform.rotation", at: 2, value: 80 } });
+    const keys = under(exec.state(), "card")
+      .filter((r) => r[1] === "keyframe")
+      .map((r) => [(r[2] as { at: number }).at, (r[2] as { value: number }).value]);
+    expect(keys).toEqual([
+      [0, 0],
+      [2, 80],
+      [3, 45],
+    ]);
+    expect(exec.state().items.get("card.transform.rotation.generator")).toBeDefined();
+    const text = saved(KEYED, exec);
+    expect(text).toContain(`type: "wiggle"`);
+    expect(load(text).errors).toEqual([]);
+  });
+
+  it("is refused on speed, volume and pan, and for a type that is not a generator", () => {
+    const exec = editor(PLAIN);
+    const refused = (path: string, generator: never) => {
+      const r = exec.execute({ type: "generator/set", params: { id: "card", path, generator } });
+      return r.ok ? "" : (r.errors?.[0]?.message ?? "");
+    };
+    expect(refused("volume", { type: "wiggle", amount: 1 } as never)).toContain("cannot be generated");
+    expect(refused("transform.rotation", { type: "shake", amount: 1 } as never)).toContain("is not a generator");
   });
 });

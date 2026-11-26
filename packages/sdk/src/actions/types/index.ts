@@ -202,6 +202,18 @@ export interface ClipActions {
   "clip/setAnchor": { id: Id; anchor?: Id | "start"; offset?: number };
 }
 
+/** A generator as a file writes it, in place of a number or a key list. */
+export type GeneratorJson =
+  | {
+      readonly type: "wiggle";
+      readonly base?: number | readonly KeyJson[];
+      readonly amount: number;
+      readonly frequency?: number;
+      readonly seed?: number;
+    }
+  | { readonly type: "drift"; readonly base?: number | readonly KeyJson[]; readonly speed: number }
+  | { readonly type: "loop"; readonly keys: readonly KeyJson[]; readonly mode?: "repeat" | "pingpong" };
+
 /** One key as a file writes it: `value` at `at` seconds into the element; `easing` leaves it. */
 export interface KeyJson {
   readonly at: number;
@@ -257,6 +269,12 @@ export interface KeyActions {
   "key/remove": { id: Id; path: string; at: number };
   /** Replaces the keys on `path` with `keys`; none removes the value. */
   "key/setAll": { id: Id; path: string; keys: readonly KeyJson[] };
+  /**
+   * Writes a generator at `path` in place of the value (`{ type: "wiggle", amount: 2 }`), or (`null`) takes it off.
+   * The number or keys already there become what it is added to (its `base`), and stay as the value when it is
+   * taken off. The key actions then work on those keys as before.
+   */
+  "generator/set": { id: Id; path: string; generator: GeneratorJson | null };
 }
 
 export interface TransitionActions {
@@ -503,6 +521,7 @@ export const AUTO_GROUP_TYPES: ReadonlySet<ActionType> = new Set<ActionType>([
   "clip/setSpeed",
   "key/move",
   "key/update",
+  "generator/set",
   "camera/update",
   "composition/updateSettings",
   "composition/setBackground",
