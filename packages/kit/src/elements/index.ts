@@ -31,25 +31,45 @@ import type { transitionSchema } from "../jsx/schemas/transition";
 
 export type * from "./shared";
 
+/** The props of a `<Composition>`, as its schema parses them. */
 export interface CompositionProps extends z.output<typeof compositionSchema> {}
+/** The props of a `<Track>`, as its schema parses them. */
 export interface TrackProps extends z.output<typeof trackSchema> {}
+/** The props of a `<Camera>`, as its schema parses them. */
 export interface CameraProps extends z.output<typeof cameraSchema> {}
+/** The props of a `<Clip>`, as its schema parses them. */
 export interface ClipProps extends z.output<typeof clipSchema> {}
+/** The props of a `<Audio>`, as its schema parses them. */
 export interface AudioProps extends z.output<typeof audioSchema> {}
+/** The props of a `<Gap>`, as its schema parses them. */
 export interface GapProps extends z.output<typeof gapSchema> {}
+/** The props of a `<Transition>`, as its schema parses them. */
 export interface TransitionProps extends z.output<typeof transitionSchema> {}
+/** The props of a `<Title>`, as its schema parses them. */
 export interface TitleProps extends z.output<typeof titleSchema> {}
+/** The props of a `<Shape>`, as its schema parses them. */
 export interface ShapeProps extends z.output<typeof shapeSchema> {}
+/** The props of a `<Svg>`, as its schema parses them. */
 export interface SvgProps extends z.output<typeof svgSchema> {}
+/** The props of a `<Sticker>`, as its schema parses them. */
 export interface StickerProps extends z.output<typeof stickerSchema> {}
+/** The props of a `<Captions>`, as its schema parses them. */
 export interface CaptionsProps extends z.output<typeof captionsSchema> {}
+/** The props of a `<Caption>`, as its schema parses them. */
 export interface CaptionProps extends z.output<typeof captionSchema> {}
+/** The props of a `<Marker>`, as its schema parses them. */
 export interface MarkerProps extends z.output<typeof markerSchema> {}
+/** The props of a `<Adjustment>`, as its schema parses them. */
 export interface AdjustmentProps extends z.output<typeof adjustmentSchema> {}
+/** The props of a `<Mask>`, as its schema parses them. */
 export interface MaskProps extends z.output<typeof maskSchema> {}
+/** The props of a `<Nested>`, as its schema parses them. */
 export interface NestedProps extends z.output<typeof nestedSchema> {}
+/** The props of a `<Multicam>`, as its schema parses them. */
 export interface MulticamProps extends z.output<typeof multicamSchema> {}
+/** The props of a `<Angle>`, as its schema parses them. */
 export interface AngleProps extends z.output<typeof angleSchema> {}
+/** The props of a `<Cut>`, as its schema parses them. */
 export interface CutProps extends z.output<typeof cutSchema> {}
 /** A `<Layer>` of free code: no `engine`. */
 export interface PlainLayerProps extends z.output<typeof layerSchema> {
@@ -61,10 +81,15 @@ export interface ThreeProps extends z.output<typeof threeSchema> {}
 export interface MotionProps extends z.output<typeof motionSchema> {}
 /** A layer's props: free code, or one a library draws, told apart by `engine`. */
 export type LayerProps = PlainLayerProps | ThreeProps | MotionProps;
+/** An effect of an element, as an item the resolver makes of its `effects`: its props. */
 export interface EffectProps extends z.output<typeof effectSchema> {}
+/** One key of a value that changes over time, as an item the resolver makes of a key list: its props. */
 export interface KeyframeProps extends z.output<typeof keyframeSchema> {}
+/** A generator on a value (a wiggle, a drift, a loop), as an item the resolver makes of it: its props. */
 export interface GeneratorProps extends z.output<typeof generatorItemSchema> {}
+/** One key of a speed ramp, as an item the resolver makes of `speed` keys: its props. */
 export interface SpeedKeyProps extends z.output<typeof speedKeySchema> {}
+/** A hold, as an item the resolver makes of `freezes`: its props. */
 export interface FreezeProps extends z.output<typeof freezeSchema> {}
 
 /**
