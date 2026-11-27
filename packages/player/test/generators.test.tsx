@@ -1,5 +1,8 @@
+import { Composition, Shape, Track } from "@uberscene/kit";
+import { collectModule, resolve } from "@uberscene/sdk/resolver";
+
 import { mountPlayer } from "./helpers/react";
-import { makeState } from "./helpers/state";
+import { fixtureManifest, makeState } from "./helpers/state";
 import { animatedBox, animatedTransform, buildFramePlan, keyframedParam, keyframedValue } from "./internal";
 
 const child = (id: string, kind: string, props: Record<string, unknown>) => ({ id, kind, props });
@@ -124,5 +127,75 @@ describe("a file without a generator", () => {
     );
     expect(keyframedValue(children, "transform.rotation", 2, 0)).toBe(200);
     expect(keyframedValue(children, "transform.opacity", 2, 0.5)).toBe(0.5);
+  });
+});
+
+describe("a value linked to another element's", () => {
+  // Through the resolver: it writes the linked value's keys and generator onto the element that links, so the
+  // player's one function for a value over time reads a link with no code of its own.
+  const linked = () => {
+    const Video = () => (
+      <Composition fps={30} width={1000} height={600}>
+        <Track id="cards" layout="free">
+          <Shape
+            id="logo"
+            start={1}
+            duration={6}
+            type="rectangle"
+            width={100}
+            height={100}
+            transform={{
+              rotation: {
+                type: "wiggle",
+                amount: 6,
+                frequency: 2,
+                base: [
+                  { at: 0, value: 0, easing: "easeOutCubic" },
+                  { at: 2, value: 90 },
+                ],
+              },
+              opacity: 0.8,
+            }}
+          />
+          <Shape
+            id="hand"
+            start={1.5}
+            duration={6}
+            type="rectangle"
+            width={100}
+            height={100}
+            transform={{
+              rotation: { link: "logo.transform.rotation", scale: -2, offset: 10, delay: 0.25 },
+              opacity: { link: "logo.transform.opacity", scale: 0.5 },
+            }}
+          />
+        </Track>
+      </Composition>
+    );
+    const state = resolve(collectModule({ default: Video } as never), fixtureManifest);
+    expect(state.errors).toEqual([]);
+    const of = (id: string) => {
+      const p = state.items.get(id)!;
+      return { p, children: p.children.map((c) => state.items.get(c)!) };
+    };
+    return { logo: of("logo"), hand: of("hand") };
+  };
+
+  it("is that value, scaled and offset, a delay later, at every frame", () => {
+    const { logo, hand } = linked();
+    // The hand starts half a second after the logo and reads it a quarter of a second late: at `rel` of its own
+    // time it reads the logo at `rel + 0.25` of the logo's.
+    for (let frame = 0; frame < 150; frame++) {
+      const rel = frame / 30;
+      const there = animatedTransform(logo.p.props.transform as never, logo.children, rel + 0.25).rotation ?? 0;
+      const here = animatedTransform(hand.p.props.transform as never, hand.children, rel).rotation;
+      expect(here).toBeCloseTo(-2 * there + 10, 9);
+    }
+  });
+
+  it("reads a constant as a value that never moves", () => {
+    const { hand } = linked();
+    expect(animatedTransform(hand.p.props.transform as never, hand.children, 0).opacity).toBe(0.4);
+    expect(animatedTransform(hand.p.props.transform as never, hand.children, 3).opacity).toBe(0.4);
   });
 });
