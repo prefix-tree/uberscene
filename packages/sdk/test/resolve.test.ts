@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 import { Angle, Audio, Clip, Composition, Cut, Gap, Multicam, Title, Track, Transition } from "@uberscene/kit";
 import { collect, lint, resolve, resolveScene, type SceneFn } from "@uberscene/sdk";
 
-import { fixturesDir, fixtureText, fixtureTree, manifest, round, serialize } from "./helpers";
+import { fixturesDir, fixtureText, fixtureTree, manifest, round, seconds, serialize } from "./helpers";
 
 const h = createElement;
 
@@ -26,8 +26,8 @@ describe("resolve", () => {
     );
     const state = resolve(collect(el), manifest);
     expect(state.errors).toEqual([]);
-    expect(state.items.get("c2")?.start).toBe(5);
-    expect(state.items.get("c2")?.duration).toBe(1);
+    expect(state.items.get("c2")?.range.start.toSeconds()).toBe(5);
+    expect(state.items.get("c2")?.range.duration.toSeconds()).toBe(1);
     expect(state.composition.duration).toBe(6);
   });
 
@@ -51,11 +51,11 @@ describe("resolve", () => {
     );
     const state = resolve(collect(el), manifest);
     expect(state.errors).toEqual([]);
-    expect(state.items.get("byOut")?.duration).toBeCloseTo(7, 4);
-    expect(state.items.get("byDuration")?.duration).toBe(4);
+    expect(state.items.get("byOut")?.range.duration.toSeconds()).toBeCloseTo(7, 4);
+    expect(state.items.get("byDuration")?.range.duration.toSeconds()).toBe(4);
     expect(state.items.get("byDuration")?.source?.out).toBeCloseTo(2.5, 4);
-    expect(state.items.get("held")?.duration).toBe(4.5);
-    expect(state.items.get("after")?.start).toBeCloseTo(15.5, 4);
+    expect(state.items.get("held")?.range.duration.toSeconds()).toBe(4.5);
+    expect(state.items.get("after")?.range.start.toSeconds()).toBeCloseTo(15.5, 4);
   });
 
   it("overlaps clips around a transition and shortens the sequence", () => {
@@ -71,13 +71,13 @@ describe("resolve", () => {
       ),
     );
     const state = resolve(collect(el), manifest);
-    expect(state.items.get("x")).toMatchObject({
+    expect(seconds(state.items.get("x"))).toMatchObject({
       start: 3,
       end: 4,
       between: ["a", "b"],
       props: { params: { curve: "ease" } },
     });
-    expect(state.items.get("b")?.start).toBe(3);
+    expect(state.items.get("b")?.range.start.toSeconds()).toBe(3);
     expect(state.composition.duration).toBe(7);
   });
 
@@ -91,8 +91,8 @@ describe("resolve", () => {
     const state = resolve(collect(el), manifest);
     expect(state.errors).toEqual([]);
     expect(state.items.get("c1")?.source).toMatchObject({ in: 2, out: 3.5 });
-    expect(round(state.items.get("t")?.start ?? 0)).toBe(0.5);
-    expect(round(state.items.get("t")?.end ?? 0)).toBe(1.5);
+    expect(round(state.items.get("t")?.range.start.toSeconds() ?? 0)).toBe(0.5);
+    expect(round(state.items.get("t")?.range.end.toSeconds() ?? 0)).toBe(1.5);
   });
 
   it("anchors to an element's end, reframes a clip to the composition and checks duck targets", () => {
@@ -117,7 +117,7 @@ describe("resolve", () => {
       ),
     );
     const state = resolve(collect(el), manifest);
-    expect(state.items.get("t")).toMatchObject({ start: 3, end: 5 });
+    expect(seconds(state.items.get("t"))).toMatchObject({ start: 3, end: 5 });
     expect(state.composition.duration).toBe(5);
     expect(state.tracks[0]?.role).toBe("dialogue");
     const crop = (
@@ -141,7 +141,7 @@ describe("resolve", () => {
     );
     const state = resolve(collect(el), manifest);
     expect(state.errors).toEqual([]);
-    expect(state.items.get("a")).toMatchObject({ start: 0, end: 4, source: { in: 2, out: 10, speed: 2 } });
+    expect(seconds(state.items.get("a"))).toMatchObject({ start: 0, end: 4, source: { in: 2, out: 10, speed: 2 } });
   });
 
   it("gives a multicam's generated clips plain asset ids and the last one its length", () => {
@@ -163,8 +163,16 @@ describe("resolve", () => {
       h(Track, { id: "t2" }, h(Clip, { id: "len", src: "asset:city", in: 0, out: 5 })),
     );
     const state = resolve(collect(el), manifest);
-    expect(state.items.get("mc.c1")).toMatchObject({ start: 0, end: 2, source: { asset: "city", in: 0, out: 2 } });
-    expect(state.items.get("mc.c2")).toMatchObject({ start: 2, end: 5, source: { asset: "interview", in: 2, out: 5 } });
+    expect(seconds(state.items.get("mc.c1"))).toMatchObject({
+      start: 0,
+      end: 2,
+      source: { asset: "city", in: 0, out: 2 },
+    });
+    expect(seconds(state.items.get("mc.c2"))).toMatchObject({
+      start: 2,
+      end: 5,
+      source: { asset: "interview", in: 2, out: 5 },
+    });
   });
 
   it("reports a reference in a cut's `at` as a schema error: cuts take seconds", () => {
@@ -219,7 +227,7 @@ describe("resolve", () => {
     expect(state.items.get("b1")?.editable).toBe("generated");
     expect(state.items.get("t1")?.lockedProps).toEqual([]);
     expect(state.items.get("t1")?.boundProps).toEqual({ "style.color": "accent" });
-    expect(state.items.get("mc1.cu2")).toMatchObject({ editable: "generated", start: 2 });
+    expect(seconds(state.items.get("mc1.cu2"))).toMatchObject({ editable: "generated", start: 2 });
   });
 
   it("resolves a nested scene by calling it inside a composition of the outer size", () => {
@@ -228,6 +236,10 @@ describe("resolve", () => {
     expect(scene.errors).toEqual([]);
     expect(scene.composition).toMatchObject({ fps: 30, width: 1920, height: 1080, duration: 3 });
     expect(scene.tracks.map((t) => [t.id, t.layout, t.items])).toEqual([["outro", "sequence", ["oc1"]]]);
-    expect(scene.items.get("oc1")).toMatchObject({ start: 0, end: 3, source: { in: 0, out: 3, asset: "city" } });
+    expect(seconds(scene.items.get("oc1"))).toMatchObject({
+      start: 0,
+      end: 3,
+      source: { in: 0, out: 3, asset: "city" },
+    });
   });
 });

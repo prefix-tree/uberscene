@@ -32,7 +32,7 @@ describe("an anchor chain", () => {
   it(`of ${N} titles written in reverse is placed, with no false cycle`, () => {
     const state = resolve(collectModule({ default: () => <Chain /> }), manifest);
     expect(state.errors.filter((e) => e.code === "CYCLE")).toEqual([]);
-    for (let i = 0; i < N; i++) expect(state.items.get(`t${i}`)?.start).toBe(i);
+    for (let i = 0; i < N; i++) expect(state.items.get(`t${i}`)?.range.start.toSeconds()).toBe(i);
   });
 
   it("can be lengthened by an edit", () => {
@@ -42,7 +42,12 @@ describe("an anchor chain", () => {
       params: { id: "t0", edge: "out", value: 2 },
     });
     expect(result.ok).toBe(true);
-    expect(exec.state().items.get(`t${N - 1}`)?.start).toBe(N);
+    expect(
+      exec
+        .state()
+        .items.get(`t${N - 1}`)
+        ?.range.start.toSeconds(),
+    ).toBe(N);
   });
 
   it("that loops is still reported as a cycle", () => {

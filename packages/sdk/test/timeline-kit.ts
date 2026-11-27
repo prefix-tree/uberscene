@@ -59,7 +59,7 @@ export function timeline(state: ResolvedState): string {
   for (const p of state.items.values()) {
     if (p.kind === "composition" || p.kind === "track") continue;
     lines.push(
-      `${p.id} ${p.kind} ${n(p.start)}..${n(p.end)}` +
+      `${p.id} ${p.kind} ${n(p.range.start.toSeconds())}..${n(p.range.end.toSeconds())}` +
         (p.source ? ` plays ${p.source.asset} ${n(p.source.in)}..${n(p.source.out)} x${p.source.speed}` : "") +
         (p.between ? ` joins ${p.between.join(">")}` : ""),
     );
@@ -92,16 +92,19 @@ export function expectSane(state: ResolvedState): void {
   check(Number.isFinite(duration) && duration >= 0, `the video's length is ${duration}`);
   let last = 0;
   for (const p of state.items.values()) {
-    const where = `${p.kind} ${p.id} ${p.start}..${p.end}`;
-    check(Number.isFinite(p.start) && Number.isFinite(p.end), `${where}: not a time`);
-    check(p.start >= 0, `${where}: starts before zero`);
-    check(p.end >= p.start - EPS, `${where}: ends before it starts`);
+    const where = `${p.kind} ${p.id} ${p.range.start.toSeconds()}..${p.range.end.toSeconds()}`;
+    check(
+      Number.isFinite(p.range.start.toSeconds()) && Number.isFinite(p.range.end.toSeconds()),
+      `${where}: not a time`,
+    );
+    check(p.range.start.toSeconds() >= 0, `${where}: starts before zero`);
+    check(p.range.end.toSeconds() >= p.range.start.toSeconds() - EPS, `${where}: ends before it starts`);
     // Content is what has a length and is seen or heard. A marker is a note at a time, a transition that joins
     // nothing is left where the cut was, and an element with no length is nothing: none of them makes the video longer.
     // A key or a hold is a note inside its clip, at the time it was written for, reached or not.
-    const content = p.end > p.start && !NOT_CONTENT.has(p.kind);
-    check(p.end <= duration + EPS || !content, `${where}: ends after the video (${duration})`);
-    if (content) last = Math.max(last, p.end);
+    const content = p.range.end.toSeconds() > p.range.start.toSeconds() && !NOT_CONTENT.has(p.kind);
+    check(p.range.end.toSeconds() <= duration + EPS || !content, `${where}: ends after the video (${duration})`);
+    if (content) last = Math.max(last, p.range.end.toSeconds());
     if (p.source) {
       const s = p.source;
       check(Number.isFinite(s.in) && Number.isFinite(s.out) && s.in >= 0, `${where}: plays ${s.in}..${s.out}`);
@@ -112,7 +115,11 @@ export function expectSane(state: ResolvedState): void {
       const [from, to] = p.between.map((id) => state.items.get(id)) as [Placement | undefined, Placement | undefined];
       check(from !== undefined && to !== undefined, `${where}: joins a clip that is not there`);
       // A transition lasts from where the incoming clip starts to where the outgoing one ends.
-      if (from && to) check(Math.abs(p.start - to.start) < EPS, `${where}: does not start with ${to.id}`);
+      if (from && to)
+        check(
+          Math.abs(p.range.start.toSeconds() - to.range.start.toSeconds()) < EPS,
+          `${where}: does not start with ${to.id}`,
+        );
     }
   }
   // Something has to be on screen or heard at the video's last moment, unless nothing is in it at all.
@@ -134,11 +141,16 @@ export function expectSane(state: ResolvedState): void {
       const joined = [...state.items.values()].find(
         (t) => t.kind === "transition" && t.between?.[0] === a.id && t.between[1] === b.id,
       );
-      const overlap = joined ? Math.min(joined.end - joined.start, a.end) : 0;
-      check(b.start >= a.start - EPS, `track ${track.id}: ${b.id} starts before ${a.id}`);
+      const overlap = joined
+        ? Math.min(joined.range.end.toSeconds() - joined.range.start.toSeconds(), a.range.end.toSeconds())
+        : 0;
       check(
-        Math.abs(b.start - Math.max(0, a.end - overlap)) < EPS,
-        `track ${track.id}: ${b.id} starts at ${b.start}, not where ${a.id} ends (${a.end}) less ${overlap}`,
+        b.range.start.toSeconds() >= a.range.start.toSeconds() - EPS,
+        `track ${track.id}: ${b.id} starts before ${a.id}`,
+      );
+      check(
+        Math.abs(b.range.start.toSeconds() - Math.max(0, a.range.end.toSeconds() - overlap)) < EPS,
+        `track ${track.id}: ${b.id} starts at ${b.range.start.toSeconds()}, not where ${a.id} ends (${a.range.end.toSeconds()}) less ${overlap}`,
       );
     }
   }

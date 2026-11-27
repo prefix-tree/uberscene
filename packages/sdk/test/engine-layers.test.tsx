@@ -37,7 +37,7 @@ describe("<Three> and <Motion>", () => {
     expect(state.errors).toEqual([]);
     const cube = state.items.get("cube")!;
     expect(cube.kind).toBe("layer");
-    expect(cube.start).toBe(1);
+    expect(cube.range.start.toSeconds()).toBe(1);
     expect(cube.props).toMatchObject({
       engine: "three",
       camera: { position: [0, 0, 5], fov: 40 },

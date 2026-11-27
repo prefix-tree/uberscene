@@ -62,7 +62,7 @@ describe("insertLayer", () => {
     const state = stateOf(text);
     expect(state.errors).toEqual([]);
     const badge = state.items.get("badge");
-    expect([badge?.start, badge?.end]).toEqual([1, 3]);
+    expect([badge?.range.start.toSeconds(), badge?.range.end.toSeconds()]).toEqual([1, 3]);
   });
 
   it("writes the component's props when given, and imports a name once", () => {

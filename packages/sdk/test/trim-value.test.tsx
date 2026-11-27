@@ -38,9 +38,9 @@ describe("trimValue", () => {
     const item = exec.state().items.get(id)!;
     const result = exec.execute({
       type: "clip/trim",
-      params: { id, edge: "out", value: trimValue(item, item.start + duration) },
+      params: { id, edge: "out", value: trimValue(item, item.range.start.toSeconds() + duration) },
     });
     expect(result.ok).toBe(true);
-    expect(exec.state().items.get(id)?.duration).toBeCloseTo(duration, 6);
+    expect(exec.state().items.get(id)?.range.duration.toSeconds()).toBeCloseTo(duration, 6);
   });
 });

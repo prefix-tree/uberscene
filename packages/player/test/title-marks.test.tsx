@@ -14,8 +14,6 @@ function box(text: string, runs: readonly TextRun[], animation?: object, time = 
   const placement = {
     id: "t",
     kind: "title",
-    start: 0,
-    duration: 2,
     range: TimeRange.of(Time.ZERO, Time.seconds(2)),
     props: { style: { color: "#ff0000" }, ...(animation ? { animation } : {}) },
   } as unknown as Placement;

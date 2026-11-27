@@ -466,7 +466,7 @@ export default function V() {
         expect(state.errors).toEqual([]);
         return [...state.items.values()]
           .filter((p) => ["keyframe", "effect", "speedKey", "freeze"].includes(p.kind))
-          .map((p) => ({ id: p.id, kind: p.kind, parent: p.parent, start: p.start, props: p.props }))
+          .map((p) => ({ id: p.id, kind: p.kind, parent: p.parent, start: p.range.start.toSeconds(), props: p.props }))
           .sort((a, b) => (a.id < b.id ? -1 : 1));
       };
       const fixed = derived(fixSource(OLD, { manifest }).text);

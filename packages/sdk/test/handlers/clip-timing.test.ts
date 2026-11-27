@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { buildSourceIndex, collectModule, Executor } from "@uberscene/sdk";
 
 import * as sample from "../../fixtures/sample";
-import { fixtureExecutor, fixtureText, manifest, round, serialize } from "../helpers";
+import { fixtureExecutor, fixtureText, manifest, round, seconds, serialize } from "../helpers";
 
 describe("clip timing", () => {
   it("trim → undo restores the state and keeps the inverse in the log", () => {
@@ -13,15 +13,15 @@ describe("clip timing", () => {
     expect(r.ok).toBe(true);
     const after = exec.state();
     // c2 slows to half speed at 2 s and holds 0.5 s, so 4.4 source seconds take 7.8 s plus the hold.
-    expect(after.items.get("c2")?.end).toBeCloseTo(13.3);
-    expect(after.items.get("g1")?.start).toBeCloseTo(13.3);
-    expect(after.items.get("c3")?.start).toBeCloseTo(14.3);
-    expect(after.items.get("l1")?.start).toBe(5);
+    expect(after.items.get("c2")?.range.end.toSeconds()).toBeCloseTo(13.3);
+    expect(after.items.get("g1")?.range.start.toSeconds()).toBeCloseTo(13.3);
+    expect(after.items.get("c3")?.range.start.toSeconds()).toBeCloseTo(14.3);
+    expect(after.items.get("l1")?.range.start.toSeconds()).toBe(5);
     expect(exec.undo()?.ok).toBe(true);
     expect(serialize(exec.state())).toEqual(before);
     expect(exec.log().net.get("c2")?.props.get("duration")).toBe(3.5);
     expect(exec.redo()?.ok).toBe(true);
-    expect(exec.state().items.get("c2")?.end).toBeCloseTo(13.3);
+    expect(exec.state().items.get("c2")?.range.end.toSeconds()).toBeCloseTo(13.3);
   });
 
   it("trims a word reference to seconds and refuses out-of-range values", () => {
@@ -38,11 +38,11 @@ describe("clip timing", () => {
     const before = serialize(exec.state());
     expect(exec.execute({ type: "clip/split", params: { id: "c3", at: 11, newId: "c3_b" } }).ok).toBe(true);
     const s = exec.state();
-    expect(s.items.get("c3")).toMatchObject({ start: 10, end: 11 });
+    expect(seconds(s.items.get("c3"))).toMatchObject({ start: 10, end: 11 });
     expect(round(s.items.get("c3")?.source?.out ?? 0)).toBe(22.2);
-    expect(s.items.get("c3_b")).toMatchObject({ start: 11 });
+    expect(seconds(s.items.get("c3_b"))).toMatchObject({ start: 11 });
     expect(round(s.items.get("c3_b")?.source?.in ?? 0)).toBe(22.2);
-    expect(s.items.get("st1")?.start).toBe(10);
+    expect(s.items.get("st1")?.range.start.toSeconds()).toBe(10);
     expect(exec.undo()?.ok).toBe(true);
     expect(serialize(exec.state())).toEqual(before);
   });
@@ -62,7 +62,7 @@ describe("clip timing", () => {
       { at: 0, value: expect.any(Number), easing: "easeOutCubic" },
       { at: 0.25, value: 1 },
     ]);
-    expect(s.items.get("c1_b.transform.opacity.1")).toMatchObject({ parent: "c1_b", start: 0.5 });
+    expect(seconds(s.items.get("c1_b.transform.opacity.1"))).toMatchObject({ parent: "c1_b", start: 0.5 });
     expect(s.items.get("mk1_b")?.parent).toBe("c1_b");
   });
 
@@ -70,7 +70,7 @@ describe("clip timing", () => {
     const exec = fixtureExecutor();
     expect(exec.execute({ type: "clip/slip", params: { id: "c3", delta: 1 } }).ok).toBe(true);
     const c3 = exec.state().items.get("c3")!;
-    expect(c3.start).toBe(10);
+    expect(c3.range.start.toSeconds()).toBe(10);
     expect(round(c3.source!.in)).toBe(22.2);
     expect(round(c3.source!.out)).toBe(27.2);
   });
@@ -85,8 +85,8 @@ describe("clip timing", () => {
     const total = exec.state().composition.duration;
     expect(exec.execute({ type: "clip/roll", params: { leftId: "c2", rightId: "c3", delta: 0.5 } }).ok).toBe(true);
     const s = exec.state();
-    expect(s.items.get("c2")?.end).toBeCloseTo(9.5);
-    expect(s.items.get("c3")?.start).toBeCloseTo(9.5);
+    expect(s.items.get("c2")?.range.end.toSeconds()).toBeCloseTo(9.5);
+    expect(s.items.get("c3")?.range.start.toSeconds()).toBeCloseTo(9.5);
     expect(s.composition.duration).toBeCloseTo(total);
   });
 

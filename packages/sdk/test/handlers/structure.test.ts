@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { Composition, Layer, Track } from "@uberscene/kit";
 import { collect, Executor } from "@uberscene/sdk";
 
-import { fixtureExecutor, manifest, serialize } from "../helpers";
+import { fixtureExecutor, manifest, seconds, serialize } from "../helpers";
 
 describe("structure on free and sequence tracks", () => {
   it("adds a clip on a free track by start and refuses the wrong placement form", () => {
@@ -25,7 +25,7 @@ describe("structure on free and sequence tracks", () => {
         params: { id: "f1", trackId: "music", src: "asset:city", place: { start: 3 }, in: 0, out: 2 },
       }).ok,
     ).toBe(true);
-    expect(exec.state().items.get("f1")).toMatchObject({ start: 3, end: 5, track: "music" });
+    expect(seconds(exec.state().items.get("f1"))).toMatchObject({ start: 3, end: 5, track: "music" });
   });
 
   it("adds sound only: an <Audio> on the music track, filling to the end, removed by undo", () => {
@@ -37,7 +37,12 @@ describe("structure on free and sequence tracks", () => {
       }).ok,
     ).toBe(true);
     const bed = exec.state().items.get("bed2");
-    expect(bed).toMatchObject({ kind: "audio", track: "music", start: 0, end: exec.state().composition.duration });
+    expect(seconds(bed)).toMatchObject({
+      kind: "audio",
+      track: "music",
+      start: 0,
+      end: exec.state().composition.duration,
+    });
     expect(
       exec.execute({
         type: "audio/add",
@@ -56,8 +61,8 @@ describe("structure on free and sequence tracks", () => {
       true,
     );
     const s = exec.state();
-    expect(s.items.get("c3")).toMatchObject({ track: "music", start: 1 });
-    expect(s.items.get("n1")?.start).toBe(c3.start);
+    expect(seconds(s.items.get("c3"))).toMatchObject({ track: "music", start: 1 });
+    expect(s.items.get("n1")?.range.start.toSeconds()).toBe(c3.range.start.toSeconds());
     expect(s.errors).toEqual([]);
     expect(exec.undo()?.ok).toBe(true);
     expect(serialize(exec.state())).toEqual(before);
@@ -84,12 +89,12 @@ describe("structure on free and sequence tracks", () => {
       params: { id: "f2", trackId: "music", src: "asset:city", place: { start: 25 }, in: 0, out: 2 },
     });
     expect(exec.execute({ type: "clip/rippleDelete", params: { id: "f1" } }).ok).toBe(true);
-    expect(exec.state().items.get("f2")?.start).toBe(23);
+    expect(exec.state().items.get("f2")?.range.start.toSeconds()).toBe(23);
     expect(exec.undo()?.ok).toBe(true);
-    expect(exec.state().items.get("f2")?.start).toBe(25);
-    expect(exec.state().items.get("f1")?.start).toBe(20);
+    expect(exec.state().items.get("f2")?.range.start.toSeconds()).toBe(25);
+    expect(exec.state().items.get("f1")?.range.start.toSeconds()).toBe(20);
     expect(exec.execute({ type: "clip/rippleDelete", params: { id: "c2" } }).ok).toBe(true);
-    expect(exec.state().items.get("c3")?.start).toBe(6.5);
+    expect(exec.state().items.get("c3")?.range.start.toSeconds()).toBe(6.5);
   });
 
   it("closes gaps on both layouts", () => {
@@ -103,15 +108,15 @@ describe("structure on free and sequence tracks", () => {
       params: { id: "f2", trackId: "music", src: "asset:city", place: { start: 30 }, in: 0, out: 2 },
     });
     expect(exec.execute({ type: "clip/closeGapBefore", params: { id: "f2" } }).ok).toBe(true);
-    expect(exec.state().items.get("f2")?.start).toBe(22);
+    expect(exec.state().items.get("f2")?.range.start.toSeconds()).toBe(22);
     expect(exec.execute({ type: "clip/closeGapBefore", params: { id: "c3" } }).ok).toBe(true);
     expect(exec.state().items.has("g1")).toBe(false);
-    expect(exec.state().items.get("c3")?.start).toBe(9);
+    expect(exec.state().items.get("c3")?.range.start.toSeconds()).toBe(9);
     expect(exec.execute({ type: "clip/closeGapBefore", params: { id: "c2" } }).errors?.[0]?.code).toBe(
       "INVALID_PARAMS",
     );
     exec.undo();
-    expect(exec.state().items.get("g1")).toMatchObject({ start: 9, end: 10 });
+    expect(seconds(exec.state().items.get("g1"))).toMatchObject({ start: 9, end: 10 });
   });
 
   it("consolidates a free track and restores positions on undo", () => {
@@ -123,10 +128,10 @@ describe("structure on free and sequence tracks", () => {
     });
     expect(exec.execute({ type: "track/consolidate", params: { trackId: "music" } }).ok).toBe(true);
     const s = exec.state();
-    expect(s.items.get("a1")?.start).toBe(0);
-    expect(s.items.get("f1")?.start).toBe(5);
+    expect(s.items.get("a1")?.range.start.toSeconds()).toBe(0);
+    expect(s.items.get("f1")?.range.start.toSeconds()).toBe(5);
     exec.undo();
-    expect(exec.state().items.get("f1")?.start).toBe(20);
+    expect(exec.state().items.get("f1")?.range.start.toSeconds()).toBe(20);
     expect(exec.execute({ type: "track/consolidate", params: { trackId: "main" } }).errors?.[0]?.code).toBe(
       "UNSUPPORTED_ON_LAYOUT",
     );
@@ -142,7 +147,7 @@ describe("structure on free and sequence tracks", () => {
     ).toBe(true);
     const s = exec.state();
     expect(s.tracks.map((t) => t.id)).toEqual(["main", "main2", "overlays", "music", "mc"]);
-    expect(s.items.get("d1")).toMatchObject({ track: "main2", start: 0 });
+    expect(seconds(s.items.get("d1"))).toMatchObject({ track: "main2", start: 0 });
     expect(s.items.get("c3_main2")?.track).toBe("main2");
     expect(s.items.get("main2")?.props.name).toBe("Main Copy");
     expect(s.errors).toEqual([]);
@@ -196,7 +201,7 @@ describe("structure on free and sequence tracks", () => {
         },
       }).ok,
     ).toBe(true);
-    expect(exec.state().items.get("t9")).toMatchObject({ start: 10.5, end: 11.5 });
+    expect(seconds(exec.state().items.get("t9"))).toMatchObject({ start: 10.5, end: 11.5 });
     expect(
       exec.execute({
         type: "element/create",
@@ -232,7 +237,7 @@ describe("structure on free and sequence tracks", () => {
     const timing = (state: typeof before) =>
       [...state.items.values()]
         .filter((p) => p.track === "main" && p.kind !== "gap")
-        .map((p) => [p.id, Math.round(p.start * 1000), Math.round(p.end * 1000)]);
+        .map((p) => [p.id, Math.round(p.range.start.toSeconds() * 1000), Math.round(p.range.end.toSeconds() * 1000)]);
     const was = timing(before);
     expect(exec.execute({ type: "track/setLayout", params: { trackId: "main", layout: "free" } }).ok).toBe(true);
     const s = exec.state();
@@ -271,9 +276,9 @@ describe("structure on free and sequence tracks", () => {
     expect(s.tracks.find((t) => t.id === "f")?.layout).toBe("sequence");
     expect(s.tree.byId.get("f")?.props.layout).toBeUndefined();
     expect(s.tree.byId.get("f")?.children.map((c) => c.id)).toEqual(["fa", "gap-f-1", "fb"]);
-    expect(s.items.get("fa")).toMatchObject({ start: 0, end: 2 });
-    expect(s.items.get("gap-f-1")).toMatchObject({ start: 2, end: 4 });
-    expect(s.items.get("fb")).toMatchObject({ start: 4, end: 6 });
+    expect(seconds(s.items.get("fa"))).toMatchObject({ start: 0, end: 2 });
+    expect(seconds(s.items.get("gap-f-1"))).toMatchObject({ start: 2, end: 4 });
+    expect(seconds(s.items.get("fb"))).toMatchObject({ start: 4, end: 6 });
     expect(s.tree.byId.get("fb")?.props.start).toBeUndefined();
     expect(s.errors).toEqual([]);
     exec.undo();
@@ -306,20 +311,24 @@ describe("structure on free and sequence tracks", () => {
   it("flattens a multicam into literal clips and restores it on undo", () => {
     const exec = fixtureExecutor();
     const before = serialize(exec.state());
-    expect(exec.state().items.get("mc1.cu2")?.end).toBeGreaterThan(12);
+    expect(exec.state().items.get("mc1.cu2")?.range.end.toSeconds()).toBeGreaterThan(12);
     expect(exec.execute({ type: "multicam/flatten", params: { id: "mc1" } }).ok).toBe(true);
     const s = exec.state();
     expect(s.items.has("mc1")).toBe(false);
     expect(s.items.has("mc1.cu1")).toBe(false);
     expect(s.tree.byId.get("mc")?.children.map((c) => c.id)).toEqual(["mc1-cu1", "mc1-cu2"]);
-    expect(s.items.get("mc1-cu1")).toMatchObject({
+    expect(seconds(s.items.get("mc1-cu1"))).toMatchObject({
       start: 0,
       end: 2,
       editable: "literal",
       source: { in: 0, out: 2, asset: "interview" },
     });
     // The last cut ran to the end of the composition, past the 12 s of city; the literal clip stops where the source does.
-    expect(s.items.get("mc1-cu2")).toMatchObject({ start: 2, end: 12, source: { in: 2, out: 12, asset: "city" } });
+    expect(seconds(s.items.get("mc1-cu2"))).toMatchObject({
+      start: 2,
+      end: 12,
+      source: { in: 2, out: 12, asset: "city" },
+    });
     expect(s.tree.byId.get("mc1-cu2")?.props).toEqual({
       id: "mc1-cu2",
       src: "asset:city",
@@ -350,10 +359,10 @@ describe("structure on free and sequence tracks", () => {
     const trackIds = s.tree.root.children.filter((c) => c.kind === "track").map((c) => c.id);
     expect(trackIds.slice(0, 2)).toEqual(["main", "n1-outro"]);
     expect(s.tracks.find((t) => t.id === "n1-outro")).toMatchObject({ layout: "free", items: ["n1-oc1"] });
-    expect(s.items.get("n1-oc1")).toMatchObject({
+    expect(seconds(s.items.get("n1-oc1"))).toMatchObject({
       track: "n1-outro",
-      start: n1.start,
-      end: n1.end,
+      start: n1.range.start.toSeconds(),
+      end: n1.range.end.toSeconds(),
       source: { in: 0, out: 3, asset: "city" },
     });
     expect(s.tree.byId.get("n1-oc1")?.props).toEqual({
@@ -361,12 +370,15 @@ describe("structure on free and sequence tracks", () => {
       src: "asset:city",
       in: 0,
       out: 3,
-      start: n1.start,
+      start: n1.range.start.toSeconds(),
       volume: 0.8,
     });
     expect(s.tree.byId.get("main")?.children.map((c) => c.id)).toEqual(["c1", "x1", "c2", "g1", "c3", "n1-gap"]);
-    expect(s.items.get("n1-gap")).toMatchObject({ start: n1.start, end: n1.end });
-    expect(s.composition.duration).toBeCloseTo(n1.end, 6);
+    expect(seconds(s.items.get("n1-gap"))).toMatchObject({
+      start: n1.range.start.toSeconds(),
+      end: n1.range.end.toSeconds(),
+    });
+    expect(s.composition.duration).toBeCloseTo(n1.range.end.toSeconds(), 6);
     expect(s.errors).toEqual([]);
     exec.undo();
     expect(serialize(exec.state())).toEqual(before);

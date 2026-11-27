@@ -206,8 +206,11 @@ describe("laws of a sequence", () => {
       );
       expectSane(after);
       for (const [i, c] of list.entries()) {
-        const was = before.items.get(c.id)?.start as number;
-        expect(after.items.get(c.id)?.start, `seed ${seed} ${c.id}`).toBeCloseTo(was + (i >= at ? gap : 0), 9);
+        const was = before.items.get(c.id)?.range.start.toSeconds() as number;
+        expect(after.items.get(c.id)?.range.start.toSeconds(), `seed ${seed} ${c.id}`).toBeCloseTo(
+          was + (i >= at ? gap : 0),
+          9,
+        );
       }
       expect(after.composition.duration).toBeCloseTo(before.composition.duration + gap, 9);
     }
@@ -226,8 +229,11 @@ describe("laws of a sequence", () => {
       const after = resolved(track(trimmed.join("")));
       expectSane(after);
       for (const [i, c] of list.entries()) {
-        const was = before.items.get(c.id)?.start as number;
-        expect(after.items.get(c.id)?.start, `seed ${seed} ${c.id}`).toBeCloseTo(was - (i > at ? 0.5 : 0), 9);
+        const was = before.items.get(c.id)?.range.start.toSeconds() as number;
+        expect(after.items.get(c.id)?.range.start.toSeconds(), `seed ${seed} ${c.id}`).toBeCloseTo(
+          was - (i > at ? 0.5 : 0),
+          9,
+        );
       }
     }
   });
@@ -247,7 +253,7 @@ describe("laws of a sequence", () => {
       expect(state.errors, `seed ${seed}`).toEqual([]);
       // Word n starts n/2 seconds into the talk; the clip starts at word `first` and plays at `speed`.
       const expected = lead + (word * 0.5 - first * 0.5) / speed;
-      expect(state.items.get("t")?.start, `seed ${seed}`).toBeCloseTo(expected, 9);
+      expect(state.items.get("t")?.range.start.toSeconds(), `seed ${seed}`).toBeCloseTo(expected, 9);
     }
   });
 
@@ -264,7 +270,7 @@ describe("laws of a sequence", () => {
           // Caption cues are numbered in the order they are made, which follows the tracks; their times are compared.
           .filter((p) => p.kind !== "track" && p.kind !== "composition")
           .map((p) => (p.kind === "caption" ? { ...p, id: "cue" } : p))
-          .map((p) => `${p.id} ${p.start.toFixed(6)} ${p.end.toFixed(6)}`)
+          .map((p) => `${p.id} ${p.range.start.toSeconds().toFixed(6)} ${p.range.end.toSeconds().toFixed(6)}`)
           .sort();
       expect(times(b), `seed ${seed}`).toEqual(times(a));
     }

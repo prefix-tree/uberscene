@@ -54,7 +54,7 @@ describe.each(FILES)("%s.tsx", (name) => {
     const state = resolve(collectModule(load(source) as never, {}), manifest);
     const clips = [...state.items.values()].filter((p) => p.kind === "clip");
     if (clips.length === 0) return;
-    const footage = Math.max(...clips.map((c) => c.start + c.duration));
+    const footage = Math.max(...clips.map((c) => c.range.start.toSeconds() + c.range.duration.toSeconds()));
     expect(state.composition.duration).toBeCloseTo(footage, 2);
   });
 });

@@ -13,7 +13,7 @@ import {
   wrapMainTrack,
 } from "@uberscene/sdk";
 
-import { manifest, serialize } from "./helpers";
+import { manifest, seconds, serialize } from "./helpers";
 
 const file = (
   body: string,
@@ -68,7 +68,12 @@ describe("clips written straight in the composition", () => {
       ["main", "sequence", true, ["opening", "interview"]],
     ]);
     expect(serialize(direct)).toEqual(serialize(load(WRAPPED)));
-    expect(direct.items.get("interview")).toMatchObject({ track: "main", start: 12, end: 22, editable: "literal" });
+    expect(seconds(direct.items.get("interview"))).toMatchObject({
+      track: "main",
+      start: 12,
+      end: 22,
+      editable: "literal",
+    });
   });
 
   it("stay where they were when a track is added: they are the bottom track wherever they are written", () => {
@@ -91,9 +96,9 @@ ${BROLL}
         ["broll", 1],
       ]);
       for (const id of ["opening", "interview"])
-        expect(state.items.get(id)).toMatchObject({
-          start: alone.items.get(id)?.start,
-          end: alone.items.get(id)?.end,
+        expect(seconds(state.items.get(id))).toMatchObject({
+          start: alone.items.get(id)?.range.start.toSeconds(),
+          end: alone.items.get(id)?.range.end.toSeconds(),
           track: "main",
         });
     }
@@ -108,8 +113,8 @@ ${BROLL}
       <Clip id="c" src="asset:city" in={8} out={10} />`),
     );
     expect(state.errors).toEqual([]);
-    expect(state.items.get("b")).toMatchObject({ start: 3, end: 7 });
-    expect(state.items.get("c")).toMatchObject({ start: 9, end: 11 });
+    expect(seconds(state.items.get("b"))).toMatchObject({ start: 3, end: 7 });
+    expect(seconds(state.items.get("c"))).toMatchObject({ start: 9, end: 11 });
   });
 
   it("report a start, a taken id, and an element that needs a track", () => {

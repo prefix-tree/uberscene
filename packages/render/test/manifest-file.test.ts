@@ -73,7 +73,7 @@ describe("loadVideo without a manifest option", () => {
     const video = await loadVideo(join(deep, "video.tsx"));
     expect(video.manifestPath).toBe(join(top, "uberscene.json"));
     expect(video.state.errors).toEqual([]);
-    expect(video.state.items.get("c")?.end).toBe(1);
+    expect(video.state.items.get("c")?.range.end.toSeconds()).toBe(1);
   });
 
   it("lists the folders it looked in when there is none", async () => {

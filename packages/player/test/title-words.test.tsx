@@ -10,8 +10,6 @@ function title(text: string, type: string): string {
   const placement = {
     id: "t",
     kind: "title",
-    start: 0,
-    duration: 2,
     range: TimeRange.of(Time.ZERO, Time.seconds(2)),
     props: { width: 400, size: 60, align: "left", animation: { type, in: 0.6, out: 0 } },
   } as unknown as Placement;
@@ -44,8 +42,6 @@ describe("the camelCase values (0.6)", () => {
     const placement = {
       id: "t",
       kind: "title",
-      start: 0,
-      duration: 2,
       range: TimeRange.of(Time.ZERO, Time.seconds(2)),
       props: { style, ...(animation ? { animation } : {}) },
     } as unknown as Placement;

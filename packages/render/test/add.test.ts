@@ -154,7 +154,9 @@ export default function Video() {
     const cues = [...state.items.values()].filter((p) => p.kind === "caption");
     expect(entry.transcript?.words.map((w) => w.text.toLowerCase())).toEqual(words.map((w) => w.toLowerCase()));
     for (const w of entry.transcript?.words ?? [])
-      expect(cues.some((c) => w.start >= c.start - 0.001 && w.end <= c.end + 0.001)).toBe(true);
+      expect(
+        cues.some((c) => w.start >= c.range.start.toSeconds() - 0.001 && w.end <= c.range.end.toSeconds() + 0.001),
+      ).toBe(true);
   });
 
   it("writes the nearest uberscene.json above the current folder", async () => {
@@ -237,8 +239,8 @@ export default () => (
     expect(state.errors).toEqual([]);
     const beat = (i: number) => entry.beats[i].start as number;
     // The title starts on beat 4, counted in what the song plays (it starts at beat 0).
-    expect(state.items.get("hit")?.start).toBeCloseTo(beat(4) - beat(0), 2);
-    expect(state.items.get("song")?.duration).toBeCloseTo(entry.beats[15].end - beat(0), 2);
+    expect(state.items.get("hit")?.range.start.toSeconds()).toBeCloseTo(beat(4) - beat(0), 2);
+    expect(state.items.get("song")?.range.duration.toSeconds()).toBeCloseTo(entry.beats[15].end - beat(0), 2);
   });
 
   it("sets a grid with a tempo and a first beat, and finds no beats when told not to", async () => {

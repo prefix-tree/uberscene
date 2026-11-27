@@ -31,10 +31,10 @@ describe("placement ranges", () => {
       expect(p.range.start.equals(at)).toBe(true);
       expect(p.range.duration.equals(T(d))).toBe(true);
       // The seconds are derived from the ticks, so the float sum's noise is gone: t2 starts at 0.3, not 0.30000000000000004.
-      expect(p.start).toBe(at.toSeconds());
+      expect(p.range.start.toSeconds()).toBe(at.toSeconds());
       at = p.range.end;
     }
-    expect(state.items.get("t2")!.start).toBe(0.3);
+    expect(state.items.get("t2")!.range.start.toSeconds()).toBe(0.3);
     expect(state.composition.length.equals(at)).toBe(true);
     expect(state.composition.duration).toBe(at.toSeconds());
   });
