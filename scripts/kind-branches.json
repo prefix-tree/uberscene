@@ -2,23 +2,33 @@
   "counts": {
     "kit": {
       "compare": 4,
-      "list": 1
+      "list": 1,
+      "cast": 4,
+      "read": 3
     },
     "sdk": {
       "compare": 131,
-      "list": 27
+      "list": 27,
+      "cast": 74,
+      "read": 77
     },
     "player": {
       "compare": 11,
-      "list": 0
+      "list": 0,
+      "cast": 55,
+      "read": 44
     },
     "render": {
       "compare": 23,
-      "list": 1
+      "list": 1,
+      "cast": 12,
+      "read": 1
     },
     "editor": {
       "compare": 7,
-      "list": 0
+      "list": 0,
+      "cast": 0,
+      "read": 0
     }
   },
   "ignore": [
