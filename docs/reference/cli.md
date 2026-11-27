@@ -28,6 +28,7 @@ npx uberscene matte <footage> [--model <name>] [--accept-licence] [--id <id>] [-
 npx uberscene matte models [--json]
 npx uberscene matte install [<model>] [--accept-licence]
 npx uberscene skills install [--dir <folder>] [--force]
+npx uberscene queue <jobs.json> [--continue-on-error] [--json] [--media <dir>] [--tabs <n>] [--quiet]
 ```
 
 `npx uberscene --help` prints the same list.
