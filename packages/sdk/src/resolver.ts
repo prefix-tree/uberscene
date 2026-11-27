@@ -1,6 +1,8 @@
 // The resolver and the asset manifest, without the parser, the actions or the lint: what a player needs to place a
 // file's elements in time and find their media. It loads none of Babel or Sucrase, so a browser app that plays files
 // but never edits them stays small, and a dev server needs no Node globals.
+
+export * from "./elements/placement";
 export * from "./manifest/cube";
 export * from "./manifest/timeref";
 export * from "./manifest/transcript";

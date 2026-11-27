@@ -1,0 +1,131 @@
+// Placements typed by their kind. The resolved state holds every placement as the loose `Placement` (a kind, and
+// props as unknown values). These are the same objects seen through their kind: `PlacedTitle` has a title's props as
+// the title schema parses them, so code that has narrowed a placement reads `p.props.style.size` as a number, with no
+// cast and no default written a second time.
+//
+// Narrowing is sound only for props that parsed, so a placement is one of two things: `Parsed<K>` (its props are its
+// kind's), or `Unparsed` (its props are as written, of no known type; it has errors and is not drawn). What works on
+// an element takes a `Placed`, which an unparsed one is not.
+//
+//   const title = placed(state.items.get(id), "title");      // PlacedTitle | undefined
+//   const p = typed(item); if (p.kind === "shape" && p.parsed) p.props.width   // number | undefined
+//   if (hasProp(item, "transform")) item.props.transform     // any kind that has one
+
+import type { z } from "zod";
+
+import { ENGINE_SCHEMAS, type Kind, type KindProps, type KindWith, SCHEMAS_BY_KIND } from "@uberscene/kit/schema";
+
+import type { Placement } from "../resolve/resolve";
+
+/** What every placement has, whatever its kind: its place, its time, its errors. The time fields stay the resolver's. */
+type Base = Omit<Placement, "kind" | "props" | "parsed">;
+
+/** A placement of kind `K` whose props parsed: they are that kind's props, each of its type, every default filled. */
+export interface Parsed<K extends Kind> extends Base {
+  readonly kind: K;
+  readonly parsed: true;
+  readonly props: Readonly<KindProps[K]>;
+}
+
+/** A placement whose props did not parse: they are as written. It keeps its row and its errors, and is not drawn. */
+export interface Unparsed extends Base {
+  readonly kind: Kind;
+  readonly parsed: false;
+  readonly props: Readonly<Record<string, unknown>>;
+}
+
+export interface PlacedComposition extends Parsed<"composition"> {}
+export interface PlacedCamera extends Parsed<"camera"> {}
+export interface PlacedTrack extends Parsed<"track"> {}
+export interface PlacedClip extends Parsed<"clip"> {}
+export interface PlacedAudio extends Parsed<"audio"> {}
+export interface PlacedGap extends Parsed<"gap"> {}
+export interface PlacedTransition extends Parsed<"transition"> {}
+export interface PlacedTitle extends Parsed<"title"> {}
+export interface PlacedShape extends Parsed<"shape"> {}
+export interface PlacedSvg extends Parsed<"svg"> {}
+export interface PlacedSticker extends Parsed<"sticker"> {}
+export interface PlacedCaptions extends Parsed<"captions"> {}
+export interface PlacedCaption extends Parsed<"caption"> {}
+export interface PlacedMarker extends Parsed<"marker"> {}
+export interface PlacedAdjustment extends Parsed<"adjustment"> {}
+export interface PlacedMask extends Parsed<"mask"> {}
+export interface PlacedNested extends Parsed<"nested"> {}
+export interface PlacedMulticam extends Parsed<"multicam"> {}
+export interface PlacedAngle extends Parsed<"angle"> {}
+export interface PlacedCut extends Parsed<"cut"> {}
+export interface PlacedLayer extends Parsed<"layer"> {}
+export interface PlacedEffect extends Parsed<"effect"> {}
+export interface PlacedKeyframe extends Parsed<"keyframe"> {}
+export interface PlacedGenerator extends Parsed<"generator"> {}
+export interface PlacedSpeedKey extends Parsed<"speedKey"> {}
+export interface PlacedFreeze extends Parsed<"freeze"> {}
+
+/** Each kind's parsed placement, by kind. */
+export interface PlacementMap {
+  composition: PlacedComposition;
+  camera: PlacedCamera;
+  track: PlacedTrack;
+  clip: PlacedClip;
+  audio: PlacedAudio;
+  gap: PlacedGap;
+  transition: PlacedTransition;
+  title: PlacedTitle;
+  shape: PlacedShape;
+  svg: PlacedSvg;
+  sticker: PlacedSticker;
+  captions: PlacedCaptions;
+  caption: PlacedCaption;
+  marker: PlacedMarker;
+  adjustment: PlacedAdjustment;
+  mask: PlacedMask;
+  nested: PlacedNested;
+  multicam: PlacedMulticam;
+  angle: PlacedAngle;
+  cut: PlacedCut;
+  layer: PlacedLayer;
+  effect: PlacedEffect;
+  keyframe: PlacedKeyframe;
+  generator: PlacedGenerator;
+  speedKey: PlacedSpeedKey;
+  freeze: PlacedFreeze;
+}
+
+/** A placement whose props parsed, of any kind: narrow it by `kind` to read its props. */
+export type Placed = PlacementMap[Kind];
+
+/** Any placement, by what is known of its props: parsed and of its kind, or not parsed. */
+export type TypedPlacement = Placed | Unparsed;
+
+/**
+ * A placement seen through its kind: the same object, typed as parsed-of-its-kind or unparsed, so `kind` and
+ * `parsed` narrow it. It costs nothing at run time.
+ */
+export function typed(placement: Placement): TypedPlacement {
+  return placement as unknown as TypedPlacement;
+}
+
+/** `placement` as a parsed placement of `kind`, or undefined when it is missing, of another kind, or did not parse. */
+export function placed<K extends Kind>(placement: Placement | undefined, kind: K): PlacementMap[K] | undefined {
+  return placement !== undefined && placement.kind === kind && placement.parsed
+    ? (placement as unknown as PlacementMap[K])
+    : undefined;
+}
+
+/**
+ * Whether a placement parsed and is of a kind whose props have `prop` (`transform`, `volume`, `follow`): then it is
+ * typed as those kinds' placement. It asks the schema, so a prop a kind gains needs nothing here.
+ */
+export function hasProp<P extends string>(
+  placement: Placement,
+  prop: P,
+): placement is Placement & PlacementMap[KindWith<P>] {
+  return placement.parsed && prop in shapeOf(placement);
+}
+
+/** The props a placement's schema has: its kind's, or for a layer a library draws, that engine's. */
+function shapeOf(placement: Placement): Readonly<Record<string, unknown>> {
+  const engine = placement.props.engine;
+  const schema = (typeof engine === "string" && ENGINE_SCHEMAS[engine]) || SCHEMAS_BY_KIND[placement.kind];
+  return (schema as unknown as z.ZodObject).shape;
+}

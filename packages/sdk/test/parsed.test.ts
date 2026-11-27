@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { collectModule, loadModule, type ResolvedState, resolve, timelineRows } from "@uberscene/sdk";
+import { collectModule, loadModule, placed, type ResolvedState, resolve, timelineRows } from "@uberscene/sdk";
 
 import { manifest } from "./helpers";
 
@@ -44,10 +44,11 @@ describe("a placement's parsed props", () => {
     expect(title?.parsed).toBe(true);
     // The colour and the weight written beside the bad size stay; the size is the schema's default.
     expect(title?.props.style).toMatchObject({ color: "#ff0000", weight: 700 });
-    const size = (title?.props.style as { size?: number }).size;
-    expect(size).not.toBe(-1);
+    const size = placed(title, "title")?.props.style.size;
+    expect(size).toBeGreaterThan(0);
+    // The size an untouched title has.
     const plain = load(`<Title id="t" start={0} duration={2}>Hi</Title>`).items.get("t");
-    expect(size).toBe((plain?.props.style as { size?: number }).size);
+    expect(size).toBe(placed(plain, "title")?.props.style.size);
   });
 
   it("leaves out a key an object does not take, and keeps the rest of the prop", () => {
