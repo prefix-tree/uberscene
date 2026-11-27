@@ -1,4 +1,5 @@
 import { capabilitiesOf, secondsToTicks } from "@uberscene/kit/schema";
+import { endTicks, lengthSeconds, secondsSinceStart, startSeconds, startTicks } from "@uberscene/sdk";
 import type { Placement, ResolvedState, ResolvedTrack } from "@uberscene/sdk/resolver";
 
 import { ease } from "./keyframes";
@@ -47,8 +48,8 @@ export function visiblePlacements(state: ResolvedState, t: number): VisibleItem[
  */
 export function isVisibleAt(p: Placement, t: number, compositionDuration: number): boolean {
   const at = secondsToTicks(t);
-  const start = secondsToTicks(p.start);
-  const end = secondsToTicks(p.end);
+  const start = startTicks(p);
+  const end = endTicks(p);
   if (at >= start && at < end) return true;
   return at === secondsToTicks(compositionDuration) && end === at && end > start;
 }
@@ -62,7 +63,7 @@ export function trackItems(state: ResolvedState, track: ResolvedTrack): Placemen
     if (p.kind === "multicam") {
       const generated = [...state.items.values()]
         .filter((q) => q.parent === id && q.kind === "clip")
-        .sort((a, b) => a.start - b.start);
+        .sort((a, b) => startSeconds(a) - startSeconds(b));
       out.push(...generated);
       continue;
     }
@@ -75,11 +76,14 @@ function transitionRoles(state: ResolvedState, track: ResolvedTrack, t: number):
   const roles = new Map<string, TransitionRole>();
   for (const id of track.items) {
     const x = state.items.get(id);
-    if (x?.kind !== "transition" || x.duration <= 0) continue;
+    if (x?.kind !== "transition" || lengthSeconds(x) <= 0) continue;
     const at = secondsToTicks(t);
-    if (at < secondsToTicks(x.start) || at >= secondsToTicks(x.end)) continue;
+    if (at < startTicks(x) || at >= endTicks(x)) continue;
     const params = (x.props.params ?? {}) as Record<string, unknown>;
-    const progress = ease(typeof params.curve === "string" ? params.curve : "linear", (t - x.start) / x.duration);
+    const progress = ease(
+      typeof params.curve === "string" ? params.curve : "linear",
+      secondsSinceStart(x, t) / lengthSeconds(x),
+    );
     if (x.between) {
       roles.set(x.between[0], { placement: x, role: "out", progress });
       roles.set(x.between[1], { placement: x, role: "in", progress });

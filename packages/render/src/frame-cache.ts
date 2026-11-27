@@ -8,7 +8,15 @@ import { join } from "node:path";
 
 import { frameStartSeconds, motionBlurOf, shutterTimes } from "@uberscene/kit/schema";
 import type { MediaResolver } from "@uberscene/player/engine";
-import { followOf, lookupAsset, type Placement, type ResolvedState } from "@uberscene/sdk";
+import {
+  endSeconds,
+  followOf,
+  lengthTicks,
+  lookupAsset,
+  type Placement,
+  type ResolvedState,
+  startSeconds,
+} from "@uberscene/sdk";
 
 import type { FontFile } from "./fonts";
 import type { ExportSource } from "./renderer";
@@ -73,7 +81,7 @@ function stable(value: unknown, flags: { free: boolean }, seen = new Set<object>
  */
 function drawnAt(state: ResolvedState, t: number): Placement[] {
   const out = new Map<string, Placement>();
-  const covers = (p: Placement): boolean => t >= p.start - 1e-6 && t <= p.end + 1e-6;
+  const covers = (p: Placement): boolean => t >= startSeconds(p) - 1e-6 && t <= endSeconds(p) + 1e-6;
   const add = (p: Placement): void => {
     if (out.has(p.id)) return;
     out.set(p.id, p);
@@ -87,7 +95,7 @@ function drawnAt(state: ResolvedState, t: number): Placement[] {
   };
   for (const p of state.items.values()) {
     if (p.kind === "composition" || p.kind === "track") out.set(p.id, p);
-    else if (!SILENT.has(p.kind) && p.end > p.start && covers(p)) {
+    else if (!SILENT.has(p.kind) && lengthTicks(p) > 0 && covers(p)) {
       const parent = state.items.get(p.parent ?? "");
       // A child is added with its parent; a multicam's generated clips name it as their parent and are added here.
       if (!parent || parent.kind === "track" || parent.kind === "composition" || parent.kind === "multicam") add(p);
@@ -207,7 +215,7 @@ export class FrameKeys {
             track: p.track,
             parent: p.parent,
             // The composition, a track and the captions run the video's whole length, which is not theirs to say.
-            ...(WHOLE.has(p.kind) ? {} : { start: p.start, end: p.end }),
+            ...(WHOLE.has(p.kind) ? {} : { start: startSeconds(p), end: endSeconds(p) }),
             source: p.source,
             between: p.between,
             interior: p.interior,

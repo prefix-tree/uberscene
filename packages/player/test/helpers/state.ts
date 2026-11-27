@@ -6,6 +6,7 @@ import {
   type AssetManifest,
   type CollectedNode,
   collectModule,
+  endSeconds,
   type Placement,
   type ResolvedState,
   type ResolvedTrack,
@@ -251,7 +252,7 @@ export function makeState(spec: StateSpec): ResolvedState {
         pendingTransition = null;
         const p = place(it, t.id, t.id, cursor);
         placed.push(p);
-        cursor = p.end;
+        cursor = endSeconds(p);
         prev = it.kind === "gap" ? null : p;
       } else {
         placed.push(place(it, t.id, t.id, it.start ?? 0));
@@ -278,7 +279,7 @@ export function makeState(spec: StateSpec): ResolvedState {
     });
   });
 
-  const duration = Math.max(0, ...[...items.values()].filter((i) => i.kind !== "transition").map((i) => i.end));
+  const duration = Math.max(0, ...[...items.values()].filter((i) => i.kind !== "transition").map((i) => endSeconds(i)));
   for (const t of tracks) {
     items.set(t.id, {
       id: t.id,

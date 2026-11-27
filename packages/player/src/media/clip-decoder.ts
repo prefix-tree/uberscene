@@ -1,4 +1,4 @@
-import { elapsedSeconds } from "@uberscene/kit/schema";
+import { secondsSinceStart } from "@uberscene/sdk";
 import type { Placement } from "@uberscene/sdk/resolver";
 
 import {
@@ -413,7 +413,7 @@ export class ClipDecoder {
   }
 
   private activeFreeze(t: number): Placement | null {
-    const rel = elapsedSeconds(t, this.placement.start);
+    const rel = secondsSinceStart(this.placement, t);
     for (const c of this.children) {
       if (c.kind !== "freeze") continue;
       const fs = Number(c.props.start ?? 0),

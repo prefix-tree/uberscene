@@ -1,6 +1,5 @@
 import type { LayerClock } from "@uberscene/kit";
 import {
-  elapsedSeconds,
   frameAtSeconds,
   frameStartSeconds,
   isDropFrame,
@@ -8,6 +7,7 @@ import {
   secondAndFrame,
   timecode as smpteTimecode,
 } from "@uberscene/kit/schema";
+import { lengthSeconds, secondsSinceStart } from "@uberscene/sdk";
 import { freezeHoldsOf, freezeShift, type Placement, rampAdvance, speedKeysOf } from "@uberscene/sdk/resolver";
 
 /** The frame a composition time falls in, counted in exact ticks. */
@@ -34,15 +34,15 @@ export function timecode(t: number, rate: Rate): string {
 
 /** 0..1 progress through a placement, what `useT()` returns inside a Layer. */
 export function localT(p: Placement, t: number): number {
-  if (p.duration <= 0) return 0;
-  const u = (t - p.start) / p.duration;
+  if (lengthSeconds(p) <= 0) return 0;
+  const u = secondsSinceStart(p, t) / lengthSeconds(p);
   return u < 0 ? 0 : u > 1 ? 1 : u;
 }
 
 /** What `useLayer()` returns inside a Layer: progress plus real seconds. */
 export function layerClock(p: Placement, t: number, fps: number): LayerClock {
-  const duration = Math.max(0, p.duration);
-  const elapsed = Math.min(duration, Math.max(0, elapsedSeconds(t, p.start)));
+  const duration = Math.max(0, lengthSeconds(p));
+  const elapsed = Math.min(duration, Math.max(0, secondsSinceStart(p, t)));
   return { t: localT(p, t), elapsed, remaining: duration - elapsed, duration, time: t, fps };
 }
 
@@ -54,8 +54,8 @@ export function layerClock(p: Placement, t: number, fps: number): LayerClock {
  */
 export function placementSourceTime(p: Placement, children: readonly Placement[], t: number): number {
   const src = p.source;
-  if (!src) return Math.max(0, t - p.start);
-  const shifted = freezeShift(freezeHoldsOf(children), Math.max(0, elapsedSeconds(t, p.start)));
+  if (!src) return Math.max(0, secondsSinceStart(p, t));
+  const shifted = freezeShift(freezeHoldsOf(children), Math.max(0, secondsSinceStart(p, t)));
   if ("held" in shifted) return clampSource(shifted.held, src);
   const keys = speedKeysOf(children);
   const advance = keys.length > 0 ? rampAdvance(keys, shifted.rel) : shifted.rel * src.speed;
@@ -66,8 +66,8 @@ export function placementSourceTime(p: Placement, children: readonly Placement[]
 // shortcut: a nested placement plays at its constant speed, its own speed keys and freezes are ignored; use placementSourceTime's mapping if nested ramps are wanted.
 export function nestedSourceTime(p: Placement, t: number): number {
   const src = p.source;
-  if (!src) return Math.max(0, t - p.start);
-  return clampSource(src.in + Math.max(0, t - p.start) * src.speed, src);
+  if (!src) return Math.max(0, secondsSinceStart(p, t));
+  return clampSource(src.in + Math.max(0, secondsSinceStart(p, t)) * src.speed, src);
 }
 
 function clampSource(v: number, src: { in: number; out: number }): number {

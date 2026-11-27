@@ -1,6 +1,7 @@
 import { memo, type ReactNode, useMemo } from "react";
 
-import { effectEntry, elapsedSeconds } from "@uberscene/kit/schema";
+import { effectEntry } from "@uberscene/kit/schema";
+import { endTicks, secondsSinceStart, startTicks } from "@uberscene/sdk";
 import type { Placement, ResolvedState } from "@uberscene/sdk/resolver";
 
 import { trackBands } from "../model/backdrop";
@@ -124,7 +125,7 @@ const Element = memo(
     const passes =
       item.placement.kind === "adjustment"
         ? undefined
-        : effectPipeline(state, item.children, item.placement.id, elapsedSeconds(time, item.placement.start), {
+        : effectPipeline(state, item.children, item.placement.id, secondsSinceStart(item.placement, time), {
             shaders: htmlInCanvas(),
           }).shaders;
     // The box stays for as long as the element has an effect a shader draws, also at a moment when that effect
@@ -206,8 +207,8 @@ export function sameElement(a: ElementCellProps, b: ElementCellProps): boolean {
     p !== q &&
     (p.id !== q.id ||
       p.kind !== q.kind ||
-      p.start !== q.start ||
-      p.end !== q.end ||
+      startTicks(p) !== startTicks(q) ||
+      endTicks(p) !== endTicks(q) ||
       p.props !== q.props ||
       p.interior !== q.interior)
   )
@@ -217,7 +218,8 @@ export function sameElement(a: ElementCellProps, b: ElementCellProps): boolean {
     a.item.children.length !== b.item.children.length ||
     a.item.children.some(
       (c, i) =>
-        c !== b.item.children[i] && (c.props !== b.item.children[i]!.props || c.start !== b.item.children[i]!.start),
+        c !== b.item.children[i] &&
+        (c.props !== b.item.children[i]!.props || startTicks(c) !== startTicks(b.item.children[i]!)),
     )
   )
     return false;
@@ -232,8 +234,8 @@ export function sameElement(a: ElementCellProps, b: ElementCellProps): boolean {
   }
   if (
     a.exact || b.exact
-      ? a.time - p.start !== b.time - q.start
-      : frameIndex(a.time - p.start, ca.rate) !== frameIndex(b.time - q.start, cb.rate)
+      ? secondsSinceStart(p, a.time) !== secondsSinceStart(q, b.time)
+      : frameIndex(secondsSinceStart(p, a.time), ca.rate) !== frameIndex(secondsSinceStart(q, b.time), cb.rate)
   )
     return false;
   // A camera moves an overlay that has no keys of its own, at times its own frame does not change.

@@ -4,7 +4,8 @@
 import { Children, type CSSProperties, cloneElement, isValidElement, type ReactNode } from "react";
 
 import { fontFamily } from "@uberscene/kit";
-import { elapsedSeconds, TEXT_ANIMATION_TYPES, type TextRun, themedRuns, titleWords } from "@uberscene/kit/schema";
+import { TEXT_ANIMATION_TYPES, type TextRun, themedRuns, titleWords } from "@uberscene/kit/schema";
+import { lengthSeconds, secondsSinceStart, startSeconds } from "@uberscene/sdk";
 import type { Placement } from "@uberscene/sdk/resolver";
 
 import { isVisibleAt } from "../model/visible";
@@ -28,9 +29,9 @@ export function titleContent(
   const text = p.text;
   // The words its <Mark>s draw their own way, with theme tokens made the theme's colours.
   const runs = p.runs?.length ? (p.state.theme ? themedRuns(p.runs, p.state.theme).runs : p.runs) : NO_RUNS;
-  const rel = elapsedSeconds(p.time, p.placement.start);
+  const rel = secondsSinceStart(p.placement, p.time);
   const anim = own.animation as { type: string; in: number; out: number } | undefined;
-  const { effect, visibleChars } = animation(anim, rel, p.placement.duration, text.length, p.placement.id);
+  const { effect, visibleChars } = animation(anim, rel, lengthSeconds(p.placement), text.length, p.placement.id);
   const weight = props.weight;
   const shadow = props.shadow as { color: string; blur?: number; x?: number; y?: number } | undefined;
   const stroke = props.stroke as { color: string; thickness: number } | undefined;
@@ -63,7 +64,7 @@ export function titleContent(
       {anim?.type === "wordByWord" ? (
         // One flex item for the whole text: the words then flow and wrap inside it as ordinary text does, instead of
         // each word being an item of a line that never wraps, with the spaces between them lost.
-        <span>{words(text, rel, anim, p.placement.duration, runs)}</span>
+        <span>{words(text, rel, anim, lengthSeconds(p.placement), runs)}</span>
       ) : (
         marked(shown, 0, runs)
       )}
@@ -206,7 +207,7 @@ export function captionsContent(p: {
       (c): c is Placement =>
         c.parent === p.placement.id && c.kind === "caption" && isVisibleAt(c, p.time, p.state.composition.duration),
     )
-    .sort((a, b) => a.start - b.start);
+    .sort((a, b) => startSeconds(a) - startSeconds(b));
   const comp = p.state.composition;
   // Without a shadow of its own, a tight dark halo under a soft drop: it reads as an outline on a white shirt or sky.
   const shadow = style.shadow
@@ -276,8 +277,8 @@ function line(
   const text = String(c.props.text ?? "");
   const words = c.props.words as { text: string; start: number; end: number }[] | undefined;
   if (!words || words.length === 0 || animation === "none") {
-    if (animation === "typewriter" && c.duration > 0)
-      return text.slice(0, Math.round((text.length * (time - c.start)) / c.duration));
+    if (animation === "typewriter" && lengthSeconds(c) > 0)
+      return text.slice(0, Math.round((text.length * secondsSinceStart(c, time)) / lengthSeconds(c)));
     return text;
   }
   return words.map((w, i) => {
