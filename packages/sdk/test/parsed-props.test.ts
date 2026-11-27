@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { ENGINE_SCHEMAS, SCHEMAS_BY_KIND } from "@uberscene/kit/schema";
+import { SCHEMAS_BY_KIND, schemaFor } from "@uberscene/kit/schema";
 import { type AssetManifest, type Placement, resolve } from "@uberscene/sdk";
 
 import { CORPUS, type CorpusFile, treeOf } from "./editing/corpus";
@@ -13,10 +13,7 @@ import { CORPUS, type CorpusFile, treeOf } from "./editing/corpus";
 // they are (nothing left to fill or turn). A placement the resolver makes itself (a key, a caption cue, a camera
 // angle's clip) is held to the same, since code reads it by its kind too.
 
-const schemaOf = (p: Placement) => {
-  const engine = p.props.engine;
-  return (typeof engine === "string" && ENGINE_SCHEMAS[engine]) || SCHEMAS_BY_KIND[p.kind];
-};
+const schemaOf = (p: Placement) => schemaFor(p.kind, p.props) ?? SCHEMAS_BY_KIND[p.kind];
 
 /** What a placement's props are checked without: values a schema keeps by identity, which JSON cannot compare. */
 const plain = (value: unknown): unknown =>

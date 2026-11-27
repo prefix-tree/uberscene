@@ -11,6 +11,7 @@ import {
   isTextMark,
   isVocabulary,
   type Kind,
+  keepsInterior,
   MAIN_TRACK_ID,
   MAIN_TRACK_KINDS,
   markSchema,
@@ -218,7 +219,7 @@ function collectChildren(
       return;
     }
     if (isVocabulary(type)) {
-      if (type.kind === "layer") {
+      if (keepsInterior(type.kind)) {
         const engine = engineOf(type);
         // An engine Layer's own props are its handles; its children are the engine's, not a component's.
         const node = makeNode(

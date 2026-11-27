@@ -21,7 +21,7 @@ import { manifest } from "./helpers";
 // The SDK's part of a kind with a folder of its own (`src/elements/<kind>/`): what a title's placement holds from
 // the file besides its props, a shape's size at rest, and each kind's old spellings.
 
-const file = (inside: string) => `import { Composition, Mark, Shape, Sticker, Title, Track } from "@uberscene/kit";
+const file = (inside: string) => `import { Composition, Mark, Shape, Sticker, Svg, Title, Track } from "@uberscene/kit";
 
 export default function Video() {
   return (
@@ -110,6 +110,11 @@ describe("old spellings", () => {
     );
   });
 
+  it("an svg's colour `mode` is `type`", () => {
+    const written = `<Svg id="v" start={0} duration={2} content="<svg/>" color={{ mode: "tint", tint: "#ff0000" }} />`;
+    expect(messages(load(written))).toContain("`color.mode` is now `color.type`; uberscene lint --fix moves the file");
+  });
+
   it("have a lint row for every key a kind says it renamed", () => {
     const rows = new Set(DEPRECATIONS.map((d) => `${d.element} ${d.prop}`));
     for (const row of [
@@ -118,7 +123,22 @@ describe("old spellings", () => {
       "Title size",
       "Shape shape",
       "Shape stroke.width",
+      "Svg color.mode",
     ])
       expect(rows, row).toContain(row);
+  });
+});
+
+describe("what a kind says of being followed", () => {
+  const follower = `<Shape id="s" start={0} duration={2} type="rectangle" follow="v" />`;
+
+  it("an SVG read from a file cannot be, and one written inline can", () => {
+    const fromFile = load(`<Svg id="v" start={0} duration={2} src="asset:logo" />${follower}`);
+    expect(fromFile.errors.map((e) => e.message)).toContain(
+      'follow names "v", an SVG read from a file: its size is only known once it is drawn, so it can\'t be followed yet; write its markup in `content`, or follow a shape',
+    );
+    const inline = load(`<Svg id="v" start={0} duration={2} content="<svg/>" />${follower}`);
+    expect(inline.errors).toEqual([]);
+    expect(SDK_ELEMENTS.svg.cannotBeFollowed?.({ content: "<svg/>" })).toBeUndefined();
   });
 });

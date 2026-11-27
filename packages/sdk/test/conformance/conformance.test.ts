@@ -19,7 +19,7 @@ import { type ActionInput, affordances, foldToSource, lint, type ResolvedState, 
 
 import { executorFor, resolveText } from "../editing/corpus";
 import { serialize } from "../helpers";
-import { SAMPLE_ACTIONS } from "./params";
+import { sampleActions } from "./params";
 import { SAMPLE, SAMPLE_KINDS, sampleFile, tagOf } from "./sample";
 
 const root = join(import.meta.dirname, "..", "..", "..", "..");
@@ -29,6 +29,12 @@ const errorsOf = (state: ResolvedState): string[] =>
   [...state.errors].map((e) => `${e.code} ${e.id ?? ""} ${e.message}`).sort();
 
 type File = ReturnType<typeof sampleFile>;
+
+/** The effects the sample writes, in order, by type. */
+const effectsOf = (state: ResolvedState): string[] =>
+  [...state.items.values()]
+    .filter((item) => item.parent === SAMPLE && item.kind === "effect")
+    .map((item) => String(item.props.type));
 
 /** What the editor holds, written into the file and read back, is the same timeline. */
 function expectWrittenBack(file: File, exec: ReturnType<typeof executorFor>): void {
@@ -108,13 +114,14 @@ describe.each(SAMPLE_KINDS.map((kind) => [kind, sampleFile(kind)] as const))("a 
   });
 
   const offered = affordances(start, SAMPLE)?.actions ?? [];
+  const actions = sampleActions({ kind, effects: effectsOf(start) });
 
   it("is offered actions", () => {
     expect(offered.length).toBeGreaterThan(0);
   });
 
   it.each(offered)("%s runs, undoes, redoes and writes back (or is refused, where the params say so)", (type) => {
-    const sample = SAMPLE_ACTIONS[type];
+    const sample = actions[type];
     expect(sample, `a ${kind} is offered ${type}: give it params in ${PARAMS_FILE}`).toBeDefined();
     if (!sample) return;
     const exec = executorFor(file);
@@ -148,12 +155,16 @@ describe.each(SAMPLE_KINDS.map((kind) => [kind, sampleFile(kind)] as const))("a 
 
 describe("the sample actions", () => {
   it("are each offered to some kind, so none is left behind when an action goes", () => {
-    const offered = new Set(
-      SAMPLE_KINDS.flatMap((kind) => {
-        const file = sampleFile(kind);
-        return affordances(resolveText(file.text, file.manifest, file.files), SAMPLE)?.actions ?? [];
-      }),
+    const left = SAMPLE_KINDS.flatMap((kind) => {
+      const file = sampleFile(kind);
+      const state = resolveText(file.text, file.manifest, file.files);
+      const offered = new Set<string>(affordances(state, SAMPLE)?.actions ?? []);
+      return Object.keys(sampleActions({ kind, effects: effectsOf(state) })).filter((type) => !offered.has(type));
+    });
+    // Params written for an action no kind is offered any more.
+    const everywhere = [...new Set(left)].filter(
+      (type) => left.filter((t) => t === type).length === SAMPLE_KINDS.length,
     );
-    expect(Object.keys(SAMPLE_ACTIONS).filter((type) => !offered.has(type as never))).toEqual([]);
+    expect(everywhere).toEqual([]);
   });
 });

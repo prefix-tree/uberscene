@@ -12,6 +12,7 @@ import {
   type RefTarget,
 } from "@uberscene/kit/schema";
 
+import { sdkElement } from "../elements";
 import type { ResolveError } from "./errors";
 import { EFFECT_PARAM_PATH } from "./link";
 import type { CollectedNode, CollectedTree } from "./tree";
@@ -185,10 +186,11 @@ export const REF_KINDS: Readonly<Record<string, RefKind>> = {
       const inside = mine !== undefined ? from : to;
       return `"${inside}" is under the camera and the other is not: put "${from}" and "${to}", which it follows, on tracks on the same side of the camera`;
     },
-    unfit: (_from, to, written, ctx) =>
-      ctx.kindOf(to) === "svg" && typeof ctx.propsOf(to).content !== "string"
-        ? `follow names "${written.text}", an SVG read from a file: its size is only known once it is drawn, so it can't be followed yet; write its markup in \`content\`, or follow a shape`
-        : null,
+    unfit: (_from, to, written, ctx) => {
+      const kind = ctx.kindOf(to);
+      const why = kind && sdkElement(kind)?.cannotBeFollowed?.(ctx.propsOf(to));
+      return why ? `follow names "${written.text}", ${why}` : null;
+    },
     phase: "frame",
     facet: "space",
     cardinality: "one",

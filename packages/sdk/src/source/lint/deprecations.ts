@@ -25,7 +25,6 @@ const NAMING: readonly Deprecation[] = [
   rename("Captions", "style.stroke.width", "thickness"),
   rename("LowerThird", "variant", "type"),
   rename("Composition", "background.mode", "type"),
-  rename("Svg", "color.mode", "type"),
   rename("Marker", "at", "start"),
   ...DIAGRAM_PARTS.map((part) => rename(part, "at", "start")),
   rename("Label", "lineWidth", "lineThickness"),

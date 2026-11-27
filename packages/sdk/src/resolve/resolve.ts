@@ -7,7 +7,6 @@ import {
   DERIVED_KINDS,
   type DeclaredFont,
   defaultTransitionParams,
-  ENGINE_SCHEMAS,
   effectEntry,
   effectParamProblem,
   type FrameRate,
@@ -27,6 +26,7 @@ import {
   SCHEMAS_BY_KIND,
   type ShaderDefinition,
   sampleRateProblem,
+  schemaFor,
   shaderFor,
   type TextRun,
   type ThemeOrigin,
@@ -883,8 +883,7 @@ function parseProps(node: CollectedNode, errors: ResolveError[], theme: Resolved
     prop: issue.prop,
     message: issue.message,
   }));
-  const engine = node.kind === "layer" && typeof node.props.engine === "string" ? node.props.engine : null;
-  const schema = (engine ? ENGINE_SCHEMAS[engine] : SCHEMAS_BY_KIND[node.kind]) as z.ZodType | undefined;
+  const schema = schemaFor(node.kind, node.props);
   let data: Record<string, unknown>;
   if (!schema) data = { ...themed.props };
   else {
@@ -942,7 +941,6 @@ function parseProps(node: CollectedNode, errors: ResolveError[], theme: Resolved
  */
 const RENAMED_KEYS: Readonly<Record<string, Readonly<Record<string, Readonly<Record<string, string>>>>>> = {
   captions: { "style.stroke": { width: "thickness" } },
-  svg: { color: { mode: "type" } },
   composition: { background: { mode: "type" } },
   marker: { "": { at: "start" } },
 };

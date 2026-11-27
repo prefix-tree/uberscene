@@ -14,11 +14,11 @@
 import type { z } from "zod";
 
 import {
-  ENGINE_SCHEMAS,
   type Kind,
   type KindProps,
   type KindWith,
   SCHEMAS_BY_KIND,
+  schemaFor,
   type TextRun,
 } from "@uberscene/kit/schema";
 
@@ -172,7 +172,6 @@ export function hasProp<P extends string>(
 
 /** The props a placement's schema has: its kind's, or for a layer a library draws, that engine's. */
 function shapeOf(placement: Placement): Readonly<Record<string, unknown>> {
-  const engine = placement.props.engine;
-  const schema = (typeof engine === "string" && ENGINE_SCHEMAS[engine]) || SCHEMAS_BY_KIND[placement.kind];
+  const schema = schemaFor(placement.kind, placement.props) ?? SCHEMAS_BY_KIND[placement.kind];
   return (schema as unknown as z.ZodObject).shape;
 }

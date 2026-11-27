@@ -1,8 +1,7 @@
-import { type Kind, kindsWhere, kindsWithProp } from "@uberscene/kit/schema";
+import { capabilitiesOf, type Kind, kindsWhere, kindsWithProp } from "@uberscene/kit/schema";
 
 import type { Json } from "../../patches/types";
-import { INTERIOR_PREFIX } from "../../resolve/tree";
-import { define, makePropHandler, rawNode, rawProp } from "../handler-kit";
+import { define, makePropHandler, rawProp } from "../handler-kit";
 import { invalid, ok } from "../types";
 
 /** Kinds that play a source range (`in`, `out`), so have a speed and a direction. */
@@ -14,6 +13,8 @@ const BLEND_KINDS = kindsWithProp("blend");
 /** Kinds whose blend has a strength (`blendOpacity`): the ones drawn on the canvas. */
 const BLEND_OPACITY_KINDS: readonly Kind[] = kindsWithProp("blendOpacity");
 const AUDIO_KINDS = kindsWhere((kind) => kind.audio);
+/** Kinds on a track that show or play a file (`src`). */
+const SRC_KINDS = kindsWithProp("src").filter((kind) => capabilitiesOf(kind).placementScope === "track");
 /** Kinds painted on the canvas. */
 const CANVAS_KINDS = kindsWhere((kind) => kind.plane === "canvas");
 
@@ -49,7 +50,7 @@ define(makePropHandler({
 define(makePropHandler({ type: "clip/setFit", kinds: CANVAS_KINDS, write: (p) => ({ fit: p.value }) }));
 define(makePropHandler({
   type: "clip/setSource",
-  kinds: ["clip", "audio", "svg", "sticker"],
+  kinds: SRC_KINDS,
   write: (p) => ({ src: p.src }),
 }));
 define(makePropHandler({
@@ -85,33 +86,6 @@ define(makePropHandler({
     }
     return { box: Object.keys(box).length > 0 ? box : undefined };
   },
-}));
-
-/** The handles of a Layer: the literal or schema-bound props of the one component inside it. */
-define(makePropHandler({
-  type: "layer/setProps",
-  kinds: ["layer"],
-  targets: { when: (item, state) => rawNode(state, item.id)?.interior !== undefined },
-  write: (p) => Object.fromEntries(Object.entries(p.props).map(([k, v]) => [`${INTERIOR_PREFIX}${k}`, v])),
-  validate: (a, state) =>
-    rawNode(state, a.params.id)?.interior
-      ? ok
-      : invalid({
-          code: "INVALID_PARAMS",
-          message: `"${a.params.id}" has no handles: a Layer gets them from the one component inside it`,
-        }),
-}));
-
-define(makePropHandler({
-  type: "layer/setTiming",
-  kinds: ["layer"],
-  write: (p, state) => ({
-    ...("duration" in p ? { duration: p.duration } : {}),
-    ...("anchor" in p ? { anchor: p.anchor } : {}),
-    ...("offset" in p ? { offset: p.offset } : {}),
-    ...("start" in p ? { start: p.start } : {}),
-    ...("anchor" in p && p.anchor !== rawProp(state, p.id, "anchor") ? { at: undefined } : {}),
-  }),
 }));
 
 define(makePropHandler({

@@ -15,6 +15,11 @@ interface SdkElementBase<K extends Kind> {
    */
   readonly restSize?: (placement: PlacementMap[K]) => Box;
   /**
+   * Why it cannot be followed, from its props as written, as what a message says after naming it ("an SVG read from
+   * a file: …"); undefined when it can. Left out, it always can.
+   */
+  readonly cannotBeFollowed?: (written: Readonly<Record<string, unknown>>) => string | undefined;
+  /**
    * Keys the kind renamed, by the object they are in (`""` for its own props), old to new: what the resolver says in
    * place of the schema's "Unrecognized key".
    */
