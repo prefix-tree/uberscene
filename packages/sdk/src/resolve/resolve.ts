@@ -30,8 +30,8 @@ import {
   sampleRateProblem,
   shaderFor,
   type ThemeOrigin,
+  type TickRange,
   type Ticks,
-  type TimeRange,
   TRANSITION_TYPES,
   type TrackLayout,
   type TrackRole,
@@ -73,7 +73,7 @@ export interface Placement {
   readonly parent: string | null;
   readonly children: readonly string[];
   /** Where it plays on the timeline, in ticks (decision 0044). Its times in seconds below are derived from it. */
-  readonly range: TimeRange;
+  readonly range: TickRange;
   /** @deprecated Seconds, derived from `range`: read `range.start`. Removed once every reader moves to ticks. */
   readonly start: number;
   /** @deprecated Seconds, derived from `range`: read `rangeEnd(range)`. */
@@ -103,7 +103,7 @@ export interface PlacementSource {
   readonly speed: number;
   readonly asset: string;
   /** `[in, out)` of the source in ticks. */
-  readonly range: TimeRange;
+  readonly range: TickRange;
 }
 
 /** A placement's source with its range in ticks, from the seconds the resolver works the source out in. */

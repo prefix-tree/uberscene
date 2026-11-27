@@ -534,7 +534,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/kit/schema`
 
-341 exports.
+343 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -816,6 +816,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `ThemeStyle` | type |  |
 | `themeToken` | function | The value of `$name`, or undefined. |
 | `Three` | const | The `<Three>` element ([reference](/reference/elements/three)). |
+| `TickRange` | interface | A half-open stretch of time in raw ticks, `[start, start + duration)`, as craft-time's `TimeRange`. |
 | `ticks` | function | A count as ticks. |
 | `Ticks` | type | A time or a length in ticks. |
 | `TICKS_PER_SECOND` | const | Ticks in one second. |
@@ -829,9 +830,10 @@ Every name each entry exports, read from the code. The sections above explain th
 | `ticksToSeconds` | const |  |
 | `ticksToUnitsFloor` | const | Ticks as a count of units at `perSecond`, floored, as craft-time's `to_units_floor`. |
 | `tidySeconds` | function | A computed time without its float noise, keeping where it really falls. |
+| `Time` | class | A point or a length on the timeline, as a whole number of ticks. |
 | `timecode` | function | SMPTE timecode of a frame, `HH:MM:SS:FF`. |
 | `timeRange` | const | The range that starts at `start` and lasts `duration`. |
-| `TimeRange` | interface | A half-open stretch of time, `[start, start + duration)`, as craft-time's `TimeRange`. |
+| `TimeRange` | class | A half-open stretch of the timeline, `[start, start + duration)`, as craft-time's `TimeRange`. |
 | `Title` | const | The `<Title>` element ([reference](/reference/elements/title)). |
 | `titleWords` | function | The words of a title's text, as the player reveals them word by word. |
 | `TOKEN_PATTERN` | const | A whole prop value naming a theme value. |

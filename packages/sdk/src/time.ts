@@ -3,7 +3,7 @@
 // row. Unlike the kit's checked helpers, these don't throw past 2^53 ticks (about 9.85 hours): a file can say a longer
 // time, which the resolver reports, and an edit or a row on such a file must still work.
 
-import { TICKS_PER_SECOND, type Ticks, type TimeRange, ticksAsSeconds } from "@uberscene/kit/schema";
+import { TICKS_PER_SECOND, type TickRange, type Ticks, ticksAsSeconds } from "@uberscene/kit/schema";
 
 /** Seconds as the nearest tick: a time from a file, a param, the manifest or the speed math. */
 export const T = (seconds: number): Ticks => (Math.round(seconds * TICKS_PER_SECOND) + 0) as Ticks;
@@ -15,7 +15,7 @@ export const plus = (a: Ticks, b: Ticks): Ticks => (a + b) as Ticks;
 export const minus = (a: Ticks, b: Ticks): Ticks => (a - b) as Ticks;
 
 interface Ranged {
-  readonly range: TimeRange;
+  readonly range: TickRange;
 }
 
 /** Where a placement starts, in ticks. */
