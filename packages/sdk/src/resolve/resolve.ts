@@ -63,6 +63,7 @@ import { derivedOrigin, expandKeys } from "./expand";
 import { FOLLOW_KINDS, followOf } from "./follow";
 import { overlay } from "./overlay";
 import { type PushSpec, pushKeys } from "./push";
+import { buildRefGraph, type RefGraph } from "./refs";
 import { placeScene, type SceneUse, sceneAssetId, withSceneAssets } from "./scene3d";
 import { freezeHoldsOf, heldWithin, holdTotal, rampAdvance, rampInverse, reachedHolds, speedKeysOf } from "./speed";
 import type { CollectedNode, CollectedTree, Editable, LayerInterior } from "./tree";
@@ -187,6 +188,8 @@ export interface ResolvedState {
   readonly shaders: readonly ShaderDefinition[];
   /** The 3D scenes clips play, by the asset id of their frames (a placement's `source.asset`). Absent when none. */
   readonly scenes?: ReadonlyMap<string, SceneUse>;
+  /** Every reference between elements: what names what, and the order to work them out in. */
+  readonly refs: RefGraph;
 }
 
 const DEFAULT_OVERLAY_DURATION = 5;
@@ -387,6 +390,15 @@ function compute(
       });
     }
   }
+
+  // Every reference between elements, read once the tracks are known: who is on which, and under the camera.
+  const refs = buildRefGraph(tree, {
+    kindOf: (id) => tree.byId.get(id)?.kind,
+    trackOf: (id) => pending.get(id)?.track ?? null,
+    cameraOfTrack: (track) => (track === null ? undefined : tracks.find((t) => t.id === track)?.camera),
+    propsOf: (id) => pending.get(id)?.props ?? tree.byId.get(id)?.props ?? {},
+    tracks,
+  });
 
   for (const p of pending.values()) {
     const duck = p.props.duck as { under: string } | undefined;
@@ -682,6 +694,7 @@ function compute(
     fonts: withPickedFonts(original.fonts ?? [], root.props.$fonts),
     shaders: original.shaders ?? [],
     ...(scenes.size > 0 ? { scenes } : {}),
+    refs: refs.graph,
   };
 }
 
