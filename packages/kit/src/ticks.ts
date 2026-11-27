@@ -15,8 +15,11 @@ declare const TICKS: unique symbol;
 /** A time or a length in ticks: a safe integer count of 1/254,016,000,000 s. */
 export type Ticks = number & { readonly [TICKS]: true };
 
-/** A half-open stretch of time, `[start, start + duration)`, as craft-time's `TimeRange`. Its end is computed. */
-export interface TimeRange {
+/**
+ * A half-open stretch of time in raw ticks, `[start, start + duration)`, as craft-time's `TimeRange`. Its end is
+ * computed. Prefer the `TimeRange` class (decision 0045), which a placement's range moves to next.
+ */
+export interface TickRange {
   readonly start: Ticks;
   readonly duration: Ticks;
 }
@@ -145,26 +148,26 @@ export function snapToNearestFrame(t: Ticks, rate: Rate): Ticks {
 }
 
 /** The range that starts at `start` and lasts `duration`. */
-export const timeRange = (start: Ticks, duration: Ticks): TimeRange => ({ start, duration });
+export const timeRange = (start: Ticks, duration: Ticks): TickRange => ({ start, duration });
 
 /** The range from `start` up to, but not including, `end`. */
-export const rangeFromBounds = (start: Ticks, end: Ticks): TimeRange => ({ start, duration: subTicks(end, start) });
+export const rangeFromBounds = (start: Ticks, end: Ticks): TickRange => ({ start, duration: subTicks(end, start) });
 
 /** The first tick after a range: `start + duration`. */
-export const rangeEnd = (r: TimeRange): Ticks => addTicks(r.start, r.duration);
+export const rangeEnd = (r: TickRange): Ticks => addTicks(r.start, r.duration);
 
 /** Whether `t` is in `[start, end)`. */
-export const rangeContains = (r: TimeRange, t: Ticks): boolean => t >= r.start && t < r.start + r.duration;
+export const rangeContains = (r: TickRange, t: Ticks): boolean => t >= r.start && t < r.start + r.duration;
 
 /** Whether a range holds no time. */
-export const rangeIsEmpty = (r: TimeRange): boolean => r.duration <= 0;
+export const rangeIsEmpty = (r: TickRange): boolean => r.duration <= 0;
 
 /** Whether two ranges share any time. An empty range overlaps nothing. */
-export const rangesOverlap = (a: TimeRange, b: TimeRange): boolean =>
+export const rangesOverlap = (a: TickRange, b: TickRange): boolean =>
   !rangeIsEmpty(a) && !rangeIsEmpty(b) && a.start < b.start + b.duration && b.start < a.start + a.duration;
 
 /** The stretch two ranges share, or null when they share none. */
-export function rangeIntersect(a: TimeRange, b: TimeRange): TimeRange | null {
+export function rangeIntersect(a: TickRange, b: TickRange): TickRange | null {
   const start = maxTicks(a.start, b.start);
   const end = minTicks(rangeEnd(a), rangeEnd(b));
   return end > start ? rangeFromBounds(start, end) : null;
