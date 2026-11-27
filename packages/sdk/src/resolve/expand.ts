@@ -92,7 +92,8 @@ function expandInto(
       byId.set(out.id, out);
       for (const d of own?.derived ?? []) index(d, byId);
     }
-    expanded.set(node, out);
+    // A node the log made again is made again by the next patch too: its expansion is never asked for twice.
+    if (!was || was === node) expanded.set(node, out);
     return out;
   };
   return visit(top);

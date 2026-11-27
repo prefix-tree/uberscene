@@ -420,7 +420,8 @@ function playsScene(node: CollectedNode, source?: ReadonlyMap<string, CollectedN
     if (kept && kept.children[i] === child) continue;
     found = playsScene(child, source);
   }
-  sceneInside.set(node, found);
+  // A node the log made again is not seen a second time: only one that stays is worth keeping the answer for.
+  if (!before || before === node) sceneInside.set(node, found);
   return found;
 }
 
@@ -749,7 +750,7 @@ function compute(
         const kid = kids[i] as CollectedNode;
         // These make elements of their own, or wait on the video's length: the track is not a settled one.
         if (kid.kind === "multicam" || kid.kind === "captions" || kid.kind === "caption") break;
-        intrinsic(kid, node.id, scratch, manifest, markers, markersKey, theme, errors);
+        intrinsic(kid, node.id, scratch, manifest, markers, markersKey, theme, errors, kid === last.children[i]);
         const p = scratch.get(kid.id);
         if (!p || p.node !== kid || p.props.duck !== undefined) break;
         if (p.props.frame && p.source) p.props = framed(p.props, manifest.assets[p.source.asset], compParsed);
@@ -1750,6 +1751,8 @@ function intrinsic(
   markersKey: string,
   theme: ResolvedTheme,
   errors: ResolveError[],
+  /** False for a node the log made again, which the next patch makes again: what it derives is not kept. */
+  keep = true,
 ): void {
   const parentProps = node.kind === "caption" && node.parent ? pending.get(node.parent)?.props : undefined;
   const hit = intrinsicByNode.get(node);
@@ -1776,6 +1779,7 @@ function intrinsic(
   }
   entered++;
   const p = intrinsicCompute(node, track, pending, manifest, markers, markersKey, theme, errors);
+  if (!keep) return;
   intrinsicByNode.set(node, {
     manifest,
     markersKey,
