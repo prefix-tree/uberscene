@@ -370,6 +370,9 @@ function compute(
   ): Placement => {
     const range = rangeOf(start, length);
     const prev = previous?.get(node.id);
+    // What an element that only moved keeps of its last placement: the source it plays and its children's ids.
+    const sourceKept = prev !== undefined && sameSource(prev.source, pendingSource);
+    const childrenKept = prev !== undefined && sameChildIds(prev.children, node.children);
     if (
       prev &&
       prev.kind === node.kind &&
@@ -380,32 +383,33 @@ function compute(
       prev.editable === node.editable &&
       prev.lockedProps === node.lockedProps &&
       prev.boundProps === node.boundProps &&
-      sameSource(prev.source, pendingSource) &&
+      sourceKept &&
       sameBetween(prev.between, between) &&
       prev.interior === node.interior &&
-      sameChildIds(prev.children, node.children) &&
+      childrenKept &&
       sameErrors(prev.errors, errors)
     )
       return prev;
-    // Only a placement that changed works out its source's range.
-    const source = withRange(pendingSource);
-    const placement: Placement = {
+    // Only a placement whose source changed works out the source's range.
+    const source = sourceKept ? prev.source : withRange(pendingSource);
+    const themed = themedByData.get(props);
+    const placement: { -readonly [K in keyof Placement]: Placement[K] } = {
       id: node.id,
       kind: node.kind,
       track,
       parent,
-      children: node.children.map((c) => c.id),
+      children: childrenKept ? prev.children : node.children.map((c) => c.id),
       range,
       props,
       editable: node.editable,
       lockedProps: node.lockedProps,
       boundProps: node.boundProps,
       errors,
-      ...(source ? { source } : {}),
-      ...(between ? { between } : {}),
-      ...(node.interior ? { interior: node.interior } : {}),
-      ...themedField(props),
     };
+    if (source) placement.source = source;
+    if (between) placement.between = between;
+    if (node.interior) placement.interior = node.interior;
+    if (themed) placement.themed = themed;
     return placement;
   };
 
@@ -801,10 +805,21 @@ function compute(
       ...themedField(compParsed),
     }),
   );
-  errors.push(...textureErrors(items, manifest));
-  errors.push(...keyframeErrors(items));
-  errors.push(...generatorErrors(items));
-  errors.push(...followErrors(items, tracks));
+  // One walk of the items sorts out the few each check reads; each check then says its errors in the items' order.
+  const effects: Placement[] = [];
+  const keyframes: Placement[] = [];
+  const generators: Placement[] = [];
+  const followers: Placement[] = [];
+  for (const item of items.values()) {
+    if (item.kind === "effect") effects.push(item);
+    else if (item.kind === "keyframe") keyframes.push(item);
+    else if (item.kind === "generator") generators.push(item);
+    if (FOLLOW_KINDS.has(item.kind) && followOf(item) !== undefined) followers.push(item);
+  }
+  errors.push(...textureErrors(effects, manifest));
+  errors.push(...keyframeErrors(keyframes, items));
+  errors.push(...generatorErrors(generators, items));
+  errors.push(...followErrors(followers, items, tracks));
   const rate = rateOf(compParsed.fps, root.id, errors);
   // A time the file says past the limit is held at it (`T`, `plusClamped`), so a video that reaches it is too long.
   if (duration.toSeconds() > MAX_SECONDS)
@@ -1318,9 +1333,9 @@ function framed(
 
 /** Keys on an effect's params: each value one that param's schema takes. */
 /** A wobble or a drift on `box.x` or `box.y` needs a place to be added to: with none, the element is centred. */
-function generatorErrors(items: ReadonlyMap<string, Placement>): ResolveError[] {
+function generatorErrors(generators: readonly Placement[], items: ReadonlyMap<string, Placement>): ResolveError[] {
   const out: ResolveError[] = [];
-  for (const g of items.values()) {
+  for (const g of generators) {
     if (g.kind !== "generator" || g.props.type === "loop") continue;
     const axis = g.props.property === "box.x" ? "x" : g.props.property === "box.y" ? "y" : null;
     const parent = g.parent ? items.get(g.parent) : undefined;
@@ -1345,14 +1360,18 @@ function generatorErrors(items: ReadonlyMap<string, Placement>): ResolveError[] 
  * A `follow` names another overlay in the file, on the same side of the camera, whose size is known before it is
  * drawn, and no chain comes back to where it started.
  */
-function followErrors(items: ReadonlyMap<string, Placement>, tracks: readonly ResolvedTrack[]): ResolveError[] {
+function followErrors(
+  followers: readonly Placement[],
+  items: ReadonlyMap<string, Placement>,
+  tracks: readonly ResolvedTrack[],
+): ResolveError[] {
   const out: ResolveError[] = [];
   const cameraOf = (p: Placement): string | undefined => tracks.find((t) => t.id === p.track)?.camera;
   const problem = (id: string, code: ResolveError["code"], message: string): void => {
     out.push({ code, id, prop: "follow", message });
   };
   const inCycle = new Set<string>();
-  for (const child of items.values()) {
+  for (const child of followers) {
     const ref = followOf(child);
     if (ref === undefined || !FOLLOW_KINDS.has(child.kind)) continue;
     const leader = items.get(ref);
@@ -1406,9 +1425,9 @@ function followErrors(items: ReadonlyMap<string, Placement>, tracks: readonly Re
   return out;
 }
 
-function keyframeErrors(items: ReadonlyMap<string, Placement>): ResolveError[] {
+function keyframeErrors(keyframes: readonly Placement[], items: ReadonlyMap<string, Placement>): ResolveError[] {
   const out: ResolveError[] = [];
-  for (const k of items.values()) {
+  for (const k of keyframes) {
     if (k.kind !== "keyframe") continue;
     const parent = k.parent ? items.get(k.parent) : undefined;
     const property = k.props.property;
@@ -1457,9 +1476,9 @@ function onElement(error: ResolveError): ResolveError {
  * Effect params that name an asset (`"asset:ID"`, a texture the shader reads): the asset must be in the manifest, a
  * LUT for a `lut` effect, and an image or a LUT for an effect the file declares.
  */
-function textureErrors(items: ReadonlyMap<string, Placement>, manifest: AssetManifest): ResolveError[] {
+function textureErrors(effects: readonly Placement[], manifest: AssetManifest): ResolveError[] {
   const out: ResolveError[] = [];
-  for (const p of items.values()) {
+  for (const p of effects) {
     if (p.kind !== "effect") continue;
     const params = (p.props.params ?? {}) as Readonly<Record<string, unknown>>;
     for (const [name, value] of Object.entries(params)) {
