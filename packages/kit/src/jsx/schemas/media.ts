@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { refPattern } from "../ref";
 import { isScene, type Scene } from "../scene3d";
 import { assetRefSchema, audioProps, keyed, timedProps, timeRefSchema, visualProps } from "./common";
 
@@ -31,7 +32,7 @@ const sourceProps = {
 /** A moment of the edit handed into a scene: seconds of the video, or `"marker:ID"`. */
 const editTimeSchema = z.union([
   z.number().nonnegative(),
-  z.string().regex(/^marker:[A-Za-z_][A-Za-z0-9_-]*$/, 'times look like 4.2 or "marker:reveal"'),
+  z.string().regex(refPattern(["marker"]), 'times look like 4.2 or "marker:reveal"'),
 ]);
 
 export const clipSchema = z.strictObject({
