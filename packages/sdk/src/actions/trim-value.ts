@@ -1,10 +1,10 @@
-import { elapsedSeconds, type TickRange, tidySeconds } from "@uberscene/kit/schema";
+import { elapsedSeconds, type TimeRange, tidySeconds } from "@uberscene/kit/schema";
 
 import { sinceStart } from "../time";
 
 /** What `trimValue` reads of an element: a placement's `range`, or an inspect row's `start` in seconds. */
 type Trimmed = { readonly source?: { readonly in: number; readonly speed: number } | undefined } & (
-  | { readonly range: TickRange }
+  | { readonly range: TimeRange }
   | { readonly start: number }
 );
 
