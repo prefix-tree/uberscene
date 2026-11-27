@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { resolveTheme, Time, TimeRange } from "@uberscene/kit/schema";
 import {
   type AssetManifest,
+  buildRefGraph,
   type CollectedNode,
   collectModule,
   endSeconds,
@@ -362,6 +363,16 @@ export function makeState(spec: StateSpec): ResolvedState {
     theme: resolveTheme(undefined),
     fonts: [],
     shaders: [],
+    refs: buildRefGraph(
+      { root, byId, errors: [] },
+      {
+        kindOf: (id) => byId.get(id)?.kind,
+        trackOf: (id) => items.get(id)?.track ?? null,
+        cameraOfTrack: (track) => tracks.find((t) => t.id === track)?.camera,
+        propsOf: (id) => items.get(id)?.props ?? {},
+        tracks,
+      },
+    ).graph,
   };
 }
 

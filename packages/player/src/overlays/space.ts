@@ -47,17 +47,39 @@ interface OverlayPlacement extends Placement {
 
 /**
  * The space of every overlay that follows another, at composition time `t`, worked out once: what a frame of the
- * player hands each element it draws. Pure: the same state and time give the same map.
+ * player hands each element it draws. Pure: the same state and time give the same map. The elements come in the
+ * order of the reference graph (`state.refs.order.space`), each after the one it follows, so one pass places them
+ * all; in a circle of follows (the resolver already says so) the first one is placed from the composition.
  */
 export function spacesAt(state: ResolvedState, t: number): ReadonlyMap<string, Space> {
   const spaces = new Map<string, Space>();
-  for (const p of state.items.values()) if (followOf(p) !== undefined) chain(state, p, t, spaces, new Set());
+  for (const id of state.refs.order.space) {
+    const p = state.items.get(id);
+    const space = p && followOf(p) !== undefined ? spaceIn(state, p, t, spaces) : undefined;
+    if (space) spaces.set(id, space);
+  }
   return spaces;
 }
 
 /** The space `p` is placed in at composition time `t`, for a caller that places one element. Pure. */
 export function spaceOf(state: ResolvedState, p: Placement, t: number): Space {
-  return followOf(p) === undefined ? rootSpace(state) : chain(state, p, t, new Map(), new Set());
+  if (followOf(p) === undefined) return rootSpace(state);
+  // The elements it follows, up the chain, then each placed from the top down. A chain that comes back on itself
+  // (the resolver already says so) ends where it does.
+  const up: Placement[] = [];
+  const seen = new Set<string>();
+  for (let at: Placement | undefined = p; at && followOf(at) !== undefined && !seen.has(at.id); ) {
+    up.push(at);
+    seen.add(at.id);
+    at = state.items.get(followOf(at) as string);
+    if (at && seen.has(at.id)) up.pop();
+  }
+  const spaces = new Map<string, Space>();
+  for (const at of up.reverse()) {
+    const space = spaceIn(state, at, t, spaces);
+    if (space) spaces.set(at.id, space);
+  }
+  return spaces.get(p.id) ?? rootSpace(state);
 }
 
 /**
@@ -74,14 +96,15 @@ function heldRel(leader: OverlayPlacement, t: number): number {
   return rel;
 }
 
-function chain(state: ResolvedState, p: Placement, t: number, spaces: Map<string, Space>, seen: Set<string>): Space {
-  const known = spaces.get(p.id);
-  if (known) return known;
+/**
+ * The space `p` is placed in: the box of the element it follows, carried by that element's transform, entrance and
+ * exit, inside that element's own space, which `spaces` holds when it follows something too. Undefined when what it
+ * follows does not exist.
+ */
+function spaceIn(state: ResolvedState, p: Placement, t: number, spaces: ReadonlyMap<string, Space>): Space | undefined {
   const leader = state.items.get(followOf(p) ?? "") as OverlayPlacement | undefined;
-  // A broken chain (an unknown id, a cycle: the resolver already says so) ends where it breaks.
-  if (!leader || seen.has(leader.id)) return rootSpace(state);
-  seen.add(p.id);
-  const outer = followOf(leader) === undefined ? rootSpace(state) : chain(state, leader, t, spaces, seen);
+  if (!leader) return undefined;
+  const outer = spaces.get(leader.id) ?? rootSpace(state);
   const children = childrenOf(state, leader);
   const rel = heldRel(leader, t);
   const transform = animatedTransform(leader.props.transform, children, rel);
@@ -96,11 +119,9 @@ function chain(state: ResolvedState, p: Placement, t: number, spaces: Map<string
     layout.rect.w,
     layout.rect.h,
   );
-  const space: Space = {
+  return {
     frame: { width: layout.rect.w, height: layout.rect.h },
     matrix: multiply(outer.matrix, multiply(layout.matrix, motion.matrix)),
     isRoot: false,
   };
-  spaces.set(p.id, space);
-  return space;
 }
