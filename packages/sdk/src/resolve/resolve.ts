@@ -399,16 +399,8 @@ function compute(
     tracks,
   });
 
+  for (const error of refs.errors.get("duck") ?? []) pending.get(error.id)?.errors.push(error);
   for (const p of pending.values()) {
-    const duck = p.props.duck as { under: string } | undefined;
-    if (duck && !tracks.some((t) => t.id === duck.under || t.role === duck.under)) {
-      p.errors.push({
-        code: "UNKNOWN_REF",
-        id: p.node.id,
-        prop: "duck.under",
-        message: `duck.under "${duck.under}" is neither a track id nor a track role`,
-      });
-    }
     if (p.props.frame && p.source) p.props = framed(p.props, manifest.assets[p.source.asset], compParsed);
   }
 
@@ -613,12 +605,12 @@ function compute(
         tracks,
         { width: Number(compParsed.width ?? 1920), height: Number(compParsed.height ?? 1080) },
         manifest,
+        refs.graph,
       );
-      for (const problem of made.problems)
-        errors.push({ code: "UNKNOWN_REF", id: problem.id, prop: "push", message: problem.message });
+      errors.push(...(refs.errors.get("push") ?? []));
       const count = { x: 0, y: 0, zoom: 0 };
       const ids: string[] = [];
-      for (const key of made.keys) {
+      for (const key of made) {
         const id = `${camera.id}.push.${key.field}.${count[key.field]++}`;
         const props = {
           id,

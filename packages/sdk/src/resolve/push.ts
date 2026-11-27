@@ -3,6 +3,7 @@ import { capabilitiesOf, type DrawRect, type ElementBox, type FitMode, placeBox 
 import { type AssetManifest, lookupAsset } from "../manifest/types";
 import { endT, plus, S, startT, T } from "../time";
 import { followOf } from "./follow";
+import type { RefGraph } from "./refs";
 import type { Placement, ResolvedTrack } from "./resolve";
 
 /** A camera's `push` as the schema parses it. */
@@ -20,11 +21,6 @@ export interface PushKey {
   readonly at: number;
   readonly value: number;
   readonly easing?: string;
-}
-
-export interface PushProblem {
-  readonly id: string;
-  readonly message: string;
 }
 
 interface Frame {
@@ -114,23 +110,16 @@ export function pushKeys(
   tracks: readonly ResolvedTrack[],
   frame: Frame,
   manifest: AssetManifest,
-): { readonly keys: readonly PushKey[]; readonly problems: readonly PushProblem[] } {
-  const problems: PushProblem[] = [];
+  refs: RefGraph,
+): readonly PushKey[] {
   const under = new Set(tracks.filter((t) => t.camera === camera.id).map((t) => t.id));
-  const named = (ids: readonly string[], prop: string): Placement[] =>
-    ids.flatMap((id) => {
-      const item = items.get(id);
-      if (!item) problems.push({ id: camera.id, message: `push.${prop} names "${id}", which does not exist` });
-      else if (item.track === null || !under.has(item.track))
-        problems.push({
-          id: camera.id,
-          message: `push.${prop} names "${id}", which is not on one of the camera's tracks: the camera does not move it`,
-        });
-      else return [item];
-      return [];
-    });
-  const on = named(push.on, "on").sort((a, b) => startT(a) - startT(b));
-  const keep = named(push.keep ?? [], "keep");
+  // What the push names, from the reference graph: the ones that exist and the camera moves. The rest are its errors.
+  const named = (prop: string): Placement[] =>
+    (refs.from.get(camera.id) ?? [])
+      .filter((e) => e.type === "push" && e.prop === prop && !e.broken)
+      .flatMap((e) => items.get(e.to) ?? []);
+  const on = named("push.on").sort((a, b) => startT(a) - startT(b));
+  const keep = named("push.keep");
 
   const number = (field: "x" | "y" | "zoom", fallback: number): number =>
     typeof camera.props[field] === "number" ? (camera.props[field] as number) : fallback;
@@ -169,5 +158,5 @@ export function pushKeys(
     if (next.x !== view.x || next.y !== view.y || next.zoom !== view.zoom) free = end;
     view = next;
   }
-  return { keys, problems };
+  return keys;
 }

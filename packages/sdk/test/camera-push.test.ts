@@ -151,7 +151,7 @@ describe("what a push refuses", () => {
       'UNKNOWN_REF cam push: push.on names "nobody", which does not exist',
     ]);
     expect(errors(pushed(`{ on: ["a"], keep: ["mark"] }`, card("a", 1, 800)))).toEqual([
-      `UNKNOWN_REF cam push: push.keep names "mark", which is not on one of the camera's tracks: the camera does not move it`,
+      `WRONG_SCOPE cam push: push.keep names "mark", which is not on one of the camera's tracks: the camera does not move it`,
     ]);
   });
 
