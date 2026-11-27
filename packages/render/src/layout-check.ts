@@ -431,7 +431,7 @@ function moveText(kind: string, dx: number, dy: number, at?: Placed): string {
 /** Where element `id` is placed now, or undefined for one the file does not place (a part a layer draws). */
 function placedOf(state: ResolvedState, id: string, t: number): Placed | undefined {
   const item = state.items.get(id);
-  if (!item || item.kind === "part") return undefined;
+  if (!item) return undefined;
   const keyed = (axis: "x" | "y"): boolean =>
     [...state.items.values()].some(
       (c) => c.parent === id && c.kind === "keyframe" && c.props.property === `box.${axis}`,
