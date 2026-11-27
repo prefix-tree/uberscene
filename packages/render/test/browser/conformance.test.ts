@@ -4,9 +4,10 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { SAMPLE_KINDS, sampleFile } from "../../../sdk/test/conformance/sample";
+import { SAMPLE_KINDS, SAMPLE_MANIFEST, sampleFile } from "../../../sdk/test/conformance/sample";
 import { directoryResolver, loadVideo, renderStill } from "../../src";
 import { readImage } from "../helpers/output";
+import { makePlaceholders } from "../helpers/placeholders";
 
 const scratch = join(import.meta.dirname, "..", ".tmp", "conformance");
 let dir = "";
@@ -14,13 +15,16 @@ let dir = "";
 beforeAll(() => {
   mkdirSync(scratch, { recursive: true });
   dir = mkdtempSync(join(scratch, "t-"));
+  // The picture a sample may show, as a file beside it.
+  makePlaceholders(SAMPLE_MANIFEST, dir);
 });
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
 it.each(SAMPLE_KINDS)("a still of a %s is not blank", async (kind) => {
   const file = join(dir, `${kind}.tsx`);
-  // A sample plays no media; the file says so itself, in place of a manifest beside it.
-  writeFileSync(file, `${sampleFile(kind).text}\nexport const manifest = { assets: [] };\n`);
+  // The file says its own manifest, in place of one beside it.
+  const sample = sampleFile(kind);
+  writeFileSync(file, `${sample.text}\nexport const manifest = ${JSON.stringify(sample.manifest)};\n`);
   const loaded = await loadVideo(file);
   expect(loaded.state.errors).toEqual([]);
   const out = join(dir, `${kind}.png`);

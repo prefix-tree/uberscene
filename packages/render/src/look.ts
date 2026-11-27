@@ -19,6 +19,7 @@ import {
 } from "@uberscene/sdk";
 
 import { writeAtomically } from "./atomic";
+import { leftOutByEffects } from "./elements";
 import type { FontFile } from "./fonts";
 import { FrameKeys, readCached, wholeKey, writeCached } from "./frame-cache";
 import { describeAt } from "./inspect";
@@ -145,9 +146,9 @@ function leaveOut(state: ResolvedState, id: string): { effects: string[] } | { o
   const p = state.items.get(id);
   if (!p) throw new Error(`--without ${id}: the file has no element with the id "${id}"`);
   if (p.kind === "effect") return { effects: [id] };
-  if (p.kind === "adjustment") {
+  if (leftOutByEffects(p.kind)) {
     const effects = p.children.filter((child) => state.items.get(child)?.kind === "effect");
-    if (effects.length === 0) throw new Error(`--without ${id}: the adjustment has no effects to leave out`);
+    if (effects.length === 0) throw new Error(`--without ${id}: the ${p.kind} has no effects to leave out`);
     return { effects };
   }
   // Drawn as DOM alone, which a sheet can leave out by hiding it.
