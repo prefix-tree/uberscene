@@ -3,9 +3,10 @@
 //
 //   pnpm --filter @uberscene/example-liftoff ignition     writes ignitions.ts, which video.tsx imports
 //
-// Fire is near white and yellow, brighter than anything else in a launch frame. The count of such pixels is taken
-// in the clip's lower part (where the pad is), at 320×180; the ignition is the first frame where that count rises
-// past a fixed share of the area and stays there, measured against the clip's first second.
+// Fire is warm and bright: orange to white, redder than it is blue. The count of such pixels is taken in the part of
+// the frame where the engines are, at 320×180. The ignition is the first frame where that count jumps: where its rise
+// over the next tenth of a second is at least a third of the clip's biggest such rise. That is the burst a viewer
+// sees, not the moment the frame turns white, which comes later.
 import { execFileSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -17,12 +18,13 @@ const here = join(import.meta.dirname, "..");
 const W = 320,
   H = 180,
   FPS = 30;
-/** Brighter than this (0–255), and no bluer than red: fire. */
-const BRIGHT = 215;
-/** The fire covers at least this share of the counted area, above the first second's level. */
-const SHARE = 0.004;
-/** It stays lit this many frames. */
-const HOLD = 6;
+/** Brighter than this (0–255), and redder than blue by this much: fire. */
+const BRIGHT = 120;
+const WARM = 40;
+/** The rise is measured over this many frames. */
+const SPAN = 3;
+/** The share of the biggest rise that counts as the burst. */
+const BURST = 1 / 3;
 
 const found: Record<string, number> = {};
 for (const { id, region } of IGNITE) {
@@ -36,7 +38,6 @@ for (const { id, region } of IGNITE) {
   );
   const frame = W * H * 3;
   const [x0, y0, x1, y1] = region.map((v, i) => Math.round(v * (i % 2 === 0 ? W : H)));
-  const area = ((x1 as number) - (x0 as number)) * ((y1 as number) - (y0 as number));
   const counts: number[] = [];
   for (let f = 0; f * frame < raw.length; f++) {
     let n = 0;
@@ -46,16 +47,14 @@ for (const { id, region } of IGNITE) {
         const r = raw[i] as number,
           g = raw[i + 1] as number,
           b = raw[i + 2] as number;
-        if (0.299 * r + 0.587 * g + 0.114 * b > BRIGHT && r >= b) n++;
+        if (0.299 * r + 0.587 * g + 0.114 * b > BRIGHT && r - b > WARM) n++;
       }
     counts.push(n);
   }
-  const base = Math.max(...counts.slice(0, FPS));
-  const lit = (f: number): boolean => (counts[f] as number) > base + SHARE * area;
-  const f = counts.findIndex(
-    (_, i) => i > FPS / 2 && Array.from({ length: HOLD }, (_, k) => lit(i + k)).every(Boolean),
-  );
-  if (f < 0) throw new Error(`${id}: no ignition found (counts peak at ${Math.max(...counts)} of ${area})`);
+  const rise = counts.map((c, i) => (counts[i + SPAN] ?? c) - c);
+  const most = Math.max(...rise);
+  const f = rise.findIndex((r) => r >= BURST * most);
+  if (most <= 0 || f < 0) throw new Error(`${id}: no ignition found`);
   found[id] = Math.round((f / FPS) * 1000) / 1000;
   process.stdout.write(`${id}: lights at ${found[id]} s\n`);
 }

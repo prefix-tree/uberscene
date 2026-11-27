@@ -39,19 +39,25 @@ interface Shot {
   /** Where the rocket is across the frame (0 left, 1 right) and down it, for the crop. */
   readonly x: number;
   readonly y?: number;
+  /** In the wide frame, the part of the source to show instead (fractions): the 4:3 film inside its own black bars,
+   * or a corner kept clear of a sign. */
+  readonly wide?: { readonly x: number; readonly y: number; readonly width: number; readonly height: number };
 }
+
+/** The 4:3 picture of a 1960s film transferred inside a 16:9 frame, as a 16:9 crop of it. */
+const FILM = { x: 0.125, y: 0.125, width: 0.75, height: 0.75 };
 
 const SHOTS: readonly Shot[] = [
   // Countdown: the pad, a shot a bar, the engines from beat 12 so they light on 16.
-  { id: "pad-wide", beat: 0, src: "pad", from: 2, x: 0.38 },
-  { id: "pad-tower", beat: 4, src: "pad", from: 64, x: 0.3 },
-  { id: "pad-top", beat: 8, src: "pad", from: 94, x: 0.62 },
+  { id: "pad-wide", beat: 0, src: "pad", from: 0.5, x: 0.38, wide: FILM },
+  { id: "pad-tower", beat: 4, src: "pad", from: 6, x: 0.32, wide: FILM },
+  { id: "pad-top", beat: 8, src: "pad", from: 94, x: 0.74, wide: FILM },
   { id: "engines", beat: 12, src: "engines", from: { lights: 16 }, x: 0.55 },
   // Apollo: the climb and the stages.
-  { id: "saturn-climb", beat: 20, src: "saturn", from: 2.5, x: 0.5 },
-  { id: "saturn-close", beat: 22, src: "saturn", from: 9, x: 0.5 },
+  { id: "saturn-climb", beat: 20, src: "saturn", from: 2.5, x: 0.5, wide: FILM },
+  { id: "saturn-close", beat: 22, src: "saturn", from: 9, x: 0.5, wide: FILM },
   { id: "interstage", beat: 24, src: "interstage", from: 10, x: 0.5, y: 0.5 },
-  { id: "stages", beat: 28, src: "apollo4", from: 4, x: 0.5 },
+  { id: "stages", beat: 28, src: "apollo4", from: 4, x: 0.5, wide: FILM },
   // Shuttle: Atlantis's engines light on 32, then a cut every two beats.
   { id: "atlantis-engines", beat: 30, src: "shuttle", from: { lights: 32 }, x: 0.55 },
   { id: "atlantis-clears", beat: 34, src: "shuttle", from: 20, x: 0.52 },
@@ -62,21 +68,37 @@ const SHOTS: readonly Shot[] = [
   { id: "atlantis-plume", beat: 44, src: "shuttle", from: 62, x: 0.6 },
   { id: "booster-camera", beat: 46, src: "shuttle", from: 42, x: 0.5 },
   // SpaceX and Artemis: the drop, a cut a beat, then every two.
-  { id: "heavy-lights", beat: 48, src: "roman", from: { lights: 48 }, x: 0.27, y: 0.6 },
+  {
+    id: "heavy-lights",
+    beat: 48,
+    src: "roman",
+    from: { lights: 48 },
+    x: 0.27,
+    y: 0.6,
+    wide: { x: 0, y: 0.25, width: 0.55, height: 0.55 },
+  },
   { id: "heavy-clears", beat: 50, src: "heavy-lift", from: 6, x: 0.56 },
   { id: "artemis-lifts", beat: 51, src: "artemis", from: 8, x: 0.47 },
-  { id: "heavy-rises", beat: 52, src: "roman", from: 18, x: 0.27, y: 0.4 },
+  {
+    id: "heavy-rises",
+    beat: 52,
+    src: "roman",
+    from: 18,
+    x: 0.27,
+    y: 0.4,
+    wide: { x: 0, y: 0.05, width: 0.55, height: 0.55 },
+  },
   { id: "heavy-tracks", beat: 53, src: "heavy-climb", from: 2, x: 0.5 },
   { id: "artemis-climbs", beat: 54, src: "artemis", from: 17, x: 0.47 },
   { id: "heavy-high", beat: 55, src: "heavy-climb", from: 12, x: 0.56 },
   { id: "artemis-high", beat: 56, src: "artemis", from: 56, x: 0.42 },
   { id: "boosters-part", beat: 58, src: "heavy-climb", from: 23, x: 0.4 },
-  { id: "boosters-land", beat: 60, src: "heavy-land", from: 4, x: 0.55 },
+  { id: "boosters-land", beat: 60, src: "heavy-land", from: 13.6, x: 0.45 },
   { id: "booster-returns", beat: 62, src: "return", from: 34, x: 0.5, y: 0.35 },
   // The booster lowered into the arms, so the catch's flare is the downbeat of bar 19.
   { id: "catch", beat: 64, src: "catch", from: 13.2 - 8 * BEAT, x: 0.5, y: 0.4 },
   // The end: the second booster home at dusk.
-  { id: "home", beat: 72, src: "return", from: 50, x: 0.5, y: 0.6 },
+  { id: "home", beat: 72, src: "return", from: 52, x: 0.5, y: 0.6 },
 ];
 
 const W9 = 1080,
@@ -130,7 +152,9 @@ export default function Video(props: z.infer<typeof schema>) {
               // A tenth longer than its beats, so the next shot covers it; the last one runs into the music's tail.
               duration={(next - shot.beat) * BEAT + (next < END ? 0.1 : 2)}
               fit="cover"
-              frame={{ focus: { x: shot.x, ...(shot.y === undefined ? {} : { y: shot.y }) } }}
+              {...(!tall && shot.wide
+                ? { transform: { crop: shot.wide } }
+                : { frame: { focus: { x: shot.x, ...(shot.y === undefined ? {} : { y: shot.y }) } } })}
             />
           );
         })}
