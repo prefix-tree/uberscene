@@ -22,6 +22,7 @@ import {
 } from "@uberscene/sdk";
 
 import { buildLarge } from "../fixtures/large";
+import { type Dependent, dependentsOf } from "../src/resolve/dependents";
 import { resolveFresh } from "../src/resolve/resolve";
 import { CORPUS, treeOf } from "./editing/corpus";
 import { EDITS } from "./editing/edits";
@@ -347,9 +348,50 @@ describe.each([
         continue;
       }
       expectSame(tree, sampleManifest, log, `row ${seed}, step ${n}: ${JSON.stringify(patch).slice(0, 200)}`);
+      try {
+        const now = resolve(tree, sampleManifest, log);
+        for (const id of ["c2", "c3", "e2", "t1", "t5", "talk", "d1", "v1"])
+          expect(dependentsOf(now, id), `dependents of ${id}`).toEqual(dependentsByReadingAll(now, id));
+      } catch (error) {
+        if (!(error instanceof Error) || error.name === "AssertionError") throw error;
+      }
     }
   });
 });
+
+/** `dependentsOf` as it was written first: every node of the tree read. */
+function dependentsByReadingAll(state: ResolvedState, id: string): Dependent[] {
+  const out: Dependent[] = [];
+  for (const node of state.tree.byId.values()) {
+    if (node.id === id) continue;
+    const props = node.props as Record<string, unknown>;
+    if (props.anchor === id || props.anchor === `${id}.end`) {
+      const edge = props.anchor === `${id}.end` ? ({ edge: "end" } as const) : {};
+      out.push({ kind: "anchor", id: node.id, ...edge, ...(typeof props.at === "string" ? { at: props.at } : {}) });
+    }
+    if (props.follow === id) out.push({ kind: "follow", id: node.id });
+    if (node.kind === "transition" && props.on === id)
+      out.push({ kind: "on", id: node.id, edge: props.edge === "in" ? "in" : "out" });
+    const duration = props.duration;
+    if (typeof duration === "object" && duration !== null) {
+      const d = duration as { match?: unknown; until?: unknown; at?: unknown };
+      if (d.match === id) out.push({ kind: "match", id: node.id });
+      if (d.until === id) out.push({ kind: "until", id: node.id, ...(typeof d.at === "string" ? { at: d.at } : {}) });
+    }
+  }
+  const track = state.tracks.find((t) => t.items.includes(id));
+  if (track?.layout === "sequence") {
+    const siblings = state.tree.byId.get(track.id)?.children ?? [];
+    const at = siblings.findIndex((c) => c.id === id);
+    const before = siblings[at - 1];
+    const after = siblings[at + 1];
+    if (before?.kind === "transition" && typeof before.props.on !== "string")
+      out.push({ kind: "beside", id: before.id, side: "before" });
+    if (after?.kind === "transition" && typeof after.props.on !== "string")
+      out.push({ kind: "beside", id: after.id, side: "after" });
+  }
+  return out;
+}
 
 describe("cached and from nothing: edits through the executor on the large project", () => {
   const manifest = {
@@ -405,6 +447,11 @@ describe("cached and from nothing: edits through the executor on the large proje
         what = `${input.type} on ${JSON.stringify(input.params).slice(0, 120)}${result.ok ? "" : " (refused)"}`;
       }
       expectSame(tree, manifest, exec.log(), `row ${seed}, step ${n}: ${what}`);
+      // What depends on an element is found from who names it in the file and the nodes the log made again; reading
+      // every node gives the same list.
+      const now = exec.state();
+      for (const id of [clip.id, title.id, pick(next, clips).id])
+        expect(dependentsOf(now, id), `dependents of ${id} after ${what}`).toEqual(dependentsByReadingAll(now, id));
     }
   });
 });
