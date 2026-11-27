@@ -1,13 +1,14 @@
-// The resolver places in ticks (decision 0044 phase 2): a placement's `range` is an exact count, a sequence's cuts are
-// sums of whole numbers, and the seconds beside it are derived from the ticks.
+// The resolver places in ticks (decisions 0044, 0045): a placement's `range` is a `TimeRange` of exact `Time`s, a
+// sequence's cuts are sums of whole ticks, and the seconds beside it are derived from them.
 import { describe, expect, it } from "vitest";
 
 import { Clip, Composition, Gap, Title, Track, Transition } from "@uberscene/kit";
-import { frameStartTicks, parseRate, rangeEnd, secondsToTicksExact as T, ticksAsSeconds } from "@uberscene/kit/schema";
+import { parseRate, Time, TimeRange } from "@uberscene/kit/schema";
 import { collectModule, resolve } from "@uberscene/sdk";
 
 const asset = (duration: number) => ({ id: "a", kind: "video", duration, fps: 30, width: 640, height: 360 });
 const manifest = { assets: { a: asset(600) } } as never;
+const T = Time.seconds;
 
 describe("placement ranges", () => {
   it("starts each clip of a sequence on the exact sum of the lengths before it", () => {
@@ -24,18 +25,18 @@ describe("placement ranges", () => {
       </Composition>
     );
     const state = resolve(collectModule({ default: Video }), manifest);
-    let at = T(0);
+    let at = Time.ZERO;
     for (const [i, d] of lengths.entries()) {
       const p = state.items.get(`t${i}`)!;
-      expect(p.range.start).toBe(at);
-      expect(p.range.duration).toBe(T(d));
+      expect(p.range.start.equals(at)).toBe(true);
+      expect(p.range.duration.equals(T(d))).toBe(true);
       // The seconds are derived from the ticks, so the float sum's noise is gone: t2 starts at 0.3, not 0.30000000000000004.
-      expect(p.start).toBe(ticksAsSeconds(at));
-      at = rangeEnd(p.range);
+      expect(p.start).toBe(at.toSeconds());
+      at = p.range.end;
     }
     expect(state.items.get("t2")!.start).toBe(0.3);
-    expect(state.composition.length).toBe(at);
-    expect(state.composition.duration).toBe(ticksAsSeconds(at));
+    expect(state.composition.length.equals(at)).toBe(true);
+    expect(state.composition.duration).toBe(at.toSeconds());
   });
 
   it("puts every cut of a long 29.97 sequence on a frame start", () => {
@@ -46,7 +47,7 @@ describe("placement ranges", () => {
       <Composition fps="29.97" width={640} height={360}>
         <Track id="main">
           {frames.map((n, i) => (
-            <Title key={i} id={`t${i}`} duration={ticksAsSeconds(frameStartTicks(n, rate))}>
+            <Title key={i} id={`t${i}`} duration={Time.frames(n, rate).toSeconds()}>
               T
             </Title>
           ))}
@@ -56,7 +57,7 @@ describe("placement ranges", () => {
     const state = resolve(collectModule({ default: Video }), manifest);
     let frame = 0;
     for (const [i, n] of frames.entries()) {
-      expect(state.items.get(`t${i}`)!.range.start).toBe(frameStartTicks(frame, rate));
+      expect(state.items.get(`t${i}`)!.range.start.equals(Time.frames(frame, rate))).toBe(true);
       frame += n;
     }
   });
@@ -70,8 +71,8 @@ describe("placement ranges", () => {
       </Composition>
     );
     const c = resolve(collectModule({ default: Video }), manifest).items.get("c")!;
-    expect(c.source?.range).toEqual({ start: T(1.1), duration: T(0.2) });
-    expect(c.range.duration).toBe(T(0.2));
+    expect(c.source?.range.equals(TimeRange.of(T(1.1), T(0.2)))).toBe(true);
+    expect(c.range.duration.equals(T(0.2))).toBe(true);
   });
 
   it("starts a transition exactly its length before the cut", () => {
@@ -89,9 +90,9 @@ describe("placement ranges", () => {
       </Composition>
     );
     const items = resolve(collectModule({ default: Video }), manifest).items;
-    expect(items.get("x")!.range).toEqual({ start: T(0.9), duration: T(0.2) });
-    expect(items.get("a2")!.range.start).toBe(T(0.9));
-    expect(items.get("t")!.range.start).toBe(T(0.9 + 1.3 + 0.3));
+    expect(items.get("x")!.range.equals(TimeRange.of(T(0.9), T(0.2)))).toBe(true);
+    expect(items.get("a2")!.range.start.equals(T(0.9))).toBe(true);
+    expect(items.get("t")!.range.start.equals(T(0.9 + 1.3 + 0.3))).toBe(true);
   });
 
   it("places keys at their element's start plus their at, in ticks", () => {
@@ -116,6 +117,6 @@ describe("placement ranges", () => {
     );
     const items = resolve(collectModule({ default: Video }), manifest).items;
     const keys = [...items.values()].filter((p) => p.parent === "t" && p.kind === "keyframe");
-    expect(keys.map((k) => k.range.start)).toEqual([T(0.3), T(0.4)]);
+    expect(keys.map((k) => String(k.range.start))).toEqual(["0.3s", "0.4s"]);
   });
 });

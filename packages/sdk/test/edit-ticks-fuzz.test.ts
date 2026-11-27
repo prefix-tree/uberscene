@@ -3,7 +3,7 @@
 // added a little float noise to the next, and a cut drifted off its frame after a few dozen of them.
 import { describe, expect, it } from "vitest";
 
-import { frameStartSeconds, parseRate, type Rate, ticksPerFrame } from "@uberscene/kit/schema";
+import { frameStartSeconds, parseRate, type Rate } from "@uberscene/kit/schema";
 import { type ActionInput, foldToSource, type ResolvedState } from "@uberscene/sdk";
 
 import { type CorpusFile, executorFor, resolveText } from "./editing/corpus";
@@ -50,10 +50,9 @@ const clipsOf = (state: ResolvedState) =>
 
 /** Every clip on the sequence starts and ends on a frame start of the timeline, and plays whole frames of its source. */
 function expectOnFrames(state: ResolvedState, rate: Rate): void {
-  const frame = ticksPerFrame(rate);
   for (const p of clipsOf(state)) {
-    expect(p.range.start % frame, `${p.id} starts on a frame`).toBe(0);
-    expect(p.range.duration % frame, `${p.id} is whole frames long`).toBe(0);
+    expect(p.range.start.isOnFrame(rate), `${p.id} starts on a frame`).toBe(true);
+    expect(p.range.duration.isOnFrame(rate), `${p.id} is whole frames long`).toBe(true);
   }
 }
 
@@ -73,10 +72,9 @@ function pickEdit(
   if (!c?.source) return undefined;
   const removable = clips.length > 2 && !(c.id.startsWith("s") && split.has(c.id));
   const remove: ActionInput | undefined = removable ? { type: "element/remove", params: { id: c.id } } : undefined;
-  const frame = ticksPerFrame(rate);
-  const frames = c.range.duration / frame;
-  const firstFrame = c.range.start / frame;
-  const sourceFrame = Math.round(c.source.range.start / frame);
+  const frames = c.range.duration.frame(rate);
+  const firstFrame = c.range.start.frame(rate);
+  const sourceFrame = c.source.range.start.nearestFrame(rate);
   const roll = next();
   if (frames < 4) return remove;
   const inside = 1 + Math.floor(next() * (frames - 2));

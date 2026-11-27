@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { resolveTheme, secondsToTicksExact, type TickRange } from "@uberscene/kit/schema";
+import { resolveTheme, Time, TimeRange } from "@uberscene/kit/schema";
 import {
   type AssetManifest,
   type CollectedNode,
@@ -16,9 +16,8 @@ import {
 import * as sample from "../../../sdk/fixtures/sample";
 
 /** A range in ticks from seconds, as the resolver makes it. */
-function rangeOf(start: number, duration: number): TickRange {
-  const t = secondsToTicksExact(start);
-  return { start: t, duration: secondsToTicksExact(duration) };
+function rangeOf(start: number, duration: number): TimeRange {
+  return TimeRange.of(Time.seconds(start), Time.seconds(Math.max(0, duration)));
 }
 
 /** A placement's times: its range in ticks and the seconds beside it. */
@@ -352,7 +351,7 @@ export function makeState(spec: StateSpec): ResolvedState {
       width,
       height,
       duration,
-      length: secondsToTicksExact(duration),
+      length: Time.seconds(duration),
     },
     tracks,
     items,
