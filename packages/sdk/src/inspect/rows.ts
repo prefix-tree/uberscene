@@ -6,7 +6,7 @@ import type { ResolveError } from "../resolve/errors";
 import { derivedOrigin } from "../resolve/expand";
 import { followOf } from "../resolve/follow";
 import type { Placement, ResolvedState } from "../resolve/resolve";
-import { endS, endT, lengthS, plus, startS, startT, T } from "../time";
+import { endSeconds, lengthSeconds, startSeconds, T } from "../time";
 import { type BeatRow, beatRows, type MusicRow, musicRows } from "./music";
 import { spokenWords, timelineBeats } from "./plays";
 
@@ -191,8 +191,8 @@ export function timelineRows(state: ResolvedState): TimelineRows {
         id: p.id,
         element: origin?.id ?? p.parent ?? "",
         property: origin ? origin.path.replace(/\.\d+$/, "") : String(p.props.property ?? ""),
-        at: round3(startS(p)),
-        frame: frame(startS(p)),
+        at: round3(startSeconds(p)),
+        frame: frame(startSeconds(p)),
         value: p.props.value,
         ...(typeof p.props.easing === "string" ? { easing: p.props.easing } : {}),
       });
@@ -213,11 +213,11 @@ export function timelineRows(state: ResolvedState): TimelineRows {
       const a = clips[i] as Placement,
         b = clips[i + 1] as Placement;
       // Clips with a gap between them do not cut to each other; overlays on a track are placed, not cut.
-      if (startT(b) > plus(endT(a), T(1e-6))) continue;
+      if (b.range.start.isAfter(a.range.end.plus(T(1e-6)))) continue;
       const over = transitions.find((t) => t.between?.[0] === a.id && t.between[1] === b.id);
       cuts.push({
-        time: round3(startS(b)),
-        frame: frame(startS(b)),
+        time: round3(startSeconds(b)),
+        frame: frame(startSeconds(b)),
         track: track.id,
         from: a.id,
         to: b.id,
@@ -275,11 +275,11 @@ function elementRow(state: ResolvedState, p: Placement, frame: (t: number) => nu
     kind: p.kind,
     track: p.track,
     parent: p.parent,
-    start: round3(startS(p)),
-    end: round3(endS(p)),
-    duration: round3(lengthS(p)),
-    startFrame: frame(startS(p)),
-    endFrame: frame(endS(p)),
+    start: round3(startSeconds(p)),
+    end: round3(endSeconds(p)),
+    duration: round3(lengthSeconds(p)),
+    startFrame: frame(startSeconds(p)),
+    endFrame: frame(endSeconds(p)),
     ...(p.source
       ? { asset: p.source.asset, in: round3(p.source.in), out: round3(p.source.out), speed: p.source.speed }
       : {}),

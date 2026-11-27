@@ -9,11 +9,9 @@ import {
   capabilitiesOf,
   curveAt,
   isSequenceItem,
-  maxTicks,
-  minTicks,
   round3,
+  Time,
   tidySeconds,
-  ZERO_TICKS,
 } from "@uberscene/kit/schema";
 
 import { createPatchLog } from "../patches/log";
@@ -22,7 +20,7 @@ import { type Dependent, dependentsOf } from "../resolve/dependents";
 import { followOf } from "../resolve/follow";
 import { ownRestBox, restBox } from "../resolve/push";
 import { type Placement, type ResolvedState, resolve } from "../resolve/resolve";
-import { lengthS, lengthT, minus, S, startT } from "../time";
+import { lengthSeconds, S } from "../time";
 import { type ActionHandler, type ApplyContext, getHandler, inverseOf } from "./registry";
 import type { Action, ActionInput, ActionType } from "./types";
 
@@ -121,7 +119,7 @@ export function carryRemoval(id: string, before: ResolvedState): Carry | null {
   for (const d of deps) {
     if (d.kind !== "match" && d.kind !== "until") continue;
     const p = before.items.get(d.id);
-    if (p && !removed.has(d.id)) pre.push(setProps(d.id, { duration: lengthS(p) }));
+    if (p && !removed.has(d.id)) pre.push(setProps(d.id, { duration: lengthSeconds(p) }));
   }
   for (const d of deps) if (d.kind === "follow" && !removed.has(d.id)) pre.push(unfollow(d.id, id, before));
   for (const d of anchored) {
@@ -131,8 +129,8 @@ export function carryRemoval(id: string, before: ResolvedState): Carry | null {
       pre.push({ type: "element/remove", params: { id: d.id } });
       continue;
     }
-    const room = maxTicks(ZERO_TICKS, minus(lengthT(prev), lengthT(p)));
-    const offset = S(minTicks(room, maxTicks(ZERO_TICKS, minus(startT(p), startT(prev)))));
+    const room = Time.max(Time.ZERO, prev.range.duration.minus(p.range.duration));
+    const offset = S(Time.min(room, Time.max(Time.ZERO, p.range.start.minus(prev.range.start))));
     pre.push(setProps(d.id, { anchor: prev.id, at: undefined, offset }));
   }
   // With a clip on each side once this one is gone, one transition still joins them: the one before it, if any.
@@ -241,9 +239,12 @@ export function carryTransitionRemoval(id: string, before: ResolvedState): Carry
   for (const d of deps) {
     const p = before.items.get(d.id);
     if (!p) continue;
-    if (d.kind === "match" || d.kind === "until") pre.push(setProps(d.id, { duration: lengthS(p) }));
+    if (d.kind === "match" || d.kind === "until") pre.push(setProps(d.id, { duration: lengthSeconds(p) }));
     else if (!target) pre.push({ type: "element/remove", params: { id: d.id } });
-    else pre.push(setProps(d.id, { anchor: target.id, at: undefined, offset: S(minus(startT(p), startT(target))) }));
+    else
+      pre.push(
+        setProps(d.id, { anchor: target.id, at: undefined, offset: S(p.range.start.minus(target.range.start)) }),
+      );
   }
   return pre.length > 0 ? { pre } : null;
 }
@@ -303,15 +304,15 @@ export function carryTrim(id: string, before: ResolvedState): Carry | null {
         if (d.kind === "until") {
           const was = before.items.get(d.id);
           if (lostWord(after, d.id, "duration") && was !== undefined)
-            post.push(setProps(d.id, { duration: lengthS(was) }));
+            post.push(setProps(d.id, { duration: lengthSeconds(was) }));
           continue;
         }
         if (!lostWord(after, d.id)) continue;
-        const was = startT(before.items.get(d.id) ?? clip);
+        const was = (before.items.get(d.id) ?? clip).range.start;
         post.push(
           setProps(d.id, {
             at: undefined,
-            offset: S(minTicks(lengthT(clip), maxTicks(ZERO_TICKS, minus(was, startT(clip))))),
+            offset: S(Time.min(clip.range.duration, Time.max(Time.ZERO, was.minus(clip.range.start)))),
           }),
         );
       }
@@ -339,7 +340,7 @@ function unfollow(child: string, leader: string, before: ResolvedState): ActionI
   if (!c || !l) return setProps(child, { follow: next });
   const own = (before.tree.byId.get(child)?.props ?? {}) as Record<string, unknown>;
   const lead = (before.tree.byId.get(leader)?.props ?? {}) as Record<string, unknown>;
-  const rel = S(minus(startT(c), startT(l)));
+  const rel = S(c.range.start.minus(l.range.start));
   const comp = { width: before.composition.width, height: before.composition.height };
   const outer = next ? restBox(before.items.get(next) ?? l, comp, before.manifest, before.items) : null;
   const outerFrame = outer && next && before.items.has(next) ? { width: outer.w, height: outer.h } : comp;

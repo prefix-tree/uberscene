@@ -1,7 +1,7 @@
 import { lookupAsset } from "../../manifest/types";
 import type { Json } from "../../patches/types";
 import type { Placement, ResolvedState } from "../../resolve/resolve";
-import { lengthS, startS, startT } from "../../time";
+import { lengthSeconds, startSeconds } from "../../time";
 import {
   define,
   insertNode,
@@ -232,7 +232,7 @@ define({
 function cutClips(state: ResolvedState, id: string): Placement[] {
   return [...state.items.values()]
     .filter((p) => p.parent === id && p.kind === "clip" && p.editable === "generated")
-    .sort((x, y) => startT(x) - startT(y));
+    .sort((x, y) => x.range.start.compare(y.range.start));
 }
 
 function flattenedClips(state: ResolvedState, id: string): NodeSpec[] {
@@ -242,11 +242,11 @@ function flattenedClips(state: ResolvedState, id: string): NodeSpec[] {
     const clipId = uniqueId(state, `${id}-${cutId}`, taken);
     taken.add(clipId);
     // A cut runs to the next cut or the end of the composition; the literal clip cannot run past its source.
-    const duration = Math.min(lengthS(p), sourceLeft(state, p));
+    const duration = Math.min(lengthSeconds(p), sourceLeft(state, p));
     return {
       id: clipId,
       kind: "clip",
-      props: { id: clipId, src: p.props.src as Json, in: p.source?.in ?? 0, duration, start: startS(p) },
+      props: { id: clipId, src: p.props.src as Json, in: p.source?.in ?? 0, duration, start: startSeconds(p) },
       children: [],
     };
   });

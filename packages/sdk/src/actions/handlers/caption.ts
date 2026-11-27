@@ -1,6 +1,5 @@
 import type { Json, PatchLog } from "../../patches/types";
 import type { ResolvedState } from "../../resolve/resolve";
-import { startT } from "../../time";
 import {
   define,
   insertNode,
@@ -34,7 +33,7 @@ function generatedCues(state: ResolvedState, captionsId: string) {
       (p) =>
         p.parent === captionsId && p.kind === "caption" && p.editable === "generated" && !state.tree.byId.has(p.id),
     )
-    .sort((a, b) => startT(a) - startT(b));
+    .sort((a, b) => a.range.start.compare(b.range.start));
 }
 
 /**

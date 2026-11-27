@@ -17,7 +17,10 @@ export type Ticks = number & { readonly [TICKS]: true };
 
 /**
  * A half-open stretch of time in raw ticks, `[start, start + duration)`, as craft-time's `TimeRange`. Its end is
- * computed. Prefer the `TimeRange` class (decision 0045), which a placement's range moves to next.
+ * computed.
+ *
+ * @deprecated Use the `TimeRange` class (decision 0045): a placement's range is one. Native and the protocol keep raw
+ * ticks.
  */
 export interface TickRange {
   readonly start: Ticks;
@@ -30,7 +33,7 @@ export function ticks(n: number): Ticks {
   return (n === 0 ? 0 : n) as Ticks;
 }
 
-/** No time: the start of a composition, or an empty length. */
+/** No time: the start of a composition, or an empty length. @deprecated Use `Time.ZERO` (decision 0045). */
 export const ZERO_TICKS: Ticks = 0 as Ticks;
 
 /** Seconds as the nearest tick. Every time written to the millisecond (0.1, 2.35) is an exact count. */
@@ -52,15 +55,15 @@ export function ticksToFileSeconds(t: Ticks): number {
   return seconds;
 }
 
-/** `a + b`, exact. */
+/** `a + b`, exact. @deprecated Use `a.plus(b)` (decision 0045). */
 export const addTicks = (a: Ticks, b: Ticks): Ticks => ticks(a + b);
-/** `a - b`, exact. */
+/** `a - b`, exact. @deprecated Use `a.minus(b)` (decision 0045). */
 export const subTicks = (a: Ticks, b: Ticks): Ticks => ticks(a - b);
-/** The earlier of two times, or the shorter of two lengths. */
+/** The earlier of two times, or the shorter of two lengths. @deprecated Use `Time.min` (decision 0045). */
 export const minTicks = (a: Ticks, b: Ticks): Ticks => (a < b ? a : b);
-/** The later of two times, or the longer of two lengths. */
+/** The later of two times, or the longer of two lengths. @deprecated Use `Time.max` (decision 0045). */
 export const maxTicks = (a: Ticks, b: Ticks): Ticks => (a > b ? a : b);
-/** `t` held to `[lo, hi]`. */
+/** `t` held to `[lo, hi]`. @deprecated Use `t.clamp(lo, hi)` (decision 0045). */
 export const clampTicks = (t: Ticks, lo: Ticks, hi: Ticks): Ticks => minTicks(maxTicks(t, lo), hi);
 
 /** Floor of `a / b` for integers, exact where `a / b` as a double would round across an integer. `b` is positive. */
@@ -147,26 +150,26 @@ export function snapToNearestFrame(t: Ticks, rate: Rate): Ticks {
   return t - a <= b - t ? a : b;
 }
 
-/** The range that starts at `start` and lasts `duration`. */
+/** The range that starts at `start` and lasts `duration`. @deprecated Use `TimeRange.of` (decision 0045). */
 export const timeRange = (start: Ticks, duration: Ticks): TickRange => ({ start, duration });
 
-/** The range from `start` up to, but not including, `end`. */
+/** The range from `start` up to, but not including, `end`. @deprecated Use `TimeRange.between` (decision 0045). */
 export const rangeFromBounds = (start: Ticks, end: Ticks): TickRange => ({ start, duration: subTicks(end, start) });
 
-/** The first tick after a range: `start + duration`. */
+/** The first tick after a range: `start + duration`. @deprecated Use `range.end` (decision 0045). */
 export const rangeEnd = (r: TickRange): Ticks => addTicks(r.start, r.duration);
 
-/** Whether `t` is in `[start, end)`. */
+/** Whether `t` is in `[start, end)`. @deprecated Use `range.contains(t)` (decision 0045). */
 export const rangeContains = (r: TickRange, t: Ticks): boolean => t >= r.start && t < r.start + r.duration;
 
-/** Whether a range holds no time. */
+/** Whether a range holds no time. @deprecated Use `range.isEmpty()` (decision 0045). */
 export const rangeIsEmpty = (r: TickRange): boolean => r.duration <= 0;
 
-/** Whether two ranges share any time. An empty range overlaps nothing. */
+/** Whether two ranges share any time. An empty range overlaps nothing. @deprecated Use `a.overlaps(b)` (decision 0045). */
 export const rangesOverlap = (a: TickRange, b: TickRange): boolean =>
   !rangeIsEmpty(a) && !rangeIsEmpty(b) && a.start < b.start + b.duration && b.start < a.start + a.duration;
 
-/** The stretch two ranges share, or null when they share none. */
+/** The stretch two ranges share, or null when they share none. @deprecated Use `a.intersect(b)` (decision 0045). */
 export function rangeIntersect(a: TickRange, b: TickRange): TickRange | null {
   const start = maxTicks(a.start, b.start);
   const end = minTicks(rangeEnd(a), rangeEnd(b));

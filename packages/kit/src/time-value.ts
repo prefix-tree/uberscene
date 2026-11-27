@@ -74,6 +74,10 @@ function secondsTicks(seconds: number): number | null {
 export class Time {
   /** No time: the start of a composition, or an empty length. */
   static readonly ZERO = new Time(0);
+  /** The latest time there is, 2^53 - 1 ticks (about 9.85 hours). */
+  static readonly MAX = new Time(Number.MAX_SAFE_INTEGER);
+  /** The earliest time there is, the negative of `MAX`. */
+  static readonly MIN = new Time(-Number.MAX_SAFE_INTEGER);
 
   /** The count of 1/254,016,000,000 s this time is. A safe integer. */
   readonly ticks: number;
@@ -147,6 +151,15 @@ export class Time {
   /** `this + other`, exact. */
   plus(other: Time): Time {
     return Time.ofTicks(this.ticks + other.ticks);
+  }
+
+  /**
+   * `this + other`, held at `MIN` or `MAX` instead of throwing past them. For a reader that must place the rest of a
+   * file that says a time too long, and reports it: a sum at the limit is how it knows.
+   */
+  plusClamped(other: Time): Time {
+    const sum = this.ticks + other.ticks;
+    return sum >= Number.MAX_SAFE_INTEGER ? Time.MAX : sum <= -Number.MAX_SAFE_INTEGER ? Time.MIN : Time.ofTicks(sum);
   }
 
   /** `this - other`, exact. */
@@ -327,16 +340,28 @@ export class TimeRange {
   /** The first tick after the range: `start + duration`. */
   readonly end: Time;
 
-  private constructor(start: Time, duration: Time) {
+  private constructor(start: Time, duration: Time, end?: Time) {
     this.start = start;
     this.duration = duration;
-    this.end = start.plus(duration);
+    this.end = end ?? start.plus(duration);
   }
 
   /** The range that starts at `start` and lasts `duration`. Throws for a negative duration. */
   static of(start: Time, duration: Time): TimeRange {
     if (duration.isNegative()) throw new RangeError(`a range can't last ${duration}`);
     return new TimeRange(start, duration);
+  }
+
+  /**
+   * The range that starts at `start` and lasts `duration`, never throwing: a negative duration is held at zero and an
+   * end past `Time.MAX` at `MAX`. For a reader that places a broken or too-long file and reports it.
+   */
+  static clamped(start: Time, duration: Time): TimeRange {
+    const length = duration.isNegative() ? Time.ZERO : duration;
+    const end = start.plusClamped(length);
+    return end.ticks - start.ticks === length.ticks
+      ? new TimeRange(start, length, end)
+      : new TimeRange(start, end.minus(start), end);
   }
 
   /** The range from `start` up to, not including, `end`. Throws when `end` is before `start`. */

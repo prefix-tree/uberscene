@@ -18,7 +18,7 @@ import {
 import type { Json } from "../../patches/types";
 import { isKeyList } from "../../resolve/expand";
 import type { ResolvedState } from "../../resolve/resolve";
-import { lengthT, T } from "../../time";
+import { T } from "../../time";
 import { define, makePropHandler, onElement, rawNode, rawProp } from "../handler-kit";
 import { invalid, type KeyJson, ok, type ValidationResult } from "../types";
 
@@ -140,11 +140,11 @@ function effectsOf(state: ResolvedState, id: string): Record<string, Json>[] {
   return Array.isArray(v) ? (v as Record<string, Json>[]).map((e) => ({ ...e })) : [];
 }
 
-const keyTargets = onElement({ when: (item) => lengthT(item) > 0 });
+const keyTargets = onElement({ when: (item) => !item.range.isEmpty() });
 
 function insideElement(state: ResolvedState, id: string, at: number): ValidationResult {
   const item = state.items.get(id);
-  return item && at >= 0 && T(at) <= lengthT(item)
+  return item && at >= 0 && T(at).isAtOrBefore(item.range.duration)
     ? ok
     : invalid({ code: "OUT_OF_BOUNDS", message: "a key's time must be inside the element", path: "at" });
 }

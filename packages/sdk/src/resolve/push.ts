@@ -1,7 +1,7 @@
 import { capabilitiesOf, type DrawRect, type ElementBox, type FitMode, placeBox } from "@uberscene/kit/schema";
 
 import { type AssetManifest, lookupAsset } from "../manifest/types";
-import { endT, plus, S, startT, T } from "../time";
+import { S, T } from "../time";
 import { followOf } from "./follow";
 import type { RefGraph } from "./refs";
 import type { Placement, ResolvedTrack } from "./resolve";
@@ -118,7 +118,7 @@ export function pushKeys(
     (refs.from.get(camera.id) ?? [])
       .filter((e) => e.type === "push" && e.prop === prop && !e.broken)
       .flatMap((e) => items.get(e.to) ?? []);
-  const on = named("push.on").sort((a, b) => startT(a) - startT(b));
+  const on = named("push.on").sort((a, b) => a.range.start.compare(b.range.start));
   const keep = named("push.keep");
 
   const number = (field: "x" | "y" | "zoom", fallback: number): number =>
@@ -129,7 +129,9 @@ export function pushKeys(
   // What must stay in view at a moment: the elements to keep, or everything the camera is showing then.
   const drawn = [...items.values()].filter((i) => i.track !== null && i.parent === i.track && under.has(i.track));
   const active = (i: Placement, t: number): boolean =>
-    capabilitiesOf(i.kind).sequenceRole !== "between" && startT(i) <= plus(T(t), T(1e-6)) && T(t) < endT(i);
+    capabilitiesOf(i.kind).sequenceRole !== "between" &&
+    i.range.start.isAtOrBefore(T(t).plus(T(1e-6))) &&
+    T(t).isBefore(i.range.end);
   const heldAt = (t: number): DrawRect | null => {
     const boxes = [...(push.keep ? [...keep, ...on.filter((i) => active(i, t))] : drawn.filter((i) => active(i, t)))];
     return boxes.length > 0 ? boxes.map((i) => restBox(i, frame, manifest, items)).reduce(union) : null;
@@ -138,10 +140,10 @@ export function pushKeys(
   const keys: PushKey[] = [];
   let free = 0;
   for (let i = 0; i < on.length; ) {
-    const first = startT(on[i] as Placement);
+    const first = (on[i] as Placement).range.start;
     const start = S(first);
     // Elements that start together are one move.
-    while (i < on.length && startT(on[i] as Placement) <= plus(first, T(1e-6))) i++;
+    while (i < on.length && (on[i] as Placement).range.start.isAtOrBefore(first.plus(T(1e-6)))) i++;
     const held = heldAt(start);
     if (!held) continue;
     const next = leastMove(view, held, frame, margin);
