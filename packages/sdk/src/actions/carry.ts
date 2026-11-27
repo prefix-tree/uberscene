@@ -142,7 +142,32 @@ export function carryRemoval(id: string, before: ResolvedState): Carry | null {
     if (d.kind === "on" || (d.kind === "beside" && d !== kept))
       pre.push({ type: "transition/remove", params: { transitionId: d.id } });
   }
+  pre.push(...pushWithout([id], before));
   return pre.length > 0 ? { pre } : null;
+}
+
+/**
+ * The cameras whose `push` names any of `ids`, each with a push that no longer does: the removed elements leave
+ * `push.on` and `push.keep`, and a push left with nothing to make room for is taken off the camera.
+ */
+function pushWithout(ids: readonly string[], before: ResolvedState): ActionInput[] {
+  const gone = new Set(ids);
+  const cameras = new Set<string>();
+  for (const id of ids)
+    for (const edge of before.refs.to.get(id) ?? [])
+      if (edge.type === "push" && !gone.has(edge.from)) cameras.add(edge.from);
+  const out: ActionInput[] = [];
+  for (const cameraId of cameras) {
+    const push = before.tree.byId.get(cameraId)?.props.push as
+      | (Record<string, Json> & { on: string[]; keep?: string[] })
+      | undefined;
+    if (!push) continue;
+    const on = push.on.filter((id) => !gone.has(id));
+    const next =
+      on.length === 0 ? null : { ...push, on, ...(push.keep ? { keep: push.keep.filter((id) => !gone.has(id)) } : {}) };
+    out.push({ type: "camera/setPush", params: { cameraId, push: next } } as ActionInput);
+  }
+  return out;
 }
 
 /** Whether a sibling on a track is something placed there, not a transition or a gap. */

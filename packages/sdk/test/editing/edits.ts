@@ -230,6 +230,15 @@ export const EDITS: readonly Edit[] = [
     }),
   },
   {
+    name: "deletes an element a camera makes room for",
+    pick: (s) => {
+      const edge = s.refs.edges.find(
+        (e) => e.type === "push" && !e.broken && s.items.get(e.to)?.editable === "literal",
+      );
+      return edge && { type: "element/remove", params: { id: edge.to } };
+    },
+  },
+  {
     name: "adds a track and a title on it",
     pick: () => ({
       type: "batch/apply",
