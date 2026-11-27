@@ -1,3 +1,4 @@
+import { endS, startS } from "../time";
 import type { ResolvedState } from "./resolve";
 
 export interface SubtitleOptions {
@@ -26,8 +27,8 @@ export function subtitles(state: ResolvedState, options: SubtitleOptions): strin
   const lines: Line[] = [];
   for (const p of state.items.values()) {
     if (p.kind !== "caption" || state.items.get(p.parent ?? "")?.kind !== "captions") continue;
-    const start = Math.max(p.start, from);
-    const end = Math.min(p.end, to);
+    const start = Math.max(startS(p), from);
+    const end = Math.min(endS(p), to);
     const text = String(p.props.text ?? "").trim();
     if (end <= start || !text) continue;
     lines.push({ start: start - from, end: end - from, text });

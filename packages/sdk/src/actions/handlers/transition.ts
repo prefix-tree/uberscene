@@ -8,6 +8,7 @@ import {
 
 import type { Json } from "../../patches/types";
 import type { ResolvedState } from "../../resolve/resolve";
+import { lengthT, T } from "../../time";
 import { carry, carryTransitionRemoval } from "../carry";
 import {
   define,
@@ -73,8 +74,9 @@ define({
           code: "UNSUPPORTED_ON_LAYOUT",
           message: "between-transitions need a sequence track; use on/edge",
         });
-      // With slack, as the resolver checks: in 1.1 to out 2.3 is 1.1999999999999997 s, and 1.2 s fits it.
-      if (a.params.duration > left.duration + 1e-9 || a.params.duration > right.duration + 1e-9)
+      // In ticks, as the resolver checks: a clip from in 1.1 to out 2.3 is exactly 1.2 s, and a 1.2 s transition fits it.
+      const length = T(a.params.duration);
+      if (length > lengthT(left) || length > lengthT(right))
         return invalid({ code: "INSUFFICIENT_HANDLES", message: "transition is longer than one of its clips" });
       return ok;
     }
@@ -83,7 +85,7 @@ define({
     if (isError(target)) return invalid(target);
     const locked = requireUnlocked(state, target);
     if (locked) return invalid(locked);
-    return a.params.duration <= target.duration + 1e-9
+    return T(a.params.duration) <= lengthT(target)
       ? ok
       : invalid({ code: "INSUFFICIENT_HANDLES", message: "transition is longer than the clip" });
   },

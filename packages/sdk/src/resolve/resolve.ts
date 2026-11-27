@@ -29,7 +29,6 @@ import {
   sampleRateProblem,
   shaderFor,
   type ThemeOrigin,
-  TICKS_PER_SECOND,
   type Ticks,
   type TimeRange,
   TRANSITION_TYPES,
@@ -45,6 +44,7 @@ import {
 import { parseTimeRef, resolveTimeRef } from "../manifest/timeref";
 import { type AssetEntry, type AssetManifest, assetIdOf, lookupAsset } from "../manifest/types";
 import type { PatchLog } from "../patches/types";
+import { minus, plus, T } from "../time";
 import {
   type AssetPlay,
   assetPlay,
@@ -105,14 +105,6 @@ export interface PlacementSource {
   /** `[in, out)` of the source in ticks. */
   readonly range: TimeRange;
 }
-
-// The resolver's own tick arithmetic. Unlike the kit's, it doesn't throw past 2^53 (about 9.85 hours): a file can say a
-// longer time, and the resolver reports that (INVALID_TIME_RANGE) instead of failing to resolve it at all.
-
-/** Seconds as the nearest tick, for a time that comes from the file, the manifest or the speed math. */
-const T = (seconds: number): Ticks => (Math.round(seconds * TICKS_PER_SECOND) + 0) as Ticks;
-const plus = (a: Ticks, b: Ticks): Ticks => (a + b) as Ticks;
-const minus = (a: Ticks, b: Ticks): Ticks => (a - b) as Ticks;
 
 /** A placement's source with its range in ticks, from the seconds the resolver works the source out in. */
 function withRange(source: PendingSource | undefined): PlacementSource | undefined {
