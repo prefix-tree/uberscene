@@ -59,3 +59,4 @@ export { clamp01, round3 } from "./math";
 export * from "./theme";
 export * from "./ticks";
 export * from "./time";
+export { Time, TimeRange } from "./time-value";

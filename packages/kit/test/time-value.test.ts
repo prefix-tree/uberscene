@@ -3,9 +3,8 @@
 // that every frame of every rate is reachable, and that a Time can't be used as a number by mistake.
 import { describe, expect, it } from "vitest";
 
-import { MAX_SECONDS, parseRate, type Rate, TICKS_PER_SECOND } from "@uberscene/kit/schema";
+import { MAX_SECONDS, parseRate, type Rate, TICKS_PER_SECOND, Time, TimeRange } from "@uberscene/kit/schema";
 
-import { Time, TimeRange } from "../src/time-value";
 import vectors from "./vectors/ticks.json" with { type: "json" };
 
 const T = Time.parse;

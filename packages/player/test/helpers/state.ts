@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { resolveTheme, secondsToTicksExact, type TimeRange } from "@uberscene/kit/schema";
+import { resolveTheme, secondsToTicksExact, type TickRange } from "@uberscene/kit/schema";
 import {
   type AssetManifest,
   type CollectedNode,
@@ -16,7 +16,7 @@ import {
 import * as sample from "../../../sdk/fixtures/sample";
 
 /** A range in ticks from seconds, as the resolver makes it. */
-function rangeOf(start: number, duration: number): TimeRange {
+function rangeOf(start: number, duration: number): TickRange {
   const t = secondsToTicksExact(start);
   return { start: t, duration: secondsToTicksExact(duration) };
 }
