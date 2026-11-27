@@ -10,7 +10,8 @@ import { frameIndex } from "./time";
 import type { DrawRect, Matrix2D } from "./transform";
 import { visiblePlacements } from "./visible";
 
-export { blendOf, matteOf } from "./canvas-ops";
+export { blendOf } from "./blend";
+export { matteOf } from "./canvas-ops";
 
 export interface MaskSpec {
   readonly shape?: Record<string, unknown> | undefined;

@@ -1,9 +1,11 @@
-import type { FitMode, ResolvedTheme } from "@uberscene/kit/schema";
+import type { FitMode } from "@uberscene/kit/schema";
 import { secondsSinceStart } from "@uberscene/sdk/resolver";
 
-import { type ElementProps, type OverlayLayout, overlayLayout } from "./layout";
-import { overlaySize } from "./size";
-import { type PreparedSvg, prepareSvg, type SvgColor, type SvgViewBox, svgAnimated } from "./svg";
+import { type OverlayLayout, overlayLayout } from "../../overlays/layout";
+import { overlaySize } from "../../overlays/size";
+import { type PreparedSvg, prepareSvg, svgAnimated } from "../../overlays/svg";
+import { themeTokens } from "../../overlays/theme-tokens";
+import type { ElementPropsOf } from "../dom-drawing";
 
 export interface SvgDrawing {
   /** The size the SVG asks for, before `fit`. */
@@ -19,19 +21,18 @@ export interface SvgDrawing {
  * `$name` / `var(--us-name)` filled from `tokens` (by default the composition's theme).
  */
 export function svgDrawing(
-  p: ElementProps,
+  p: ElementPropsOf<"svg">,
   markup: string,
   tokens: Readonly<Record<string, string>> = themeTokens(p.state.theme),
 ): SvgDrawing {
-  const props = p.placement.props as Record<string, unknown>;
-  const viewBox = props.viewBox as SvgViewBox | undefined;
+  const props = p.placement.props;
   const { size, fit } = overlaySize(p.state, p.placement, p.children, secondsSinceStart(p.placement, p.time), markup);
   const layout = overlayLayout(p, size, fit, true);
   const prepared = prepareSvg(markup, {
     box: { width: layout.rect.w, height: layout.rect.h },
-    viewBox,
-    preserveAspectRatio: props.preserveAspectRatio as string | undefined,
-    color: props.color as SvgColor | undefined,
+    viewBox: props.viewBox,
+    preserveAspectRatio: props.preserveAspectRatio,
+    color: props.color,
     tokens,
     idPrefix: p.placement.id,
     draw: layout.draw,
@@ -39,17 +40,4 @@ export function svgDrawing(
     ...(svgAnimated(markup) ? { time: secondsSinceStart(p.placement, p.time) } : {}),
   });
   return { size, fit, layout, prepared };
-}
-
-const tokensByTheme = new WeakMap<ResolvedTheme, Readonly<Record<string, string>>>();
-
-/** A theme's tokens as SVG attribute values. */
-export function themeTokens(theme: ResolvedTheme | undefined): Readonly<Record<string, string>> {
-  if (!theme) return {};
-  let tokens = tokensByTheme.get(theme);
-  if (!tokens) {
-    tokens = Object.fromEntries(Object.entries(theme.tokens).map(([k, v]) => [k, String(v)]));
-    tokensByTheme.set(theme, tokens);
-  }
-  return tokens;
 }

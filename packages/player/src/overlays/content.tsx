@@ -1,7 +1,7 @@
 /** @jsxRuntime automatic */
 /** @jsxImportSource react */
 
-import { Children, type CSSProperties, cloneElement, isValidElement, type ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 import { fontFamily } from "@uberscene/kit";
 import { lengthSeconds, type Placement, secondsSinceStart, startSeconds } from "@uberscene/sdk/resolver";
@@ -141,33 +141,4 @@ function line(
       </span>
     );
   });
-}
-
-/** The interior as written, with the Layer's handles (edited props) applied to its one component. */
-export function layerContent(interior: ReactNode, props: Readonly<Record<string, unknown>> | undefined): ReactNode {
-  if (!props) return interior;
-  const only = Children.toArray(interior).filter((c) => c !== null && typeof c !== "boolean" && c !== "");
-  const child = only.length === 1 ? only[0] : null;
-  return isValidElement(child) ? cloneElement(child, props) : interior;
-}
-
-/** The labelled box shown for a sticker with no media. */
-export function stickerPlaceholder(label: string): ReactNode {
-  return (
-    <div
-      style={{
-        width: "100%",
-        height: "100%",
-        background: "#333",
-        color: "#ccc",
-        font: "16px monospace",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        borderRadius: 8,
-      }}
-    >
-      {label}
-    </div>
-  );
 }

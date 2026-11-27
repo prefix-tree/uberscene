@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import { type DrawPlane, KIT_ELEMENTS, type MigratedKind } from "@uberscene/kit/schema";
 import { buildSourceIndex, collectModule, loadModule, placed, resolve } from "@uberscene/sdk";
 
@@ -5,22 +7,18 @@ import { SAMPLE, SAMPLE_KINDS, sampleFile } from "../../sdk/test/conformance/sam
 import { elementSize, PLAYER_ELEMENTS } from "../src/elements";
 import { overlaySize } from "../src/overlays/size";
 import { mountPlayer } from "./helpers/react";
-import { DEFAULT_MANIFEST } from "./helpers/state";
 import { buildFramePlan, visiblePlacements } from "./internal";
 
 // The conformance suite's part in the player (the rest is `packages/sdk/test/conformance`): every kind that has a
 // folder of its own is drawn from its sample, on the plane the kit says it stands on.
 
-/** The plane the kit says a kind stands on, as any plane: today every kind with a folder is on the DOM's. */
+/** The plane the kit says a kind stands on, as any plane. */
 const planeOf = (kind: MigratedKind): DrawPlane => KIT_ELEMENTS[kind].capabilities.plane;
 
 describe.each(SAMPLE_KINDS)("a %s", (kind) => {
   const file = sampleFile(kind);
-  const load = () =>
-    resolve(
-      collectModule(loadModule(file.text) as never, {}, { index: buildSourceIndex(file.text) }),
-      DEFAULT_MANIFEST,
-    );
+  const module = loadModule(file.text) as { default: () => ReactNode };
+  const load = () => resolve(collectModule(module as never, {}, { index: buildSourceIndex(file.text) }), file.manifest);
 
   it("shows while it is on the timeline, at a size of its own", () => {
     const state = load();
@@ -39,7 +37,8 @@ describe.each(SAMPLE_KINDS)("a %s", (kind) => {
   it("is drawn on its plane", async () => {
     const state = load();
     const plane = planeOf(kind);
-    const m = await mountPlayer(state);
+    // The file's own element goes with the state: a layer's free code is drawn from it.
+    const m = await mountPlayer(state, module.default());
     await m.seek(1);
     const cell = m.container.querySelector(`[data-el="${SAMPLE}"]`) as HTMLElement | null;
     const onCanvas = buildFramePlan(state, 1).ops.some((op) => op.id === SAMPLE);

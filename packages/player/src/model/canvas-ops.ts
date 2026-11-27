@@ -1,15 +1,8 @@
-// What each kind paints on the canvas at a moment: the footage kinds (a clip, a nested composition) and an
-// adjustment. `buildFramePlan` asks this table for every visible item, in draw order; a kind with no entry paints
-// nothing there (the DOM layer draws the overlays). A new kind that paints on the canvas is an entry here.
+// What each kind paints on the canvas at a moment. `buildFramePlan` asks this table for every visible item, in draw
+// order; a kind with no entry paints nothing there (the DOM layer draws the overlays). A kind with a folder of its own
+// says its ops there (`elements/<kind>/canvas.ts`); the footage kinds (a clip, a nested composition) are here.
 
-import {
-  type BlendMode,
-  type ElementBox,
-  type FitMode,
-  MASK_TYPES,
-  TRANSITION_TYPES,
-  type Transform,
-} from "@uberscene/kit/schema";
+import { type ElementBox, type FitMode, MASK_TYPES, TRANSITION_TYPES, type Transform } from "@uberscene/kit/schema";
 import {
   type AssetEntry,
   lookupAsset,
@@ -18,7 +11,9 @@ import {
   secondsSinceStart,
 } from "@uberscene/sdk/resolver";
 
+import { ELEMENT_CANVAS } from "../elements/canvas";
 import { devWarn } from "../warn";
+import { blendOf } from "./blend";
 import { trackCamera } from "./camera";
 import { postEffects } from "./effects";
 import type { DrawOp, MaskSpec, MatteSpec, ResolveNested } from "./frame-plan";
@@ -29,7 +24,7 @@ import { transitionLook } from "./transition";
 import type { VisibleItem } from "./visible";
 
 /** What a kind's ops are planned from: the state and the moment, and what the plan holds so far. */
-interface PlanContext {
+export interface PlanContext {
   readonly state: ResolvedState;
   readonly t: number;
   readonly resolveNested: ResolveNested | undefined;
@@ -43,31 +38,6 @@ interface PlanContext {
 
 /** The ops one visible item paints, in order. They are put on the item's band by the plan. */
 export type CanvasOps = (ctx: PlanContext, item: VisibleItem) => readonly DrawOp[];
-
-const BLEND_TO_CANVAS: Readonly<Record<BlendMode, GlobalCompositeOperation>> = {
-  normal: "source-over",
-  multiply: "multiply",
-  screen: "screen",
-  overlay: "overlay",
-  darken: "darken",
-  lighten: "lighten",
-  colorDodge: "color-dodge",
-  colorBurn: "color-burn",
-  hardLight: "hard-light",
-  softLight: "soft-light",
-  difference: "difference",
-  exclusion: "exclusion",
-  hue: "hue",
-  saturation: "saturation",
-  color: "color",
-  luminosity: "luminosity",
-  add: "lighter",
-  linearDodge: "lighter",
-};
-
-export function blendOf(value: unknown): GlobalCompositeOperation {
-  return BLEND_TO_CANVAS[value as BlendMode] ?? "source-over";
-}
 
 /** Footage: the picture itself, under the camera of its track, and a dip to black or white over it when its transition is one. */
 const footageOps: CanvasOps = (ctx, item) => {
@@ -88,38 +58,11 @@ const footageOps: CanvasOps = (ctx, item) => {
   return dip ? [op, dipOp(item.transition!.placement, dip, comp.width, comp.height)] : [op];
 };
 
-/** An adjustment: its effects over everything painted beneath it. With nothing beneath, or switched off, nothing. */
-const adjustmentOps: CanvasOps = ({ state, t, ops }, item) => {
-  const p = item.placement;
-  const comp = state.composition;
-  if (p.props.enabled === false) return [];
-  const { shaders, ...filters } = effectPipeline(state, item.children, p.id, secondsSinceStart(p, t), {
-    shaders: true,
-  });
-  if (ops.length === 0) return [];
-  // Vignette and grain darken and speckle everything beneath, before the adjustment's other effects.
-  const post = postEffects(state.items, item.children, frameIndex(t, comp.rate), secondsSinceStart(p, t));
-  return [
-    {
-      id: p.id,
-      kind: "adjustment",
-      rect: { x: 0, y: 0, w: comp.width, h: comp.height },
-      matrix: { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 },
-      fit: "stretch",
-      opacity: Number(p.props.opacity ?? 1),
-      blend: blendOf(p.props.blend),
-      ...filters,
-      borderRadius: 0,
-      ...(post ? { post } : {}),
-      ...(shaders ? { shaders } : {}),
-    },
-  ];
-};
-
 export const CANVAS_OPS: Readonly<Record<string, CanvasOps>> = {
+  // The kinds with a folder of their own (`elements/<kind>/canvas.ts`).
+  ...ELEMENT_CANVAS,
   clip: footageOps,
   nested: footageOps,
-  adjustment: adjustmentOps,
 };
 
 function mediaOp(

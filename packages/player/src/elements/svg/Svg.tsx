@@ -1,22 +1,21 @@
-import { useEffect, useState } from "react";
-
-import { dataAttrs, type ElementProps, layoutStyle, overlayStyle } from "../../overlays/layout";
-import { svgDrawing } from "../../overlays/svg-element";
+import { dataAttrs, layoutStyle, overlayStyle } from "../../overlays/layout";
+import { useMediaText } from "../../react/media";
 import { devWarn } from "../../warn";
-import { usePlayer } from "../hooks";
+import type { ElementPropsOf } from "../dom-drawing";
+import { svgDrawing } from "./drawing";
 
 /** Inline SVG markup, or an SVG asset read as text, prepared the way the export prepares it. */
-export function Svg(p: ElementProps) {
-  const props = p.placement.props as Record<string, unknown>;
-  const content = typeof props.content === "string" ? props.content : null;
-  const text = useMediaText(content === null && typeof props.src === "string" ? props.src : null);
+export function Svg(p: ElementPropsOf<"svg">) {
+  const props = p.placement.props;
+  const content = props.content ?? null;
+  const text = useMediaText(content === null ? (props.src ?? null) : null);
   const markup = content ?? text;
   // Marked pending while its file loads, so an export waits for the drawing instead of capturing nothing.
   if (markup === null)
     return (
       <div
         {...dataAttrs(p.placement)}
-        {...(content === null && typeof props.src === "string" ? { "data-pending": "" } : {})}
+        {...(content === null && props.src !== undefined ? { "data-pending": "" } : {})}
         style={overlayStyle(p, { width: 0, height: 0 })}
       />
     );
@@ -30,70 +29,4 @@ export function Svg(p: ElementProps) {
       dangerouslySetInnerHTML={{ __html: drawing.prepared.markup }}
     />
   );
-}
-
-/** Resolves an `asset:` reference to an object URL or a plain URL. */
-export function useMediaUrl(ref: string | null): string | null {
-  const core = usePlayer();
-  const [url, setUrl] = useState<string | null>(null);
-  useEffect(() => {
-    if (!ref) {
-      setUrl(null);
-      return;
-    }
-    const id = ref.startsWith("asset:") ? ref.slice(6) : ref;
-    let revoke: string | null = null;
-    let cancelled = false;
-    core
-      .resolveMedia(id)
-      .then((handle) => {
-        if (cancelled) return;
-        if (handle.kind === "url") setUrl(handle.url);
-        else if (handle.kind === "blob") {
-          revoke = URL.createObjectURL(handle.blob);
-          setUrl(revoke);
-        } else setUrl(null);
-      })
-      .catch(() => {
-        if (!cancelled) setUrl(null);
-      });
-    return () => {
-      cancelled = true;
-      if (revoke) URL.revokeObjectURL(revoke);
-    };
-  }, [core, ref]);
-  return url;
-}
-
-/** Reads an `asset:` reference as text, for markup that is inlined rather than loaded as an image. */
-function useMediaText(ref: string | null): string | null {
-  const core = usePlayer();
-  const [text, setText] = useState<string | null>(null);
-  useEffect(() => {
-    if (!ref) {
-      setText(null);
-      return;
-    }
-    const id = ref.startsWith("asset:") ? ref.slice(6) : ref;
-    let cancelled = false;
-    core
-      .resolveMedia(id)
-      .then((handle) =>
-        handle.kind === "url"
-          ? fetch(handle.url).then((r) => r.text())
-          : handle.kind === "blob"
-            ? handle.blob.text()
-            : null,
-      )
-      .then((t) => {
-        if (!cancelled) setText(t);
-      })
-      .catch(() => {
-        if (!cancelled) setText(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [core, ref]);
-  return text;
 }

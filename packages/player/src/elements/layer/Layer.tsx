@@ -1,19 +1,28 @@
-import { type CSSProperties, type ReactNode, useEffect, useLayoutEffect, useRef } from "react";
+import {
+  Children,
+  type CSSProperties,
+  cloneElement,
+  isValidElement,
+  type ReactNode,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+} from "react";
 
 import { layerEngine } from "@uberscene/kit/schema";
 import { secondsSinceStart } from "@uberscene/sdk/resolver";
 
 import { layerClock } from "../../model/time";
-import { layerContent } from "../../overlays/content";
 import { dataAttrs, type ElementProps, overlayStyle } from "../../overlays/layout";
 import { overlaySize } from "../../overlays/size";
-import { themeTokens } from "../../overlays/svg-element";
+import { themeTokens } from "../../overlays/theme-tokens";
+import { LayerContext } from "../../react/context";
+import { holdCssAnimations } from "../../react/hold-animations";
 import { devWarn } from "../../warn";
-import { LayerContext } from "../context";
-import { holdCssAnimations } from "../hold-animations";
+import type { ElementPropsOf } from "../dom-drawing";
 
 /** Arbitrary React inside the composition, driven by `useLayer()` and `useT()` through LayerContext. */
-export function Layer(p: ElementProps & { readonly interior: ReactNode }) {
+export function Layer(p: ElementPropsOf<"layer"> & { readonly interior: ReactNode }) {
   const comp = p.state.composition;
   const { size } = overlaySize(p.state, p.placement, p.children, secondsSinceStart(p.placement, p.time));
   const style = overlayStyle(p, size);
@@ -33,7 +42,7 @@ export function Layer(p: ElementProps & { readonly interior: ReactNode }) {
   return (
     <div ref={ref} {...dataAttrs(p.placement)} style={{ ...themeVars(p.state.theme), ...style }}>
       <LayerContext.Provider value={clock}>
-        {typeof p.placement.props.engine === "string" ? (
+        {p.placement.props.engine !== undefined ? (
           <Engine name={p.placement.props.engine} props={p.placement.props}>
             {p.interior}
           </Engine>
@@ -43,6 +52,14 @@ export function Layer(p: ElementProps & { readonly interior: ReactNode }) {
       </LayerContext.Provider>
     </div>
   );
+}
+
+/** The interior as written, with the Layer's handles (edited props) applied to its one component. */
+function layerContent(interior: ReactNode, props: Readonly<Record<string, unknown>> | undefined): ReactNode {
+  if (!props) return interior;
+  const only = Children.toArray(interior).filter((c) => c !== null && typeof c !== "boolean" && c !== "");
+  const child = only.length === 1 ? only[0] : null;
+  return isValidElement(child) ? cloneElement(child, props) : interior;
 }
 
 const varsByTokens = new WeakMap<object, CSSProperties>();
