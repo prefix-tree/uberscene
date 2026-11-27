@@ -1,4 +1,4 @@
-// The machine's music and its notes: score.ts rendered with Strudel, mastered to -14 LUFS under a -1 dBFS ceiling and
+// The machine's music and its notes: video.tsx rendered with Strudel, mastered to -14 LUFS under a -1 dBFS ceiling and
 // added with its grid (120 BPM from 0 s, so beat N is at N / 2 seconds, exactly), then each voice's notes written to
 // notes.ts, which the film draws from.
 //
@@ -11,7 +11,7 @@ import { join } from "node:path";
 
 import { addAsset, masterGain, renderStrudel, type StrudelEvent, writeStrudelWav } from "@uberscene/render";
 
-import { SCORE } from "../score";
+import { SCORE } from "../video";
 
 const here = join(import.meta.dirname, "..");
 mkdirSync(join(here, "media"), { recursive: true });
@@ -78,7 +78,7 @@ for (const [voice, list] of Object.entries(notes))
 
 writeFileSync(
   join(here, "notes.ts"),
-  `// Written by scripts/music.ts from score.ts: the notes each voice plays, in seconds, as Strudel rendered them. The
+  `// Written by scripts/music.ts from video.tsx: the notes each voice plays, in seconds, as Strudel rendered them. The
 // film draws from these, so every part moves on the note that sounds.
 // Run \`pnpm --filter @uberscene/example-machine music\` to write them again.
 export const NOTES = ${JSON.stringify(notes)} as const;

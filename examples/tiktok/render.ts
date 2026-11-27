@@ -37,7 +37,13 @@ interface Film {
    * The film's music as a Strudel score (from examples/): shown first in the reveal, its sections lit as they play,
    * until `until`, when the editor switches to the film's file.
    */
-  readonly music?: { readonly file: string; readonly until: number };
+  readonly music?:
+    | { readonly file: string; readonly until: number }
+    /**
+     * The score is in the film's own file: the editor shows that one file, on its music first, and at each of
+     * `turns` (seconds) moves to its timeline, then back to its music, and so on.
+     */
+    | { readonly turns: readonly number[] };
 }
 
 const FILMS: Record<string, Film> = {
@@ -67,18 +73,19 @@ const FILMS: Record<string, Film> = {
     ],
     music: { file: "liftoff/score.ts", until: 20 },
   },
-  // Drawn, no footage: every block that falls is a note of the score. It opens on two bars of the drop, under the
-  // hook. The code comes up as the lead joins: the score through the end of the build and into the drop, its lit
-  // chord the block landing above, then the file that draws the lanes; the film takes the frame back to power down.
+  // Drawn, no footage, and one file: the score, the picture and the timeline. So the code is under the film from the
+  // first frame to the last, and the editor moves through that file on bar lines: its music, its timeline, its music
+  // again for the drop, its timeline as the lanes go dark. The hook says what was built.
   machine: {
     file: "machine/video.tsx",
     needs: "pnpm --filter @uberscene/example-machine prepare-media",
-    reveal: [16, 28],
+    reveal: [0, 40],
     hook: [
-      { text: "Today we're building:\nmusic as code.", from: 0, to: 2.6, y: 820 },
-      { text: "BUT no editor.\nJust code.", from: 2.6, to: 5.4, y: 820 },
+      { text: "Today we're building music\nand graphics on one timeline.", from: 0, to: 3.2, size: 56, y: 330 },
+      { text: "Same framework. One file:\nmusic, animation, export.", from: 3.2, to: 6.4, size: 56, y: 330 },
+      { text: "BUT no editor.\nJust code.", from: 6.4, to: 9, y: 350 },
     ],
-    music: { file: "machine/score.ts", until: 22 },
+    music: { turns: [10, 20, 30] },
   },
 };
 
@@ -159,15 +166,22 @@ for (const [name, film] of Object.entries(FILMS)) {
   const props = { code, lit, film: id, width, height, length, file: basename(file), hook: "This video is code." };
   const [split, back] = film.reveal ?? middleThird(video.state, length);
   const picture = { file: basename(file), label: film.music ? "the pictures" : "playing above", code, lit };
-  const pages = film.music
-    ? (() => {
-        const score = readFileSync(join(examples, film.music.file), "utf8");
-        return [
-          { file: basename(film.music.file), label: "the music", code: score, lit: scoreLit(score), from: 0 },
-          { ...picture, from: film.music.until },
-        ];
-      })()
-    : [{ ...picture, from: 0 }];
+  const music = film.music;
+  const pages = !music
+    ? [{ ...picture, from: 0 }]
+    : "turns" in music
+      ? [0, ...music.turns].map((from, i) =>
+          i % 2 === 0
+            ? { file: basename(file), label: "the music", code, lit: scoreLit(code), from }
+            : { ...picture, label: "the timeline", from },
+        )
+      : (() => {
+          const score = readFileSync(join(examples, music.file), "utf8");
+          return [
+            { file: basename(music.file), label: "the music", code: score, lit: scoreLit(score), from: 0 },
+            { ...picture, from: music.until },
+          ];
+        })();
   for (const [kind, page, extra] of [
     ["code", "frame.tsx", props],
     ["reveal", "reveal.tsx", { film: id, width, height, length, pages, split, back, hook: film.hook }],

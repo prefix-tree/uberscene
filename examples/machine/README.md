@@ -15,7 +15,8 @@ sounds. The block bursts, its pad lights, and the kick shakes the frame.
 
 ## The score is the clock
 
-The music is a [Strudel](https://strudel.cc) score, `score.ts`. Each voice in it has a name:
+The whole film is one file, `video.tsx`: the music, the picture and the timeline. The music is a
+[Strudel](https://strudel.cc) score at the top of it. Each voice in it has a name:
 
 ```ts
 note("f1*4").s("sine").penv(36).decay(.32).sustain(0).voice("kick")
@@ -28,7 +29,7 @@ notes at random as the machine powers down. Strudel's randomness is a function o
 
 `scripts/music.ts` renders the score with `renderStrudel` from `@uberscene/render`, masters it to -14 LUFS, and adds
 the WAV with its grid: 120 BPM from 0 s, so beat N is at exactly N / 2 seconds. The render also returns every note it
-played (its time, length, gain and voice), and the script writes them to `notes.ts`. `video.tsx` draws from that file:
+played (its time, length, gain and voice), and the script writes them to `notes.ts`. The picture draws from that file:
 a block's distance above the line is the time until its note, so picture and sound cannot drift.
 
 A lane is a `<Layer>`. It lights two seconds before its voice plays, as the first note comes into view, and goes dark

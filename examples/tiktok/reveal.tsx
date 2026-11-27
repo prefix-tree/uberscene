@@ -85,9 +85,13 @@ const DROP = 0.3;
 const easeInOut = (k: number): number => (k < 0.5 ? 4 * k * k * k : 1 - (-2 * k + 2) ** 3 / 2);
 
 /** The code, sliding up from below the frame as the layer starts and back down as it ends. */
-function Code(props: { pages: z.infer<typeof pageSchema>[]; length: number; split: number }) {
+function Code(props: { pages: z.infer<typeof pageSchema>[]; length: number; split: number; back: number }) {
   const { elapsed, remaining } = useLayer();
-  const up = Math.min(easeInOut(Math.min(1, elapsed / RISE)), easeInOut(Math.min(1, remaining / DROP)));
+  // A post that opens split has the code up from its first frame, and one that ends split keeps it up to its last.
+  const up = Math.min(
+    props.split <= 0 ? 1 : easeInOut(Math.min(1, elapsed / RISE)),
+    props.back >= props.length ? 1 : easeInOut(Math.min(1, remaining / DROP)),
+  );
   const top = SPLIT_Y + (1 - up) * (H - SPLIT_Y);
   // The window reads the film's clock, so its lines light as the film above plays them; the page is the last one up.
   const t = props.split + elapsed;
@@ -135,10 +139,18 @@ export default function Reveal(props: z.infer<typeof schema>) {
           box={{
             x: W / 2,
             y: [
-              { at: split, value: centre, easing: "easeInOutCubic" },
-              { at: split + RISE, value: raised },
-              { at: back - DROP, value: raised, easing: "easeInOutCubic" },
-              { at: back, value: centre },
+              ...(split <= 0
+                ? [{ at: 0, value: raised }]
+                : [
+                    { at: split, value: centre, easing: "easeInOutCubic" as const },
+                    { at: split + RISE, value: raised },
+                  ]),
+              ...(back >= length
+                ? []
+                : [
+                    { at: back - DROP, value: raised, easing: "easeInOutCubic" as const },
+                    { at: back, value: centre },
+                  ]),
             ],
             width: W,
             height: h,
@@ -149,7 +161,7 @@ export default function Reveal(props: z.infer<typeof schema>) {
       <Track id="code" layout="free">
         {/* A ground: it runs under the phone's caption and buttons, faded; its lit line is held inside the safe zone. */}
         <Layer id="source" start={split} duration={back - split} ground>
-          <Code pages={pages} length={length} split={split} />
+          <Code pages={pages} length={length} split={split} back={back} />
         </Layer>
       </Track>
       {hook ? (
