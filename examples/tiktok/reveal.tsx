@@ -7,7 +7,7 @@
 // lit line is held inside TikTok's safe zone (y 240 to 1260), above the caption and buttons.
 //
 // The code can be several files, `pages`, each from a second of the film on, as tabs of the editor switching on a beat
-// (the music's score, then the pictures' file). A `hook` line can open the post for its first three seconds.
+// (the music's score, then the pictures' file). `hook` lines can open the post: a question, its answer, the turn.
 import { z } from "zod";
 
 import { Clip, Composition, Layer, Title, Track, useLayer } from "@uberscene/kit";
@@ -34,8 +34,21 @@ export const schema = z.object({
   length: z.number(),
   /** The code shown below the film: the film's source, or several files, each from a second of the film on. */
   pages: z.array(pageSchema).min(1),
-  /** A line over the first three seconds that says what the post is. */
-  hook: z.string().optional(),
+  /**
+   * Lines that open the post and say what it is, each over its own seconds: a question, its answer, then the turn
+   * ("BUT…"). `y` is the line's middle; left out, a little above the frame's middle.
+   */
+  hook: z
+    .array(
+      z.object({
+        text: z.string(),
+        from: z.number(),
+        to: z.number(),
+        size: z.number().optional(),
+        y: z.number().optional(),
+      }),
+    )
+    .optional(),
   /** When the code comes up and when it goes, in seconds of the film. */
   split: z.number(),
   back: z.number(),
@@ -138,25 +151,28 @@ export default function Reveal(props: z.infer<typeof schema>) {
         </Layer>
       </Track>
       {hook ? (
-        <Track id="hook-line" layout="free">
-          <Title
-            id="hook"
-            start={0}
-            duration={3}
-            style={{
-              font: display,
-              size: 92,
-              weight: 800,
-              color: "#ffffff",
-              align: "center",
-              shadow: { color: "rgba(0, 0, 0, 0.75)", blur: 30, y: 2 },
-            }}
-            box={{ x: W / 2, y: 760, width: 960, height: 260, origin: "center" }}
-            enter={{ type: "fade", duration: 0.2 }}
-            exit={{ type: "fade", duration: 0.3 }}
-          >
-            {hook}
-          </Title>
+        <Track id="hook-lines" layout="free">
+          {hook.map((line, i) => (
+            <Title
+              key={line.text}
+              id={`hook-${i}`}
+              start={line.from}
+              duration={line.to - line.from}
+              style={{
+                font: display,
+                size: line.size ?? 76,
+                weight: 800,
+                color: "#ffffff",
+                align: "center",
+                shadow: { color: "rgba(0, 0, 0, 0.8)", blur: 30, y: 2 },
+              }}
+              box={{ x: W / 2, y: line.y ?? 760, width: 840, height: 240, origin: "center" }}
+              enter={{ type: "fade", duration: 0.12 }}
+              exit={{ type: "fade", duration: 0.2 }}
+            >
+              {line.text}
+            </Title>
+          ))}
         </Track>
       ) : null}
     </Composition>

@@ -40,6 +40,7 @@ the vertical crop drops pixels instead of stretching them (`scripts/fetch.ts`, c
 renders the music and finds the ignitions. The two vertical Starship clips (`media/catch.webm`, `media/return.webm`)
 are not from Commons and not in the repository: supply your own.
 
-`examples/tiktok` renders it as a TikTok post too, with the code in a split: the hook "This video is code. So is the
-music.", then `score.ts` and `video.tsx` lighting up as they play (`pnpm --filter @uberscene/example-tiktok render
+`examples/tiktok` renders it as a TikTok post too, with the code in a split: a hook ("How do you edit 60 years of
+launches?" … "BUT this one has no editor. It's code. Even the music."), then `score.ts` and `video.tsx` lighting up as
+they play (`pnpm --filter @uberscene/example-tiktok render
 liftoff`).
