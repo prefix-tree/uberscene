@@ -28,6 +28,35 @@ The export loads a file the way the editor does: it may import `react`, `zod` an
 `.tsx` modules inside the project, plus what `--import` offers. A file that imports anything else fails with the same message in both, so a file that exports
 also opens in the editor.
 
+## Several exports in one go
+
+`uberscene queue` exports a list of videos in order and prints one summary at the end: a wide and a tall cut of the
+same file, one export per set of props, a draft beside the final.
+
+```json
+{
+  "jobs": [
+    { "file": "video.tsx", "out": "out/wide.mp4" },
+    { "file": "video.tsx", "props": { "aspect": "9:16" }, "out": "out/tall.mp4", "quality": "high" },
+    { "file": "teaser.tsx", "from": 2, "to": 8, "out": "out/teaser.webm" }
+  ]
+}
+```
+
+```sh
+npx uberscene queue jobs.json
+```
+
+- A job needs `file` and `out`. `props`, `from`, `to`, `codec`, `quality`, `bitrate`, `manifest`, `draft` and
+  `silent` mean what the options of the same name mean. Paths are relative to the queue file, and the folder an
+  `out` names is made when it is missing. The file can also be the list of jobs alone.
+- Every job is checked before the first one renders: a missing file, an unknown codec, `quality` beside `bitrate`,
+  two jobs writing one file. Each message names its job, so a typo in the last job is found in a second.
+- `--media`, `--tabs`, `--font`, `--import`, `--keyframe` and `--continue` apply to every job.
+- The first job that fails stops the queue, and the rest are listed as skipped. With `--continue-on-error` every job
+  runs. A failed job writes nothing and leaves an older file at its `out` as it was.
+- The command exits 0 when every job rendered and 1 otherwise. `--json` prints the summary as JSON.
+
 ## Formats
 
 | `--out` | Writes |
