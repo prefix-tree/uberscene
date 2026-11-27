@@ -6,8 +6,13 @@ import {
   TRANSITION_TYPES,
   type Transform,
 } from "@uberscene/kit/schema";
-import { secondsSinceStart } from "@uberscene/sdk";
-import { type AssetEntry, lookupAsset, type Placement, type ResolvedState } from "@uberscene/sdk/resolver";
+import {
+  type AssetEntry,
+  lookupAsset,
+  type Placement,
+  type ResolvedState,
+  secondsSinceStart,
+} from "@uberscene/sdk/resolver";
 
 import { devWarn } from "../warn";
 import { backdropTracks, trackBands } from "./backdrop";

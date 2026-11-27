@@ -5,8 +5,7 @@ import { Children, type CSSProperties, cloneElement, isValidElement, type ReactN
 
 import { fontFamily } from "@uberscene/kit";
 import { TEXT_ANIMATION_TYPES, type TextRun, themedRuns, titleWords } from "@uberscene/kit/schema";
-import { lengthSeconds, secondsSinceStart, startSeconds } from "@uberscene/sdk";
-import type { Placement } from "@uberscene/sdk/resolver";
+import { lengthSeconds, type Placement, secondsSinceStart, startSeconds } from "@uberscene/sdk/resolver";
 
 import { isVisibleAt } from "../model/visible";
 import { devWarn } from "../warn";

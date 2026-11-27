@@ -1,5 +1,5 @@
 import type { TextRun } from "@uberscene/kit/schema";
-import { secondsSinceStart } from "@uberscene/sdk";
+import { secondsSinceStart } from "@uberscene/sdk/resolver";
 
 import { titleContent } from "../../overlays/content";
 import { dataAttrs, type ElementProps, overlayStyle } from "../../overlays/layout";

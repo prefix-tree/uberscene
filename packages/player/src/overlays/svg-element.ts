@@ -1,5 +1,5 @@
 import type { FitMode, ResolvedTheme } from "@uberscene/kit/schema";
-import { secondsSinceStart } from "@uberscene/sdk";
+import { secondsSinceStart } from "@uberscene/sdk/resolver";
 
 import { type ElementProps, type OverlayLayout, overlayLayout } from "./layout";
 import { overlaySize } from "./size";

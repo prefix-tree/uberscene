@@ -1,6 +1,7 @@
 import { capabilitiesOf, secondsToTicks } from "@uberscene/kit/schema";
-import { endSeconds, endTicks, secondsSinceStart, startSeconds, startTicks } from "@uberscene/sdk";
 import {
+  endSeconds,
+  endTicks,
   type FreezeHold,
   freezeHoldsOf,
   lookupAsset,
@@ -11,7 +12,10 @@ import {
   rampAdvance,
   rampInverse,
   rampSpeed,
+  secondsSinceStart,
   speedKeysOf,
+  startSeconds,
+  startTicks,
 } from "@uberscene/sdk/resolver";
 
 import { AUDIO_CHUNK_S, DUCK_ATTACK_S, DUCK_RELEASE_S, ENVELOPE_STEP_S } from "../constants";

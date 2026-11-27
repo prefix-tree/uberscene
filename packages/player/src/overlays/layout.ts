@@ -1,8 +1,7 @@
 import type { CSSProperties } from "react";
 
 import type { ElementBox, FitMode, Transform } from "@uberscene/kit/schema";
-import { lengthSeconds, secondsSinceStart } from "@uberscene/sdk";
-import type { Placement, ResolvedState } from "@uberscene/sdk/resolver";
+import { lengthSeconds, type Placement, type ResolvedState, secondsSinceStart } from "@uberscene/sdk/resolver";
 
 import { trackCamera } from "../model/camera";
 import { blendOf } from "../model/frame-plan";

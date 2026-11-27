@@ -1,6 +1,14 @@
 import { capabilitiesOf, secondsToTicks } from "@uberscene/kit/schema";
-import { endTicks, lengthSeconds, secondsSinceStart, startSeconds, startTicks } from "@uberscene/sdk";
-import type { Placement, ResolvedState, ResolvedTrack } from "@uberscene/sdk/resolver";
+import {
+  endTicks,
+  lengthSeconds,
+  type Placement,
+  type ResolvedState,
+  type ResolvedTrack,
+  secondsSinceStart,
+  startSeconds,
+  startTicks,
+} from "@uberscene/sdk/resolver";
 
 import { ease } from "./keyframes";
 

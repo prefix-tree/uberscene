@@ -1,4 +1,4 @@
-import { lengthSeconds } from "@uberscene/sdk";
+import { lengthSeconds } from "@uberscene/sdk/resolver";
 
 import { type ClipRect, effect } from "./motion";
 import type { TransitionRole } from "./visible";

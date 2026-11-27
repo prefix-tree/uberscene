@@ -1,5 +1,4 @@
-import { secondsSinceStart } from "@uberscene/sdk";
-import type { Placement } from "@uberscene/sdk/resolver";
+import { type Placement, secondsSinceStart } from "@uberscene/sdk/resolver";
 
 import {
   FRAME_WAIT_MS,

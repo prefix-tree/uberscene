@@ -1,5 +1,4 @@
-import { endSeconds, startSeconds } from "@uberscene/sdk";
-import { lookupAsset, type Placement, type ResolvedState } from "@uberscene/sdk/resolver";
+import { endSeconds, lookupAsset, type Placement, type ResolvedState, startSeconds } from "@uberscene/sdk/resolver";
 
 import { MOUNT_AHEAD_S, UNMOUNT_BEHIND_S } from "../constants";
 import { matteOf } from "../model/frame-plan";

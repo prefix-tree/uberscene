@@ -1,6 +1,11 @@
 import type { ElementBox, Transform } from "@uberscene/kit/schema";
-import { lengthSeconds, secondsSinceStart } from "@uberscene/sdk";
-import { followOf, type Placement, type ResolvedState } from "@uberscene/sdk/resolver";
+import {
+  followOf,
+  lengthSeconds,
+  type Placement,
+  type ResolvedState,
+  secondsSinceStart,
+} from "@uberscene/sdk/resolver";
 
 import { DEFAULT_DURATION, type GraphicAnimation, motionAt } from "../model/motion";
 import {

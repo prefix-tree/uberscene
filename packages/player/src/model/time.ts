@@ -7,8 +7,15 @@ import {
   secondAndFrame,
   timecode as smpteTimecode,
 } from "@uberscene/kit/schema";
-import { lengthSeconds, secondsSinceStart } from "@uberscene/sdk";
-import { freezeHoldsOf, freezeShift, type Placement, rampAdvance, speedKeysOf } from "@uberscene/sdk/resolver";
+import {
+  freezeHoldsOf,
+  freezeShift,
+  lengthSeconds,
+  type Placement,
+  rampAdvance,
+  secondsSinceStart,
+  speedKeysOf,
+} from "@uberscene/sdk/resolver";
 
 /** The frame a composition time falls in, counted in exact ticks. */
 export function frameIndex(t: number, rate: Rate): number {

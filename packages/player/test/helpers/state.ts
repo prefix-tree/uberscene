@@ -11,7 +11,7 @@ import {
   type ResolvedState,
   type ResolvedTrack,
   resolve,
-} from "@uberscene/sdk";
+} from "@uberscene/sdk/resolver";
 
 import * as sample from "../../../sdk/fixtures/sample";
 

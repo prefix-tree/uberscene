@@ -1,5 +1,5 @@
 import { round3 } from "@uberscene/kit/schema";
-import { secondsSinceStart } from "@uberscene/sdk";
+import { secondsSinceStart } from "@uberscene/sdk/resolver";
 
 import { keyframedValue } from "../model/keyframes";
 import { type ElementProps, type OverlayLayout, overlayLayout } from "./layout";

@@ -1,4 +1,4 @@
-import { secondsSinceStart } from "@uberscene/sdk";
+import { secondsSinceStart } from "@uberscene/sdk/resolver";
 
 import { stickerPlaceholder } from "../../overlays/content";
 import { dataAttrs, type ElementProps, overlayStyle } from "../../overlays/layout";

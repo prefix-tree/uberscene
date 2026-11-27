@@ -1,8 +1,7 @@
 import { memo, type ReactNode, useMemo } from "react";
 
 import { effectEntry } from "@uberscene/kit/schema";
-import { endTicks, secondsSinceStart, startTicks } from "@uberscene/sdk";
-import type { Placement, ResolvedState } from "@uberscene/sdk/resolver";
+import { endTicks, type Placement, type ResolvedState, secondsSinceStart, startTicks } from "@uberscene/sdk/resolver";
 
 import { trackBands } from "../model/backdrop";
 import { trackCamera } from "../model/camera";
