@@ -534,7 +534,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/kit/schema`
 
-343 exports.
+349 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -668,6 +668,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `installLayerClock` | function |  |
 | `installLayerEngine` | function | Install (or with `null`, remove) the engine that draws `<Layer engine={name}>` tags such as `<Three>`. |
 | `installSceneSource` | function |  |
+| `InvalidRef` | interface | A reference that reads as none of the forms asked for. |
 | `isBuiltInTransition` | function |  |
 | `isBundledFont` | function |  |
 | `isDomOverlay` | function | Drawn as DOM alone, over the canvas, for a stretch of time. |
@@ -734,6 +735,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `PALETTE_KEYS` | const | The palette names every built-in theme fills. |
 | `parseColor` | function | A CSS colour as sRGB with alpha. |
 | `parseRate` | function | A frame rate as an exact fraction. |
+| `parseRef` | function | Reads a reference as one of the forms in `accept`. |
 | `placeAxis` | function | Where a box starts on one axis. |
 | `placeBox` | function | The one rule every element that draws is placed by. |
 | `Placed` | interface | Where an element's content lands. |
@@ -752,6 +754,10 @@ Every name each entry exports, read from the code. The sections above explain th
 | `rateValue` | const | The rate as frames per second, for display and for code that only needs an approximate number. |
 | `READ_TIME` | const | How long words must stay on screen to be read. |
 | `readTimeNeeded` | function | Seconds a title of `words` words needs on screen. |
+| `RefForm` | type | The name of a form, for saying which ones a prop takes. |
+| `refPattern` | function | The pattern a schema checks a reference with. |
+| `RefPoint` | type | The edges of an element a reference may name. |
+| `RefTarget` | type | What a reference names. |
 | `RENAMED_EFFECT_PARAMS` | const | Built-in effects' params that had another name before 0.6, by effect. |
 | `RENAMED_TRANSITION_PARAMS` | const | Built-in transitions' params that had another name before 0.6, by transition. |
 | `renamedParam` | function | What a built-in effect's (or transition's) param `param` is called since 0.6, when that is another name; else undefined. |
@@ -884,7 +890,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/sdk`
 
-243 exports.
+248 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -916,6 +922,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `Beat` | interface | A beat of music. |
 | `BeatRow` | interface | A beat at the time it plays. |
 | `beatRows` | function | The beats the timeline plays, as rows. |
+| `buildRefGraph` | function | Reads every reference of the tree into a graph, and reports what the kinds with a `report` find wrong. |
 | `buildSourceIndex` | function | Index every vocabulary JSX element with a literal id so patches can be written back as text edits. |
 | `CameraActions` | interface |  |
 | `CameraPush` | interface | A camera's `push` as a file writes it. |
@@ -966,7 +973,6 @@ Every name each entry exports, read from the code. The sections above explain th
 | `fold` | function | Turn the patch log's net effect into text edits against the index. |
 | `FoldResult` | interface |  |
 | `foldToSource` | function | Fold with baking. |
-| `FOLLOW_KINDS` | const | The kinds that take a `follow`, and the kinds one may follow. |
 | `followOf` | function | The id an element follows (its `follow` prop), if it names one. |
 | `FreezeActions` | interface |  |
 | `FreezeHold` | interface | A hold. |
@@ -1068,6 +1074,11 @@ Every name each entry exports, read from the code. The sections above explain th
 | `rangeOf` | function |  |
 | `reachedHolds` | function | The holds a clip reaches when, without any hold, it would last `played` seconds. |
 | `reduceInto` | function | Keep `net` reduced. |
+| `REF_KINDS` | const | The ways to refer, in the order a holder's references are listed. |
+| `RefContext` | interface | What the checks of a reference may ask about the file. |
+| `RefEdge` | interface | One reference. |
+| `RefGraph` | interface | The references of a file. |
+| `RefKind` | interface | A way one element refers to another. |
 | `removedElement` | function | What became of `<Keyframe>`, `<Effect>`, `<SpeedKey>` and `<Freeze>`, told from the props of an element whose component is undefined. |
 | `renameProp` | function | Gives a prop a new name. |
 | `renameValue` | function | Respells a string value. |
@@ -1134,7 +1145,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/sdk/resolver`
 
-91 exports.
+96 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -1144,6 +1155,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `assetPlay` | function | The play of one clip or audio placement. |
 | `AssetPlay` | interface | Where an asset plays on the timeline. |
 | `Beat` | interface | A beat of music. |
+| `buildRefGraph` | function | Reads every reference of the tree into a graph, and reports what the kinds with a `report` find wrong. |
 | `collect` | function | Walk the element tree the file's default export returned and index every vocabulary element by id. |
 | `CollectedNode` | interface | One vocabulary element as collected from the React element tree, before schema parsing and before placement. |
 | `CollectedTree` | interface |  |
@@ -1162,7 +1174,6 @@ Every name each entry exports, read from the code. The sections above explain th
 | `endTicks` | const | Where a placement ends, in ticks. |
 | `entriesOf` | function | An asset's list of words, shots, silences or beats. |
 | `findParentOf` | function |  |
-| `FOLLOW_KINDS` | const | The kinds that take a `follow`, and the kinds one may follow. |
 | `followOf` | function | The id an element follows (its `follow` prop), if it names one. |
 | `FreezeHold` | interface | A hold. |
 | `freezeHoldsOf` | function | A clip's holds (from `freezes`), sorted by `start`. |
@@ -1199,6 +1210,11 @@ Every name each entry exports, read from the code. The sections above explain th
 | `RampKey` | interface | A speed key. |
 | `rampSpeed` | function | Speed at clip time `u` under keys sorted by `at`. |
 | `reachedHolds` | function | The holds a clip reaches when, without any hold, it would last `played` seconds. |
+| `REF_KINDS` | const | The ways to refer, in the order a holder's references are listed. |
+| `RefContext` | interface | What the checks of a reference may ask about the file. |
+| `RefEdge` | interface | One reference. |
+| `RefGraph` | interface | The references of a file. |
+| `RefKind` | interface | A way one element refers to another. |
 | `removedElement` | function | What became of `<Keyframe>`, `<Effect>`, `<SpeedKey>` and `<Freeze>`, told from the props of an element whose component is undefined. |
 | `resolve` | function | Absolute placements for every element, computed from the tree, the manifests and the patch log. |
 | `ResolvedState` | interface |  |
