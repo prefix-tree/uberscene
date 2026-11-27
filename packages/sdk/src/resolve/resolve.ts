@@ -79,7 +79,14 @@ export interface Placement {
   /** @deprecated Seconds, derived from `range`: read `range.duration`. */
   readonly duration: number;
   readonly source?: PlacementSource;
-  /** Schema-parsed props with defaults applied, after patches. Raw props when the schema rejected them. */
+  /**
+   * Whether `props` are what the kind's schema parsed: every prop of its type, every default filled. A prop the
+   * schema refuses is reported and left out, a refused key inside an object first (`style.size`) and the whole prop
+   * if that is not enough, so this is false only when what is left still does not parse: a prop the element cannot
+   * do without is missing or wrong. Such an element keeps its row and its errors and is not drawn.
+   */
+  readonly parsed: boolean;
+  /** Schema-parsed props with defaults applied, after patches. The props as written when `parsed` is false. */
   readonly props: Readonly<Record<string, unknown>>;
   readonly editable: Editable;
   readonly lockedProps: readonly string[];
@@ -309,7 +316,7 @@ function compute(
       ...(source ? { source } : {}),
       ...(between ? { between } : {}),
       ...(node.interior ? { interior: node.interior } : {}),
-      ...themedField(props),
+      ...propsFields(props),
     };
     return placement;
   };
@@ -471,7 +478,7 @@ function compute(
       lockedProps: child.lockedProps,
       boundProps: child.boundProps,
       errors: own,
-      ...themedField(props),
+      ...propsFields(props),
     });
   };
   for (const child of root.children) {
@@ -492,7 +499,7 @@ function compute(
         lockedProps: child.lockedProps,
         boundProps: child.boundProps,
         errors: own,
-        ...themedField(props),
+        ...propsFields(props),
       });
       for (const inner of child.children) {
         if (inner.kind === "track") structuralTrack(inner, child.id);
@@ -536,7 +543,7 @@ function compute(
         lockedProps: child.lockedProps,
         boundProps: child.boundProps,
         errors: own,
-        ...themedField(props),
+        ...propsFields(props),
       });
     }
   }
@@ -671,7 +678,7 @@ function compute(
       lockedProps: root.lockedProps,
       boundProps: root.boundProps,
       errors: [],
-      ...themedField(compParsed),
+      ...propsFields(compParsed),
     }),
   );
   errors.push(...textureErrors(items, manifest));
@@ -756,6 +763,8 @@ interface ParsedProps {
 const parsedByProps = new WeakMap<object, ParsedProps>();
 /** Which parsed props the theme supplied, keyed by the parsed `data`. */
 const themedByData = new WeakMap<object, Readonly<Record<string, ThemeOrigin>>>();
+/** The `data` the schema did not parse, even with what it refused left out: the props as written. */
+const unparsedData = new WeakSet<object>();
 
 /** The shaders of the file being resolved (`effect`, `transition`); set for the length of one `compute`. */
 let fileShaders: readonly ShaderDefinition[] = [];
@@ -812,6 +821,56 @@ function declaredShader(
   return null;
 }
 
+const isObject = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
+
+/**
+ * Raw props without what the schema refused. `deepest` leaves out the key each issue is at, as deep as objects go: a
+ * key inside an object prop, the prop itself where the path goes into a list. `prop` leaves out the whole prop.
+ */
+function without(
+  props: Readonly<Record<string, unknown>>,
+  issues: readonly z.core.$ZodIssue[],
+  how: "deepest" | "prop",
+): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...props };
+  /** The object at `path` in `out`, each level copied on the way so the given props are not changed; null past a list. */
+  const reach = (path: readonly PropertyKey[]): Record<string, unknown> | null => {
+    let at = out;
+    for (const key of path) {
+      const next = at[String(key)];
+      if (!isObject(next)) return null;
+      const copy = { ...next };
+      at[String(key)] = copy;
+      at = copy;
+    }
+    return at;
+  };
+  for (const issue of issues) {
+    const path = issue.path;
+    // A key the element, or an object inside it, does not take at all.
+    if (issue.code === "unrecognized_keys") {
+      const holder = how === "deepest" || path.length === 0 ? reach(path) : null;
+      if (holder) for (const k of issue.keys) delete holder[k];
+      else if (path.length > 0) delete out[String(path[0])];
+      continue;
+    }
+    if (path.length === 0) continue;
+    if (how === "prop") {
+      delete out[String(path[0])];
+      continue;
+    }
+    // As deep as the path stays in objects: the key that holds a list goes whole.
+    let depth = path.length - 1;
+    let holder = reach(path.slice(0, depth));
+    while (!holder && depth > 0) {
+      depth -= 1;
+      holder = reach(path.slice(0, depth));
+    }
+    if (holder) delete holder[String(path[depth])];
+  }
+  return out;
+}
+
 function parseProps(node: CollectedNode, errors: ResolveError[], theme: ResolvedTheme): Record<string, unknown> {
   const cached = parsedByProps.get(node.props);
   if (cached && cached.theme === theme) {
@@ -851,18 +910,19 @@ function parseProps(node: CollectedNode, errors: ResolveError[], theme: Resolved
           },
         };
     } else {
-      // A value the schema refuses is reported and then left out, so the element is placed as if the prop was not
-      // written: a speed of 0 or a negative duration must not reach the arithmetic and place something for ever, or
-      // backwards. Without the refused props the rest usually parses, and takes its defaults.
-      const kept: Record<string, unknown> = { ...themed.props };
-      for (const issue of result.error.issues) {
-        if (issue.path.length === 1) delete kept[String(issue.path[0])];
-        // A prop the element does not take at all.
-        else if (issue.path.length === 0 && issue.code === "unrecognized_keys")
-          for (const k of issue.keys) delete kept[k];
+      // A value the schema refuses is reported and then left out, so the element is placed as if it was not written:
+      // a speed of 0 or a negative duration must not reach the arithmetic and place something for ever, or backwards.
+      // First only what is refused goes, a key inside an object where that is where the fault is (`style.size`), so
+      // the rest of the prop stays; then the whole prop. Without them the rest usually parses, and takes its defaults.
+      const given = node.kind === "composition" ? withoutPending(themed.props) : themed.props;
+      const narrowly = schema.safeParse(without(given, result.error.issues, "deepest"));
+      const kept = narrowly.success ? given : without(given, result.error.issues, "prop");
+      const again = narrowly.success ? narrowly : schema.safeParse(kept);
+      if (again.success) data = again.data as Record<string, unknown>;
+      else {
+        data = kept;
+        unparsedData.add(data);
       }
-      const again = schema.safeParse(kept);
-      data = again.success ? (again.data as Record<string, unknown>) : kept;
       own.push(
         ...result.error.issues.map(
           (issue) =>
@@ -975,9 +1035,10 @@ function movedKey(kind: Kind, issue: z.core.$ZodIssue, props: Readonly<Record<st
   return undefined;
 }
 
-function themedField(props: Record<string, unknown>): { themed?: Readonly<Record<string, ThemeOrigin>> } {
+/** What a placement says about its props besides holding them: whether they parsed, and what the theme supplied. */
+function propsFields(props: Record<string, unknown>): Pick<Placement, "parsed" | "themed"> {
   const themed = themedByData.get(props);
-  return themed ? { themed } : {};
+  return { parsed: !unparsedData.has(props), ...(themed ? { themed } : {}) };
 }
 
 /** What `intrinsic` derives for a node; cached per node object and copied into a fresh Pending each resolve. */
@@ -1184,6 +1245,7 @@ function framed(
     ...props,
     transform: { ...transform, crop: { x: fx * (1 - width), y: fy * (1 - height), width, height } },
   };
+  if (unparsedData.has(props)) unparsedData.add(out);
   framedByProps.set(props, { key, props: out });
   return out;
 }
