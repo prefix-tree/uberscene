@@ -1,4 +1,13 @@
 import type { ElementCapabilities } from "./define";
+import {
+  AUDIO_KEY_PATHS,
+  BOX_KEY_PATHS,
+  CAMERA_KEY_PATHS,
+  type KeyPath,
+  SHAPE_KEY_PATHS,
+  TRANSFORM_KEY_PATHS,
+  VOLUME_KEY_PATHS,
+} from "./key-paths";
 
 const none: ElementCapabilities = {
   timed: false,
@@ -21,7 +30,11 @@ const none: ElementCapabilities = {
   themeMotion: false,
   elementActions: false,
   playsAsset: false,
+  keyPaths: [],
 };
+
+/** What moves anything with a `transform` and a `box`. */
+const PLACED_KEY_PATHS: readonly KeyPath[] = [...TRANSFORM_KEY_PATHS, ...BOX_KEY_PATHS];
 
 /** What everything placed on a track for a stretch of time has. */
 const item = { timed: true, sequenceRole: "item", placementScope: "track" } as const;
@@ -34,6 +47,7 @@ const overlay = {
   childKinds: ["effect", "keyframe", "mask"],
   plane: "dom",
   elementActions: true,
+  keyPaths: PLACED_KEY_PATHS,
 } as const;
 
 const with_ = (over: Partial<ElementCapabilities>): ElementCapabilities => ({ ...none, ...over });
@@ -52,7 +66,12 @@ export const KIND_CAPABILITIES: Readonly<Record<string, ElementCapabilities>> = 
     placementScope: "none",
     spansVideo: true,
   }),
-  camera: with_({ container: true, childKinds: ["track"], placementScope: "composition" }),
+  camera: with_({
+    container: true,
+    childKinds: ["track"],
+    placementScope: "composition",
+    keyPaths: CAMERA_KEY_PATHS,
+  }),
   track: with_({
     container: true,
     placementScope: "composition",
@@ -85,6 +104,7 @@ export const KIND_CAPABILITIES: Readonly<Record<string, ElementCapabilities>> = 
     mainTrack: true,
     masked: true,
     playsAsset: true,
+    keyPaths: [...PLACED_KEY_PATHS, ...AUDIO_KEY_PATHS],
   }),
   audio: with_({
     ...item,
@@ -93,6 +113,7 @@ export const KIND_CAPABILITIES: Readonly<Record<string, ElementCapabilities>> = 
     container: true,
     childKinds: ["keyframe", "speedKey", "freeze"],
     playsAsset: true,
+    keyPaths: AUDIO_KEY_PATHS,
   }),
   gap: with_({ timed: true, placementScope: "track", sequenceRole: "empty", mainTrack: true }),
   transition: with_({
@@ -103,7 +124,12 @@ export const KIND_CAPABILITIES: Readonly<Record<string, ElementCapabilities>> = 
     mainTrack: true,
   }),
   title: with_({ ...overlay, hasText: true, themeStyle: "look", themeMotion: true }),
-  shape: with_({ ...overlay, themeStyle: "props", themeMotion: true }),
+  shape: with_({
+    ...overlay,
+    themeStyle: "props",
+    themeMotion: true,
+    keyPaths: [...PLACED_KEY_PATHS, ...SHAPE_KEY_PATHS],
+  }),
   svg: with_({ ...overlay, themeStyle: "props", themeMotion: true }),
   sticker: with_({ ...overlay, themeStyle: "props", themeMotion: true }),
   captions: with_({
@@ -139,6 +165,7 @@ export const KIND_CAPABILITIES: Readonly<Record<string, ElementCapabilities>> = 
     freeCode: true,
     masked: true,
     elementActions: true,
+    keyPaths: [...PLACED_KEY_PATHS, ...VOLUME_KEY_PATHS],
   }),
   multicam: with_({
     container: true,
@@ -160,6 +187,16 @@ export const KIND_CAPABILITIES: Readonly<Record<string, ElementCapabilities>> = 
 
 export function capabilitiesOf(kind: string): ElementCapabilities {
   return KIND_CAPABILITIES[kind] ?? none;
+}
+
+/** The paths in a `kind`'s props that keys and generators may sit at. */
+export function keyPathsOf(kind: string): readonly KeyPath[] {
+  return capabilitiesOf(kind).keyPaths;
+}
+
+/** A `kind`'s entry for `path`: the path itself, or the one path both of two axes are written at (`transform.scale`). */
+export function keyPathOf(kind: string, path: string): KeyPath | undefined {
+  return keyPathsOf(kind).find((k) => k.path === path || k.both === path);
 }
 
 /** The kinds whose entry passes `test`, in the table's order: how a list of kinds is written. */

@@ -1,6 +1,8 @@
 import type { ReactElement, ReactNode } from "react";
 import type { z } from "zod";
 
+import type { KeyPath } from "./key-paths";
+
 export type PlacementScope = "composition" | "track" | "child" | "none";
 
 export interface ElementCapabilities {
@@ -54,6 +56,8 @@ export interface ElementCapabilities {
   readonly elementActions: boolean;
   /** Plays a manifest asset by `src` (a clip, an audio): what "plays", beats, words and shots are read from. */
   readonly playsAsset: boolean;
+  /** The paths in its props a key list or a generator may sit at (`KeyPath`); an effect's params are the effect's. */
+  readonly keyPaths: readonly KeyPath[];
 }
 
 export type DrawPlane = "canvas" | "dom" | "both" | "none";

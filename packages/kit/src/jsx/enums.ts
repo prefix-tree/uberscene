@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { TRANSITION_TYPES, VIDEO_EFFECT_TYPES } from "../effects/registry";
+import { isKeyframeProperty } from "./key-paths";
 
 // Every value here is drawn by the player and the export: a type the renderers do not draw is not offered.
 
@@ -137,43 +138,6 @@ export const SHAPE_TYPES = [
   "path",
   "star",
 ] as const;
-
-export const KEYFRAME_PROPERTIES = [
-  "box.x",
-  "box.y",
-  "transform.scale.x",
-  "transform.scale.y",
-  "transform.rotation",
-  "transform.opacity",
-  "transform.anchor.x",
-  "transform.anchor.y",
-  "transform.borderRadius",
-  "transform.crop.x",
-  "transform.crop.y",
-  "transform.crop.width",
-  "transform.crop.height",
-  "audio.volume",
-  "audio.pan",
-  "camera.x",
-  "camera.y",
-  "camera.zoom",
-  "camera.rotation",
-  "shape.width",
-  "shape.height",
-  "shape.fill",
-  "shape.points",
-  "shape.stroke.color",
-  "shape.stroke.thickness",
-  "shape.stroke.dashOffset",
-] as const;
-
-/** What a `<Camera>` animates, and its value when the file writes none. */
-export const CAMERA_FIELDS = { x: 0, y: 0, zoom: 1, rotation: 0 } as const;
-
-/** A property a key list can animate, as the resolver names it (`transform.opacity` for `transform={{ opacity: […] }}`). */
-export function isKeyframeProperty(value: string): boolean {
-  return (KEYFRAME_PROPERTIES as readonly string[]).includes(value);
-}
 
 export const TEXT_ALIGNS = ["left", "center", "right", "justify"] as const;
 export const TEXT_VALIGNS = ["top", "middle", "bottom"] as const;

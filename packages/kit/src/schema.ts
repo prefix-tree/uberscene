@@ -39,6 +39,7 @@ export * from "./jsx/elements";
 export * from "./jsx/engines";
 export * from "./jsx/enums";
 export * from "./jsx/generators";
+export * from "./jsx/key-paths";
 export { knobsOf } from "./jsx/knobs";
 export { isTextMark, type MarkProps, markSchema, moveRuns, type TextRun, themedRuns } from "./jsx/mark";
 export * from "./jsx/read-time";
