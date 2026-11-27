@@ -1,16 +1,21 @@
+import { kindsWhere, kindsWithProp } from "@uberscene/kit/schema";
+
 import type { Json } from "../../patches/types";
 import { INTERIOR_PREFIX } from "../../resolve/tree";
 import { define, makePropHandler, rawNode, rawProp } from "../handler-kit";
 import { invalid, ok } from "../types";
 
-const SOURCE_KINDS = ["clip", "audio", "nested"];
+/** Kinds that play a source range (`in`, `out`), so have a speed and a direction. */
+const SOURCE_KINDS = kindsWhere((kind) => kind.trimSource);
 /** Kinds that take a `transform`. */
-const TRANSFORM_KINDS = ["clip", "title", "shape", "svg", "sticker", "nested", "layer"];
+const TRANSFORM_KINDS = kindsWhere((kind) => kind.transformable);
 /** Kinds that take a `blend` mode: everything that draws, and an adjustment for what it filters. */
-const BLEND_KINDS = [...TRANSFORM_KINDS, "adjustment"];
+const BLEND_KINDS = kindsWithProp("blend");
 /** Kinds whose blend has a strength (`blendOpacity`): the ones drawn on the canvas. */
-const BLEND_OPACITY_KINDS = ["clip", "nested"];
-const AUDIO_KINDS = ["clip", "audio", "nested"];
+const BLEND_OPACITY_KINDS = kindsWithProp("blendOpacity");
+const AUDIO_KINDS = kindsWhere((kind) => kind.audio);
+/** Kinds painted on the canvas. */
+const CANVAS_KINDS = kindsWhere((kind) => kind.plane === "canvas");
 
 /** Speed always recomputes the timeline length; `out` stays, so nothing else changes in the file. */
 define(makePropHandler({
@@ -41,7 +46,7 @@ define(makePropHandler({
         });
   },
 }));
-define(makePropHandler({ type: "clip/setFit", kinds: ["clip", "nested"], write: (p) => ({ fit: p.value }) }));
+define(makePropHandler({ type: "clip/setFit", kinds: CANVAS_KINDS, write: (p) => ({ fit: p.value }) }));
 define(makePropHandler({
   type: "clip/setSource",
   kinds: ["clip", "audio", "svg", "sticker"],

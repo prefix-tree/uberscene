@@ -1,6 +1,7 @@
 import {
   defaultTransitionParams,
   isBuiltInTransition,
+  isSequenceItem,
   shaderFor,
   TRANSITION_PARAMS,
   TRANSITION_TYPES,
@@ -65,7 +66,7 @@ define({
       if (locked) return invalid(locked);
       if (left.track !== right.track)
         return invalid({ code: "NOT_ADJACENT", message: "clips are on different tracks" });
-      if (left.kind === "gap" || right.kind === "gap" || left.kind === "transition" || right.kind === "transition")
+      if (!isSequenceItem(left.kind) || !isSequenceItem(right.kind))
         return invalid({ code: "NOT_ADJACENT", message: "a transition needs a clip on each side" });
       if (siblingAfter(state, bId) !== aId)
         return invalid({ code: "NOT_ADJACENT", message: "clips must be adjacent siblings" });

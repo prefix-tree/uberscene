@@ -4,6 +4,7 @@ import {
   type CurveKey,
   capabilitiesOf,
   curveAt,
+  isSequenceItem,
   type Ticks,
   ticksPerFrame,
   tidySeconds,
@@ -78,7 +79,9 @@ function movedOffset(state: ResolvedState, item: ResolvedPlacement, at: number):
 define(carry(
   {
     type: "clip/trim",
-    targets: onElement({ when: (item) => capabilitiesOf(item.kind).timed && item.kind !== "transition" }),
+    targets: onElement({
+      when: (item) => capabilitiesOf(item.kind).timed && capabilitiesOf(item.kind).sequenceRole !== "between",
+    }),
     validate: (a, state) => {
       const base = validateTarget(
         state,
@@ -89,7 +92,7 @@ define(carry(
       const item = state.items.get(a.params.id)!;
       const caps = capabilitiesOf(item.kind);
       const errors: ActionError[] = [];
-      if (!caps.timed || item.kind === "transition")
+      if (!caps.timed || caps.sequenceRole === "between")
         errors.push({ code: "INVALID_PARAMS", message: `<${item.kind}> cannot be trimmed` });
       const parsed = parseTimeRef(a.params.value);
       if (parsed.kind === "invalid") errors.push({ code: "INVALID_PARAMS", message: parsed.reason, path: "value" });
@@ -249,7 +252,9 @@ function neighbours(
   const node = rawNode(state, item.id);
   const parent = node?.parent ? rawNode(state, node.parent) : undefined;
   if (!node || !parent) return { prev: null, next: null };
-  const siblings = parent.children.filter((c) => c.kind !== "transition" && typeof c.props.anchor !== "string");
+  const siblings = parent.children.filter(
+    (c) => capabilitiesOf(c.kind).sequenceRole !== "between" && typeof c.props.anchor !== "string",
+  );
   const i = siblings.findIndex((c) => c.id === item.id);
   const prev = i > 0 ? (state.items.get((siblings[i - 1] as { id: string }).id) ?? null) : null;
   const next =
@@ -465,7 +470,7 @@ define(carry(
   {
     type: "clip/split",
     targets: onElement({
-      when: (item) => capabilitiesOf(item.kind).timed && item.kind !== "transition" && item.kind !== "gap",
+      when: (item) => capabilitiesOf(item.kind).timed && isSequenceItem(item.kind),
     }),
     validate: (a, state) => {
       const base = validateTarget(state, a.params.id, ["in", "out", "duration"]);
@@ -473,7 +478,7 @@ define(carry(
       const item = state.items.get(a.params.id)!;
       if (state.tree.byId.has(a.params.newId))
         return invalid({ code: "DUPLICATE_ID", message: `"${a.params.newId}" exists` });
-      if (!capabilitiesOf(item.kind).timed || item.kind === "transition" || item.kind === "gap")
+      if (!capabilitiesOf(item.kind).timed || !isSequenceItem(item.kind))
         return invalid({ code: "INVALID_PARAMS", message: `<${item.kind}> cannot be split` });
       // At least a frame on each side: a sliver shorter than a frame draws nothing and only clutters the file.
       const frame = ticksPerFrame(state.composition.rate) as Ticks;
@@ -667,7 +672,13 @@ define({
       0,
       ...track.items
         .map((id) => state.items.get(id))
-        .filter((i) => i && i.id !== item.id && endT(i) <= plus(startT(item), T(1e-6)) && i.kind !== "transition")
+        .filter(
+          (i) =>
+            i &&
+            i.id !== item.id &&
+            endT(i) <= plus(startT(item), T(1e-6)) &&
+            capabilitiesOf(i.kind).sequenceRole !== "between",
+        )
         .map((i) => endT(i!)),
     ) as Ticks;
     const shift = minus(startT(item), prevEnd);

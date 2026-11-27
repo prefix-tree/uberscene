@@ -2050,7 +2050,7 @@ function assetPlays(src: string, pending: Map<string, Pending>, tracks: readonly
   for (const p of pending.values()) {
     if (!p.source || p.start === undefined || !sameAsset(p.source.asset, src)) continue;
     if (p.track && hidden.has(p.track)) continue;
-    if (p.node.kind !== "clip" && p.node.kind !== "audio") continue;
+    if (!capabilitiesOf(p.node.kind).playsAsset) continue;
     plays.push(
       assetPlay({
         id: p.node.id,

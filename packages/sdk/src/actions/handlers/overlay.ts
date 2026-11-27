@@ -1,4 +1,4 @@
-import { capabilitiesOf, moveRuns } from "@uberscene/kit/schema";
+import { capabilitiesOf, kindsWhere, moveRuns } from "@uberscene/kit/schema";
 
 import type { Json } from "../../patches/types";
 import type { Placement, ResolvedState } from "../../resolve/resolve";
@@ -26,7 +26,7 @@ const EPS = T(1e-6);
 const EXTRACT_BLOCKERS = ["in", "out", "transform", "fit", "blend", "blendOpacity", "emphasis"] as const;
 
 /** The kinds `element/create` and `element/update` take: whatever sits on a track and is not media or a transition. */
-const ELEMENT_KINDS: readonly string[] = ["title", "shape", "svg", "sticker", "adjustment", "nested", "layer"];
+const ELEMENT_KINDS = kindsWhere((kind) => kind.elementActions);
 
 define({
   type: "element/create",

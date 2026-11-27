@@ -1,10 +1,12 @@
 // Moments: the places on a timeline a person or an agent asks to look at, written the way the file is written (an
 // element's id, a word, a shot, a marker) or as plain time (seconds, a frame, a range).
 import {
+  capabilitiesOf,
   frameStartSeconds,
   framesUntil,
   maxTicks,
   nearestFrame,
+  onOverlayPlane,
   type Rate,
   round3,
   type Ticks,
@@ -211,7 +213,7 @@ function resolveRef(
   } else {
     const seen = new Set<string>();
     for (const p of state.items.values()) {
-      if (!p.source || (p.kind !== "clip" && p.kind !== "audio") || seen.has(p.source.asset)) continue;
+      if (!p.source || !capabilitiesOf(p.kind).playsAsset || seen.has(p.source.asset)) continue;
       seen.add(p.source.asset);
       const asset = lookupAsset(state.manifest, p.source.asset);
       if (asset) for (const play of playsOf(state, p.source.asset)) candidates.push({ play, asset });
@@ -235,9 +237,6 @@ function resolveRef(
   else if (known) errors.push(`${m.text}: no clip on the timeline plays it${m.clip ? ` in ${m.clip}` : ""}`);
   else errors.push(`${m.text}: no asset the timeline plays has it in the manifest`);
 }
-
-/** Overlays an editor looks at once each: what is drawn over the footage, and what grades it. */
-const OVERLAYS = new Set(["title", "shape", "svg", "sticker", "layer", "adjustment"]);
 
 /**
  * Five moments around one thing. A transition: the last frame before it, its first frame, its middle, its last
@@ -310,7 +309,7 @@ export function skimMoments(state: ResolvedState): Moment[] {
   const transitions = [...state.items.values()].filter((p) => p.kind === "transition");
   for (const p of state.items.values()) {
     if (!(lengthT(p) > 0) || p.track === null) continue;
-    if (p.kind === "clip" || p.kind === "nested") {
+    if (capabilitiesOf(p.kind).plane === "canvas") {
       // A clip that comes in through a transition is fully there once the transition is over.
       const into = transitions.find((t) => t.between?.[1] === p.id);
       if (into) {
@@ -321,7 +320,7 @@ export function skimMoments(state: ResolvedState): Moment[] {
         if (startS(p) > f / 2) add(`${p.id}.before`, startS(p) - f, `last frame before ${p.kind} ${p.id}`);
         add(`${p.id}.start`, startS(p), `first frame of ${p.kind} ${p.id}`);
       }
-    } else if (OVERLAYS.has(p.kind)) {
+    } else if (onOverlayPlane(p.kind)) {
       overlayMids.add(`${p.id}.mid`);
       add(`${p.id}.mid`, (startS(p) + endS(p)) / 2, `middle of ${p.kind} ${p.id}`);
     }

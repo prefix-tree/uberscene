@@ -1,4 +1,5 @@
 import {
+  capabilitiesOf,
   findFont,
   isBundledFont,
   nearestFont,
@@ -86,7 +87,7 @@ function literalParts(prop: PropSite): Json | undefined {
 /** The preset a `style` names: the name itself, or a title's or captions' `style.preset`. */
 function presetOf(kind: string, style: PropSite): string | undefined {
   if (typeof style.literal === "string") return style.literal;
-  if (kind !== "title" && kind !== "captions") return undefined;
+  if (capabilitiesOf(kind).themeStyle !== "look") return undefined;
   const object = literalParts(style);
   const named = typeof object === "object" && object !== null && !Array.isArray(object) ? object.preset : undefined;
   return typeof named === "string" ? named : undefined;

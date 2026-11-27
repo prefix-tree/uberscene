@@ -7,6 +7,7 @@ import {
   effectParamProblem,
   GENERATOR_TYPES,
   isGenerator,
+  kindsWithProp,
   shaderFor,
   VIDEO_EFFECT_TYPES,
 } from "@uberscene/kit/schema";
@@ -391,7 +392,7 @@ define(makePropHandler({
 
 define(makePropHandler({
   type: "freeze/setAll",
-  kinds: ["clip", "audio"],
+  kinds: kindsWithProp("freezes"),
   write: (p) => ({
     freezes:
       p.freezes.length > 0

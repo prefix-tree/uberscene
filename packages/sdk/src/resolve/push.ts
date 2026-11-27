@@ -1,4 +1,4 @@
-import { type DrawRect, type ElementBox, type FitMode, placeBox } from "@uberscene/kit/schema";
+import { capabilitiesOf, type DrawRect, type ElementBox, type FitMode, placeBox } from "@uberscene/kit/schema";
 
 import { type AssetManifest, lookupAsset } from "../manifest/types";
 import { endT, plus, S, startT, T } from "../time";
@@ -140,7 +140,7 @@ export function pushKeys(
   // What must stay in view at a moment: the elements to keep, or everything the camera is showing then.
   const drawn = [...items.values()].filter((i) => i.track !== null && i.parent === i.track && under.has(i.track));
   const active = (i: Placement, t: number): boolean =>
-    i.kind !== "transition" && startT(i) <= plus(T(t), T(1e-6)) && T(t) < endT(i);
+    capabilitiesOf(i.kind).sequenceRole !== "between" && startT(i) <= plus(T(t), T(1e-6)) && T(t) < endT(i);
   const heldAt = (t: number): DrawRect | null => {
     const boxes = [...(push.keep ? [...keep, ...on.filter((i) => active(i, t))] : drawn.filter((i) => active(i, t)))];
     return boxes.length > 0 ? boxes.map((i) => restBox(i, frame, manifest, items)).reduce(union) : null;

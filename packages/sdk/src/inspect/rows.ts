@@ -1,6 +1,6 @@
 // The resolved timeline as flat rows: one array per kind of thing, each row with its id, its seconds and its frames.
 // Flat rows are what jq, a short script or a SQL table take as they are.
-import { framesUntil, type Rate, round3 } from "@uberscene/kit/schema";
+import { capabilitiesOf, framesUntil, type Rate, round3 } from "@uberscene/kit/schema";
 
 import type { ResolveError } from "../resolve/errors";
 import { derivedOrigin } from "../resolve/expand";
@@ -207,9 +207,7 @@ export function timelineRows(state: ResolvedState): TimelineRows {
     if (track.layout !== "sequence") continue;
     const clips = track.items
       .map((id) => state.items.get(id))
-      .filter(
-        (p): p is Placement => p !== undefined && (p.kind === "clip" || p.kind === "audio" || p.kind === "nested"),
-      );
+      .filter((p): p is Placement => p !== undefined && capabilitiesOf(p.kind).trimSource);
     const transitions = [...state.items.values()].filter((p) => p.kind === "transition" && p.track === track.id);
     for (let i = 0; i + 1 < clips.length; i++) {
       const a = clips[i] as Placement,

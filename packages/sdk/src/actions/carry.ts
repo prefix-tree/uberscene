@@ -6,7 +6,9 @@ import {
   BOX_ORIGIN_POINT,
   type BoxOrigin,
   type CurveKey,
+  capabilitiesOf,
   curveAt,
+  isSequenceItem,
   maxTicks,
   minTicks,
   round3,
@@ -95,7 +97,7 @@ function clipBefore(state: ResolvedState, id: string): Placement | undefined {
   const siblings = track ? (state.tree.byId.get(track.id)?.children ?? []) : [];
   for (let i = siblings.findIndex((c) => c.id === id) - 1; i >= 0; i--) {
     const kind = siblings[i]?.kind;
-    if (kind !== "transition" && kind !== "gap") return state.items.get(siblings[i]!.id);
+    if (onTrack(kind)) return state.items.get(siblings[i]!.id);
   }
   return undefined;
 }
@@ -143,14 +145,16 @@ export function carryRemoval(id: string, before: ResolvedState): Carry | null {
   return pre.length > 0 ? { pre } : null;
 }
 
+/** Whether a sibling on a track is something placed there, not a transition or a gap. */
+const onTrack = (kind: string | undefined): boolean => kind !== undefined && isSequenceItem(kind);
+
 /** The clip a transition leads into on its track, else the one it leaves; transitions and gaps are skipped. */
 function clipBeside(state: ResolvedState, id: string): Placement | undefined {
   const track = state.tracks.find((t) => t.items.includes(id));
   const siblings = track ? (state.tree.byId.get(track.id)?.children ?? []) : [];
   const at = siblings.findIndex((c) => c.id === id);
-  const isClip = (kind: string | undefined) => kind !== undefined && kind !== "transition" && kind !== "gap";
-  const next = siblings.slice(at + 1).find((c) => c.kind !== "transition");
-  if (next && isClip(next.kind)) return state.items.get(next.id);
+  const next = siblings.slice(at + 1).find((c) => capabilitiesOf(c.kind).sequenceRole !== "between");
+  if (next && onTrack(next.kind)) return state.items.get(next.id);
   return clipBefore(state, id);
 }
 
@@ -179,8 +183,10 @@ export function carryTransitionRemoval(id: string, before: ResolvedState): Carry
 function hasClipAfter(state: ResolvedState, id: string): boolean {
   const track = state.tracks.find((t) => t.items.includes(id));
   const siblings = track ? (state.tree.byId.get(track.id)?.children ?? []) : [];
-  const next = siblings.slice(siblings.findIndex((c) => c.id === id) + 1).find((c) => c.kind !== "transition");
-  return next !== undefined && next.kind !== "gap";
+  const next = siblings
+    .slice(siblings.findIndex((c) => c.id === id) + 1)
+    .find((c) => capabilitiesOf(c.kind).sequenceRole !== "between");
+  return next !== undefined && capabilitiesOf(next.kind).sequenceRole !== "empty";
 }
 
 /**
