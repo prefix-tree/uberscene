@@ -1,5 +1,5 @@
 import { KIT_ELEMENTS, type Kind } from "../elements";
-import { ITEM, NO_TRAITS, OVERLAY, traits } from "../elements/traits";
+import { ITEM, NO_TRAITS, traits } from "../elements/traits";
 import type { ElementCapabilities } from "./define";
 import { AUDIO_KEY_PATHS, CAMERA_KEY_PATHS, type KeyPath, PLACED_KEY_PATHS, VOLUME_KEY_PATHS } from "./key-paths";
 
@@ -77,8 +77,8 @@ export const KIND_CAPABILITIES: Readonly<Record<Kind, ElementCapabilities>> = {
   }),
   title: KIT_ELEMENTS.title.capabilities,
   shape: KIT_ELEMENTS.shape.capabilities,
-  svg: traits({ ...OVERLAY, themeStyle: "props", themeMotion: true }),
-  sticker: traits({ ...OVERLAY, themeStyle: "props", themeMotion: true }),
+  svg: KIT_ELEMENTS.svg.capabilities,
+  sticker: KIT_ELEMENTS.sticker.capabilities,
   captions: traits({
     visual: true,
     container: true,
@@ -90,14 +90,7 @@ export const KIND_CAPABILITIES: Readonly<Record<Kind, ElementCapabilities>> = {
   }),
   caption: traits({ timed: true, visual: true, placementScope: "child" }),
   marker: traits({ placementScope: "composition" }),
-  adjustment: traits({
-    ...ITEM,
-    visual: true,
-    container: true,
-    childKinds: ["effect", "keyframe"],
-    plane: "both",
-    elementActions: true,
-  }),
+  adjustment: KIT_ELEMENTS.adjustment.capabilities,
   mask: traits({ placementScope: "child" }),
   nested: traits({
     ...ITEM,
@@ -124,7 +117,7 @@ export const KIND_CAPABILITIES: Readonly<Record<Kind, ElementCapabilities>> = {
   }),
   angle: traits({ placementScope: "child" }),
   cut: traits({ placementScope: "child" }),
-  layer: traits({ ...OVERLAY, childKinds: ["effect", "keyframe"], freeCode: true }),
+  layer: KIT_ELEMENTS.layer.capabilities,
   effect: traits({ container: true, childKinds: ["keyframe"], placementScope: "child" }),
   keyframe: traits({ placementScope: "child" }),
   generator: traits({ placementScope: "child" }),

@@ -16,25 +16,29 @@ import type {
 import type { cameraSchema, compositionSchema, gapSchema, markerSchema, trackSchema } from "../jsx/schemas/composition";
 import type { audioSchema, clipSchema } from "../jsx/schemas/media";
 import type { angleSchema, cutSchema, multicamSchema } from "../jsx/schemas/multicam";
-import type {
-  adjustmentSchema,
-  layerSchema,
-  motionSchema,
-  nestedSchema,
-  stickerSchema,
-  svgSchema,
-  threeSchema,
-} from "../jsx/schemas/overlays";
+import type { nestedSchema } from "../jsx/schemas/overlays";
 import type { transitionSchema } from "../jsx/schemas/transition";
+import { adjustment } from "./adjustment";
+import type { adjustmentSchema } from "./adjustment/schema";
 import type { KitElement } from "./element";
+import { layer } from "./layer";
+import type { layerSchema, motionSchema, threeSchema } from "./layer/schema";
 import { shape } from "./shape";
 import type { shapeSchema } from "./shape/schema";
+import { sticker } from "./sticker";
+import type { stickerSchema } from "./sticker/schema";
+import { svg } from "./svg";
+import type { svgSchema } from "./svg/schema";
 import { title } from "./title";
 import type { titleSchema } from "./title/schema";
 
+export type { AdjustmentElement } from "./adjustment";
 export type { KitElement } from "./element";
+export type { LayerElement } from "./layer";
 export type { ShapeElement } from "./shape";
 export type * from "./shared";
+export type { StickerElement } from "./sticker";
+export type { SvgElement } from "./svg";
 export type { TitleElement } from "./title";
 
 /** The props of a `<Composition>`, as its schema parses them. */
@@ -152,10 +156,12 @@ export type KindWith<P extends string> = string extends P
  * holds one entry per kind here, so a kind added to this list does not compile until every package has its part. The
  * other kinds are still described by the tables (`jsx/capabilities.ts` and each package's own).
  */
-export type MigratedKind = "title" | "shape";
+export type MigratedKind = "title" | "shape" | "svg" | "sticker" | "layer" | "adjustment";
 
 /** The kit's part of each kind that has a folder of its own. */
-export const KIT_ELEMENTS = { title, shape } satisfies { readonly [K in MigratedKind]: KitElement<K> };
+export const KIT_ELEMENTS = { title, shape, svg, sticker, layer, adjustment } satisfies {
+  readonly [K in MigratedKind]: KitElement<K>;
+};
 
 /** The plane a kind is drawn on, as a type: what the player's entry for it must hold. */
 export type PlaneOf<K extends MigratedKind> = (typeof KIT_ELEMENTS)[K]["capabilities"]["plane"];
@@ -168,4 +174,9 @@ export function isMigratedKind(kind: string): kind is MigratedKind {
 /** The kit's part of `kind`, or undefined for a kind that has no folder of its own yet. */
 export function kitElement(kind: Kind): KitElement<Kind> | undefined {
   return isMigratedKind(kind) ? KIT_ELEMENTS[kind] : undefined;
+}
+
+/** Whether `kind`'s children in the file are free code, kept as its interior, and not elements: a layer's. */
+export function keepsInterior(kind: Kind): boolean {
+  return kitElement(kind)?.interior === true;
 }

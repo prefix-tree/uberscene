@@ -5,7 +5,7 @@
 import type { z } from "zod";
 
 import type { audioSchema, clipSchema } from "../jsx/schemas/media";
-import type { layerSchema } from "../jsx/schemas/overlays";
+import type { layerSchema } from "./layer/schema";
 import type { titleSchema } from "./title/schema";
 
 type Title = z.output<typeof titleSchema>;

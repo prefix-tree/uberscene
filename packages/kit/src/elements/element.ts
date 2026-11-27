@@ -19,6 +19,21 @@ export interface KitElement<K extends Kind, P extends DrawPlane = DrawPlane> {
    */
   readonly sample: string;
   /**
+   * What the sample stands over, written on a track beneath it, for a kind that shows only over something: an
+   * adjustment filters the footage under it. A file the sample or this plays is `asset:picture`, an image.
+   */
+  readonly sampleBeneath?: string;
+  /**
+   * Its children in the file are free code, kept whole as its interior for the player to draw, and never read as
+   * elements: a layer.
+   */
+  readonly interior?: true;
+  /**
+   * The schemas of a kind that more than one tag writes, told apart by the prop `by`: a layer a library draws says
+   * which in `engine`, and has that engine's props. An element that writes none of them is checked against `schema`.
+   */
+  readonly variants?: { readonly by: string; readonly schemas: Readonly<Record<string, z.ZodType>> };
+  /**
    * Whether a theme's motion style fills this element's `enter` and `exit`, given its props as written. Left out, it
    * always does (for a kind whose row has `themeMotion`).
    */

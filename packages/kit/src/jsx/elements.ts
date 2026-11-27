@@ -2,7 +2,19 @@ import type { ReactElement } from "react";
 import type { z } from "zod";
 
 import type { EffectParams, TransitionParams } from "../effects/registry";
-import { KIT_ELEMENTS, type Kind, type KindWith, type ShapeElement, type TitleElement } from "../elements";
+import {
+  type AdjustmentElement,
+  KIT_ELEMENTS,
+  type Kind,
+  type KindWith,
+  kitElement,
+  type LayerElement,
+  type ShapeElement,
+  type StickerElement,
+  type SvgElement,
+  type TitleElement,
+} from "../elements";
+import { motionSchema, threeSchema } from "../elements/layer/schema";
 import { capabilitiesOf } from "./capabilities";
 import { defineElement, type VocabularyComponent, type VocabularyMeta, type VocabularyProps } from "./define";
 import type { Easing, TransitionType, VideoEffectType } from "./enums";
@@ -19,15 +31,7 @@ import type { Link } from "./schemas/common";
 import { cameraSchema, compositionSchema, gapSchema, markerSchema, trackSchema } from "./schemas/composition";
 import { audioSchema, clipSchema } from "./schemas/media";
 import { angleSchema, cutSchema, multicamSchema } from "./schemas/multicam";
-import {
-  adjustmentSchema,
-  layerSchema,
-  motionSchema,
-  nestedSchema,
-  stickerSchema,
-  svgSchema,
-  threeSchema,
-} from "./schemas/overlays";
+import { nestedSchema } from "./schemas/overlays";
 import { transitionSchema } from "./schemas/transition";
 import type { EffectRef, TransitionRef } from "./shaders";
 
@@ -72,16 +76,15 @@ const titleTag: TagOf<TitleElement> = tag(KIT_ELEMENTS.title);
 export const Title = titleTag as unknown as WithEffects<TagOf<TitleElement>>;
 const shapeTag: TagOf<ShapeElement> = tag(KIT_ELEMENTS.shape);
 export const Shape = shapeTag as unknown as WithEffects<TagOf<ShapeElement>>;
-export const Svg = el("svg", svgSchema) as unknown as WithEffects<VocabularyComponent<"svg", typeof svgSchema>>;
-export const Sticker = el("sticker", stickerSchema) as unknown as WithEffects<
-  VocabularyComponent<"sticker", typeof stickerSchema>
->;
+const svgTag: TagOf<SvgElement> = tag(KIT_ELEMENTS.svg);
+export const Svg = svgTag as unknown as WithEffects<TagOf<SvgElement>>;
+const stickerTag: TagOf<StickerElement> = tag(KIT_ELEMENTS.sticker);
+export const Sticker = stickerTag as unknown as WithEffects<TagOf<StickerElement>>;
 export const Captions = el("captions", captionsSchema);
 export const Caption = el("caption", captionSchema);
 export const Marker = el("marker", markerSchema);
-export const Adjustment = el("adjustment", adjustmentSchema) as unknown as WithEffects<
-  VocabularyComponent<"adjustment", typeof adjustmentSchema>
->;
+const adjustmentTag: TagOf<AdjustmentElement> = tag(KIT_ELEMENTS.adjustment);
+export const Adjustment = adjustmentTag as unknown as WithEffects<TagOf<AdjustmentElement>>;
 export const Mask = el("mask", maskSchema);
 export const Nested = el("nested", nestedSchema) as unknown as WithEffects<
   VocabularyComponent<"nested", typeof nestedSchema>
@@ -89,9 +92,8 @@ export const Nested = el("nested", nestedSchema) as unknown as WithEffects<
 export const Multicam = el("multicam", multicamSchema);
 export const Angle = el("angle", angleSchema);
 export const Cut = el("cut", cutSchema);
-export const Layer = el("layer", layerSchema) as unknown as WithEffects<
-  VocabularyComponent<"layer", typeof layerSchema>
->;
+const layerTag: TagOf<LayerElement> = tag(KIT_ELEMENTS.layer);
+export const Layer = layerTag as unknown as WithEffects<TagOf<LayerElement>>;
 /** A Layer a library draws: a `layer` component with the engine's own props, and the engine's name. */
 type EngineLayer<E extends string, S extends z.ZodType> = VocabularyComponent<"layer", S> & { readonly engine: E };
 
@@ -103,7 +105,8 @@ const engineLayer = <E extends string, S extends Parameters<typeof defineElement
   engine: E,
   schema: S,
 ): EngineLayer<E, S> => {
-  const component = defineElement({ kind: "layer", schema, capabilities: capabilitiesOf("layer") });
+  const { kind, capabilities } = KIT_ELEMENTS.layer;
+  const component = defineElement({ kind, schema, capabilities });
   Object.defineProperty(component, "engine", { value: engine, enumerable: true });
   return component as typeof component & { readonly engine: E };
 };
@@ -127,10 +130,14 @@ export type EngineLayers = {
 
 /** The engine Layers by tag, and the schema each is checked against once collected (with its `engine`). */
 export const ENGINE_LAYERS: EngineLayers = { Three, Motion };
-export const ENGINE_SCHEMAS: Readonly<Record<string, typeof threeSchema | typeof motionSchema>> = {
-  three: threeSchema,
-  motion: motionSchema,
-};
+/**
+ * The schema of each engine's layer, by engine.
+ *
+ * @deprecated Ask `schemaFor(kind, props)`: it gives the schema an element as written is checked against, whatever
+ * its kind.
+ */
+export const ENGINE_SCHEMAS: Readonly<Record<string, typeof threeSchema | typeof motionSchema>> =
+  KIT_ELEMENTS.layer.variants.schemas;
 
 /** The engine a vocabulary component draws with, if it is an engine Layer. */
 export function engineOf(type: unknown): string | null {
@@ -270,6 +277,18 @@ export const SCHEMAS_BY_KIND = {
   ...Object.fromEntries(Object.values(ELEMENTS).map((component) => [component.kind, component.schema])),
   ...DERIVED_SCHEMAS,
 } as unknown as Readonly<Record<Kind, z.ZodType>>;
+
+/**
+ * The schema an element is checked against, from its kind and its props as written. It is the kind's, but for a
+ * kind more than one tag writes (`KitElement.variants`): a layer that names an `engine` has that engine's schema.
+ * Undefined when it names a variant there is none of.
+ */
+export function schemaFor(kind: Kind, written: Readonly<Record<string, unknown>>): z.ZodType | undefined {
+  const variants = kitElement(kind)?.variants;
+  const name = variants && written[variants.by];
+  if (typeof name !== "string" || !variants) return SCHEMAS_BY_KIND[kind];
+  return Object.hasOwn(variants.schemas, name) ? variants.schemas[name] : undefined;
+}
 
 /**
  * The kinds whose schema has `prop`, in the vocabulary's order: what takes a `blend`, a `follow`, `freezes`. The

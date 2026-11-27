@@ -4,6 +4,7 @@
 export * from "./components/index";
 export * from "./diagram/index";
 export { builtInShader } from "./effects/registry";
+export type { ThreeFrameArgs, ThreeSetupArgs, ThreeSetupFunction } from "./elements/layer/schema";
 export { Mark, type MarkProps } from "./elements/title/mark";
 export {
   type Extrapolate,
@@ -61,7 +62,6 @@ export {
   stageTimeNames,
   stageValueAt,
 } from "./jsx/scene3d";
-export type { ThreeFrameArgs, ThreeSetupArgs, ThreeSetupFunction } from "./jsx/schemas/overlays";
 export { type EffectRef, effect, type TransitionRef, transition } from "./jsx/shaders";
 export * from "./jsx/use-seekable";
 export { type LayerClock, useLayer, useT } from "./jsx/use-t";

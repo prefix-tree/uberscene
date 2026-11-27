@@ -3,8 +3,10 @@ import {
   ELEMENTS,
   isMigratedKind,
   KIT_ELEMENTS,
+  keepsInterior,
   kitElement,
   SCHEMAS_BY_KIND,
+  schemaFor,
   shapeSize,
 } from "@uberscene/kit/schema";
 
@@ -37,5 +39,28 @@ describe("the kinds with a folder of their own", () => {
   it("a shape that writes no size is 200 pixels each way", () => {
     expect(shapeSize({})).toEqual({ width: 200, height: 200 });
     expect(shapeSize({ width: 320 })).toEqual({ width: 320, height: 200 });
+  });
+
+  it("a layer a library draws is checked against that engine's schema, and any other element against its kind's", () => {
+    const { schemas } = KIT_ELEMENTS.layer.variants;
+    expect(schemaFor("layer", {})).toBe(KIT_ELEMENTS.layer.schema);
+    expect(schemaFor("layer", { engine: "three" })).toBe(schemas.three);
+    expect(schemaFor("layer", { engine: "motion" })).toBe(schemas.motion);
+    // An engine there is none of has no schema; a name every object has is not an engine.
+    expect(schemaFor("layer", { engine: "unreal" })).toBeUndefined();
+    expect(schemaFor("layer", { engine: "toString" })).toBeUndefined();
+    // A kind with one tag takes no notice of a prop called `engine`.
+    expect(schemaFor("clip", { engine: "three" })).toBe(SCHEMAS_BY_KIND.clip);
+    expect(schemaFor("title", {})).toBe(KIT_ELEMENTS.title.schema);
+  });
+
+  it("a layer's children are its free code, and no other kind's are", () => {
+    expect(keepsInterior("layer")).toBe(true);
+    for (const kind of ["title", "nested", "multicam", "clip"] as const) expect(keepsInterior(kind)).toBe(false);
+  });
+
+  it("an adjustment stands on both planes, and says what its sample is over", () => {
+    expect(KIT_ELEMENTS.adjustment.capabilities.plane).toBe("both");
+    expect(KIT_ELEMENTS.adjustment.sampleBeneath).toContain("<Clip");
   });
 });

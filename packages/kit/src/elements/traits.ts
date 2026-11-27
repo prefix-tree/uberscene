@@ -32,7 +32,7 @@ export const NO_TRAITS: ElementCapabilities = {
 export const ITEM = { timed: true, sequenceRole: "item", placementScope: "track" } as const;
 
 /** An overlay: drawn on the DOM plane over the canvas, with a transform. */
-export const OVERLAY = {
+const OVERLAY = {
   ...ITEM,
   visual: true,
   transformable: true,
