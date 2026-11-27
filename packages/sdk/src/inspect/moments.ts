@@ -7,6 +7,7 @@ import {
   maxTicks,
   nearestFrame,
   onOverlayPlane,
+  parseRef,
   type Rate,
   round3,
   type Ticks,
@@ -52,12 +53,10 @@ export const MOMENT_FORMS =
 /** The most moments one range may ask for. */
 export const MAX_RANGE_MOMENTS = 500;
 
-const ID = "[A-Za-z_][A-Za-z0-9_-]*";
 const NUMBER = /^\d+(?:\.\d+)?$/;
 const FRAME = /^(\d+)f$/;
-const ELEMENT = new RegExp(`^(${ID})(?:\\.(start|mid|end))?$`);
-const REF = /^(?:word|shot|silence|beat):\d+(?:\.end)?$|^marker:[A-Za-z_][A-Za-z0-9_-]*$/;
-const CLIP_REF = new RegExp(`^(${ID})@((?:word|shot|silence|beat):\\d+(?:\\.end)?)$`);
+/** The references a moment may be written as, of the one reference grammar. */
+const REF_FORMS = ["moment", "marker", "element"] as const;
 
 function parseTime(text: string): (ParsedMoment & { kind: "time" }) | null {
   if (NUMBER.test(text)) return { kind: "time", text, seconds: Number(text) };
@@ -79,17 +78,14 @@ export function parseMoment(input: string): ParsedMoment {
     if (!from || !to || more.length > 0 || rest.length > 0 || step === null) return { kind: "invalid", text };
     return { kind: "range", text, from, to, ...(step ? { step } : {}) };
   }
-  if (REF.test(text)) return { kind: "ref", text, ref: text };
-  const clipRef = CLIP_REF.exec(text);
-  if (clipRef) return { kind: "ref", text, clip: clipRef[1] as string, ref: clipRef[2] as string };
-  const element = ELEMENT.exec(text);
-  if (element)
-    return {
-      kind: "element",
-      text,
-      id: element[1] as string,
-      ...(element[2] ? { point: element[2] as "start" | "mid" | "end" } : {}),
-    };
+  const target = parseRef(text, REF_FORMS);
+  if (target.type === "marker") return { kind: "ref", text, ref: text };
+  if (target.type === "moment")
+    return target.of === undefined
+      ? { kind: "ref", text, ref: text }
+      : { kind: "ref", text, clip: target.of, ref: text.slice(target.of.length + 1) };
+  if (target.type === "element")
+    return { kind: "element", text, id: target.id, ...(target.edge ? { point: target.edge } : {}) };
   return { kind: "invalid", text };
 }
 

@@ -1,3 +1,5 @@
+import { parseRef, refPattern } from "@uberscene/kit/schema";
+
 import type { ResolveError } from "../resolve/errors";
 import type { AssetEntry } from "./types";
 
@@ -19,11 +21,12 @@ export type ParsedTimeRef =
   | { readonly kind: "marker"; readonly id: string }
   | { readonly kind: "invalid"; readonly reason: string };
 
-const REF = /^(word|shot|silence|beat):(\d+)(\.end)?$/;
-const MARKER = /^marker:([A-Za-z_][A-Za-z0-9_-]*)$/;
+/** The forms a time reference takes, of the one reference grammar. */
+const FORMS = ["moment", "marker"] as const;
+const PATTERN = refPattern(FORMS);
 
 export function isTimeRefString(value: unknown): value is string {
-  return typeof value === "string" && (REF.test(value) || MARKER.test(value));
+  return typeof value === "string" && PATTERN.test(value);
 }
 
 export function parseTimeRef(ref: unknown): ParsedTimeRef {
@@ -33,12 +36,9 @@ export function parseTimeRef(ref: unknown): ParsedTimeRef {
       : { kind: "invalid", reason: "seconds must be a finite non-negative number" };
   }
   if (typeof ref !== "string") return { kind: "invalid", reason: "a time is a number or a reference string" };
-  const m = REF.exec(ref);
-  if (m) {
-    return { kind: m[1] as "word" | "shot" | "silence" | "beat", index: Number(m[2]), edge: m[3] ? "end" : "start" };
-  }
-  const mk = MARKER.exec(ref);
-  if (mk) return { kind: "marker", id: mk[1] as string };
+  const target = parseRef(ref, FORMS);
+  if (target.type === "moment") return { kind: target.unit, index: target.index, edge: target.edge };
+  if (target.type === "marker") return { kind: "marker", id: target.id };
   return { kind: "invalid", reason: `unrecognised time reference "${ref}"` };
 }
 
