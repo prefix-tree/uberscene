@@ -37,11 +37,12 @@ export default defineConfig({
   },
   themeConfig: {
     logo: "/logo.svg",
-    // The top bar names three ways in, as short as a poster (on every page, the landing one included); the sidebar is the map of the docs.
+    // The top bar names three ways in and the blog, as short as a poster (on every page, the landing one included); the sidebar is the map of the docs.
     nav: [
       { text: "Docs", link: "/guide/introduction", activeMatch: "^/(guide|reference)/" },
       { text: "Examples", link: "/examples/", activeMatch: "^/(examples|recipes)" },
       { text: "Playground", link: "/playground", activeMatch: "^/playground" },
+      { text: "Blog", link: "/blog/", activeMatch: "^/blog/" },
     ],
     sidebar: [
       {
@@ -193,6 +194,7 @@ export default defineConfig({
         text: "Project",
         items: [
           { text: "Core principles", link: "/guide/principles" },
+          { text: "Blog", link: "/blog/" },
           { text: "Changelog", link: "https://github.com/prefix-tree/uberscene/blob/main/packages/kit/CHANGELOG.md" },
         ],
       },
