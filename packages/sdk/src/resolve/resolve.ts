@@ -14,6 +14,8 @@ import {
   isBuiltInTransition,
   MAIN_TRACK_KINDS,
   MAX_SECONDS,
+  maxTicks,
+  minTicks,
   parseRate,
   type Rate,
   RESPELLED_VALUES,
@@ -27,13 +29,17 @@ import {
   sampleRateProblem,
   shaderFor,
   type ThemeOrigin,
+  TICKS_PER_SECOND,
+  type Ticks,
+  type TimeRange,
   TRANSITION_TYPES,
   type TrackLayout,
   type TrackRole,
   type TransitionType,
   themedRuns,
-  tidySeconds,
+  ticksAsSeconds,
   VIDEO_EFFECT_TYPES,
+  ZERO_TICKS,
 } from "@uberscene/kit/schema";
 
 import { parseTimeRef, resolveTimeRef } from "../manifest/timeref";
@@ -66,10 +72,15 @@ export interface Placement {
   readonly track: string | null;
   readonly parent: string | null;
   readonly children: readonly string[];
+  /** Where it plays on the timeline, in ticks (decision 0044). Its times in seconds below are derived from it. */
+  readonly range: TimeRange;
+  /** @deprecated Seconds, derived from `range`: read `range.start`. Removed once every reader moves to ticks. */
   readonly start: number;
+  /** @deprecated Seconds, derived from `range`: read `rangeEnd(range)`. */
   readonly end: number;
+  /** @deprecated Seconds, derived from `range`: read `range.duration`. */
   readonly duration: number;
-  readonly source?: { readonly in: number; readonly out: number; readonly speed: number; readonly asset: string };
+  readonly source?: PlacementSource;
   /** Schema-parsed props with defaults applied, after patches. Raw props when the schema rejected them. */
   readonly props: Readonly<Record<string, unknown>>;
   readonly editable: Editable;
@@ -83,6 +94,42 @@ export interface Placement {
   readonly interior?: LayerInterior;
   /** Props the theme supplied, by dot path: `$primary`, `style:h1`, `motion` or `theme`. Absent when none did. */
   readonly themed?: Readonly<Record<string, ThemeOrigin>>;
+}
+
+/** The part of an asset a clip or audio plays. `in` and `out` are seconds of the source, `range` the same in ticks. */
+export interface PlacementSource {
+  readonly in: number;
+  readonly out: number;
+  readonly speed: number;
+  readonly asset: string;
+  /** `[in, out)` of the source in ticks. */
+  readonly range: TimeRange;
+}
+
+// The resolver's own tick arithmetic. Unlike the kit's, it doesn't throw past 2^53 (about 9.85 hours): a file can say a
+// longer time, and the resolver reports that (INVALID_TIME_RANGE) instead of failing to resolve it at all.
+
+/** Seconds as the nearest tick, for a time that comes from the file, the manifest or the speed math. */
+const T = (seconds: number): Ticks => (Math.round(seconds * TICKS_PER_SECOND) + 0) as Ticks;
+const plus = (a: Ticks, b: Ticks): Ticks => (a + b) as Ticks;
+const minus = (a: Ticks, b: Ticks): Ticks => (a - b) as Ticks;
+
+/** A placement's source with its range in ticks, from the seconds the resolver works the source out in. */
+function withRange(source: PendingSource | undefined): PlacementSource | undefined {
+  if (!source) return undefined;
+  const start = T(source.in);
+  return { ...source, range: { start, duration: minus(T(source.out), start) } };
+}
+
+/** A placement's `range` and the seconds derived from it. */
+function timeFields(start: Ticks, duration: Ticks): Pick<Placement, "range" | "start" | "end" | "duration"> {
+  const end = plus(start, duration);
+  return {
+    range: { start, duration },
+    start: ticksAsSeconds(start),
+    end: ticksAsSeconds(end),
+    duration: ticksAsSeconds(duration),
+  };
 }
 
 const MAIN_KINDS: ReadonlySet<string> = new Set(MAIN_TRACK_KINDS);
@@ -113,7 +160,10 @@ export interface ResolvedState {
     readonly rate: Rate;
     readonly width: number;
     readonly height: number;
+    /** @deprecated Seconds, derived from `length`. */
     readonly duration: number;
+    /** How long the video is, in ticks. */
+    readonly length: Ticks;
   };
   readonly tracks: readonly ResolvedTrack[];
   readonly items: ReadonlyMap<string, Placement>;
@@ -134,19 +184,22 @@ export interface ResolvedState {
 const DEFAULT_OVERLAY_DURATION = 5;
 const IMAGE_DEFAULT_DURATION = 5;
 
+/** A source while the resolver works it out: seconds of the asset, which speed ramps and freezes are computed in. */
+type PendingSource = Omit<PlacementSource, "range">;
+
 interface Pending {
   readonly node: CollectedNode;
   readonly track: string | null;
   readonly parent: string | null;
   props: Record<string, unknown>;
   errors: ResolveError[];
-  source?: Placement["source"];
+  source?: PendingSource;
   /** Intrinsic length, when it does not depend on other elements. */
-  duration?: number;
+  duration?: Ticks;
   durationDep?: { kind: "match"; id: string } | { kind: "until"; id: string; at?: string } | { kind: "fill" };
-  start?: number;
+  start?: Ticks;
   /** `at` is a word, shot or silence of the anchor's source: the start is where the anchor plays it, plus `offset`. */
-  anchorDep?: { id: string | "start"; offset: number; edge?: "end"; at?: string };
+  anchorDep?: { id: string | "start"; offset: Ticks; edge?: "end"; at?: string };
   between?: readonly [string, string];
 }
 
@@ -213,21 +266,22 @@ function compute(
     node: CollectedNode,
     track: string | null,
     parent: string | null,
-    start: number,
-    length: number,
+    start: Ticks,
+    length: Ticks,
     props: Record<string, unknown>,
     errors: readonly ResolveError[],
-    source: Placement["source"],
+    pendingSource: PendingSource | undefined,
     between: Placement["between"],
   ): Placement => {
+    const source = withRange(pendingSource);
     const prev = previous?.get(node.id);
     if (
       prev &&
       prev.kind === node.kind &&
       prev.track === track &&
       prev.parent === parent &&
-      prev.start === start &&
-      prev.duration === length &&
+      prev.range.start === start &&
+      prev.range.duration === length &&
       prev.props === props &&
       prev.editable === node.editable &&
       prev.lockedProps === node.lockedProps &&
@@ -245,9 +299,7 @@ function compute(
       track,
       parent,
       children: node.children.map((c) => c.id),
-      start,
-      end: start + length,
-      duration: length,
+      ...timeFields(start, length),
       props,
       editable: node.editable,
       lockedProps: node.lockedProps,
@@ -351,17 +403,17 @@ function compute(
   iterateDependencies(pending, manifest);
   placeCaptions(root, pending, tracks, manifest, markers);
 
-  let compositionEnd = 0;
+  let compositionEnd = ZERO_TICKS;
   for (const p of pending.values()) {
     // Something with no length shows and sounds nothing, so it does not make the video longer.
     if (p.start !== undefined && p.duration !== undefined && p.duration > 0 && p.node.kind !== "transition")
-      compositionEnd = Math.max(compositionEnd, p.start + p.duration);
+      compositionEnd = maxTicks(compositionEnd, plus(p.start, p.duration));
   }
   for (const p of pending.values()) {
     if (p.durationDep?.kind === "fill" && p.start !== undefined) {
-      p.duration = Math.max(0, compositionEnd - p.start);
+      p.duration = maxTicks(ZERO_TICKS, minus(compositionEnd, p.start));
       if (p.source) {
-        let out = p.source.in + sourceSpan(p.node, p.duration, p.source.speed);
+        let out = p.source.in + sourceSpan(p.node, ticksAsSeconds(p.duration), p.source.speed);
         // A file cannot fill more time than it holds: it plays to its end and stops there.
         const asset = lookupAsset(manifest, p.source.asset);
         // (A multicam's last generated clip is left as it is: its angles are cut to the multicam's own length.)
@@ -375,9 +427,9 @@ function compute(
             code: "TRIM_PAST_SOURCE",
             id: p.node.id,
             prop: "duration",
-            message: `${asset.id} is ${round3(asset.duration)}s long and cannot fill ${round3(p.duration)}s: it ends ${round3(p.duration - length)}s before the video does`,
+            message: `${asset.id} is ${round3(asset.duration)}s long and cannot fill ${round3(ticksAsSeconds(p.duration))}s: it ends ${round3(ticksAsSeconds(p.duration) - length)}s before the video does`,
           });
-          p.duration = length;
+          p.duration = T(length);
           out = asset.duration;
         }
         p.source = { ...p.source, out };
@@ -394,8 +446,8 @@ function compute(
         id: p.node.id,
         message: `could not place <${p.node.kind} id="${p.node.id}">`,
       });
-      p.start ??= 0;
-      p.duration ??= 0;
+      p.start ??= ZERO_TICKS;
+      p.duration ??= ZERO_TICKS;
     }
   }
 
@@ -411,9 +463,7 @@ function compute(
       track: child.id,
       parent,
       children: child.children.map((c) => c.id),
-      start: 0,
-      end: 0,
-      duration: 0,
+      ...timeFields(ZERO_TICKS, ZERO_TICKS),
       props,
       editable: child.editable,
       lockedProps: child.lockedProps,
@@ -434,9 +484,7 @@ function compute(
         track: null,
         parent: root.id,
         children: child.children.map((c) => c.id),
-        start: 0,
-        end: 0,
-        duration: 0,
+        ...timeFields(ZERO_TICKS, ZERO_TICKS),
         props,
         editable: child.editable,
         lockedProps: child.lockedProps,
@@ -450,27 +498,37 @@ function compute(
           // The camera's keys are on the video's clock: `at` is seconds from its start.
           const keyErrors: ResolveError[] = [];
           const keyProps = parseProps(inner, keyErrors, theme);
-          const at = lengthOr(keyProps.at, 0);
-          structural.push(place(inner, null, child.id, at, 0, keyProps, keyErrors, undefined, undefined));
+          const at = T(lengthOr(keyProps.at, 0));
+          structural.push(place(inner, null, child.id, at, ZERO_TICKS, keyProps, keyErrors, undefined, undefined));
         } else if (inner.kind === "generator") {
           // A generator on a camera value runs for the whole video; its end is set with the camera's.
           const own: ResolveError[] = [];
-          structural.push(place(inner, null, child.id, 0, 0, parseProps(inner, own, theme), own, undefined, undefined));
+          structural.push(
+            place(
+              inner,
+              null,
+              child.id,
+              ZERO_TICKS,
+              ZERO_TICKS,
+              parseProps(inner, own, theme),
+              own,
+              undefined,
+              undefined,
+            ),
+          );
         }
       }
     } else if (child.kind === "marker") {
       const own: ResolveError[] = [];
       const props = parseProps(child, own, theme);
-      const at = markers.get(child.id) ?? 0;
+      const at = T(markers.get(child.id) ?? 0);
       structural.push({
         id: child.id,
         kind: "marker",
         track: null,
         parent: root.id,
         children: [],
-        start: at,
-        end: at,
-        duration: 0,
+        ...timeFields(at, ZERO_TICKS),
         props,
         editable: child.editable,
         lockedProps: child.lockedProps,
@@ -480,13 +538,13 @@ function compute(
       });
     }
   }
-  let duration = 0;
+  let duration = ZERO_TICKS;
   for (const p of pending.values()) {
-    const start = p.start as number;
-    const length = p.duration as number;
+    const start = p.start as Ticks;
+    const length = p.duration as Ticks;
     if (p.source && isScene(p.props.src)) {
       const played = placeScene(
-        { id: p.node.id, start, props: p.props, source: p.source },
+        { id: p.node.id, start: ticksAsSeconds(start), props: p.props, source: p.source },
         manifest,
         markers,
         p.errors,
@@ -499,12 +557,16 @@ function compute(
     const placement = place(p.node, p.track, p.parent, start, length, p.props, p.errors, p.source, p.between);
     items.set(p.node.id, placement);
     if (p.errors.length > 0) errors.push(...p.errors);
-    if (p.node.kind !== "transition" && placement.end > placement.start) duration = Math.max(duration, placement.end);
+    if (p.node.kind !== "transition" && placement.range.duration > 0)
+      duration = maxTicks(duration, plus(placement.range.start, placement.range.duration));
     duration = placeChildren(p.node, placement, items, errors, place, duration, theme);
   }
 
   for (const s of structural) {
-    items.set(s.id, reuse(s.kind === "track" || s.kind === "camera" ? { ...s, end: duration, duration } : s));
+    items.set(
+      s.id,
+      reuse(s.kind === "track" || s.kind === "camera" ? { ...s, ...timeFields(s.range.start, duration) } : s),
+    );
     errors.push(...s.errors);
   }
   // A camera's push becomes ordinary camera keys, made once everything it names has a start: the player, the export
@@ -557,7 +619,7 @@ function compute(
           lockedProps: [],
           boundProps: {},
         };
-        items.set(id, place(node, null, camera.id, key.at, 0, props, [], undefined, undefined));
+        items.set(id, place(node, null, camera.id, T(key.at), ZERO_TICKS, props, [], undefined, undefined));
         ids.push(id);
       }
       if (ids.length > 0) items.set(camera.id, reuse({ ...pushed, children: [...pushed.children, ...ids] }));
@@ -571,9 +633,7 @@ function compute(
       track: null,
       parent: null,
       children: root.children.map((c) => c.id),
-      start: 0,
-      end: duration,
-      duration,
+      ...timeFields(ZERO_TICKS, duration),
       props: compParsed,
       editable: root.editable,
       lockedProps: root.lockedProps,
@@ -587,11 +647,11 @@ function compute(
   errors.push(...generatorErrors(items));
   errors.push(...followErrors(items, tracks));
   const rate = rateOf(compParsed.fps, root.id, errors);
-  if (duration > MAX_SECONDS)
+  if (ticksAsSeconds(duration) > MAX_SECONDS)
     errors.push({
       code: "INVALID_TIME_RANGE",
       id: root.id,
-      message: `the video is ${duration.toFixed(0)} s long; times are exact up to ${MAX_SECONDS} s (about 9.85 hours)`,
+      message: `the video is ${ticksAsSeconds(duration).toFixed(0)} s long; times are exact up to ${MAX_SECONDS} s (about 9.85 hours)`,
     });
   const sampleProblem = sampleRateProblem(Number(compParsed.sampleRate ?? 48000));
   if (sampleProblem) errors.push({ code: "SCHEMA", id: root.id, prop: "sampleRate", message: sampleProblem });
@@ -602,7 +662,8 @@ function compute(
       rate,
       width: Number(compParsed.width ?? 1920),
       height: Number(compParsed.height ?? 1080),
-      duration,
+      duration: ticksAsSeconds(duration),
+      length: duration,
     },
     tracks,
     items,
@@ -990,7 +1051,7 @@ function intrinsicCompute(
     const end = props.anchor.endsWith(".end");
     p.anchorDep = {
       id: end ? props.anchor.slice(0, -4) : props.anchor,
-      offset: Number(props.offset ?? 0),
+      offset: T(Number(props.offset ?? 0)),
       ...(end ? { edge: "end" as const } : {}),
     };
   }
@@ -1019,7 +1080,7 @@ function intrinsicCompute(
         prop: "src",
         message: `asset ${props.src} is not in the manifest`,
       });
-      p.duration = typeof dur === "number" ? dur : 0;
+      p.duration = T(typeof dur === "number" ? dur : 0);
     } else if (asset.kind === "lut") {
       own.push({
         code: "SCHEMA",
@@ -1027,31 +1088,31 @@ function intrinsicCompute(
         prop: "src",
         message: `asset ${props.src} is a LUT, which plays nothing; grade with it: effects={[{ type: "lut", src: "${props.src}" }]}`,
       });
-      p.duration = typeof dur === "number" ? dur : 0;
+      p.duration = T(typeof dur === "number" ? dur : 0);
     } else {
       sourceRange(p, asset, markers);
       if (props.cutout !== undefined && props.cutout !== false)
         own.push(...cutoutErrors(node.id, asset, manifest, scene));
     }
   } else if (node.kind === "transition") {
-    p.duration = lengthOr(props.duration, 0.5);
+    p.duration = T(lengthOr(props.duration, 0.5));
   } else if (node.kind === "gap") {
     // A gap whose duration the schema refused holds no time.
-    p.duration = lengthOr(props.duration, 0);
+    p.duration = T(lengthOr(props.duration, 0));
   } else if (node.kind === "caption") {
     // Timed in the captions pass, once the clips that play the asset are placed.
   } else if (node.kind === "captions") {
-    p.start = 0;
+    p.start = ZERO_TICKS;
     p.durationDep = { kind: "fill" };
     for (const child of node.children)
       if (child.kind === "caption") intrinsic(child, track, pending, manifest, markers, markersKey, theme, errors);
     return p;
   } else if (node.kind === "multicam") {
-    p.start = 0;
+    p.start = ZERO_TICKS;
     p.durationDep = { kind: "fill" };
   } else if (caps.timed) {
-    if (dur === undefined) p.duration = DEFAULT_OVERLAY_DURATION;
-    else if (typeof dur === "number") p.duration = dur;
+    if (dur === undefined) p.duration = T(DEFAULT_OVERLAY_DURATION);
+    else if (typeof dur === "number") p.duration = T(dur);
     else if (dur === "fill") p.durationDep = { kind: "fill" };
     else if (dur === "source") {
       own.push({
@@ -1060,7 +1121,7 @@ function intrinsicCompute(
         prop: "duration",
         message: `<${node.kind}> has no source to take a duration from`,
       });
-      p.duration = DEFAULT_OVERLAY_DURATION;
+      p.duration = T(DEFAULT_OVERLAY_DURATION);
     } else if (typeof dur === "object" && dur) p.durationDep = otherDep(dur);
   }
   return p;
@@ -1330,7 +1391,7 @@ function sourceRange(p: Pending, asset: AssetEntry, markers: ReadonlyMap<string,
       message: `the freeze starts ${Number(child.props.start)}s into "${node.id}", after the clip has ended, so it never holds`,
     });
   }
-  p.duration = natural + holdTotal(holds);
+  p.duration = plus(T(natural), T(holdTotal(holds)));
 }
 
 /** Source seconds a clip plays over `length` timeline seconds: its freeze holds play none, its speed keys replace `speed`. */
@@ -1347,11 +1408,11 @@ function placeTrack(
   theme: ResolvedTheme,
   errors: ResolveError[],
 ): void {
-  let cursor = 0;
+  let cursor = ZERO_TICKS;
   let prevClip: Pending | null = null;
   let pendingTransition: Pending | null = null;
   /** The length of the transition that leads into `prevClip`, to see that two transitions do not meet inside it. */
-  let intoPrev = 0;
+  let intoPrev = ZERO_TICKS;
   for (const child of trackNode.children) {
     const p = pending.get(child.id);
     if (!p) continue;
@@ -1362,7 +1423,7 @@ function placeTrack(
     }
     if (child.kind === "transition") {
       if (typeof p.props.on === "string") {
-        p.anchorDep = { id: p.props.on, offset: 0 };
+        p.anchorDep = { id: p.props.on, offset: ZERO_TICKS };
         // Edge transitions attach to a clip edge; resolved in iterateDependencies with edge logic.
         continue;
       }
@@ -1372,7 +1433,7 @@ function placeTrack(
           id: child.id,
           message: "a transition between siblings needs a sequence track; use on/edge on free tracks",
         });
-        p.start = 0;
+        p.start = ZERO_TICKS;
         continue;
       }
       if (pendingTransition) {
@@ -1406,7 +1467,7 @@ function placeTrack(
           prop: "start",
           message: "elements on a free track need start",
         });
-      p.start = lengthOr(p.props.start, 0);
+      p.start = T(lengthOr(p.props.start, 0));
       continue;
     }
     if (typeof p.props.start === "number") {
@@ -1424,7 +1485,7 @@ function placeTrack(
         prop: "duration",
         message: '"fill" is not meaningful inside a sequence',
       });
-      p.duration = 0;
+      p.duration = ZERO_TICKS;
       delete p.durationDep;
     }
     if (pendingTransition && child.kind === "gap") {
@@ -1436,18 +1497,18 @@ function placeTrack(
       pendingTransition.start = cursor;
       pendingTransition = null;
     }
-    let into = 0;
+    let into = ZERO_TICKS;
     if (pendingTransition && prevClip) {
-      const d = pendingTransition.duration ?? 0;
-      const outgoing = prevClip.duration ?? 0;
-      // With the same slack as below: out 1.3 minus in 1.1 is 0.19999999999999996, and a 0.2 s transition fits it.
-      if (d > outgoing + 1e-9 || (p.duration !== undefined && d > p.duration + 1e-9)) {
+      const d = pendingTransition.duration ?? ZERO_TICKS;
+      const outgoing = prevClip.duration ?? ZERO_TICKS;
+      // Lengths are ticks, so they compare exactly: a clip from 1.1 to 1.3 is 0.2 s long, and a 0.2 s transition fits it.
+      if (d > outgoing || (p.duration !== undefined && d > p.duration)) {
         pendingTransition.errors.push({
           code: "INSUFFICIENT_HANDLES",
           id: pendingTransition.node.id,
           message: "transition is longer than one of its clips",
         });
-      } else if (intoPrev + d > outgoing + 1e-9) {
+      } else if (intoPrev + d > outgoing) {
         pendingTransition.errors.push({
           code: "INSUFFICIENT_HANDLES",
           id: pendingTransition.node.id,
@@ -1457,10 +1518,11 @@ function placeTrack(
       // A transition that does not fit is told above and held to what its clips have: the part of the outgoing clip
       // that the transition before has not used, and the whole of the incoming one. Longer, the incoming clip would
       // start before the outgoing one does.
-      const fit = Math.max(0, Math.min(d, outgoing - intoPrev, p.duration ?? Number.POSITIVE_INFINITY));
+      const room = minus(outgoing, intoPrev);
+      const fit = maxTicks(ZERO_TICKS, minTicks(minTicks(d, room), p.duration ?? d));
       if (fit < d) pendingTransition.duration = fit;
       into = fit;
-      const start = cursor - fit;
+      const start = minus(cursor, fit);
       pendingTransition.start = start;
       pendingTransition.between = [prevClip.node.id, child.id];
       cursor = start;
@@ -1475,7 +1537,7 @@ function placeTrack(
     pendingTransition = null;
     intoPrev = into;
     p.start = cursor;
-    if (p.duration !== undefined) cursor += p.duration;
+    if (p.duration !== undefined) cursor = plus(cursor, p.duration);
     else p.durationDep ??= { kind: "fill" }; // match deps settle later; cursor cannot advance past an unknown length
     if (p.durationDep?.kind === "match" || p.durationDep?.kind === "until") {
       p.errors.push({
@@ -1484,7 +1546,7 @@ function placeTrack(
         prop: "duration",
         message: `${p.durationDep.kind} durations are not allowed inside a sequence`,
       });
-      p.duration = 0;
+      p.duration = ZERO_TICKS;
       delete p.durationDep;
     }
     prevClip = child.kind === "gap" ? null : p;
@@ -1517,7 +1579,7 @@ function placeMulticam(
   }
   cuts.sort((a, b) => a.at - b.at);
   const sync = Number(p.props.sync ?? 0);
-  p.start = cuts[0]?.at ?? 0;
+  p.start = T(cuts[0]?.at ?? 0);
   cuts.forEach((cut, i) => {
     const next = cuts[i + 1];
     const angle = angles.get(cut.angle);
@@ -1549,12 +1611,12 @@ function placeMulticam(
       parent: node.id,
       props: generated.props as Record<string, unknown>,
       errors: [],
-      start: cut.at,
+      start: T(cut.at),
     };
     gp.source = { in: inSec, out: inSec, speed: 1, asset: assetIdOf(String(angle.src)) };
     if (next) {
-      gp.duration = next.at - cut.at;
-      gp.source = { ...gp.source, out: inSec + gp.duration };
+      gp.duration = minus(T(next.at), T(cut.at));
+      gp.source = { ...gp.source, out: inSec + ticksAsSeconds(gp.duration) };
     } else {
       gp.durationDep = { kind: "fill" };
     }
@@ -1572,7 +1634,7 @@ function iterateDependencies(pending: Map<string, Pending>, manifest: AssetManif
       if (p.anchorDep && p.start === undefined) {
         const dep = p.anchorDep;
         if (dep.id === "start") {
-          p.start = Math.max(0, dep.offset);
+          p.start = maxTicks(ZERO_TICKS, dep.offset);
           progressed = true;
           continue;
         }
@@ -1584,7 +1646,7 @@ function iterateDependencies(pending: Map<string, Pending>, manifest: AssetManif
             prop: p.node.kind === "transition" ? "on" : "anchor",
             message: `anchor "${dep.id}" does not exist`,
           });
-          p.start = 0;
+          p.start = ZERO_TICKS;
           delete p.anchorDep;
           progressed = true;
           continue;
@@ -1595,16 +1657,16 @@ function iterateDependencies(pending: Map<string, Pending>, manifest: AssetManif
         ) {
           if (p.node.kind === "transition") {
             const edge = p.props.edge === "in" ? "in" : "out";
-            const d = p.duration ?? 0;
-            p.start = edge === "in" ? target.start : target.start + (target.duration ?? 0) - d;
+            const d = p.duration ?? ZERO_TICKS;
+            p.start = edge === "in" ? target.start : minus(plus(target.start, target.duration ?? ZERO_TICKS), d);
           } else {
             const base =
               dep.at !== undefined
-                ? playedAt(p, target, dep.at, manifest)
+                ? T(playedAt(p, target, dep.at, manifest))
                 : dep.edge === "end"
-                  ? (target.duration ?? 0)
-                  : 0;
-            p.start = Math.max(0, target.start + base + dep.offset);
+                  ? (target.duration ?? ZERO_TICKS)
+                  : ZERO_TICKS;
+            p.start = maxTicks(ZERO_TICKS, plus(plus(target.start, base), dep.offset));
           }
           progressed = true;
         }
@@ -1618,7 +1680,7 @@ function iterateDependencies(pending: Map<string, Pending>, manifest: AssetManif
             prop: "duration",
             message: `${p.durationDep.kind} target "${p.durationDep.id}" does not exist`,
           });
-          p.duration = 0;
+          p.duration = ZERO_TICKS;
           delete (p as Pending).durationDep;
           progressed = true;
         } else if (takeLength(p, target, manifest)) progressed = true;
@@ -1635,8 +1697,8 @@ function iterateDependencies(pending: Map<string, Pending>, manifest: AssetManif
         id: p.node.id,
         message: `"${p.node.id}" depends on itself through anchors or match durations`,
       });
-      p.start ??= 0;
-      p.duration ??= 0;
+      p.start ??= ZERO_TICKS;
+      p.duration ??= ZERO_TICKS;
       delete p.anchorDep;
       delete p.durationDep;
     }
@@ -1670,23 +1732,29 @@ function takeLength(p: Following, target: Pending, manifest: AssetManifest): boo
     const { at, id } = p.durationDep;
     // A moment it cannot find (reported) ends it where the target ends, as an until without one does.
     const said = p.errors.length;
-    const moment = at !== undefined ? playedAt(p, target, at, manifest, "duration") : target.duration;
-    const end = target.start + (p.errors.length > said && moment === 0 ? target.duration : moment);
-    // Not round3: a target that ends off the ms grid (121 frames at 24 fps is 5.0416667 s) would be outlived by a frame.
-    const left = tidySeconds(end - p.start);
-    if (round3(left) <= 0)
+    const moment = at !== undefined ? T(playedAt(p, target, at, manifest, "duration")) : target.duration;
+    const end = plus(target.start, p.errors.length > said && moment === 0 ? target.duration : moment);
+    // Exact in ticks: a target that ends off the ms grid (121 frames at 24 fps is 5.0416667 s) is not outlived by a frame.
+    const left = minus(end, p.start);
+    // Under half a millisecond left is no length, as when lengths were rounded to the ms.
+    const none = round3(ticksAsSeconds(left)) <= 0;
+    if (none)
       p.errors.push({
         code: "INVALID_TIME_RANGE",
         id: p.node.id,
         prop: "duration",
         message:
           at !== undefined
-            ? `"${p.node.id}" starts at ${round3(p.start)} s, after "${id}" plays ${at} (${round3(end)} s), so it has no length`
-            : `"${p.node.id}" starts at ${round3(p.start)} s, after "${id}" has ended (${round3(end)} s), so it has no length`,
+            ? `"${p.node.id}" starts at ${round3(ticksAsSeconds(p.start))} s, after "${id}" plays ${at} (${round3(ticksAsSeconds(end))} s), so it has no length`
+            : `"${p.node.id}" starts at ${round3(ticksAsSeconds(p.start))} s, after "${id}" has ended (${round3(ticksAsSeconds(end))} s), so it has no length`,
       });
-    p.duration = round3(left) <= 0 ? 0 : left;
+    p.duration = none ? ZERO_TICKS : left;
   }
-  if (p.source) p.source = { ...p.source, out: p.source.in + sourceSpan(p.node, p.duration, p.source.speed) };
+  if (p.source)
+    p.source = {
+      ...p.source,
+      out: p.source.in + sourceSpan(p.node, ticksAsSeconds(p.duration), p.source.speed),
+    };
   delete (p as Pending).durationDep;
   return true;
 }
@@ -1721,7 +1789,7 @@ function settleMatches(pending: Map<string, Pending>, manifest: AssetManifest): 
       id: p.node.id,
       message: `"${p.node.id}" depends on itself through anchors or match durations`,
     });
-    p.duration = 0;
+    p.duration = ZERO_TICKS;
     delete (p as Pending).durationDep;
   }
 }
@@ -1807,7 +1875,7 @@ function playedAt(
 export function samePlacement(a: Placement, b: Placement): boolean {
   if (a === b) return true;
   if (a.id !== b.id || a.kind !== b.kind || a.track !== b.track || a.parent !== b.parent) return false;
-  if (a.start !== b.start || a.end !== b.end || a.duration !== b.duration) return false;
+  if (a.range.start !== b.range.start || a.range.duration !== b.range.duration) return false;
   if (
     a.props !== b.props ||
     a.editable !== b.editable ||
@@ -1820,7 +1888,7 @@ export function samePlacement(a: Placement, b: Placement): boolean {
   return sameErrors(a.errors, b.errors);
 }
 
-function sameSource(a: Placement["source"], b: Placement["source"]): boolean {
+function sameSource(a: PendingSource | undefined, b: PendingSource | undefined): boolean {
   if (!a || !b) return a === b;
   return a.asset === b.asset && a.in === b.in && a.out === b.out && a.speed === b.speed;
 }
@@ -1850,11 +1918,11 @@ type Place = (
   node: CollectedNode,
   track: string | null,
   parent: string | null,
-  start: number,
-  length: number,
+  start: Ticks,
+  length: Ticks,
   props: Record<string, unknown>,
   errors: readonly ResolveError[],
-  source: Placement["source"],
+  source: PendingSource | undefined,
   between: Placement["between"],
 ) => Placement;
 
@@ -1865,9 +1933,9 @@ function placeChildren(
   items: Map<string, Placement>,
   errors: ResolveError[],
   place: Place,
-  end: number,
+  end: Ticks,
   theme: ResolvedTheme,
-): number {
+): Ticks {
   for (const child of node.children) {
     if (items.has(child.id)) continue;
     const own: ResolveError[] = [];
@@ -1876,15 +1944,15 @@ function placeChildren(
     if (caps.placementScope !== "child") {
       own.push({ code: "INVALID_CHILD", id: child.id, message: `<${child.kind}> cannot be a child of <${node.kind}>` });
     }
-    let start = parent.start;
-    let duration = parent.duration;
+    let start = parent.range.start;
+    let duration = parent.range.duration;
     if (child.kind === "keyframe" || child.kind === "speedKey") {
-      start = parent.start + lengthOr(props.at, 0);
-      duration = 0;
+      start = plus(parent.range.start, T(lengthOr(props.at, 0)));
+      duration = ZERO_TICKS;
     }
     if (child.kind === "freeze") {
-      start = parent.start + lengthOr(props.start, 0);
-      duration = lengthOr(props.duration, 0);
+      start = plus(parent.range.start, T(lengthOr(props.start, 0)));
+      duration = T(lengthOr(props.duration, 0));
     }
     const placement = place(child, parent.track, node.id, start, duration, props, own, undefined, undefined);
     items.set(child.id, placement);
@@ -1932,8 +2000,9 @@ function placeCaptions(
         const e = captionTime(p.props.end, asset, plays, markers, { id: child.id, prop: "end", src });
         if (typeof s !== "number") p.errors.push(s);
         if (typeof e !== "number") p.errors.push(e);
-        p.start = typeof s === "number" ? s : 0;
-        p.duration = typeof s === "number" && typeof e === "number" ? Math.max(0, e - s) : 0;
+        p.start = T(typeof s === "number" ? s : 0);
+        p.duration =
+          typeof s === "number" && typeof e === "number" ? maxTicks(ZERO_TICKS, minus(T(e), T(s))) : ZERO_TICKS;
       }
       continue;
     }
@@ -1961,8 +2030,8 @@ function placeCaptions(
         parent: node.id,
         props: cue.props as Record<string, unknown>,
         errors: [],
-        start: Number(cue.props.start),
-        duration: Number(cue.props.end) - Number(cue.props.start),
+        start: T(Number(cue.props.start)),
+        duration: minus(T(Number(cue.props.end)), T(Number(cue.props.start))),
       });
     }
   }
@@ -1993,7 +2062,7 @@ function assetPlays(src: string, pending: Map<string, Pending>, tracks: readonly
     plays.push(
       assetPlay({
         id: p.node.id,
-        start: p.start,
+        start: ticksAsSeconds(p.start),
         source: p.source,
         open: p.duration === undefined,
         children: p.node.children,

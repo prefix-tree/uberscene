@@ -864,7 +864,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/sdk`
 
-235 exports.
+236 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -1022,6 +1022,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `PatchLog` | interface |  |
 | `PatchLogOptions` | interface |  |
 | `Placement` | interface |  |
+| `PlacementSource` | interface | The part of an asset a clip or audio plays. |
 | `PlacementSpec` | type | Where a new element goes. |
 | `planCues` | function | Group timeline words into cues. |
 | `playOf` | function | The play of one clip or audio placement, or null for an element that plays no asset. |
@@ -1106,7 +1107,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/sdk/resolver`
 
-83 exports.
+84 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -1158,6 +1159,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `Patch` | type | One change recorded by an action. |
 | `PatchLog` | interface |  |
 | `Placement` | interface |  |
+| `PlacementSource` | interface | The part of an asset a clip or audio plays. |
 | `planCues` | function | Group timeline words into cues. |
 | `playsKey` | function | A stable key for the plays of one asset, so an unchanged timeline reuses the generated nodes. |
 | `Presence` | type |  |
