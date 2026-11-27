@@ -108,8 +108,8 @@ export interface PlacementFacts {
   title: Pick<PlacedTitle, "text" | "runs">;
 }
 
-/** Each kind's parsed placement, by kind. */
-export interface PlacementMap {
+/** The kinds whose parsed placement has a name of its own (`PlacedTitle`). */
+interface NamedPlacements {
   composition: PlacedComposition;
   camera: PlacedCamera;
   track: PlacedTrack;
@@ -137,6 +137,14 @@ export interface PlacementMap {
   speedKey: PlacedSpeedKey;
   freeze: PlacedFreeze;
 }
+
+/**
+ * Each kind's parsed placement, by kind: its named type where it has one, else `Parsed` of the kind. So a kind added
+ * to the kit's `KindProps` has a typed placement with nothing written here.
+ */
+export type PlacementMap = {
+  [K in Kind]: K extends keyof NamedPlacements ? NamedPlacements[K] : Parsed<K>;
+};
 
 /** A placement whose props parsed, of any kind: narrow it by `kind` to read its props. */
 export type Placed = PlacementMap[Kind];

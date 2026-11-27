@@ -7,15 +7,25 @@ import {
   KINDS,
   kindsWhere,
   kindsWithProp,
+  kindTakes,
   MAIN_TRACK_KINDS,
   MASKED_KINDS,
   onOverlayPlane,
   STYLED_KINDS,
 } from "@uberscene/kit/schema";
 
+/**
+ * The kinds there were when the lists below were written out. A kind added since is not in them, and is left out of
+ * what is compared, so a new kind needs no line here: its own traits and schema are checked by the conformance suite.
+ */
+const THEN = new Set(
+  "composition camera track clip audio gap transition title shape svg sticker captions caption marker adjustment mask nested multicam angle cut layer effect keyframe generator speedKey freeze".split(
+    " ",
+  ),
+);
 /** A list as a set: the lists these replace were only ever asked "is this kind in it". */
-const set = (kinds: readonly string[]) => [...kinds].sort();
-const kinds = KINDS;
+const set = (kinds: readonly string[]) => kinds.filter((kind) => THEN.has(kind)).sort();
+const kinds = KINDS.filter((kind) => THEN.has(kind));
 
 // Each list the packages kept of their own, written out once as it stood, against what the kind table now answers.
 describe("the kind table answers what the packages' own lists did", () => {
@@ -80,8 +90,31 @@ describe("traits the schema already shows are read from it", () => {
     expect(set(kindsWithProp(prop))).toEqual(set(was));
   });
 
-  it("agrees with the table where both say it", () => {
-    expect(set(kindsWithProp("transform"))).toEqual(set(kindsWhere((k) => k.transformable)));
-    expect(set(kindsWithProp("volume"))).toEqual(set(kindsWhere((k) => k.audio)));
+  it("is what the table answers, for every kind: a transform, a sound, a source range, children", () => {
+    for (const kind of KINDS) {
+      const entry = capabilitiesOf(kind);
+      expect(entry.transformable, kind).toBe(kindTakes(kind, "transform"));
+      expect(entry.audio, kind).toBe(kindTakes(kind, "volume"));
+      expect(entry.trimSource, kind).toBe(kindTakes(kind, "in") && kindTakes(kind, "out"));
+      expect(entry.container, kind).toBe(entry.childKinds.length > 0);
+    }
+  });
+
+  it("puts every kind placed on a track among what a track holds", () => {
+    expect(capabilitiesOf("track").childKinds).toEqual([
+      "clip",
+      "audio",
+      "gap",
+      "transition",
+      "title",
+      "shape",
+      "svg",
+      "sticker",
+      "adjustment",
+      "nested",
+      "layer",
+      "multicam",
+    ]);
+    expect(set(capabilitiesOf("track").childKinds)).toEqual(set(kindsWhere((k) => k.placementScope === "track")));
   });
 });
