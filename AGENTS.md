@@ -18,24 +18,28 @@ It writes a kind that already type-checks and draws (a labelled box on the overl
 | It writes | What goes there |
 |---|---|
 | `packages/kit/src/elements/<kind>/schema.ts` | The props, as a Zod schema. Each prop has a line that says what it is. Add only what is drawn. |
-| `packages/kit/src/elements/<kind>/index.ts` | The kind's row of traits, and a `sample`: one of it as a file writes it. |
+| `packages/kit/src/elements/<kind>/index.ts` | Its sentence for the reference, the heading it is filed under, its row of traits, and a `sample`: one of it as a file writes it. |
 | `packages/sdk/src/elements/<kind>/index.ts` | What the resolver or a tool asks of this kind alone. Empty to start. |
 | `packages/player/src/elements/<kind>/index.ts` | Its size. No React: the engine loads this file. |
 | `packages/player/src/elements/<kind>/<Tag>.tsx`, `dom.tsx` | Its drawing, from `placement.props`, which are typed. |
 
-It also adds the kind to eleven files that list kinds: the registries (`elements/index.ts` in the kit, the SDK and the
-player, the player's `elements/dom.tsx`, the editor's `registry/editor/elements.tsx`), the tag and the kind table in
-the kit (`jsx/elements.ts`, `jsx/capabilities.ts`, `index.ts`), the typed placements in the SDK
-(`elements/placement.ts`), the reference page's sentence (`scripts/gen-docs.ts`) and the sealed list
-(`scripts/kind-branches.json`). `scripts/new-element.test.ts` holds that list of files exact.
+It also adds the kind to seven files: the registry of each package (`elements/index.ts` in the kit, the SDK and the
+player, the player's `elements/dom.tsx`, the editor's `registry/editor/elements.tsx`), and the tag a file writes
+(`jsx/elements.ts` and `index.ts` in the kit). `scripts/new-element.test.ts` holds that list of files exact.
+
+Nothing else lists the kind. These are read from the kit's registry and the kind's schema:
+
+- the kind table (`capabilitiesOf`), with what the schema says: whether it takes a `transform`, sounds, trims a source;
+- the paths keys may sit at: write the value in the schema with `animatable` or `keyed`;
+- which actions it is offered: an action that writes a prop applies to the kinds whose schema has the prop;
+- its typed placement, its place among what a track holds, the sealed kinds, and its reference page.
 
 Then, in order:
 
 1. Write the props and the drawing. Read a prop as its type (`placement.props.label`): no cast, and no default
    written a second time, since the schema's default is already there.
-2. Write its sentence in `scripts/gen-docs.ts`, and run `pnpm docs:gen` and `pnpm registry:build`.
-3. Run `pnpm check`. Two tests list kinds by a trait and will name yours: `packages/sdk/test/capabilities.test.ts` and
-   `packages/kit/test/kinds.test.ts` (which kinds take a `follow`, a `blend`, a transform). Add it where it belongs.
+2. Write its sentence (`summary`) in its kit folder, and run `pnpm docs:gen` and `pnpm registry:build`.
+3. Run `pnpm check`.
 4. Add a changeset.
 
 What the checks hold a kind to:

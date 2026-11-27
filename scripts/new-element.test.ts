@@ -31,9 +31,6 @@ const EDITED = [
   "packages/player/src/elements/dom.tsx",
   "packages/player/src/elements/index.ts",
   "packages/sdk/src/elements/index.ts",
-  "packages/sdk/src/elements/placement.ts",
-  "scripts/gen-docs.ts",
-  "scripts/kind-branches.json",
 ];
 
 /**
@@ -70,7 +67,7 @@ function errorsWith(project: string, made: ReturnType<typeof scaffoldElement>): 
   });
 }
 
-test("a new kind is six new files and ten changed ones, and they compile", () => {
+test("a new kind is six new files and seven changed ones, and they compile", () => {
   const made = scaffoldElement("chart", read);
   assert.deepEqual(Object.keys(made.created).sort(), CREATED);
   assert.deepEqual(Object.keys(made.edited).sort(), EDITED);
@@ -94,12 +91,22 @@ test("a kind listed in the kit and left out of a package does not compile", () =
 
 test("it lists the new kind where the kinds are listed", () => {
   const { edited } = scaffoldElement("chart", read);
-  assert.match(edited["packages/kit/src/elements/index.ts"] ?? "", /export type MigratedKind =[^;]*\| "chart";/);
+  assert.match(edited["packages/kit/src/elements/index.ts"] ?? "", /export const KIT_ELEMENTS = \{[^}]*\bchart\b/);
   assert.match(edited["packages/kit/src/elements/index.ts"] ?? "", /\n {2}chart: ChartProps;\n/);
   assert.match(edited["packages/kit/src/index.ts"] ?? "", /\n {2}Chart,\n/);
-  assert.match(edited["packages/sdk/src/elements/placement.ts"] ?? "", /\n {2}chart: PlacedChart;\n/);
-  const sealed = (JSON.parse(edited["scripts/kind-branches.json"] ?? "{}") as { sealed: string[] }).sealed;
-  assert.equal(sealed.at(-1), "chart");
+});
+
+test("the files a new kind changes are a registry in each package and the kit's tags, and no list of kinds", () => {
+  const { edited } = scaffoldElement("chart", read);
+  // What is read from the kit's registry needs no line of its own: the kind table, the typed placements, the sealed
+  // kinds, the reference page.
+  for (const file of [
+    "packages/kit/src/jsx/capabilities.ts",
+    "packages/sdk/src/elements/placement.ts",
+    "scripts/gen-docs.ts",
+    "scripts/kind-branches.json",
+  ])
+    assert.equal(file in edited, false, `${file} is not changed`);
 });
 
 test("it refuses a kind there is already, and a name that is not a kind's", () => {

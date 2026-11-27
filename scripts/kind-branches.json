@@ -37,7 +37,6 @@
     "packages/kit/src/jsx/shaders.ts: p.kind === \"transition\"",
     "packages/sdk/src/inspect/sync.ts: e.kind === \"marker\""
   ],
-  "sealed": ["title", "shape", "svg", "sticker", "layer", "adjustment"],
   "allow": [
     {
       "file": "packages/kit/src/theme/schema.ts",

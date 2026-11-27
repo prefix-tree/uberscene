@@ -1,5 +1,5 @@
 // Starts a new element kind: `pnpm new:element chart` writes the kind's folder in the kit, the SDK and the player from
-// templates, and adds it to each registry and to the lists that still name every kind. What it starts is an overlay
+// templates, and adds it to each package's registry and to the kit's table of tags. What it starts is an overlay
 // drawn as DOM (a labelled box), which type-checks and passes the conformance suite as it stands; the author then
 // writes its props and its drawing.
 //
@@ -99,6 +99,8 @@ export interface ${Tag}Element extends KitElement<"${kind}", "dom"> {
 
 export const ${kind}: ${Tag}Element = {
   kind: "${kind}",
+  summary: "Say here, in a sentence, what a ${kind} is.",
+  group: "Text and graphics",
   schema: ${kind}Schema,
   traits: overlayTraits(),
   sample: \`<${Tag} id="sample" start={0} duration={3} box={{ x: 960, y: 540, width: 480, height: 270, origin: "center" }} />\`,
@@ -162,19 +164,22 @@ export const ${kind}Dom: DomDrawingOf<"${kind}"> = {
   };
 
   const edits: Record<string, readonly Edit[]> = {
-    // The kit: its props, its place in the list of kinds, and its entry among the kinds with folders.
+    // The kit: its props, its place in the list of kinds, and its entry among the kinds with folders. The kind table,
+    // the key paths, the typed placements, the sealed kinds and the reference page all read from these.
     [kitIndex]: [
       after(
         `import type { KitElement } from "./element";\n`,
         `import { ${kind} } from "./${kind}";\nimport type { ${kind}Schema } from "./${kind}/schema";\n`,
       ),
-      after(`export type { KitElement } from "./element";\n`, `export type { ${Tag}Element } from "./${kind}";\n`),
+      after(
+        `export type { ElementGroup, KitElement } from "./element";\n`,
+        `export type { ${Tag}Element } from "./${kind}";\n`,
+      ),
       before(
         `/**\n * Every kind, with the props`,
         `/** The props of a \`<${Tag}>\`, as its schema parses them. */\nexport interface ${Tag}Props extends z.output<typeof ${kind}Schema> {}\n`,
       ),
       after(`  layer: LayerProps;\n`, `  ${kind}: ${Tag}Props;\n`),
-      lastIn("MigratedKind", /(export type MigratedKind =)([^;]+)(;)/, `"${kind}"`, " | "),
       lastIn("KIT_ELEMENTS", /(export const KIT_ELEMENTS = \{)([^}]*)(\} satisfies)/, kind),
     ],
     // The tag a file writes, and the table of tags.
@@ -192,14 +197,6 @@ export const ${kind}Dom: DomDrawingOf<"${kind}"> = {
     "packages/sdk/src/elements/index.ts": [
       after(`import type { SdkElement } from "./element";\n`, `import { ${kind} } from "./${kind}";\n`),
       lastIn("SDK_ELEMENTS", registry("SDK_ELEMENTS"), kind),
-    ],
-    // Its placement, typed by its kind.
-    "packages/sdk/src/elements/placement.ts": [
-      after(
-        `export interface PlacedLayer extends Parsed<"layer"> {}\n`,
-        `/** A \`${kind}\` whose props parsed. */\nexport interface Placed${Tag} extends Parsed<"${kind}"> {}\n`,
-      ),
-      after(`  layer: PlacedLayer;\n`, `  ${kind}: Placed${Tag};\n`),
     ],
     "packages/player/src/elements/index.ts": [
       after(`import type { PlayerElement } from "./element";\n`, `import { ${kind} } from "./${kind}";\n`),
@@ -220,15 +217,6 @@ export const ${kind}Dom: DomDrawingOf<"${kind}"> = {
         `${kind}: { kind: "${kind}", icon: Shapes }`,
       ),
     ],
-    // Its reference page, and its name kept to its folders.
-    "scripts/gen-docs.ts": [
-      lastIn(
-        `"Text and graphics" in ELEMENT_DOCS`,
-        /("Text and graphics": \[)([\s\S]*?)(\n {2}\],)/,
-        `    ["${Tag}", "Say here, in a sentence, what a ${kind} is."]`,
-      ),
-    ],
-    "scripts/kind-branches.json": [lastIn(`"sealed"`, /("sealed": \[)([^\]]*)(\])/, `"${kind}"`)],
   };
 
   const edited: Record<string, string> = {};
@@ -267,9 +255,9 @@ function main(): void {
     [
       "",
       `A ${kind} is a labelled box for now. Next:`,
-      `  1. its props, in packages/kit/src/elements/${kind}/schema.ts, and its sample beside it;`,
+      `  1. its props, in packages/kit/src/elements/${kind}/schema.ts, with its sentence and its sample beside it;`,
       `  2. its drawing, in packages/player/src/elements/${kind}/;`,
-      "  3. its sentence in scripts/gen-docs.ts, then `pnpm docs:gen` and `pnpm registry:build`;",
+      "  3. `pnpm docs:gen` and `pnpm registry:build`;",
       "  4. `pnpm check`: the conformance suite runs its sample through every package.",
     ].join("\n"),
   );

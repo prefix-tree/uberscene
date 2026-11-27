@@ -24,16 +24,17 @@
 // A match that is not an element's kind though its type is all kind names (a shader's `"effect" | "transition"`, a
 // parsed time ref's) is named once in the budget file's `ignore`, as "file: matched text".
 //
-// Sealed kinds (the budget file's `sealed`) are stricter: a sealed kind may be named only in its own folders. Any
+// Sealed kinds are stricter: a sealed kind may be named only in its own folders. They are the kinds that have folders
+// (the kit's `KIT_ELEMENTS`), so a kind is sealed the moment it gets them, and no list of them is kept here. Any
 // comparison or list that names one, and any place its name is written where a kind is expected (`placed(p, "title")`,
 // `capabilitiesOf("shape")`), outside `packages/*/src/elements/`, the editor's `registry/editor/elements.tsx` and the
-// files the budget's `allow` lists with a reason, fails outright, whatever the counts. A kind is sealed once it has
-// its folders, so nothing outside them learns its name again.
+// files the budget's `allow` lists with a reason, fails outright, whatever the counts.
 import { readFileSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
 import ts from "typescript";
 
+import { KIT_ELEMENTS } from "../packages/kit/src/elements";
 import { KIND_CAPABILITIES } from "../packages/kit/src/jsx/capabilities";
 import { DERIVED_KINDS } from "../packages/kit/src/jsx/elements";
 
@@ -79,8 +80,6 @@ type Counts = Record<string, Record<What, number>>;
 interface Budget {
   readonly counts: Counts;
   readonly ignore: readonly string[];
-  /** Kinds that may be named only in their own folders. */
-  readonly sealed?: readonly string[];
   /** Files outside those folders that may name a sealed kind, each with why. */
   readonly allow?: readonly { readonly file: string; readonly why: string }[];
 }
@@ -88,7 +87,8 @@ interface Budget {
 const budget = JSON.parse(readFileSync(budgetFile, "utf8")) as Budget;
 const ignored = new Set(budget.ignore);
 const usedIgnores = new Set<string>();
-const sealed = new Set(budget.sealed ?? []);
+/** Kinds that may be named only in their own folders: every kind that has them. */
+const sealed = new Set<string>(Object.keys(KIT_ELEMENTS));
 const allowed = new Set((budget.allow ?? []).map((a) => a.file));
 const usedAllows = new Set<string>();
 /** Where a sealed kind is named outside its folders: `file:line  what was written`. */
@@ -287,15 +287,9 @@ if (process.argv.includes("--update")) {
   const next: Budget = {
     counts,
     ignore: budget.ignore.filter((key) => usedIgnores.has(key)),
-    sealed: [...sealed],
     allow: (budget.allow ?? []).filter((a) => usedAllows.has(a.file)),
   };
-  // The short list of sealed kinds on one line, as the formatter keeps it.
-  const text = JSON.stringify(next, null, 2).replace(
-    /"sealed": \[\s*([^\]]*?)\s*\]/,
-    (_all, inner: string) => `"sealed": [${inner.split(/,\s*/).join(", ")}]`,
-  );
-  writeFileSync(budgetFile, `${text}\n`);
+  writeFileSync(budgetFile, `${JSON.stringify(next, null, 2)}\n`);
   console.log("\nscripts/kind-branches.json written.");
 } else if (under.length > 0 || stale.length > 0) {
   const lines = [...under.map((line) => `below the budget: ${line}`), ...stale];
