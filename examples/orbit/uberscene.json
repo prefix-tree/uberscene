@@ -5,7 +5,7 @@
       "duration": 34,
       "audio": {
         "sampleRate": 48000,
-        "channels": 1,
+        "channels": 2,
         "streams": 1
       },
       "id": "song",

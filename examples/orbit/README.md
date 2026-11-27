@@ -55,8 +55,8 @@ npx uberscene inspect examples/orbit/video.tsx --events --in 10..12.6 --kinds be
 …
 ```
 
-The beats are a grid: the music is made by a script on a clock and added with `--bpm 120 --first-beat 0`, so beat N
-is at exactly N / 2 seconds. [Sync](../../docs/guide/sync.md) explains every field.
+The beats are a grid: the music is a Strudel score (`score.ts`) on a clock of a bar a cycle, added with `--bpm 120
+--first-beat 0`, so beat N is at exactly N / 2 seconds. [Sync](../../docs/guide/sync.md) explains every field.
 
 ## Rebuild it
 
@@ -72,7 +72,7 @@ It needs ffmpeg with libvpx-vp9 and dav1d. It runs three scripts:
 | Script | What it does |
 |---|---|
 | `scripts/fetch.ts` | Reads five timelapses from Wikimedia Commons, trimmed to the seconds used, and writes them to `media/` as VP9 without sound. It adds them to `uberscene.json` and writes `CREDITS.md`. ffmpeg seeks each one to the seconds used. |
-| `scripts/music.ts` | Synthesizes `media/song.wav` (pad, arpeggio, drums, bass, riser) and adds it with its grid. |
+| `scripts/music.ts` | Renders `score.ts`, the music as a Strudel score (pad, arpeggio, drums, bass, riser), to `media/song.wav` with `renderStrudel`, masters it to -14 LUFS and adds it with its grid. Strudel is fetched on first use (AGPL-3.0-or-later, not part of UberScene). |
 | `scripts/flashes.ts` | Finds the lightning in `media/storms.webm` and writes `lightning.ts`. |
 
 `examples/tiktok` renders it as two posts too: the film alone, and the film over its own source
@@ -86,4 +86,5 @@ It needs ffmpeg with libvpx-vp9 and dav1d. It runs three scripts:
 - Export: -14.0 LUFS integrated, peak -3.6 dBFS. The drop is 4 LU louder than the intro and the outro.
 
 The footage is public domain, from NASA's crew Earth observations and its Scientific Visualization Studio
-([CREDITS.md](CREDITS.md)). The music is made here and shares the repository's licence.
+([CREDITS.md](CREDITS.md)). The music is written here as a Strudel score and shares the repository's licence; Strudel,
+which renders it, is fetched on first use and is not part of the repository.

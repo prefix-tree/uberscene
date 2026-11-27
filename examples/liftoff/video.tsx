@@ -135,7 +135,7 @@ export default function Video(props: z.infer<typeof schema>) {
   return (
     <Composition fps={30} width={W} height={H} background={{ type: "color", color: "#000000" }}>
       <Track id="music" layout="free" role="music">
-        <Audio id="song" src="asset:song" start={0} in="beat:0" out="beat:79.end" />
+        <Audio id="song" src="asset:song" start={0} in="beat:0" out="beat:83.end" />
       </Track>
 
       <Track id="shots" layout="free">

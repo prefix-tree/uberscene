@@ -1,6 +1,6 @@
 # Credits
 
-The footage, from Wikimedia Commons, written by `scripts/fetch.ts`. The music (`scripts/music.ts`) is synthesized here and shares the repository's licence.
+The footage, from Wikimedia Commons, written by `scripts/fetch.ts`. The music is a Strudel score (`score.ts`), written here and shared under the repository's licence; Strudel, which renders it, is fetched on first use and is not part of the repository.
 
 | Asset | File | What it shows | Author | Licence |
 |---|---|---|---|---|

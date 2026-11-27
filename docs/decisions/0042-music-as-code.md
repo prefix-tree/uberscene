@@ -1,6 +1,10 @@
 # 0042. Music as code: a Strudel score is an audio source
 
-> Status: proposed. Decides [#249](https://github.com/prefix-tree/uberscene/issues/249); the element, the moments and
+> Status: accepted; the renderer is built. `renderStrudel` in `packages/render/src/strudel/` fetches, bundles and
+> renders as below (the bundling is done by esbuild installed in the cache beside Strudel, since Vite is only a dev
+> dependency), and `examples/liftoff` and `examples/orbit` make their music with it. The `<Audio src={score}>` element,
+> the moments and the hook are still to come in #252.
+> Decides [#249](https://github.com/prefix-tree/uberscene/issues/249); the element, the moments and
 > the hook are built in [#252](https://github.com/prefix-tree/uberscene/issues/252). Follows
 > [0040](./0040-a-3d-scene-is-a-clip-source.md): a score plays through `<Audio>` the way a scene plays through
 > `<Clip>`. Fetches its engine at run time the way [0039](./0039-a-person-cut-out-of-the-background.md) fetches its
