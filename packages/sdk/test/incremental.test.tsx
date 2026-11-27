@@ -63,6 +63,9 @@ function logFor(tree: CollectedTree): PatchLog {
   });
 }
 
+/** How many rows of random patches each case runs: `INCREMENTAL_ROWS=60` for a longer look after a change to a cache. */
+const ROWS = Array.from({ length: Number(process.env.INCREMENTAL_ROWS ?? 6) }, (_, i) => i + 1);
+
 /** A small seeded random, so a failure names a row that can be run again. */
 function random(seed: number): () => number {
   let s = seed >>> 0;
@@ -327,7 +330,7 @@ describe.each([
   ["29.97", false],
   [60, true],
 ] as const)("cached and from nothing: random patches at %s fps (captions: %s)", (fps, captions) => {
-  it.each([1, 2, 3, 4, 5, 6])("agree after every patch of row %i, and after taking patches back", (seed) => {
+  it.each(ROWS)("agree after every patch of row %i, and after taking patches back", (seed) => {
     const tree = rich(fps, captions);
     const log = logFor(tree);
     const next = random(seed * 7919 + Number.parseFloat(String(fps)) * 31);
@@ -403,7 +406,7 @@ describe("cached and from nothing: edits through the executor on the large proje
     assets: { ...sampleManifest.assets, bed: { ...sampleManifest.assets.bed, duration: 600 } },
   } as AssetManifest;
 
-  it.each([1, 2, 3])("agree after every edit, undo and redo of row %i", (seed) => {
+  it.each(ROWS.slice(0, Math.max(3, ROWS.length / 2)))("agree after every edit, undo and redo of row %i", (seed) => {
     const tree = collectModule(buildLarge(40));
     let ids = 0;
     const exec = new Executor({ tree, manifest, log: logFor(tree), now: () => 0, newActionId: () => `a${++ids}` });

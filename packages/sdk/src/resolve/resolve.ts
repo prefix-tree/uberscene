@@ -363,18 +363,24 @@ function shifted(old: Pending, ticks: number, by: Time): Pending {
   const p = pendingOf(old.node, old.track, old.parent, old.props, old.errors);
   p.source = old.source;
   p.duration = old.duration;
-  p.start = (old.start as Time).plus(by);
+  const start = (old.start as Time).plus(by);
+  p.start = start;
   p.between = old.between;
   const was = old.settled?.placed;
-  (p as { settled: Pending["settled"] }).settled =
+  // The element's placement starts where the element does, and it ends where its placement's range does.
+  const placement =
     was && was.far < LIMIT && was.far + ticks < LIMIT
+      ? { ...was.placement, range: rangeOf(start, was.placement.range.duration) }
+      : undefined;
+  (p as { settled: Pending["settled"] }).settled =
+    was && placement
       ? {
           placed: {
-            placement: moved(was.placement, by),
-            inside: was.inside.map((inner) => moved(inner, by)),
+            placement,
+            inside: was.inside.length > 0 ? was.inside.map((inner) => moved(inner, by)) : was.inside,
             errors: was.errors,
             far: was.far + ticks,
-            ends: was.ends ? was.ends.plus(by) : null,
+            ends: was.ends ? placement.range.end : null,
             // The followers among them are these placements, moved: found again when they are put back.
             ...(was.found === null ? { found: null } : {}),
           },
