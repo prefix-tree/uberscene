@@ -2,3 +2,4 @@ media/*.webm
 media/*.wav
 .uberscene/
 out/
+media/*.part
