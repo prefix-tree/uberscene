@@ -52,7 +52,7 @@ export function buildAudioPlan(
   for (const track of state.tracks) {
     if (track.hidden || track.muted || (anySolo && !track.solo)) continue;
     for (const p of [...state.items.values()].filter(
-      (q) => q.track === track.id && q.parent !== null && q.kind !== "transition",
+      (q) => q.track === track.id && q.parent !== null && capabilitiesOf(q.kind).sequenceRole !== "between",
     )) {
       if (!capabilitiesOf(p.kind).audio) continue;
       if (p.end <= from || p.start >= to) continue;

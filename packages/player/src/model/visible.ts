@@ -26,7 +26,7 @@ export function visiblePlacements(state: ResolvedState, t: number): VisibleItem[
     const roles = transitionRoles(state, track, t);
     for (const placement of trackItems(state, track)) {
       const caps = capabilitiesOf(placement.kind);
-      if (!caps.visual || !caps.timed || placement.kind === "transition") continue;
+      if (!caps.visual || !caps.timed || caps.sequenceRole === "between") continue;
       if (!isVisibleAt(placement, t, state.composition.duration)) continue;
       const role = roles.get(placement.id);
       out.push({
