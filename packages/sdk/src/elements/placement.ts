@@ -34,31 +34,57 @@ export interface Unparsed extends Base {
   readonly props: Readonly<Record<string, unknown>>;
 }
 
+/** A `composition` whose props parsed. */
 export interface PlacedComposition extends Parsed<"composition"> {}
+/** A `camera` whose props parsed. */
 export interface PlacedCamera extends Parsed<"camera"> {}
+/** A `track` whose props parsed. */
 export interface PlacedTrack extends Parsed<"track"> {}
+/** A `clip` whose props parsed. */
 export interface PlacedClip extends Parsed<"clip"> {}
+/** A `audio` whose props parsed. */
 export interface PlacedAudio extends Parsed<"audio"> {}
+/** A `gap` whose props parsed. */
 export interface PlacedGap extends Parsed<"gap"> {}
+/** A `transition` whose props parsed. */
 export interface PlacedTransition extends Parsed<"transition"> {}
+/** A `title` whose props parsed. */
 export interface PlacedTitle extends Parsed<"title"> {}
+/** A `shape` whose props parsed. */
 export interface PlacedShape extends Parsed<"shape"> {}
+/** A `svg` whose props parsed. */
 export interface PlacedSvg extends Parsed<"svg"> {}
+/** A `sticker` whose props parsed. */
 export interface PlacedSticker extends Parsed<"sticker"> {}
+/** A `captions` whose props parsed. */
 export interface PlacedCaptions extends Parsed<"captions"> {}
+/** A `caption` whose props parsed. */
 export interface PlacedCaption extends Parsed<"caption"> {}
+/** A `marker` whose props parsed. */
 export interface PlacedMarker extends Parsed<"marker"> {}
+/** A `adjustment` whose props parsed. */
 export interface PlacedAdjustment extends Parsed<"adjustment"> {}
+/** A `mask` whose props parsed. */
 export interface PlacedMask extends Parsed<"mask"> {}
+/** A `nested` whose props parsed. */
 export interface PlacedNested extends Parsed<"nested"> {}
+/** A `multicam` whose props parsed. */
 export interface PlacedMulticam extends Parsed<"multicam"> {}
+/** A `angle` whose props parsed. */
 export interface PlacedAngle extends Parsed<"angle"> {}
+/** A `cut` whose props parsed. */
 export interface PlacedCut extends Parsed<"cut"> {}
+/** A `layer` whose props parsed. */
 export interface PlacedLayer extends Parsed<"layer"> {}
+/** A `effect` whose props parsed. */
 export interface PlacedEffect extends Parsed<"effect"> {}
+/** A `keyframe` whose props parsed. */
 export interface PlacedKeyframe extends Parsed<"keyframe"> {}
+/** A `generator` whose props parsed. */
 export interface PlacedGenerator extends Parsed<"generator"> {}
+/** A `speedKey` whose props parsed. */
 export interface PlacedSpeedKey extends Parsed<"speedKey"> {}
+/** A `freeze` whose props parsed. */
 export interface PlacedFreeze extends Parsed<"freeze"> {}
 
 /** Each kind's parsed placement, by kind. */
