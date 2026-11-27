@@ -100,7 +100,7 @@ export interface ${Tag}Element extends KitElement<"${kind}", "dom"> {
 export const ${kind}: ${Tag}Element = {
   kind: "${kind}",
   schema: ${kind}Schema,
-  capabilities: overlayTraits(),
+  traits: overlayTraits(),
   sample: \`<${Tag} id="sample" start={0} duration={3} box={{ x: 960, y: 540, width: 480, height: 270, origin: "center" }} />\`,
 };
 `,
@@ -186,11 +186,6 @@ export const ${kind}Dom: DomDrawingOf<"${kind}"> = {
       ),
       after(`  readonly Layer: typeof Layer;\n`, `  readonly ${Tag}: typeof ${Tag};\n`),
       after(`  Cut,\n  Layer,\n`, `  ${Tag},\n`),
-    ],
-    // Its row in the kind table, and its place among what a track holds.
-    "packages/kit/src/jsx/capabilities.ts": [
-      after(`      "layer",\n`, `      "${kind}",\n`),
-      after(`  layer: KIT_ELEMENTS.layer.capabilities,\n`, `  ${kind}: KIT_ELEMENTS.${kind}.capabilities,\n`),
     ],
     // What a video file imports.
     "packages/kit/src/index.ts": [after(`  Layer,\n`, `  ${Tag},\n`)],

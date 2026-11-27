@@ -27,7 +27,6 @@ const EDITED = [
   "packages/editor/registry/editor/elements.tsx",
   "packages/kit/src/elements/index.ts",
   "packages/kit/src/index.ts",
-  "packages/kit/src/jsx/capabilities.ts",
   "packages/kit/src/jsx/elements.ts",
   "packages/player/src/elements/dom.tsx",
   "packages/player/src/elements/index.ts",
@@ -71,7 +70,7 @@ function errorsWith(project: string, made: ReturnType<typeof scaffoldElement>): 
   });
 }
 
-test("a new kind is six new files and eleven changed ones, and they compile", () => {
+test("a new kind is six new files and ten changed ones, and they compile", () => {
   const made = scaffoldElement("chart", read);
   assert.deepEqual(Object.keys(made.created).sort(), CREATED);
   assert.deepEqual(Object.keys(made.edited).sort(), EDITED);
