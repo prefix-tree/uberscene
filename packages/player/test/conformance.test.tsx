@@ -13,7 +13,7 @@ import { buildFramePlan, visiblePlacements } from "./internal";
 // folder of its own is drawn from its sample, on the plane the kit says it stands on.
 
 /** The plane the kit says a kind stands on, as any plane. */
-const planeOf = (kind: MigratedKind): DrawPlane => KIT_ELEMENTS[kind].capabilities.plane;
+const planeOf = (kind: MigratedKind): DrawPlane => KIT_ELEMENTS[kind].traits.plane;
 
 describe.each(SAMPLE_KINDS)("a %s", (kind) => {
   const file = sampleFile(kind);

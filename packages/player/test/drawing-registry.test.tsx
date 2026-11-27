@@ -45,7 +45,7 @@ describe("the drawing tables", () => {
     expect(sorted(Object.keys(PLAYER_ELEMENTS))).toEqual(sorted(migrated));
     const on = (...planes: string[]) =>
       Object.values(KIT_ELEMENTS)
-        .filter((element) => planes.includes(element.capabilities.plane))
+        .filter((element) => planes.includes(element.traits.plane))
         .map((element) => element.kind);
     // On the DOM plane: a DOM drawing in the folder, which the table the DOM layer asks then holds.
     const dom = on("dom", "both");
