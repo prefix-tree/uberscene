@@ -1,5 +1,6 @@
-// Renders each example film twice for TikTok, 1080x1920: `out/<name>-code.mp4`, the film on top with its source
-// lighting up below (frame.tsx), and `out/<name>-post.mp4`, just the film (post.tsx).
+// Renders each example film three times for TikTok, 1080x1920: `out/<name>-code.mp4`, the film on top with its source
+// lighting up below (frame.tsx); `out/<name>-reveal.mp4`, the film full screen that splits for a stretch to show the
+// code playing it and then fills the frame again (reveal.tsx); and `out/<name>-post.mp4`, just the film (post.tsx).
 //
 //   pnpm --filter @uberscene/example-tiktok render            every film
 //   pnpm --filter @uberscene/example-tiktok render reel hero  some of them
@@ -11,6 +12,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 
 import { addAsset, checkLayout, directoryResolver, formatLayout, loadVideo, renderVideo } from "@uberscene/render";
+import { timelineBeats } from "@uberscene/sdk";
 
 const here = import.meta.dirname;
 const examples = join(here, "..");
@@ -24,6 +26,11 @@ interface Film {
   readonly file: string;
   /** What makes its media, when it is not in the repository. */
   readonly needs?: string;
+  /**
+   * When the reveal shows the code and when the film takes the frame back, in seconds of the film. Left out: the
+   * middle third, each end moved to the nearest beat when the film has music.
+   */
+  readonly reveal?: readonly [number, number];
 }
 
 const FILMS: Record<string, Film> = {
@@ -34,13 +41,16 @@ const FILMS: Record<string, Film> = {
   hero: { file: "showcase/hero.tsx" },
   "snake-heart": { file: "shorts/snake-heart.tsx" },
   "game-lighting": { file: "shorts/game-lighting.tsx" },
-  orbit: { file: "orbit/video.tsx", needs: "pnpm --filter @uberscene/example-orbit prepare-media" },
+  // The code comes up for the build, as the lightning strikes, and the film takes the frame back on the drop.
+  orbit: { file: "orbit/video.tsx", needs: "pnpm --filter @uberscene/example-orbit prepare-media", reveal: [8, 16] },
 };
 
 /** Elements whose line lights up while they are on screen; sound and structure do not. */
 const SHOWN = new Set(["title", "clip", "shape", "layer", "svg", "sticker", "captions", "nested"]);
 
 const only = process.argv.slice(2);
+/** `POSTS=reveal,post` renders only those posts. */
+const kinds = process.env.POSTS?.split(",");
 for (const [name, film] of Object.entries(FILMS)) {
   if (only.length > 0 && !only.includes(name)) continue;
   const file = join(examples, film.file);
@@ -87,12 +97,15 @@ for (const [name, film] of Object.entries(FILMS)) {
   const length = round(video.state.composition.duration);
   const resolver = directoryResolver(out, JSON.parse(readFileSync(manifest, "utf8")), { [id]: rendered });
 
-  // 4. The two posts.
+  // 4. The three posts.
   const props = { code, lit, film: id, width, height, length, file: basename(file), hook: "This video is code." };
+  const [split, back] = film.reveal ?? middleThird(video.state, length);
   for (const [kind, page, extra] of [
     ["code", "frame.tsx", props],
+    ["reveal", "reveal.tsx", { film: id, width, height, length, code, lit, file: basename(file), split, back }],
     ["post", "post.tsx", { film: id, width, height, length }],
   ] as const) {
+    if (kinds && !kinds.includes(kind)) continue;
     const post = await loadVideo(join(here, page), { manifest, props: extra });
     if (post.state.errors.length > 0)
       throw new Error(`${name}-${kind}: ${post.state.errors.map((e) => `${e.id}: ${e.message}`).join("; ")}`);
@@ -107,7 +120,7 @@ for (const [name, film] of Object.entries(FILMS)) {
     process.stdout.write(
       `${name}-${kind}: ${r.frames} frames, ${r.width}x${r.height}, ${(r.wallMs / 1000).toFixed(0)} s → ${target}\n`,
     );
-    if (kind === "code") {
+    if (kind !== "post") {
       const layout = await checkLayout({
         state: post.state,
         media: resolver,
@@ -118,6 +131,14 @@ for (const [name, film] of Object.entries(FILMS)) {
       if (layout.issues.length > 0) process.stderr.write(formatLayout(layout));
     }
   }
+}
+
+/** The middle third of a film, each end moved to the nearest beat of its music when it has some. */
+function middleThird(state: Parameters<typeof timelineBeats>[0], length: number): [number, number] {
+  const beats = timelineBeats(state).map((b) => b.time);
+  const snap = (t: number): number =>
+    beats.length === 0 ? round(t) : beats.reduce((best, b) => (Math.abs(b - t) < Math.abs(best - t) ? b : best));
+  return [snap(length / 3), snap((2 * length) / 3)];
 }
 
 function round(n: number): number {

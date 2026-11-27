@@ -29,6 +29,7 @@ const C = {
   punct: "#89ddff",
   lit: "rgba(255, 196, 0, 0.16)",
   litMark: "#ffc400",
+  litStrong: "rgba(255, 196, 0, 0.3)",
 };
 
 const KEYWORDS = new Set([
@@ -118,6 +119,7 @@ export function CodeView({
   size = 20,
   hold = 0.3,
   fade = 0,
+  strong = false,
 }: {
   code: string;
   lit: readonly LitLine[];
@@ -133,6 +135,8 @@ export function CodeView({
   hold?: number;
   /** Pixels at the bottom of the window that fade into the page (the part a phone's UI covers). */
   fade?: number;
+  /** For a phone: the lit line stands out more, and the lines around it step back. */
+  strong?: boolean;
 }) {
   const lines = code.replace(/\s+$/, "").split("\n");
   const lead = Math.round(size * 1.45);
@@ -204,13 +208,19 @@ export function CodeView({
                 height: lead,
                 display: "flex",
                 alignItems: "center",
-                background: lit ? C.lit : "transparent",
+                background: lit ? (strong ? C.litStrong : C.lit) : "transparent",
+                opacity: strong && on.size > 0 && !lit ? 0.45 : 1,
                 font: `500 ${size}px ${MONO}`,
                 whiteSpace: "pre",
               }}
             >
               <span
-                style={{ width: 4, flexShrink: 0, alignSelf: "stretch", background: lit ? C.litMark : "transparent" }}
+                style={{
+                  width: strong ? 8 : 4,
+                  flexShrink: 0,
+                  alignSelf: "stretch",
+                  background: lit ? C.litMark : "transparent",
+                }}
               />
               <span
                 style={{

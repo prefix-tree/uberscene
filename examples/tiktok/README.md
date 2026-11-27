@@ -5,6 +5,10 @@ Each film becomes two vertical posts, 1080x1920:
 - **`<name>-code.mp4`**: "This video is code." The film plays on top, and its own source scrolls below in an editor
   window, with the line of whatever is on screen lit as it appears. It ends on a card with the project's name and
   address. (`frame.tsx`, with the window in `code-view.tsx`.)
+- **`<name>-reveal.mp4`**: the film full screen, then for a stretch it slides up into the top of the frame and its own
+  source rises into the bottom, lighting each line as what it writes comes on screen; then the code drops away and the
+  film fills the frame again. For a film cut to music the stretch runs from one section to the next (orbit: the code
+  comes up for the build and goes on the drop), so both moves land on beats. (`reveal.tsx`.)
 - **`<name>-post.mp4`**: just the film. A tall film fills the frame; a wide one sits across it over a blurred copy of
   itself, so there are no bars. (`post.tsx`.)
 
