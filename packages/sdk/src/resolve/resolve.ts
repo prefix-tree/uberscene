@@ -610,8 +610,8 @@ function compute(
       const ids: string[] = [];
       for (const key of made) {
         const id = `${camera.id}.push.${key.field}.${count[key.field]++}`;
+        // A key's props, as a key written in the file resolves to: what it sets, when and how. Its id is the item's.
         const props = {
-          id,
           property: `camera.${key.field}`,
           at: key.at,
           value: key.value,
@@ -1594,6 +1594,32 @@ function placeTrack(
   }
 }
 
+/** For a placement the resolver makes with the schema's defaults filled in: its props without them. */
+const writtenByProps = new WeakMap<object, Readonly<Record<string, unknown>>>();
+
+/**
+ * A placement's props as a file would write them. They are its props, except for an element the resolver makes and
+ * fills the schema's defaults into (a multicam's clips): those are without the defaults, so a bake writes
+ * `<Clip src in />` and not every default beside it.
+ */
+export function propsAsWritten(placement: Placement): Readonly<Record<string, unknown>> {
+  return writtenByProps.get(placement.props) ?? placement.props;
+}
+
+let madeClipDefaults: Readonly<Record<string, unknown>> | undefined;
+/** What the clip schema fills in for a clip that writes only its source: the props a clip the resolver makes takes. */
+function clipDefaults(): Readonly<Record<string, unknown>> {
+  if (!madeClipDefaults) {
+    const {
+      id: _id,
+      src: _src,
+      ...rest
+    } = SCHEMAS_BY_KIND.clip.parse({ id: "made", src: "asset:made" }) as Record<string, unknown>;
+    madeClipDefaults = rest;
+  }
+  return madeClipDefaults;
+}
+
 function placeMulticam(
   node: CollectedNode,
   p: Pending,
@@ -1627,6 +1653,11 @@ function placeMulticam(
     }
     const id = `${node.id}.${cut.node.id}`;
     const inSec = Math.max(0, cut.at - sync + Number(angle.offset ?? 0));
+    // What a file would write for this clip, and what the clip schema parses that to: the placement holds the
+    // second, defaults and all, so it reads as any other clip; a bake writes the first.
+    const written = { id, src: angle.src, in: inSec };
+    const parsed = { ...written, ...clipDefaults() };
+    writtenByProps.set(parsed, written);
     const generated: CollectedNode = {
       id,
       kind: "clip",
@@ -1635,14 +1666,14 @@ function placeMulticam(
       editable: "generated",
       lockedProps: [],
       boundProps: {},
-      props: { id, src: angle.src, in: inSec },
+      props: written,
       origin: { helper: "multicam", callerId: node.id, callIndex: 0 },
     };
     const gp: Pending = {
       node: generated,
       track: track.id,
       parent: node.id,
-      props: generated.props as Record<string, unknown>,
+      props: parsed,
       errors: [],
       start: T(cut.at),
     };
