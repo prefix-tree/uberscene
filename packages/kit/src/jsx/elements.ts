@@ -2,7 +2,7 @@ import type { ReactElement } from "react";
 import type { z } from "zod";
 
 import type { EffectParams, TransitionParams } from "../effects/registry";
-import { KIT_ELEMENTS, type Kind, type KindWith } from "../elements";
+import { KIT_ELEMENTS, type Kind, type KindWith, type ShapeElement, type TitleElement } from "../elements";
 import { capabilitiesOf } from "./capabilities";
 import { defineElement, type VocabularyComponent, type VocabularyMeta, type VocabularyProps } from "./define";
 import type { Easing, TransitionType, VideoEffectType } from "./enums";
@@ -66,10 +66,12 @@ export interface TransitionComponent extends VocabularyMeta<"transition", typeof
 }
 
 export const Transition = el("transition", transitionSchema) as unknown as TransitionComponent;
-const titleTag = tag(KIT_ELEMENTS.title);
-export const Title = titleTag as unknown as WithEffects<typeof titleTag>;
-const shapeTag = tag(KIT_ELEMENTS.shape);
-export const Shape = shapeTag as unknown as WithEffects<typeof shapeTag>;
+/** The tag's type by its element's name, so a declaration file names the schema and does not print it again. */
+type TagOf<E extends { readonly kind: Kind; readonly schema: z.ZodType }> = VocabularyComponent<E["kind"], E["schema"]>;
+const titleTag: TagOf<TitleElement> = tag(KIT_ELEMENTS.title);
+export const Title = titleTag as unknown as WithEffects<TagOf<TitleElement>>;
+const shapeTag: TagOf<ShapeElement> = tag(KIT_ELEMENTS.shape);
+export const Shape = shapeTag as unknown as WithEffects<TagOf<ShapeElement>>;
 export const Svg = el("svg", svgSchema) as unknown as WithEffects<VocabularyComponent<"svg", typeof svgSchema>>;
 export const Sticker = el("sticker", stickerSchema) as unknown as WithEffects<
   VocabularyComponent<"sticker", typeof stickerSchema>
