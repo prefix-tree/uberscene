@@ -10,7 +10,7 @@ import {
   type ShaderUniform,
   shaderFor,
 } from "@uberscene/kit/schema";
-import type { Placement, ResolvedState } from "@uberscene/sdk/resolver";
+import { lengthSeconds, type Placement, type ResolvedState } from "@uberscene/sdk/resolver";
 
 import { cssPasses } from "./css-passes";
 import { childFilter, paramsAt } from "./effects";
@@ -202,7 +202,7 @@ export function transitionPass(state: ResolvedState, role: TransitionRole): Tran
     params: (x.props.params ?? {}) as Readonly<Record<string, unknown>>,
     uniforms: def.uniforms,
     progress: role.progress,
-    time: role.progress * x.duration,
+    time: role.progress * lengthSeconds(x),
     role: role.role,
     paired: x.between !== undefined,
   };

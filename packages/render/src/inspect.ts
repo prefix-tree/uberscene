@@ -4,7 +4,6 @@ import type { Knob } from "@uberscene/kit";
 import {
   capabilitiesOf,
   type ElementBox,
-  elapsedSeconds,
   frameStartSeconds,
   rateLabel,
   round3,
@@ -26,14 +25,18 @@ import {
   EVENT_KINDS,
   type EventKind,
   type EventRow,
+  endSeconds,
   followOf,
+  lengthSeconds,
   listenRange,
   lookupAsset,
   type Moment,
   parseMoments,
   type ResolvedState,
   resolveMoments,
+  secondsSinceStart,
   spokenWords,
+  startSeconds,
   type TimelineRows,
   timelineEvents,
   timelineRows,
@@ -106,7 +109,9 @@ function placedAt(
   t: number,
 ): { x: number; y: number } {
   const space = spaceOf(state, p, t);
-  const box = animatedBox(p.props.box as never, children, t - p.start) as { x?: unknown; y?: unknown } | undefined;
+  const box = animatedBox(p.props.box as never, children, secondsSinceStart(p, t)) as
+    | { x?: unknown; y?: unknown }
+    | undefined;
   const x = typeof box?.x === "number" ? box.x : space.frame.width / 2;
   const y = typeof box?.y === "number" ? box.y : space.frame.height / 2;
   const m = space.matrix;
@@ -123,7 +128,7 @@ export function describeAt(state: ResolvedState, moment: Moment): MomentView {
   for (const { placement: p, track, children, transition } of visiblePlacements(state, t)) {
     // A clip at the very end of the transition it leaves through draws nothing.
     if (transition?.role === "out" && transition.progress >= 1) continue;
-    const rel = elapsedSeconds(t, p.start);
+    const rel = secondsSinceStart(p, t);
     const transform = restless(animatedTransform(p.props.transform as never, children, rel) as Record<string, unknown>);
     const box = placed(animatedBox(p.props.box as never, children, rel));
     const text = p.kind === "title" ? state.tree.byId.get(p.id)?.text : undefined;
@@ -134,7 +139,7 @@ export function describeAt(state: ResolvedState, moment: Moment): MomentView {
       track: track.id,
       ...(track.camera !== undefined ? { camera: true as const } : {}),
       ...(follow !== undefined ? { follow, placedAt: placedAt(state, p, children, t) } : {}),
-      progress: round3(p.duration > 0 ? Math.min(1, Math.max(0, rel / p.duration)) : 0),
+      progress: round3(lengthSeconds(p) > 0 ? Math.min(1, Math.max(0, rel / lengthSeconds(p))) : 0),
       ...(p.source ? { sourceTime: round3(placementSourceTime(p, children, t)) } : {}),
       ...(text ? { text } : {}),
       ...(box ? { box } : {}),
@@ -157,17 +162,20 @@ export function describeAt(state: ResolvedState, moment: Moment): MomentView {
     for (const p of state.items.values()) {
       if (p.track !== track.id || p.parent === null || !capabilitiesOf(p.kind).audio) continue;
       // In ticks, as the mixer and the player count: a sound plays from its start up to its end.
-      if (!within(p.start, p.end) || !p.source) continue;
+      if (!within(startSeconds(p), endSeconds(p)) || !p.source) continue;
       const asset = lookupAsset(state.manifest, p.source.asset);
       if (!asset || asset.kind === "image" || (asset.kind === "video" && !asset.audio)) continue;
-      const gain = envelopeAt(buildGainEnvelope(p, track, state, p.start, p.end), t, 1);
+      const gain = envelopeAt(buildGainEnvelope(p, track, state, startSeconds(p), endSeconds(p)), t, 1);
       heard.push({ id: p.id, track: track.id, asset: asset.id, gain: Math.round(gain * 100) / 100 });
     }
   }
 
   const word = spokenWords(state).find((w) => within(w.start, w.end));
   const caption = [...state.items.values()].find(
-    (p) => p.kind === "caption" && state.items.get(p.parent ?? "")?.kind === "captions" && within(p.start, p.end),
+    (p) =>
+      p.kind === "caption" &&
+      state.items.get(p.parent ?? "")?.kind === "captions" &&
+      within(startSeconds(p), endSeconds(p)),
   );
   const view = cameraValuesAt(state, t);
   return {

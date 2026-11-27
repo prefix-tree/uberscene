@@ -1,5 +1,6 @@
 import { readTimeNeeded, round3, titleWords } from "@uberscene/kit/schema";
 import type { ResolvedState } from "@uberscene/sdk";
+import { endSeconds, lengthSeconds, startSeconds } from "@uberscene/sdk";
 
 /** A title on screen for less time than its words take to read. Times are composition seconds, rounded. */
 export interface ReadTimeIssue {
@@ -31,20 +32,20 @@ export function checkReadTime(
   const to = window.to ?? state.composition.duration;
   const out: ReadTimeIssue[] = [];
   for (const p of state.items.values()) {
-    if (p.kind !== "title" || p.end <= from || p.start >= to) continue;
+    if (p.kind !== "title" || endSeconds(p) <= from || startSeconds(p) >= to) continue;
     const words = titleWords(state.tree.byId.get(p.id)?.text ?? "").length;
     if (words === 0) continue;
     const animation = p.props.animation as { type: string; in?: number; stagger?: number } | undefined;
     const needs = round3(readTimeNeeded(words, animation));
-    const seconds = round3(p.end - p.start);
+    const seconds = round3(lengthSeconds(p));
     if (needs - seconds <= frame) continue;
     const reveal =
       animation?.type === "typewriter" ? " typed in" : animation?.type === "wordByWord" ? " shown word by word" : "";
     out.push({
       id: p.id,
       kind: "title",
-      from: round3(p.start),
-      to: round3(p.end),
+      from: round3(startSeconds(p)),
+      to: round3(endSeconds(p)),
       seconds,
       needs,
       words,

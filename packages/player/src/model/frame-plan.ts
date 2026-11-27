@@ -1,13 +1,18 @@
 import {
   type BlendMode,
   type ElementBox,
-  elapsedSeconds,
   type FitMode,
   MASK_TYPES,
   TRANSITION_TYPES,
   type Transform,
 } from "@uberscene/kit/schema";
-import { type AssetEntry, lookupAsset, type Placement, type ResolvedState } from "@uberscene/sdk/resolver";
+import {
+  type AssetEntry,
+  lookupAsset,
+  type Placement,
+  type ResolvedState,
+  secondsSinceStart,
+} from "@uberscene/sdk/resolver";
 
 import { devWarn } from "../warn";
 import { backdropTracks, trackBands } from "./backdrop";
@@ -180,12 +185,12 @@ export function buildFramePlan(state: ResolvedState, t: number, resolveNested?: 
       if (op && dip) ops.push(banded(dipOp(item.transition!.placement, dip, comp.width, comp.height), item.track.id));
     } else if (p.kind === "adjustment") {
       if (p.props.enabled === false) continue;
-      const { shaders, ...filters } = effectPipeline(state, item.children, p.id, elapsedSeconds(t, p.start), {
+      const { shaders, ...filters } = effectPipeline(state, item.children, p.id, secondsSinceStart(p, t), {
         shaders: true,
       });
       if (ops.length === 0) continue;
       // Vignette and grain darken and speckle everything beneath, before the adjustment's other effects.
-      const post = postEffects(state.items, item.children, frameIndex(t, comp.rate), elapsedSeconds(t, p.start));
+      const post = postEffects(state.items, item.children, frameIndex(t, comp.rate), secondsSinceStart(p, t));
       ops.push(
         banded(
           {
@@ -266,7 +271,7 @@ function mediaOp(
 ): DrawOp | null {
   const p = item.placement;
   const comp = state.composition;
-  const rel = elapsedSeconds(t, p.start);
+  const rel = secondsSinceStart(p, t);
   const transform = animatedTransform(p.props.transform as Transform | undefined, item.children, rel);
   const box = animatedBox(p.props.box as ElementBox | undefined, item.children, rel);
   const fit = (p.props.fit as FitMode | undefined) ?? "contain";
