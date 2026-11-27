@@ -4,6 +4,57 @@ Setup, checks and where things live are in [CONTRIBUTING.md](CONTRIBUTING.md). B
 `pnpm docs:check` (and `pnpm docs:gen` if it fails), and add a changeset (`pnpm changeset`) when a published package
 changes for its users.
 
+## Adding an element
+
+An element kind is one folder of the same name in each package, `packages/<package>/src/elements/<kind>/`, and one
+line in each package's registry. Start one with the script, never by hand:
+
+```sh
+pnpm new:element chart
+```
+
+It writes a kind that already type-checks and draws (a labelled box on the overlay plane), then says what to fill in.
+
+| It writes | What goes there |
+|---|---|
+| `packages/kit/src/elements/<kind>/schema.ts` | The props, as a Zod schema. Each prop has a line that says what it is. Add only what is drawn. |
+| `packages/kit/src/elements/<kind>/index.ts` | The kind's row of traits, and a `sample`: one of it as a file writes it. |
+| `packages/sdk/src/elements/<kind>/index.ts` | What the resolver or a tool asks of this kind alone. Empty to start. |
+| `packages/player/src/elements/<kind>/index.ts` | Its size. No React: the engine loads this file. |
+| `packages/player/src/elements/<kind>/<Tag>.tsx`, `dom.tsx` | Its drawing, from `placement.props`, which are typed. |
+
+It also adds the kind to eleven files that list kinds: the registries (`elements/index.ts` in the kit, the SDK and the
+player, the player's `elements/dom.tsx`, the editor's `registry/editor/elements.tsx`), the tag and the kind table in
+the kit (`jsx/elements.ts`, `jsx/capabilities.ts`, `index.ts`), the typed placements in the SDK
+(`elements/placement.ts`), the reference page's sentence (`scripts/gen-docs.ts`) and the sealed list
+(`scripts/kind-branches.json`). `scripts/new-element.test.ts` holds that list of files exact.
+
+Then, in order:
+
+1. Write the props and the drawing. Read a prop as its type (`placement.props.label`): no cast, and no default
+   written a second time, since the schema's default is already there.
+2. Write its sentence in `scripts/gen-docs.ts`, and run `pnpm docs:gen` and `pnpm registry:build`.
+3. Run `pnpm check`. Two tests list kinds by a trait and will name yours: `packages/sdk/test/capabilities.test.ts` and
+   `packages/kit/test/kinds.test.ts` (which kinds take a `follow`, a `blend`, a transform). Add it where it belongs.
+4. Add a changeset.
+
+What the checks hold a kind to:
+
+- **The types.** A kind listed in the kit and missing from a package's registry does not compile, and the error names
+  the registry file. A kind on the canvas must have canvas ops (`packages/player/src/elements/canvas.ts`); a kind on
+  the overlay plane must have a DOM drawing.
+- **The conformance suite** (`packages/sdk/test/conformance`, and its parts in the player and the export) runs the
+  `sample` of every kind: it resolves and lints clean, takes keys at each of its key paths, has a row for the tools,
+  runs, undoes, redoes and writes back every action it is offered, is drawn on its plane, gives a still that is not
+  blank, and has a reference page. An action the kind is offered with no params yet fails and names the file to add
+  them to (`packages/sdk/test/conformance/params.ts`).
+- **The ratchet** (`pnpm kinds`). The kind is sealed: its name is written only in its folders. Code elsewhere that
+  must treat it its own way asks its entry (add a member to `KitElement`, `SdkElement` or `PlayerElement` and read it
+  through the registry) or asks a trait (`capabilitiesOf(kind)`), never `kind === "chart"`.
+
+A kind that needs something beneath it to show (an adjustment filters footage) says so in `sampleBeneath`. A sample
+that plays a file names `asset:picture`, an image the suite provides.
+
 ## Time math: never do arithmetic on raw seconds at a boundary
 
 Times are stored as float seconds, and a sequence adds lengths up: `0.1 + 0.2` is `0.30000000000000004`, while frame 9
