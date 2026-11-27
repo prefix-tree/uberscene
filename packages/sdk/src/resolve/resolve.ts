@@ -207,10 +207,22 @@ interface SettledTrack {
   readonly composition: Record<string, unknown>;
   readonly shaders: readonly ShaderDefinition[] | undefined;
   readonly pendings: readonly Pending[];
+  /** Where the last of them that shows or sounds ends: what the track adds to the video's length. */
+  readonly end: Time;
 }
 const settledByTrack = new Cache<CollectedNode, SettledTrack>();
 /** Counts the `Pending`s one `compute` makes or takes, before it places anything. */
 let entered = 0;
+/** Counts the `Pending`s made for elements the file does not write: a multicam's clips, captions' cues. */
+let made = 0;
+
+/** Where an element that shows or sounds ends, or null for one that has no length or is a transition. */
+function endOf(p: Pending): Time | null {
+  // Something with no length shows and sounds nothing, so it does not make the video longer.
+  return p.start !== undefined && p.duration?.isAfter(Time.ZERO) && p.node.kind !== "transition"
+    ? p.start.plusClamped(p.duration)
+    : null;
+}
 
 const sourceIdsUnique = new WeakMap<CollectedTree, boolean>();
 const sceneInside = new Cache<CollectedNode, boolean>();
@@ -429,6 +441,8 @@ function compute(
   const trackNodes: CollectedNode[] = [];
   /** The tracks taken as they were settled, which are not placed again. */
   const taken = new Set<CollectedNode>();
+  /** Every settled track of this resolve: those taken, and those settled now. */
+  const settledTracks: SettledTrack[] = [];
   // How many elements are given a `Pending`: more than `pending` holds when two share an id.
   entered = 0;
   let order = 0;
@@ -462,6 +476,7 @@ function compute(
       for (const settled of kept.pendings) pending.set(settled.node.id, settled);
       entered += kept.pendings.length;
       taken.add(child);
+      settledTracks.push(kept);
       return;
     }
     for (const item of child.children) intrinsic(item, child.id, pending, manifest, markers, markersKey, theme, errors);
@@ -509,8 +524,16 @@ function compute(
   // everything the plain way, which is what says what such a file comes to.
   if (taken.size > 0 && pending.size !== entered) return compute(original, manifest, log, previous, true);
 
-  for (const p of pending.values()) {
-    if (p.settled) continue;
+  // The elements still to be worked out: every one but a settled track's. The loops below read these, in the order
+  // `pending` holds them, and leave the settled ones alone.
+  let moving: Pending[] = [];
+  const listMoving = (): void => {
+    moving = [];
+    for (const p of pending.values()) if (!p.settled) moving.push(p);
+  };
+  listMoving();
+
+  for (const p of moving) {
     const duck = p.props.duck as { under: string } | undefined;
     if (duck && !tracks.some((t) => t.id === duck.under || t.role === duck.under)) {
       p.errors.push({
@@ -539,23 +562,34 @@ function compute(
       pendings.push(p);
     }
     if (pendings.length !== trackNode.children.length || pendings.length === 0) continue;
+    let end = Time.ZERO;
     for (const p of pendings) {
       (p as { settled?: Pending["settled"] }).settled = {};
       Object.freeze(p.errors);
       Object.freeze(p);
+      const at = endOf(p);
+      if (at) end = Time.max(end, at);
     }
-    settledByTrack.set(trackNode, { theme, manifest, markersKey, composition: compParsed, shaders, pendings });
+    const settled: SettledTrack = { theme, manifest, markersKey, composition: compParsed, shaders, pendings, end };
+    settledByTrack.set(trackNode, settled);
+    settledTracks.push(settled);
   }
-  iterateDependencies(pending, manifest);
+  // The tracks settled just now are out of it, and a multicam's clips are in.
+  listMoving();
+  // The elements that wait on another, or on the video's length: the only ones the passes below can change.
+  const waiting = moving.filter((p) => p.anchorDep !== undefined || p.durationDep !== undefined);
+  iterateDependencies(waiting, pending, manifest);
+  const before = made;
   placeCaptions(root, pending, tracks, manifest, markers);
+  if (made !== before) listMoving();
 
   let compositionEnd = Time.ZERO;
-  for (const p of pending.values()) {
-    // Something with no length shows and sounds nothing, so it does not make the video longer.
-    if (p.start !== undefined && p.duration?.isAfter(Time.ZERO) && p.node.kind !== "transition")
-      compositionEnd = Time.max(compositionEnd, p.start.plusClamped(p.duration));
+  for (const settled of settledTracks) compositionEnd = Time.max(compositionEnd, settled.end);
+  for (const p of moving) {
+    const at = endOf(p);
+    if (at) compositionEnd = Time.max(compositionEnd, at);
   }
-  for (const p of pending.values()) {
+  for (const p of waiting) {
     if (p.durationDep?.kind === "fill" && p.start !== undefined) {
       p.duration = Time.max(Time.ZERO, compositionEnd.minus(p.start));
       if (p.source) {
@@ -584,8 +618,8 @@ function compute(
     }
   }
   // An element that matches a filling one could not take its length until now.
-  settleMatches(pending, manifest);
-  for (const p of pending.values()) {
+  settleMatches(waiting, pending, manifest);
+  for (const p of moving) {
     if (p.start === undefined || p.duration === undefined) {
       p.errors.push({
         code: p.anchorDep ? "DANGLING_ANCHOR" : "MISSING_START",
@@ -1802,16 +1836,25 @@ function placeMulticam(
       gp.durationDep = { kind: "fill" };
     }
     pending.set(id, gp);
+    made++;
   });
   p.durationDep = { kind: "fill" };
 }
 
-function iterateDependencies(pending: Map<string, Pending>, manifest: AssetManifest): void {
+/**
+ * Gives each element that waits on another its start and its length. `waiting` are those elements, in the order
+ * `pending` holds them; `pending` is every element, to find the one each waits on.
+ */
+function iterateDependencies(
+  waiting: readonly Pending[],
+  pending: Map<string, Pending>,
+  manifest: AssetManifest,
+): void {
   // A pass that places nothing ends the loop, so a cycle still stops; a pass that places something places at least one
   // element, so a chain of any length, in any order, is placed within one pass per element.
   for (let pass = 0; pass <= pending.size; pass++) {
     let progressed = false;
-    for (const p of pending.values()) {
+    for (const p of waiting) {
       if (p.anchorDep && p.start === undefined) {
         const dep = p.anchorDep;
         if (dep.id === "start") {
@@ -1869,7 +1912,7 @@ function iterateDependencies(pending: Map<string, Pending>, manifest: AssetManif
     }
     if (!progressed) break;
   }
-  for (const p of pending.values()) {
+  for (const p of waiting) {
     // A match on an element that fills the video is settled after the fill, not a cycle.
     if (!p.anchorDep && follows(p) && waitsForFill(p, pending)) continue;
     if ((p.anchorDep && p.start === undefined) || (follows(p) && p.duration === undefined)) {
@@ -1953,17 +1996,17 @@ function waitsForFill(p: Pending, pending: Map<string, Pending>): boolean {
 }
 
 /** Gives each element still waiting on a match its target's length, now that fills have theirs. */
-function settleMatches(pending: Map<string, Pending>, manifest: AssetManifest): void {
+function settleMatches(waiting: readonly Pending[], pending: Map<string, Pending>, manifest: AssetManifest): void {
   for (let pass = 0; pass <= pending.size; pass++) {
     let progressed = false;
-    for (const p of pending.values()) {
+    for (const p of waiting) {
       if (!follows(p) || p.duration !== undefined) continue;
       const target = pending.get(p.durationDep.id);
       if (target && takeLength(p, target, manifest)) progressed = true;
     }
     if (!progressed) break;
   }
-  for (const p of pending.values()) {
+  for (const p of waiting) {
     if (!follows(p) || p.duration !== undefined) continue;
     p.errors.push({
       code: "CYCLE",
@@ -2211,6 +2254,7 @@ function placeCaptions(
       cuesByCaptions.set(node, { key, maxChars, manifest, props: cp.props, nodes });
     }
     for (const cue of nodes) {
+      made++;
       pending.set(cue.id, {
         node: cue,
         track: null,
