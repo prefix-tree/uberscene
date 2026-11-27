@@ -237,7 +237,7 @@ function resolveRef(
 }
 
 /** Overlays an editor looks at once each: what is drawn over the footage, and what grades it. */
-const OVERLAYS = new Set(["title", "shape", "svg", "sticker", "layer", "motion", "three", "adjustment"]);
+const OVERLAYS = new Set(["title", "shape", "svg", "sticker", "layer", "adjustment"]);
 
 /**
  * Five moments around one thing. A transition: the last frame before it, its first frame, its middle, its last

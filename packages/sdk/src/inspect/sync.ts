@@ -42,7 +42,7 @@ export interface EventRow {
 const NO_EDGES = new Set(["caption", "marker", "transition"]);
 
 /** Elements whose start shows on screen: what a viewer sees change. */
-const SEEN = new Set(["clip", "title", "shape", "svg", "sticker", "layer", "nested", "motion", "three"]);
+const SEEN = new Set(["clip", "title", "shape", "svg", "sticker", "layer", "nested"]);
 
 /**
  * The beat nearest a time, among music that is playing then (or within a beat of it); undefined when none is. `beats`
