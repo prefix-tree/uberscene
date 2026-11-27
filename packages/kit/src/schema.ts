@@ -29,6 +29,7 @@ export {
   type TransitionParams,
 } from "./effects/registry";
 export { type ColourFunction, fusedColourSource } from "./effects/shapes";
+export type * from "./elements";
 export { BLOCK_ASPECTS } from "./jsx/block-meta";
 export { type Box, type DrawRect, fitRect, type Placed, placeAxis, placeBox } from "./jsx/box";
 export * from "./jsx/capabilities";

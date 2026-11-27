@@ -2,6 +2,7 @@ import type { ReactElement } from "react";
 import type { z } from "zod";
 
 import type { EffectParams, TransitionParams } from "../effects/registry";
+import type { Kind } from "../elements";
 import { capabilitiesOf } from "./capabilities";
 import { defineElement, type VocabularyComponent, type VocabularyMeta, type VocabularyProps } from "./define";
 import type { Easing, TransitionType, VideoEffectType } from "./enums";
@@ -32,7 +33,7 @@ import {
 import { transitionSchema } from "./schemas/transition";
 import type { EffectRef, TransitionRef } from "./shaders";
 
-const el = <K extends string, S extends Parameters<typeof defineElement>[0]["schema"]>(kind: K, schema: S) =>
+const el = <K extends Kind, S extends Parameters<typeof defineElement>[0]["schema"]>(kind: K, schema: S) =>
   defineElement({ kind, schema, capabilities: capabilitiesOf(kind) });
 
 export const Composition = el("composition", compositionSchema);
@@ -235,4 +236,5 @@ export function kindsWithProp(prop: string): readonly string[] {
     .map((component) => component.kind);
 }
 
+/** The kinds a file writes as tags: every kind but the items the resolver makes from props. */
 export type ElementKind = (typeof ELEMENTS)[keyof typeof ELEMENTS]["kind"];

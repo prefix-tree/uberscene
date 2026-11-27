@@ -1,6 +1,7 @@
 import type { ReactElement, ReactNode } from "react";
 import type { z } from "zod";
 
+import type { Kind } from "../elements";
 import type { KeyPath } from "./key-paths";
 
 export type PlacementScope = "composition" | "track" | "child" | "none";
@@ -67,7 +68,7 @@ export type ThemeStyle = "look" | "props" | "none";
 export type VocabularyProps<S extends z.ZodType> = z.input<S> & { readonly children?: ReactNode };
 
 /** What a vocabulary component carries besides being one: its kind, schema and capabilities. */
-export interface VocabularyMeta<K extends string, S extends z.ZodType> {
+export interface VocabularyMeta<K extends Kind, S extends z.ZodType> {
   readonly kind: K;
   readonly schema: S;
   readonly isVocabulary: true;
@@ -75,12 +76,12 @@ export interface VocabularyMeta<K extends string, S extends z.ZodType> {
   readonly displayName: string;
 }
 
-export type VocabularyComponent<K extends string, S extends z.ZodType> = ((
+export type VocabularyComponent<K extends Kind, S extends z.ZodType> = ((
   props: VocabularyProps<S>,
 ) => ReactElement | null) &
   VocabularyMeta<K, S>;
 
-export interface ElementDefinition<K extends string, S extends z.ZodType> {
+export interface ElementDefinition<K extends Kind, S extends z.ZodType> {
   readonly kind: K;
   readonly schema: S;
   readonly capabilities: ElementCapabilities;
@@ -93,7 +94,7 @@ export interface ElementDefinition<K extends string, S extends z.ZodType> {
  * kind, its Zod prop schema and its editing capabilities, so the resolver and
  * the editor can read the element tree without rendering it.
  */
-export function defineElement<K extends string, S extends z.ZodType>(
+export function defineElement<K extends Kind, S extends z.ZodType>(
   def: ElementDefinition<K, S>,
 ): VocabularyComponent<K, S> {
   const component = ((props: VocabularyProps<S>) => {
@@ -112,10 +113,10 @@ export function defineElement<K extends string, S extends z.ZodType>(
   return component;
 }
 
-export function isVocabulary(type: unknown): type is VocabularyComponent<string, z.ZodType> {
+export function isVocabulary(type: unknown): type is VocabularyComponent<Kind, z.ZodType> {
   return typeof type === "function" && (type as { isVocabulary?: unknown }).isVocabulary === true;
 }
 
-export function kindOf(type: unknown): string | null {
+export function kindOf(type: unknown): Kind | null {
   return isVocabulary(type) ? type.kind : null;
 }

@@ -1,3 +1,4 @@
+import type { Kind } from "../elements";
 import type { ElementCapabilities } from "./define";
 import {
   AUDIO_KEY_PATHS,
@@ -183,7 +184,12 @@ export const KIND_CAPABILITIES: Readonly<Record<string, ElementCapabilities>> = 
   generator: with_({ placementScope: "child" }),
   speedKey: with_({ placementScope: "child" }),
   freeze: with_({ placementScope: "child" }),
-};
+} satisfies Record<Kind, ElementCapabilities>;
+
+/** Whether a string is an element kind: the one check where a kind comes in as text (a file's tag, an action's params). */
+export function isKind(kind: string): kind is Kind {
+  return Object.hasOwn(KIND_CAPABILITIES, kind);
+}
 
 export function capabilitiesOf(kind: string): ElementCapabilities {
   return KIND_CAPABILITIES[kind] ?? none;
