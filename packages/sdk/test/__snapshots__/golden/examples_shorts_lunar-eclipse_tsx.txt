@@ -1,0 +1,62 @@
+composition composition 30/1 frames 888
+why-ring shape 0-149
+miss-ring shape 149-378
+hit-ring shape 378-501
+red-ring shape 501-743
+sunsets-ring shape 743-888
+why clip 0-149 source 150-300 x1
+miss clip 149-378 source 324-554 x1
+hit clip 378-501 source 573-696 x1
+red clip 501-743 source 1645-1887 x1
+sunsets clip 743-888 source 1906-2053 x1
+question layer 0-149
+stage layer 48-149
+tilt layer 99-149
+path layer 149-378
+above layer 217-378
+below layer 315-378
+under layer 378-501
+months layer 399-501
+through layer 452-501
+moon layer 501-743
+totality layer 640-743
+orange layer 701-743
+redder layer 720-743
+brown layer 733-743
+earth layer 743-888
+rim layer 819-888
+rays layer 855-888
+captions captions 0-888
+captions-1 caption 0-29
+captions-2 caption 29-65
+captions-3 caption 65-99
+captions-4 caption 99-137
+captions-5 caption 137-149
+captions-6 caption 149-196
+captions-7 caption 196-227
+captions-8 caption 227-257
+captions-9 caption 257-272
+captions-10 caption 272-296
+captions-11 caption 306-338
+captions-12 caption 338-361
+captions-13 caption 361-378
+captions-14 caption 378-415
+captions-15 caption 415-452
+captions-16 caption 452-479
+captions-17 caption 479-501
+captions-18 caption 501-524
+captions-19 caption 524-546
+captions-20 caption 546-567
+captions-21 caption 587-631
+captions-22 caption 632-657
+captions-23 caption 663-694
+captions-24 caption 694-728
+captions-25 caption 728-743
+captions-26 caption 743-809
+captions-27 caption 809-834
+captions-28 caption 834-867
+captions-29 caption 867-888
+rings track 0-888
+talk track 0-888
+diagram track 0-888
+composition composition 0-888

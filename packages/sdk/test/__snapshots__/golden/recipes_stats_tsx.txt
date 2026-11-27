@@ -1,0 +1,9 @@
+composition composition 30/1 frames 360
+bg clip 0-180 source 180-360 x1
+bg2 clip 180-360 source 360-540 x1
+heading title 9-339
+stat-cups layer 24-174
+stat-on-time layer 192-342
+main track 0-360
+numbers track 0-360
+composition composition 0-360

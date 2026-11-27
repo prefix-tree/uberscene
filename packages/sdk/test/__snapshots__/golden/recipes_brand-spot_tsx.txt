@@ -1,0 +1,22 @@
+composition composition 30/1 frames 360
+blobs layer 0-360
+demo clip 120-300 source 60-240 x1
+window layer 120-300
+kicker title 9-114
+name title 15-114
+swoosh layer 33-114
+tagline title 42-114
+step-1 layer 138-210
+step-2 layer 210-294
+steps layer 138-294
+live layer 216-294
+end-name title 300-360
+end-cta layer 309-360
+end-badge layer 318-360
+party layer 309-360
+backdrop track 0-360
+screen track 0-360
+open track 0-360
+notes track 0-360
+close track 0-360
+composition composition 0-360

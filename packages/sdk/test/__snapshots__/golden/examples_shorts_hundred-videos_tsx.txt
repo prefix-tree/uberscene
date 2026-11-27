@@ -1,0 +1,109 @@
+composition composition 30/1 frames 1307
+us clip 0-169 source 13-182 x1
+hundred clip 169-328 source 181-341 x1
+hundred.transform.crop.x.0 keyframe 169-169
+hundred.transform.crop.x.1 keyframe 184-184
+hundred.transform.crop.y.0 keyframe 169-169
+hundred.transform.crop.y.1 keyframe 184-184
+hundred.transform.crop.width.0 keyframe 169-169
+hundred.transform.crop.width.1 keyframe 184-184
+hundred.transform.crop.height.0 keyframe 169-169
+hundred.transform.crop.height.1 keyframe 184-184
+hundred.box.y.0 keyframe 169-169
+hundred.box.y.1 keyframe 184-184
+how clip 328-458 source 341-471 x1
+list clip 458-872 source 471-885 x1
+infinite clip 872-1226 source 884-1239 x1
+perfect clip 1226-1307 source 1238-1320 x1
+perfect.transform.crop.x.0 keyframe 1226-1226
+perfect.transform.crop.x.1 keyframe 1241-1241
+perfect.transform.crop.y.0 keyframe 1226-1226
+perfect.transform.crop.y.1 keyframe 1241-1241
+perfect.transform.crop.width.0 keyframe 1226-1226
+perfect.transform.crop.width.1 keyframe 1241-1241
+perfect.transform.crop.height.0 keyframe 1226-1226
+perfect.transform.crop.height.1 keyframe 1241-1241
+perfect.box.y.0 keyframe 1226-1226
+perfect.box.y.1 keyframe 1241-1241
+scrim-hundred layer 169-328
+scrim-list layer 458-1226
+scrim-out layer 1226-1241
+hundred-grid layer 169-328
+points layer 458-872
+ways layer 872-1226
+fill audio 193-253 source 0-60 x1
+next audio 286-290 source 0-4 x1
+point-script audio 455-456 source 0-1 x1
+point-edit audio 552-553 source 0-1 x1
+point-voice audio 614-615 source 0-1 x1
+point-thumbnail audio 723-724 source 0-1 x1
+point-title audio 830-831 source 0-1 x1
+captions captions 0-1307
+captions-1 caption 0-26
+captions-2 caption 26-59
+captions-3 caption 59-84
+captions-4 caption 84-101
+captions-5 caption 101-121
+captions-6 caption 121-143
+captions-7 caption 143-155
+captions-8 caption 155-169
+captions-9 caption 169-193
+captions-10 caption 193-214
+captions-11 caption 214-236
+captions-12 caption 236-264
+captions-13 caption 264-278
+captions-14 caption 278-291
+captions-15 caption 291-309
+captions-16 caption 309-327
+captions-17 caption 328-341
+captions-18 caption 341-360
+captions-19 caption 360-384
+captions-20 caption 384-409
+captions-21 caption 409-431
+captions-22 caption 431-455
+captions-23 caption 458-477
+captions-24 caption 477-512
+captions-25 caption 512-527
+captions-26 caption 527-546
+captions-27 caption 546-576
+captions-28 caption 576-591
+captions-29 caption 591-609
+captions-30 caption 609-646
+captions-31 caption 646-663
+captions-32 caption 663-678
+captions-33 caption 678-690
+captions-34 caption 690-703
+captions-35 caption 703-718
+captions-36 caption 718-749
+captions-37 caption 749-777
+captions-38 caption 777-794
+captions-39 caption 794-821
+captions-40 caption 821-842
+captions-41 caption 842-859
+captions-42 caption 859-872
+captions-43 caption 872-902
+captions-44 caption 902-925
+captions-45 caption 925-951
+captions-46 caption 951-966
+captions-47 caption 966-984
+captions-48 caption 984-1001
+captions-49 caption 1001-1028
+captions-50 caption 1028-1046
+captions-51 caption 1046-1060
+captions-52 caption 1060-1076
+captions-53 caption 1076-1094
+captions-54 caption 1094-1112
+captions-55 caption 1112-1131
+captions-56 caption 1131-1161
+captions-57 caption 1161-1177
+captions-58 caption 1177-1194
+captions-59 caption 1194-1212
+captions-60 caption 1212-1226
+captions-61 caption 1226-1250
+captions-62 caption 1250-1267
+captions-63 caption 1267-1294
+talk track 0-1307
+scrim track 0-1307
+graphics track 0-1307
+sounds track 0-1307
+composition composition 0-1307

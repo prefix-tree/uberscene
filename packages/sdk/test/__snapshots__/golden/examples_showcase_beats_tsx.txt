@@ -1,0 +1,85 @@
+composition composition 30/1 frames 480
+song audio 0-480 source 7-488 x1
+wide clip 0-33 source 60-93 x1
+cup clip 31-64 source 180-213 x1
+spout clip 61-94 source 300-333 x1
+badge clip 90-123 source 420-453 x1
+green clip 120-138 source 540-558 x1
+green.effects.0 effect 120-138
+blue clip 136-154 source 585-603 x1
+blue.effects.0 effect 136-154
+yellow clip 151-169 source 630-648 x1
+yellow.effects.0 effect 151-169
+violet clip 166-184 source 675-693 x1
+violet.effects.0 effect 166-184
+orange clip 181-199 source 720-738 x1
+orange.effects.0 effect 181-199
+teal clip 195-213 source 765-783 x1
+teal.effects.0 effect 195-213
+pink clip 210-228 source 810-828 x1
+pink.effects.0 effect 210-228
+cyan clip 225-243 source 855-873 x1
+cyan.effects.0 effect 225-243
+hand clip 240-273 source 1140-1173 x1
+jug clip 271-304 source 1230-1263 x1
+pour clip 301-334 source 1350-1383 x1
+lift clip 330-363 source 1470-1503 x1
+last clip 360-480 source 900-1020 x1
+last.transform.scale.x.0 keyframe 360-360
+last.transform.scale.x.1 keyframe 374-374
+last.transform.scale.x.2 keyframe 375-375
+last.transform.scale.x.3 keyframe 389-389
+last.transform.scale.x.4 keyframe 390-390
+last.transform.scale.x.5 keyframe 404-404
+last.transform.scale.x.6 keyframe 405-405
+last.transform.scale.x.7 keyframe 419-419
+last.transform.scale.x.8 keyframe 420-420
+last.transform.scale.x.9 keyframe 434-434
+last.transform.scale.x.10 keyframe 435-435
+last.transform.scale.x.11 keyframe 449-449
+last.transform.scale.x.12 keyframe 450-450
+last.transform.scale.x.13 keyframe 464-464
+last.transform.scale.x.14 keyframe 465-465
+last.transform.scale.x.15 keyframe 479-479
+last.transform.scale.y.0 keyframe 360-360
+last.transform.scale.y.1 keyframe 374-374
+last.transform.scale.y.2 keyframe 375-375
+last.transform.scale.y.3 keyframe 389-389
+last.transform.scale.y.4 keyframe 390-390
+last.transform.scale.y.5 keyframe 404-404
+last.transform.scale.y.6 keyframe 405-405
+last.transform.scale.y.7 keyframe 419-419
+last.transform.scale.y.8 keyframe 420-420
+last.transform.scale.y.9 keyframe 434-434
+last.transform.scale.y.10 keyframe 435-435
+last.transform.scale.y.11 keyframe 449-449
+last.transform.scale.y.12 keyframe 450-450
+last.transform.scale.y.13 keyframe 464-464
+last.transform.scale.y.14 keyframe 465-465
+last.transform.scale.y.15 keyframe 479-479
+l0 title 0-30
+l2 title 31-61
+l4 title 61-91
+l6 title 90-120
+l8 title 120-135
+l9 title 136-151
+l10 title 151-166
+l11 title 166-181
+l12 title 181-196
+l13 title 195-210
+l14 title 210-225
+l15 title 225-240
+l16 title 240-270
+l18 title 271-301
+l20 title 301-331
+l22 title 330-360
+w1 title 240-270
+w2 title 271-301
+w3 title 301-331
+w4 title 330-360
+title title 360-480
+music track 0-480
+shots track 0-480
+labels track 0-480
+words track 0-480
+composition composition 0-480

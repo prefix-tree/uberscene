@@ -1,0 +1,30 @@
+composition composition 30/1 frames 768
+hook clip 0-156 source 168-324 x1
+x1 transition 144-156
+broll clip 144-324 source 180-360 x1
+broll.transform.scale.x.0 keyframe 144-144
+broll.transform.scale.x.1 keyframe 324-324
+broll.transform.scale.y.0 keyframe 144-144
+broll.transform.scale.y.1 keyframe 324-324
+demo clip 324-534 source 60-270 x1
+x2 transition 522-534
+close clip 522-678 source 720-876 x1
+outro clip 678-768 source 0-90 x1
+title title 12-96
+tagline title 27-96
+lt-bg shape 534-654
+lt-name title 537-654
+lt-role title 540-654
+cta layer 687-762
+bed audio 0-768 source 0-768 x1
+captions captions 0-768
+cap-1 caption 0-90
+cap-2 caption 105-156
+cap-3 caption 522-618
+cap-4 caption 636-678
+m-hook marker 0-0
+m-close marker 522-522
+main track 0-768
+overlays track 0-768
+music track 0-768
+composition composition 0-768

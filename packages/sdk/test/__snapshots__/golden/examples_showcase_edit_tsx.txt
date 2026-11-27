@@ -1,0 +1,16 @@
+composition composition 30/1 frames 237
+open clip 0-90 source 120-210 x1
+x1 transition 72-90
+zoom clip 72-177 source 60-165 x1
+zoom.transform.scale.x.0 keyframe 72-72
+zoom.transform.scale.x.1 keyframe 177-177
+zoom.transform.scale.y.0 keyframe 72-72
+zoom.transform.scale.y.1 keyframe 177-177
+x2 transition 159-177
+close clip 159-237 source 540-618 x1
+title title 9-75
+who layer 84-162
+end title 165-231
+main track 0-237
+text track 0-237
+composition composition 0-237

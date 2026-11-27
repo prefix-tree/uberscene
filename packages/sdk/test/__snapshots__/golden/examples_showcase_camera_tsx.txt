@@ -1,0 +1,57 @@
+composition composition 30/1 frames 180
+pour clip 0-180 source 180-360 x1
+frame-a shape 30-180
+frame-a.box.y.generator generator 30-180
+frame-b shape 66-180
+frame-b.box.y.generator generator 66-180
+frame-c shape 102-180
+frame-c.box.y.generator generator 102-180
+picture-a clip 30-180 source 300-450 x1
+picture-a.transform.opacity.0 keyframe 30-30
+picture-a.transform.opacity.1 keyframe 36-36
+picture-a.transform.scale.x.0 keyframe 30-30
+picture-a.transform.scale.x.1 keyframe 39-39
+picture-a.transform.scale.y.0 keyframe 30-30
+picture-a.transform.scale.y.1 keyframe 39-39
+picture-a.box.y.generator generator 30-180
+picture-b clip 66-180 source 120-234 x1
+picture-b.transform.opacity.0 keyframe 66-66
+picture-b.transform.opacity.1 keyframe 72-72
+picture-b.transform.scale.x.0 keyframe 66-66
+picture-b.transform.scale.x.1 keyframe 75-75
+picture-b.transform.scale.y.0 keyframe 66-66
+picture-b.transform.scale.y.1 keyframe 75-75
+picture-b.box.y.generator generator 66-180
+picture-c clip 102-180 source 600-678 x1
+picture-c.transform.opacity.0 keyframe 102-102
+picture-c.transform.opacity.1 keyframe 108-108
+picture-c.transform.scale.x.0 keyframe 102-102
+picture-c.transform.scale.x.1 keyframe 111-111
+picture-c.transform.scale.y.0 keyframe 102-102
+picture-c.transform.scale.y.1 keyframe 111-111
+picture-c.box.y.generator generator 102-180
+label-a title 30-180
+label-a.box.y.generator generator 30-180
+label-b title 66-180
+label-b.box.y.generator generator 66-180
+label-c title 102-180
+label-c.box.y.generator generator 102-180
+mark title 0-180
+cam camera 0-180
+subject track 0-180
+frames track 0-180
+pictures track 0-180
+labels track 0-180
+cam.zoom.generator generator 0-0
+brand track 0-180
+cam.push.x.0 keyframe 30-30
+cam.push.x.1 keyframe 39-39
+cam.push.x.2 keyframe 66-66
+cam.push.x.3 keyframe 75-75
+cam.push.zoom.0 keyframe 66-66
+cam.push.zoom.1 keyframe 75-75
+cam.push.x.4 keyframe 102-102
+cam.push.x.5 keyframe 111-111
+cam.push.zoom.2 keyframe 102-102
+cam.push.zoom.3 keyframe 111-111
+composition composition 0-180
