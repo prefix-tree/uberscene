@@ -29,6 +29,55 @@ function stickerSizeOf(comp: Box): number {
   return Math.round(Math.min(comp.width, comp.height) / 4);
 }
 
+/** What an overlay asks for before its box places it: a size, and how it fills that box. */
+export interface IntrinsicSize {
+  readonly size: Box;
+  readonly fit: FitMode;
+}
+
+/** A kind's own size at `rel` seconds into the element; `markup` is an SVG's file, when it has been loaded. */
+type SizeOf = (
+  state: ResolvedState,
+  p: Placement,
+  children: readonly Placement[],
+  rel: number,
+  markup?: string,
+) => IntrinsicSize;
+
+/**
+ * The size each kind draws at before layout. A kind with no entry is as large as the frame. A title's is its text
+ * box; a shape's its `width` and `height`, keys counted; a sticker's a square; an SVG's what its markup says.
+ */
+export const INTRINSIC_SIZE: Readonly<Record<string, SizeOf>> = {
+  title: (state, p) => ({ size: titleBox(p.props as Record<string, unknown>, state.composition), fit: "none" }),
+  shape: (_state, p, children, rel) => ({
+    size: shapeSizeOf({
+      width: keyframedValue(children, "shape.width", rel, p.props.width),
+      height: keyframedValue(children, "shape.height", rel, p.props.height),
+    }),
+    fit: "none",
+  }),
+  sticker: (state) => {
+    const side = stickerSizeOf(state.composition);
+    return { size: { width: side, height: side }, fit: "none" };
+  },
+  svg: (state, p, _children, _rel, markup) => {
+    const comp = state.composition;
+    const props = p.props as Record<string, unknown>;
+    const fit = (props.fit as FitMode | undefined) ?? "none";
+    const source = markup ?? (typeof props.content === "string" ? props.content : undefined);
+    if (source !== undefined) return { size: svgIntrinsicSize(source, props.viewBox as SvgViewBox | undefined), fit };
+    const box = (props.box ?? {}) as { width?: unknown; height?: unknown };
+    return {
+      size: {
+        width: typeof box.width === "number" ? box.width : comp.width,
+        height: typeof box.height === "number" ? box.height : comp.height,
+      },
+      fit,
+    };
+  },
+};
+
 /**
  * The size an overlay asks for before its box places it, and how it fills that box, at `rel` seconds into it: the one
  * place every overlay element and the parent chain (overlays/space.ts) take it from, so where an element is placed
@@ -42,40 +91,10 @@ export function overlaySize(
   children: readonly Placement[],
   rel: number,
   markup?: string,
-): { readonly size: Box; readonly fit: FitMode } {
-  const comp = state.composition;
-  const props = p.props as Record<string, unknown>;
-  switch (p.kind) {
-    case "title":
-      return { size: titleBox(props, comp), fit: "none" };
-    case "shape":
-      return {
-        size: shapeSizeOf({
-          width: keyframedValue(children, "shape.width", rel, props.width),
-          height: keyframedValue(children, "shape.height", rel, props.height),
-        }),
-        fit: "none",
-      };
-    case "sticker": {
-      const side = stickerSizeOf(comp);
-      return { size: { width: side, height: side }, fit: "none" };
-    }
-    case "svg": {
-      const fit = (props.fit as FitMode | undefined) ?? "none";
-      const source = markup ?? (typeof props.content === "string" ? props.content : undefined);
-      if (source !== undefined) return { size: svgIntrinsicSize(source, props.viewBox as SvgViewBox | undefined), fit };
-      const box = (props.box ?? {}) as { width?: unknown; height?: unknown };
-      return {
-        size: {
-          width: typeof box.width === "number" ? box.width : comp.width,
-          height: typeof box.height === "number" ? box.height : comp.height,
-        },
-        fit,
-      };
-    }
-    default:
-      return { size: { width: comp.width, height: comp.height }, fit: "none" };
-  }
+): IntrinsicSize {
+  const own = INTRINSIC_SIZE[p.kind];
+  if (own) return own(state, p, children, rel, markup);
+  return { size: { width: state.composition.width, height: state.composition.height }, fit: "none" };
 }
 
 /** The placements of `p`'s children, from the state. */
