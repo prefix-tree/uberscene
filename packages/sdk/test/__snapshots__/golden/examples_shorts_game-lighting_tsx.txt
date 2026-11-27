@@ -1,0 +1,26 @@
+composition composition 30/1 frames 900
+room layer 0-900
+room.effects.0 effect 0-900
+room.effects.0.intensity.0 keyframe 0-0
+room.effects.0.intensity.1 keyframe 78-78
+room.effects.0.intensity.2 keyframe 105-105
+room.effects.0.intensity.3 keyframe 690-690
+room.effects.0.intensity.4 keyframe 717-717
+list layer 0-900
+subtitles captions 0-900
+s-hook caption 6-84
+s-bare caption 93-147
+s-1a caption 150-213
+s-1b caption 213-279
+s-2a caption 285-348
+s-2b caption 348-414
+s-3a caption 420-483
+s-3b caption 483-549
+s-4a caption 555-618
+s-4b caption 618-684
+s-5a caption 690-747
+s-5b caption 747-804
+s-outro caption 810-894
+scene track 0-900
+switches track 0-900
+composition composition 0-900

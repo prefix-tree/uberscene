@@ -1,0 +1,8 @@
+composition composition 30/1 frames 1307
+paper layer 0-1307
+raw clip 0-1307 source 13-1320 x1
+edit clip 0-1307 source 0-1307 x1
+card track 0-1307
+before track 0-1307
+after track 0-1307
+composition composition 0-1307

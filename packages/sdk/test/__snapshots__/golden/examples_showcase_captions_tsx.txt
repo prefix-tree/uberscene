@@ -1,0 +1,15 @@
+composition composition 30/1 frames 333
+talk clip 0-333 source 12-345 x1
+point title 220-322
+captions captions 0-333
+captions-1 caption 0-36
+captions-2 caption 38-83
+captions-3 caption 97-131
+captions-4 caption 133-183
+captions-5 caption 185-207
+captions-6 caption 220-258
+captions-7 caption 261-295
+captions-8 caption 297-333
+main track 0-333
+points track 0-333
+composition composition 0-333

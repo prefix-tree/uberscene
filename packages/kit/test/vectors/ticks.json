@@ -1,0 +1,2009 @@
+{
+  "source": "craft-time (storytold/craft-libs crates/time) at 82062077bba679ba5236e2d1a391f02d1533cbab, the commit native/Cargo.toml pins",
+  "ticksPerSecond": 254016000000,
+  "seconds": [
+    { "seconds": 0.0, "ticks": 0 },
+    { "seconds": 0.001, "ticks": 254016000 },
+    { "seconds": 0.1, "ticks": 25401600000 },
+    { "seconds": 0.2, "ticks": 50803200000 },
+    { "seconds": 0.3, "ticks": 76204800000 },
+    { "seconds": 0.30000000000000004, "ticks": 76204800000 },
+    { "seconds": 0.3333333333333333, "ticks": 84672000000 },
+    { "seconds": 2.35, "ticks": 596937600000 },
+    { "seconds": 4.041, "ticks": 1026478656000 },
+    { "seconds": 5.041666666666667, "ticks": 1280664000000 },
+    { "seconds": 9.75, "ticks": 2476656000000 },
+    { "seconds": 3600.0, "ticks": 914457600000000 },
+    { "seconds": 35459.0, "ticks": 9007153344000000 },
+    { "seconds": -0.1, "ticks": -25401600000 },
+    { "seconds": -2.5, "ticks": -635040000000 }
+  ],
+  "frames": [
+    { "frame": 0, "rate": { "den": 1, "num": 24 }, "snap": 0, "snapNearest": 0, "ticks": 0 },
+    { "frame": 0, "rate": { "den": 1, "num": 24 }, "snap": 0, "snapNearest": 0, "ticks": 1 },
+    { "frame": 0, "rate": { "den": 1, "num": 24 }, "snap": 0, "snapNearest": 0, "ticks": 5292000000 },
+    { "frame": 0, "rate": { "den": 1, "num": 24 }, "snap": 0, "snapNearest": 10584000000, "ticks": 5292000001 },
+    { "frameStart": 0, "rate": { "den": 1, "num": 24 }, "ticks": 0 },
+    { "frame": 0, "rate": { "den": 1, "num": 24 }, "snap": 0, "snapNearest": 10584000000, "ticks": 10583999999 },
+    {
+      "frame": 1,
+      "rate": { "den": 1, "num": 24 },
+      "snap": 10584000000,
+      "snapNearest": 10584000000,
+      "ticks": 10584000000
+    },
+    {
+      "frame": 1,
+      "rate": { "den": 1, "num": 24 },
+      "snap": 10584000000,
+      "snapNearest": 10584000000,
+      "ticks": 10584000001
+    },
+    {
+      "frame": 1,
+      "rate": { "den": 1, "num": 24 },
+      "snap": 10584000000,
+      "snapNearest": 10584000000,
+      "ticks": 15876000000
+    },
+    {
+      "frame": 1,
+      "rate": { "den": 1, "num": 24 },
+      "snap": 10584000000,
+      "snapNearest": 21168000000,
+      "ticks": 15876000001
+    },
+    { "frameStart": 1, "rate": { "den": 1, "num": 24 }, "ticks": 10584000000 },
+    {
+      "frame": 8,
+      "rate": { "den": 1, "num": 24 },
+      "snap": 84672000000,
+      "snapNearest": 95256000000,
+      "ticks": 95255999999
+    },
+    {
+      "frame": 9,
+      "rate": { "den": 1, "num": 24 },
+      "snap": 95256000000,
+      "snapNearest": 95256000000,
+      "ticks": 95256000000
+    },
+    {
+      "frame": 9,
+      "rate": { "den": 1, "num": 24 },
+      "snap": 95256000000,
+      "snapNearest": 95256000000,
+      "ticks": 95256000001
+    },
+    {
+      "frame": 9,
+      "rate": { "den": 1, "num": 24 },
+      "snap": 95256000000,
+      "snapNearest": 95256000000,
+      "ticks": 100548000000
+    },
+    {
+      "frame": 9,
+      "rate": { "den": 1, "num": 24 },
+      "snap": 95256000000,
+      "snapNearest": 105840000000,
+      "ticks": 100548000001
+    },
+    { "frameStart": 9, "rate": { "den": 1, "num": 24 }, "ticks": 95256000000 },
+    {
+      "frame": 99,
+      "rate": { "den": 1, "num": 24 },
+      "snap": 1047816000000,
+      "snapNearest": 1058400000000,
+      "ticks": 1058399999999
+    },
+    {
+      "frame": 100,
+      "rate": { "den": 1, "num": 24 },
+      "snap": 1058400000000,
+      "snapNearest": 1058400000000,
+      "ticks": 1058400000000
+    },
+    {
+      "frame": 100,
+      "rate": { "den": 1, "num": 24 },
+      "snap": 1058400000000,
+      "snapNearest": 1058400000000,
+      "ticks": 1058400000001
+    },
+    {
+      "frame": 100,
+      "rate": { "den": 1, "num": 24 },
+      "snap": 1058400000000,
+      "snapNearest": 1058400000000,
+      "ticks": 1063692000000
+    },
+    {
+      "frame": 100,
+      "rate": { "den": 1, "num": 24 },
+      "snap": 1058400000000,
+      "snapNearest": 1068984000000,
+      "ticks": 1063692000001
+    },
+    { "frameStart": 100, "rate": { "den": 1, "num": 24 }, "ticks": 1058400000000 },
+    {
+      "frame": 1798,
+      "rate": { "den": 1, "num": 24 },
+      "snap": 19030032000000,
+      "snapNearest": 19040616000000,
+      "ticks": 19040615999999
+    },
+    {
+      "frame": 1799,
+      "rate": { "den": 1, "num": 24 },
+      "snap": 19040616000000,
+      "snapNearest": 19040616000000,
+      "ticks": 19040616000000
+    },
+    {
+      "frame": 1799,
+      "rate": { "den": 1, "num": 24 },
+      "snap": 19040616000000,
+      "snapNearest": 19040616000000,
+      "ticks": 19040616000001
+    },
+    {
+      "frame": 1799,
+      "rate": { "den": 1, "num": 24 },
+      "snap": 19040616000000,
+      "snapNearest": 19040616000000,
+      "ticks": 19045908000000
+    },
+    {
+      "frame": 1799,
+      "rate": { "den": 1, "num": 24 },
+      "snap": 19040616000000,
+      "snapNearest": 19051200000000,
+      "ticks": 19045908000001
+    },
+    { "frameStart": 1799, "rate": { "den": 1, "num": 24 }, "ticks": 19040616000000 },
+    {
+      "frame": 107891,
+      "rate": { "den": 1, "num": 24 },
+      "snap": 1141918344000000,
+      "snapNearest": 1141928928000000,
+      "ticks": 1141928927999999
+    },
+    {
+      "frame": 107892,
+      "rate": { "den": 1, "num": 24 },
+      "snap": 1141928928000000,
+      "snapNearest": 1141928928000000,
+      "ticks": 1141928928000000
+    },
+    {
+      "frame": 107892,
+      "rate": { "den": 1, "num": 24 },
+      "snap": 1141928928000000,
+      "snapNearest": 1141928928000000,
+      "ticks": 1141928928000001
+    },
+    {
+      "frame": 107892,
+      "rate": { "den": 1, "num": 24 },
+      "snap": 1141928928000000,
+      "snapNearest": 1141928928000000,
+      "ticks": 1141934220000000
+    },
+    {
+      "frame": 107892,
+      "rate": { "den": 1, "num": 24 },
+      "snap": 1141928928000000,
+      "snapNearest": 1141939512000000,
+      "ticks": 1141934220000001
+    },
+    { "frameStart": 107892, "rate": { "den": 1, "num": 24 }, "ticks": 1141928928000000 },
+    { "frame": 0, "rate": { "den": 1, "num": 25 }, "snap": 0, "snapNearest": 0, "ticks": 0 },
+    { "frame": 0, "rate": { "den": 1, "num": 25 }, "snap": 0, "snapNearest": 0, "ticks": 1 },
+    { "frame": 0, "rate": { "den": 1, "num": 25 }, "snap": 0, "snapNearest": 0, "ticks": 5080320000 },
+    { "frame": 0, "rate": { "den": 1, "num": 25 }, "snap": 0, "snapNearest": 10160640000, "ticks": 5080320001 },
+    { "frameStart": 0, "rate": { "den": 1, "num": 25 }, "ticks": 0 },
+    { "frame": 0, "rate": { "den": 1, "num": 25 }, "snap": 0, "snapNearest": 10160640000, "ticks": 10160639999 },
+    {
+      "frame": 1,
+      "rate": { "den": 1, "num": 25 },
+      "snap": 10160640000,
+      "snapNearest": 10160640000,
+      "ticks": 10160640000
+    },
+    {
+      "frame": 1,
+      "rate": { "den": 1, "num": 25 },
+      "snap": 10160640000,
+      "snapNearest": 10160640000,
+      "ticks": 10160640001
+    },
+    {
+      "frame": 1,
+      "rate": { "den": 1, "num": 25 },
+      "snap": 10160640000,
+      "snapNearest": 10160640000,
+      "ticks": 15240960000
+    },
+    {
+      "frame": 1,
+      "rate": { "den": 1, "num": 25 },
+      "snap": 10160640000,
+      "snapNearest": 20321280000,
+      "ticks": 15240960001
+    },
+    { "frameStart": 1, "rate": { "den": 1, "num": 25 }, "ticks": 10160640000 },
+    {
+      "frame": 8,
+      "rate": { "den": 1, "num": 25 },
+      "snap": 81285120000,
+      "snapNearest": 91445760000,
+      "ticks": 91445759999
+    },
+    {
+      "frame": 9,
+      "rate": { "den": 1, "num": 25 },
+      "snap": 91445760000,
+      "snapNearest": 91445760000,
+      "ticks": 91445760000
+    },
+    {
+      "frame": 9,
+      "rate": { "den": 1, "num": 25 },
+      "snap": 91445760000,
+      "snapNearest": 91445760000,
+      "ticks": 91445760001
+    },
+    {
+      "frame": 9,
+      "rate": { "den": 1, "num": 25 },
+      "snap": 91445760000,
+      "snapNearest": 91445760000,
+      "ticks": 96526080000
+    },
+    {
+      "frame": 9,
+      "rate": { "den": 1, "num": 25 },
+      "snap": 91445760000,
+      "snapNearest": 101606400000,
+      "ticks": 96526080001
+    },
+    { "frameStart": 9, "rate": { "den": 1, "num": 25 }, "ticks": 91445760000 },
+    {
+      "frame": 99,
+      "rate": { "den": 1, "num": 25 },
+      "snap": 1005903360000,
+      "snapNearest": 1016064000000,
+      "ticks": 1016063999999
+    },
+    {
+      "frame": 100,
+      "rate": { "den": 1, "num": 25 },
+      "snap": 1016064000000,
+      "snapNearest": 1016064000000,
+      "ticks": 1016064000000
+    },
+    {
+      "frame": 100,
+      "rate": { "den": 1, "num": 25 },
+      "snap": 1016064000000,
+      "snapNearest": 1016064000000,
+      "ticks": 1016064000001
+    },
+    {
+      "frame": 100,
+      "rate": { "den": 1, "num": 25 },
+      "snap": 1016064000000,
+      "snapNearest": 1016064000000,
+      "ticks": 1021144320000
+    },
+    {
+      "frame": 100,
+      "rate": { "den": 1, "num": 25 },
+      "snap": 1016064000000,
+      "snapNearest": 1026224640000,
+      "ticks": 1021144320001
+    },
+    { "frameStart": 100, "rate": { "den": 1, "num": 25 }, "ticks": 1016064000000 },
+    {
+      "frame": 1798,
+      "rate": { "den": 1, "num": 25 },
+      "snap": 18268830720000,
+      "snapNearest": 18278991360000,
+      "ticks": 18278991359999
+    },
+    {
+      "frame": 1799,
+      "rate": { "den": 1, "num": 25 },
+      "snap": 18278991360000,
+      "snapNearest": 18278991360000,
+      "ticks": 18278991360000
+    },
+    {
+      "frame": 1799,
+      "rate": { "den": 1, "num": 25 },
+      "snap": 18278991360000,
+      "snapNearest": 18278991360000,
+      "ticks": 18278991360001
+    },
+    {
+      "frame": 1799,
+      "rate": { "den": 1, "num": 25 },
+      "snap": 18278991360000,
+      "snapNearest": 18278991360000,
+      "ticks": 18284071680000
+    },
+    {
+      "frame": 1799,
+      "rate": { "den": 1, "num": 25 },
+      "snap": 18278991360000,
+      "snapNearest": 18289152000000,
+      "ticks": 18284071680001
+    },
+    { "frameStart": 1799, "rate": { "den": 1, "num": 25 }, "ticks": 18278991360000 },
+    {
+      "frame": 107891,
+      "rate": { "den": 1, "num": 25 },
+      "snap": 1096241610240000,
+      "snapNearest": 1096251770880000,
+      "ticks": 1096251770879999
+    },
+    {
+      "frame": 107892,
+      "rate": { "den": 1, "num": 25 },
+      "snap": 1096251770880000,
+      "snapNearest": 1096251770880000,
+      "ticks": 1096251770880000
+    },
+    {
+      "frame": 107892,
+      "rate": { "den": 1, "num": 25 },
+      "snap": 1096251770880000,
+      "snapNearest": 1096251770880000,
+      "ticks": 1096251770880001
+    },
+    {
+      "frame": 107892,
+      "rate": { "den": 1, "num": 25 },
+      "snap": 1096251770880000,
+      "snapNearest": 1096251770880000,
+      "ticks": 1096256851200000
+    },
+    {
+      "frame": 107892,
+      "rate": { "den": 1, "num": 25 },
+      "snap": 1096251770880000,
+      "snapNearest": 1096261931520000,
+      "ticks": 1096256851200001
+    },
+    { "frameStart": 107892, "rate": { "den": 1, "num": 25 }, "ticks": 1096251770880000 },
+    { "frame": 0, "rate": { "den": 1, "num": 30 }, "snap": 0, "snapNearest": 0, "ticks": 0 },
+    { "frame": 0, "rate": { "den": 1, "num": 30 }, "snap": 0, "snapNearest": 0, "ticks": 1 },
+    { "frame": 0, "rate": { "den": 1, "num": 30 }, "snap": 0, "snapNearest": 0, "ticks": 4233600000 },
+    { "frame": 0, "rate": { "den": 1, "num": 30 }, "snap": 0, "snapNearest": 8467200000, "ticks": 4233600001 },
+    { "frameStart": 0, "rate": { "den": 1, "num": 30 }, "ticks": 0 },
+    { "frame": 0, "rate": { "den": 1, "num": 30 }, "snap": 0, "snapNearest": 8467200000, "ticks": 8467199999 },
+    { "frame": 1, "rate": { "den": 1, "num": 30 }, "snap": 8467200000, "snapNearest": 8467200000, "ticks": 8467200000 },
+    { "frame": 1, "rate": { "den": 1, "num": 30 }, "snap": 8467200000, "snapNearest": 8467200000, "ticks": 8467200001 },
+    {
+      "frame": 1,
+      "rate": { "den": 1, "num": 30 },
+      "snap": 8467200000,
+      "snapNearest": 8467200000,
+      "ticks": 12700800000
+    },
+    {
+      "frame": 1,
+      "rate": { "den": 1, "num": 30 },
+      "snap": 8467200000,
+      "snapNearest": 16934400000,
+      "ticks": 12700800001
+    },
+    { "frameStart": 1, "rate": { "den": 1, "num": 30 }, "ticks": 8467200000 },
+    {
+      "frame": 8,
+      "rate": { "den": 1, "num": 30 },
+      "snap": 67737600000,
+      "snapNearest": 76204800000,
+      "ticks": 76204799999
+    },
+    {
+      "frame": 9,
+      "rate": { "den": 1, "num": 30 },
+      "snap": 76204800000,
+      "snapNearest": 76204800000,
+      "ticks": 76204800000
+    },
+    {
+      "frame": 9,
+      "rate": { "den": 1, "num": 30 },
+      "snap": 76204800000,
+      "snapNearest": 76204800000,
+      "ticks": 76204800001
+    },
+    {
+      "frame": 9,
+      "rate": { "den": 1, "num": 30 },
+      "snap": 76204800000,
+      "snapNearest": 76204800000,
+      "ticks": 80438400000
+    },
+    {
+      "frame": 9,
+      "rate": { "den": 1, "num": 30 },
+      "snap": 76204800000,
+      "snapNearest": 84672000000,
+      "ticks": 80438400001
+    },
+    { "frameStart": 9, "rate": { "den": 1, "num": 30 }, "ticks": 76204800000 },
+    {
+      "frame": 99,
+      "rate": { "den": 1, "num": 30 },
+      "snap": 838252800000,
+      "snapNearest": 846720000000,
+      "ticks": 846719999999
+    },
+    {
+      "frame": 100,
+      "rate": { "den": 1, "num": 30 },
+      "snap": 846720000000,
+      "snapNearest": 846720000000,
+      "ticks": 846720000000
+    },
+    {
+      "frame": 100,
+      "rate": { "den": 1, "num": 30 },
+      "snap": 846720000000,
+      "snapNearest": 846720000000,
+      "ticks": 846720000001
+    },
+    {
+      "frame": 100,
+      "rate": { "den": 1, "num": 30 },
+      "snap": 846720000000,
+      "snapNearest": 846720000000,
+      "ticks": 850953600000
+    },
+    {
+      "frame": 100,
+      "rate": { "den": 1, "num": 30 },
+      "snap": 846720000000,
+      "snapNearest": 855187200000,
+      "ticks": 850953600001
+    },
+    { "frameStart": 100, "rate": { "den": 1, "num": 30 }, "ticks": 846720000000 },
+    {
+      "frame": 1798,
+      "rate": { "den": 1, "num": 30 },
+      "snap": 15224025600000,
+      "snapNearest": 15232492800000,
+      "ticks": 15232492799999
+    },
+    {
+      "frame": 1799,
+      "rate": { "den": 1, "num": 30 },
+      "snap": 15232492800000,
+      "snapNearest": 15232492800000,
+      "ticks": 15232492800000
+    },
+    {
+      "frame": 1799,
+      "rate": { "den": 1, "num": 30 },
+      "snap": 15232492800000,
+      "snapNearest": 15232492800000,
+      "ticks": 15232492800001
+    },
+    {
+      "frame": 1799,
+      "rate": { "den": 1, "num": 30 },
+      "snap": 15232492800000,
+      "snapNearest": 15232492800000,
+      "ticks": 15236726400000
+    },
+    {
+      "frame": 1799,
+      "rate": { "den": 1, "num": 30 },
+      "snap": 15232492800000,
+      "snapNearest": 15240960000000,
+      "ticks": 15236726400001
+    },
+    { "frameStart": 1799, "rate": { "den": 1, "num": 30 }, "ticks": 15232492800000 },
+    {
+      "frame": 107891,
+      "rate": { "den": 1, "num": 30 },
+      "snap": 913534675200000,
+      "snapNearest": 913543142400000,
+      "ticks": 913543142399999
+    },
+    {
+      "frame": 107892,
+      "rate": { "den": 1, "num": 30 },
+      "snap": 913543142400000,
+      "snapNearest": 913543142400000,
+      "ticks": 913543142400000
+    },
+    {
+      "frame": 107892,
+      "rate": { "den": 1, "num": 30 },
+      "snap": 913543142400000,
+      "snapNearest": 913543142400000,
+      "ticks": 913543142400001
+    },
+    {
+      "frame": 107892,
+      "rate": { "den": 1, "num": 30 },
+      "snap": 913543142400000,
+      "snapNearest": 913543142400000,
+      "ticks": 913547376000000
+    },
+    {
+      "frame": 107892,
+      "rate": { "den": 1, "num": 30 },
+      "snap": 913543142400000,
+      "snapNearest": 913551609600000,
+      "ticks": 913547376000001
+    },
+    { "frameStart": 107892, "rate": { "den": 1, "num": 30 }, "ticks": 913543142400000 },
+    {
+      "frame": 999999,
+      "rate": { "den": 1, "num": 30 },
+      "snap": 8467191532800000,
+      "snapNearest": 8467200000000000,
+      "ticks": 8467199999999999
+    },
+    {
+      "frame": 1000000,
+      "rate": { "den": 1, "num": 30 },
+      "snap": 8467200000000000,
+      "snapNearest": 8467200000000000,
+      "ticks": 8467200000000000
+    },
+    {
+      "frame": 1000000,
+      "rate": { "den": 1, "num": 30 },
+      "snap": 8467200000000000,
+      "snapNearest": 8467200000000000,
+      "ticks": 8467200000000001
+    },
+    {
+      "frame": 1000000,
+      "rate": { "den": 1, "num": 30 },
+      "snap": 8467200000000000,
+      "snapNearest": 8467200000000000,
+      "ticks": 8467204233600000
+    },
+    {
+      "frame": 1000000,
+      "rate": { "den": 1, "num": 30 },
+      "snap": 8467200000000000,
+      "snapNearest": 8467208467200000,
+      "ticks": 8467204233600001
+    },
+    { "frameStart": 1000000, "rate": { "den": 1, "num": 30 }, "ticks": 8467200000000000 },
+    { "frame": 0, "rate": { "den": 1, "num": 50 }, "snap": 0, "snapNearest": 0, "ticks": 0 },
+    { "frame": 0, "rate": { "den": 1, "num": 50 }, "snap": 0, "snapNearest": 0, "ticks": 1 },
+    { "frame": 0, "rate": { "den": 1, "num": 50 }, "snap": 0, "snapNearest": 0, "ticks": 2540160000 },
+    { "frame": 0, "rate": { "den": 1, "num": 50 }, "snap": 0, "snapNearest": 5080320000, "ticks": 2540160001 },
+    { "frameStart": 0, "rate": { "den": 1, "num": 50 }, "ticks": 0 },
+    { "frame": 0, "rate": { "den": 1, "num": 50 }, "snap": 0, "snapNearest": 5080320000, "ticks": 5080319999 },
+    { "frame": 1, "rate": { "den": 1, "num": 50 }, "snap": 5080320000, "snapNearest": 5080320000, "ticks": 5080320000 },
+    { "frame": 1, "rate": { "den": 1, "num": 50 }, "snap": 5080320000, "snapNearest": 5080320000, "ticks": 5080320001 },
+    { "frame": 1, "rate": { "den": 1, "num": 50 }, "snap": 5080320000, "snapNearest": 5080320000, "ticks": 7620480000 },
+    {
+      "frame": 1,
+      "rate": { "den": 1, "num": 50 },
+      "snap": 5080320000,
+      "snapNearest": 10160640000,
+      "ticks": 7620480001
+    },
+    { "frameStart": 1, "rate": { "den": 1, "num": 50 }, "ticks": 5080320000 },
+    {
+      "frame": 8,
+      "rate": { "den": 1, "num": 50 },
+      "snap": 40642560000,
+      "snapNearest": 45722880000,
+      "ticks": 45722879999
+    },
+    {
+      "frame": 9,
+      "rate": { "den": 1, "num": 50 },
+      "snap": 45722880000,
+      "snapNearest": 45722880000,
+      "ticks": 45722880000
+    },
+    {
+      "frame": 9,
+      "rate": { "den": 1, "num": 50 },
+      "snap": 45722880000,
+      "snapNearest": 45722880000,
+      "ticks": 45722880001
+    },
+    {
+      "frame": 9,
+      "rate": { "den": 1, "num": 50 },
+      "snap": 45722880000,
+      "snapNearest": 45722880000,
+      "ticks": 48263040000
+    },
+    {
+      "frame": 9,
+      "rate": { "den": 1, "num": 50 },
+      "snap": 45722880000,
+      "snapNearest": 50803200000,
+      "ticks": 48263040001
+    },
+    { "frameStart": 9, "rate": { "den": 1, "num": 50 }, "ticks": 45722880000 },
+    {
+      "frame": 99,
+      "rate": { "den": 1, "num": 50 },
+      "snap": 502951680000,
+      "snapNearest": 508032000000,
+      "ticks": 508031999999
+    },
+    {
+      "frame": 100,
+      "rate": { "den": 1, "num": 50 },
+      "snap": 508032000000,
+      "snapNearest": 508032000000,
+      "ticks": 508032000000
+    },
+    {
+      "frame": 100,
+      "rate": { "den": 1, "num": 50 },
+      "snap": 508032000000,
+      "snapNearest": 508032000000,
+      "ticks": 508032000001
+    },
+    {
+      "frame": 100,
+      "rate": { "den": 1, "num": 50 },
+      "snap": 508032000000,
+      "snapNearest": 508032000000,
+      "ticks": 510572160000
+    },
+    {
+      "frame": 100,
+      "rate": { "den": 1, "num": 50 },
+      "snap": 508032000000,
+      "snapNearest": 513112320000,
+      "ticks": 510572160001
+    },
+    { "frameStart": 100, "rate": { "den": 1, "num": 50 }, "ticks": 508032000000 },
+    {
+      "frame": 1798,
+      "rate": { "den": 1, "num": 50 },
+      "snap": 9134415360000,
+      "snapNearest": 9139495680000,
+      "ticks": 9139495679999
+    },
+    {
+      "frame": 1799,
+      "rate": { "den": 1, "num": 50 },
+      "snap": 9139495680000,
+      "snapNearest": 9139495680000,
+      "ticks": 9139495680000
+    },
+    {
+      "frame": 1799,
+      "rate": { "den": 1, "num": 50 },
+      "snap": 9139495680000,
+      "snapNearest": 9139495680000,
+      "ticks": 9139495680001
+    },
+    {
+      "frame": 1799,
+      "rate": { "den": 1, "num": 50 },
+      "snap": 9139495680000,
+      "snapNearest": 9139495680000,
+      "ticks": 9142035840000
+    },
+    {
+      "frame": 1799,
+      "rate": { "den": 1, "num": 50 },
+      "snap": 9139495680000,
+      "snapNearest": 9144576000000,
+      "ticks": 9142035840001
+    },
+    { "frameStart": 1799, "rate": { "den": 1, "num": 50 }, "ticks": 9139495680000 },
+    {
+      "frame": 107891,
+      "rate": { "den": 1, "num": 50 },
+      "snap": 548120805120000,
+      "snapNearest": 548125885440000,
+      "ticks": 548125885439999
+    },
+    {
+      "frame": 107892,
+      "rate": { "den": 1, "num": 50 },
+      "snap": 548125885440000,
+      "snapNearest": 548125885440000,
+      "ticks": 548125885440000
+    },
+    {
+      "frame": 107892,
+      "rate": { "den": 1, "num": 50 },
+      "snap": 548125885440000,
+      "snapNearest": 548125885440000,
+      "ticks": 548125885440001
+    },
+    {
+      "frame": 107892,
+      "rate": { "den": 1, "num": 50 },
+      "snap": 548125885440000,
+      "snapNearest": 548125885440000,
+      "ticks": 548128425600000
+    },
+    {
+      "frame": 107892,
+      "rate": { "den": 1, "num": 50 },
+      "snap": 548125885440000,
+      "snapNearest": 548130965760000,
+      "ticks": 548128425600001
+    },
+    { "frameStart": 107892, "rate": { "den": 1, "num": 50 }, "ticks": 548125885440000 },
+    {
+      "frame": 999999,
+      "rate": { "den": 1, "num": 50 },
+      "snap": 5080314919680000,
+      "snapNearest": 5080320000000000,
+      "ticks": 5080319999999999
+    },
+    {
+      "frame": 1000000,
+      "rate": { "den": 1, "num": 50 },
+      "snap": 5080320000000000,
+      "snapNearest": 5080320000000000,
+      "ticks": 5080320000000000
+    },
+    {
+      "frame": 1000000,
+      "rate": { "den": 1, "num": 50 },
+      "snap": 5080320000000000,
+      "snapNearest": 5080320000000000,
+      "ticks": 5080320000000001
+    },
+    {
+      "frame": 1000000,
+      "rate": { "den": 1, "num": 50 },
+      "snap": 5080320000000000,
+      "snapNearest": 5080320000000000,
+      "ticks": 5080322540160000
+    },
+    {
+      "frame": 1000000,
+      "rate": { "den": 1, "num": 50 },
+      "snap": 5080320000000000,
+      "snapNearest": 5080325080320000,
+      "ticks": 5080322540160001
+    },
+    { "frameStart": 1000000, "rate": { "den": 1, "num": 50 }, "ticks": 5080320000000000 },
+    { "frame": 0, "rate": { "den": 1, "num": 60 }, "snap": 0, "snapNearest": 0, "ticks": 0 },
+    { "frame": 0, "rate": { "den": 1, "num": 60 }, "snap": 0, "snapNearest": 0, "ticks": 1 },
+    { "frame": 0, "rate": { "den": 1, "num": 60 }, "snap": 0, "snapNearest": 0, "ticks": 2116800000 },
+    { "frame": 0, "rate": { "den": 1, "num": 60 }, "snap": 0, "snapNearest": 4233600000, "ticks": 2116800001 },
+    { "frameStart": 0, "rate": { "den": 1, "num": 60 }, "ticks": 0 },
+    { "frame": 0, "rate": { "den": 1, "num": 60 }, "snap": 0, "snapNearest": 4233600000, "ticks": 4233599999 },
+    { "frame": 1, "rate": { "den": 1, "num": 60 }, "snap": 4233600000, "snapNearest": 4233600000, "ticks": 4233600000 },
+    { "frame": 1, "rate": { "den": 1, "num": 60 }, "snap": 4233600000, "snapNearest": 4233600000, "ticks": 4233600001 },
+    { "frame": 1, "rate": { "den": 1, "num": 60 }, "snap": 4233600000, "snapNearest": 4233600000, "ticks": 6350400000 },
+    { "frame": 1, "rate": { "den": 1, "num": 60 }, "snap": 4233600000, "snapNearest": 8467200000, "ticks": 6350400001 },
+    { "frameStart": 1, "rate": { "den": 1, "num": 60 }, "ticks": 4233600000 },
+    {
+      "frame": 8,
+      "rate": { "den": 1, "num": 60 },
+      "snap": 33868800000,
+      "snapNearest": 38102400000,
+      "ticks": 38102399999
+    },
+    {
+      "frame": 9,
+      "rate": { "den": 1, "num": 60 },
+      "snap": 38102400000,
+      "snapNearest": 38102400000,
+      "ticks": 38102400000
+    },
+    {
+      "frame": 9,
+      "rate": { "den": 1, "num": 60 },
+      "snap": 38102400000,
+      "snapNearest": 38102400000,
+      "ticks": 38102400001
+    },
+    {
+      "frame": 9,
+      "rate": { "den": 1, "num": 60 },
+      "snap": 38102400000,
+      "snapNearest": 38102400000,
+      "ticks": 40219200000
+    },
+    {
+      "frame": 9,
+      "rate": { "den": 1, "num": 60 },
+      "snap": 38102400000,
+      "snapNearest": 42336000000,
+      "ticks": 40219200001
+    },
+    { "frameStart": 9, "rate": { "den": 1, "num": 60 }, "ticks": 38102400000 },
+    {
+      "frame": 99,
+      "rate": { "den": 1, "num": 60 },
+      "snap": 419126400000,
+      "snapNearest": 423360000000,
+      "ticks": 423359999999
+    },
+    {
+      "frame": 100,
+      "rate": { "den": 1, "num": 60 },
+      "snap": 423360000000,
+      "snapNearest": 423360000000,
+      "ticks": 423360000000
+    },
+    {
+      "frame": 100,
+      "rate": { "den": 1, "num": 60 },
+      "snap": 423360000000,
+      "snapNearest": 423360000000,
+      "ticks": 423360000001
+    },
+    {
+      "frame": 100,
+      "rate": { "den": 1, "num": 60 },
+      "snap": 423360000000,
+      "snapNearest": 423360000000,
+      "ticks": 425476800000
+    },
+    {
+      "frame": 100,
+      "rate": { "den": 1, "num": 60 },
+      "snap": 423360000000,
+      "snapNearest": 427593600000,
+      "ticks": 425476800001
+    },
+    { "frameStart": 100, "rate": { "den": 1, "num": 60 }, "ticks": 423360000000 },
+    {
+      "frame": 1798,
+      "rate": { "den": 1, "num": 60 },
+      "snap": 7612012800000,
+      "snapNearest": 7616246400000,
+      "ticks": 7616246399999
+    },
+    {
+      "frame": 1799,
+      "rate": { "den": 1, "num": 60 },
+      "snap": 7616246400000,
+      "snapNearest": 7616246400000,
+      "ticks": 7616246400000
+    },
+    {
+      "frame": 1799,
+      "rate": { "den": 1, "num": 60 },
+      "snap": 7616246400000,
+      "snapNearest": 7616246400000,
+      "ticks": 7616246400001
+    },
+    {
+      "frame": 1799,
+      "rate": { "den": 1, "num": 60 },
+      "snap": 7616246400000,
+      "snapNearest": 7616246400000,
+      "ticks": 7618363200000
+    },
+    {
+      "frame": 1799,
+      "rate": { "den": 1, "num": 60 },
+      "snap": 7616246400000,
+      "snapNearest": 7620480000000,
+      "ticks": 7618363200001
+    },
+    { "frameStart": 1799, "rate": { "den": 1, "num": 60 }, "ticks": 7616246400000 },
+    {
+      "frame": 107891,
+      "rate": { "den": 1, "num": 60 },
+      "snap": 456767337600000,
+      "snapNearest": 456771571200000,
+      "ticks": 456771571199999
+    },
+    {
+      "frame": 107892,
+      "rate": { "den": 1, "num": 60 },
+      "snap": 456771571200000,
+      "snapNearest": 456771571200000,
+      "ticks": 456771571200000
+    },
+    {
+      "frame": 107892,
+      "rate": { "den": 1, "num": 60 },
+      "snap": 456771571200000,
+      "snapNearest": 456771571200000,
+      "ticks": 456771571200001
+    },
+    {
+      "frame": 107892,
+      "rate": { "den": 1, "num": 60 },
+      "snap": 456771571200000,
+      "snapNearest": 456771571200000,
+      "ticks": 456773688000000
+    },
+    {
+      "frame": 107892,
+      "rate": { "den": 1, "num": 60 },
+      "snap": 456771571200000,
+      "snapNearest": 456775804800000,
+      "ticks": 456773688000001
+    },
+    { "frameStart": 107892, "rate": { "den": 1, "num": 60 }, "ticks": 456771571200000 },
+    {
+      "frame": 999999,
+      "rate": { "den": 1, "num": 60 },
+      "snap": 4233595766400000,
+      "snapNearest": 4233600000000000,
+      "ticks": 4233599999999999
+    },
+    {
+      "frame": 1000000,
+      "rate": { "den": 1, "num": 60 },
+      "snap": 4233600000000000,
+      "snapNearest": 4233600000000000,
+      "ticks": 4233600000000000
+    },
+    {
+      "frame": 1000000,
+      "rate": { "den": 1, "num": 60 },
+      "snap": 4233600000000000,
+      "snapNearest": 4233600000000000,
+      "ticks": 4233600000000001
+    },
+    {
+      "frame": 1000000,
+      "rate": { "den": 1, "num": 60 },
+      "snap": 4233600000000000,
+      "snapNearest": 4233600000000000,
+      "ticks": 4233602116800000
+    },
+    {
+      "frame": 1000000,
+      "rate": { "den": 1, "num": 60 },
+      "snap": 4233600000000000,
+      "snapNearest": 4233604233600000,
+      "ticks": 4233602116800001
+    },
+    { "frameStart": 1000000, "rate": { "den": 1, "num": 60 }, "ticks": 4233600000000000 },
+    { "frame": 0, "rate": { "den": 1, "num": 12 }, "snap": 0, "snapNearest": 0, "ticks": 0 },
+    { "frame": 0, "rate": { "den": 1, "num": 12 }, "snap": 0, "snapNearest": 0, "ticks": 1 },
+    { "frame": 0, "rate": { "den": 1, "num": 12 }, "snap": 0, "snapNearest": 0, "ticks": 10584000000 },
+    { "frame": 0, "rate": { "den": 1, "num": 12 }, "snap": 0, "snapNearest": 21168000000, "ticks": 10584000001 },
+    { "frameStart": 0, "rate": { "den": 1, "num": 12 }, "ticks": 0 },
+    { "frame": 0, "rate": { "den": 1, "num": 12 }, "snap": 0, "snapNearest": 21168000000, "ticks": 21167999999 },
+    {
+      "frame": 1,
+      "rate": { "den": 1, "num": 12 },
+      "snap": 21168000000,
+      "snapNearest": 21168000000,
+      "ticks": 21168000000
+    },
+    {
+      "frame": 1,
+      "rate": { "den": 1, "num": 12 },
+      "snap": 21168000000,
+      "snapNearest": 21168000000,
+      "ticks": 21168000001
+    },
+    {
+      "frame": 1,
+      "rate": { "den": 1, "num": 12 },
+      "snap": 21168000000,
+      "snapNearest": 21168000000,
+      "ticks": 31752000000
+    },
+    {
+      "frame": 1,
+      "rate": { "den": 1, "num": 12 },
+      "snap": 21168000000,
+      "snapNearest": 42336000000,
+      "ticks": 31752000001
+    },
+    { "frameStart": 1, "rate": { "den": 1, "num": 12 }, "ticks": 21168000000 },
+    {
+      "frame": 8,
+      "rate": { "den": 1, "num": 12 },
+      "snap": 169344000000,
+      "snapNearest": 190512000000,
+      "ticks": 190511999999
+    },
+    {
+      "frame": 9,
+      "rate": { "den": 1, "num": 12 },
+      "snap": 190512000000,
+      "snapNearest": 190512000000,
+      "ticks": 190512000000
+    },
+    {
+      "frame": 9,
+      "rate": { "den": 1, "num": 12 },
+      "snap": 190512000000,
+      "snapNearest": 190512000000,
+      "ticks": 190512000001
+    },
+    {
+      "frame": 9,
+      "rate": { "den": 1, "num": 12 },
+      "snap": 190512000000,
+      "snapNearest": 190512000000,
+      "ticks": 201096000000
+    },
+    {
+      "frame": 9,
+      "rate": { "den": 1, "num": 12 },
+      "snap": 190512000000,
+      "snapNearest": 211680000000,
+      "ticks": 201096000001
+    },
+    { "frameStart": 9, "rate": { "den": 1, "num": 12 }, "ticks": 190512000000 },
+    {
+      "frame": 99,
+      "rate": { "den": 1, "num": 12 },
+      "snap": 2095632000000,
+      "snapNearest": 2116800000000,
+      "ticks": 2116799999999
+    },
+    {
+      "frame": 100,
+      "rate": { "den": 1, "num": 12 },
+      "snap": 2116800000000,
+      "snapNearest": 2116800000000,
+      "ticks": 2116800000000
+    },
+    {
+      "frame": 100,
+      "rate": { "den": 1, "num": 12 },
+      "snap": 2116800000000,
+      "snapNearest": 2116800000000,
+      "ticks": 2116800000001
+    },
+    {
+      "frame": 100,
+      "rate": { "den": 1, "num": 12 },
+      "snap": 2116800000000,
+      "snapNearest": 2116800000000,
+      "ticks": 2127384000000
+    },
+    {
+      "frame": 100,
+      "rate": { "den": 1, "num": 12 },
+      "snap": 2116800000000,
+      "snapNearest": 2137968000000,
+      "ticks": 2127384000001
+    },
+    { "frameStart": 100, "rate": { "den": 1, "num": 12 }, "ticks": 2116800000000 },
+    {
+      "frame": 1798,
+      "rate": { "den": 1, "num": 12 },
+      "snap": 38060064000000,
+      "snapNearest": 38081232000000,
+      "ticks": 38081231999999
+    },
+    {
+      "frame": 1799,
+      "rate": { "den": 1, "num": 12 },
+      "snap": 38081232000000,
+      "snapNearest": 38081232000000,
+      "ticks": 38081232000000
+    },
+    {
+      "frame": 1799,
+      "rate": { "den": 1, "num": 12 },
+      "snap": 38081232000000,
+      "snapNearest": 38081232000000,
+      "ticks": 38081232000001
+    },
+    {
+      "frame": 1799,
+      "rate": { "den": 1, "num": 12 },
+      "snap": 38081232000000,
+      "snapNearest": 38081232000000,
+      "ticks": 38091816000000
+    },
+    {
+      "frame": 1799,
+      "rate": { "den": 1, "num": 12 },
+      "snap": 38081232000000,
+      "snapNearest": 38102400000000,
+      "ticks": 38091816000001
+    },
+    { "frameStart": 1799, "rate": { "den": 1, "num": 12 }, "ticks": 38081232000000 },
+    {
+      "frame": 107891,
+      "rate": { "den": 1, "num": 12 },
+      "snap": 2283836688000000,
+      "snapNearest": 2283857856000000,
+      "ticks": 2283857855999999
+    },
+    {
+      "frame": 107892,
+      "rate": { "den": 1, "num": 12 },
+      "snap": 2283857856000000,
+      "snapNearest": 2283857856000000,
+      "ticks": 2283857856000000
+    },
+    {
+      "frame": 107892,
+      "rate": { "den": 1, "num": 12 },
+      "snap": 2283857856000000,
+      "snapNearest": 2283857856000000,
+      "ticks": 2283857856000001
+    },
+    {
+      "frame": 107892,
+      "rate": { "den": 1, "num": 12 },
+      "snap": 2283857856000000,
+      "snapNearest": 2283857856000000,
+      "ticks": 2283868440000000
+    },
+    {
+      "frame": 107892,
+      "rate": { "den": 1, "num": 12 },
+      "snap": 2283857856000000,
+      "snapNearest": 2283879024000000,
+      "ticks": 2283868440000001
+    },
+    { "frameStart": 107892, "rate": { "den": 1, "num": 12 }, "ticks": 2283857856000000 },
+    { "frame": 0, "rate": { "den": 1001, "num": 24000 }, "snap": 0, "snapNearest": 0, "ticks": 0 },
+    { "frame": 0, "rate": { "den": 1001, "num": 24000 }, "snap": 0, "snapNearest": 0, "ticks": 1 },
+    { "frame": 0, "rate": { "den": 1001, "num": 24000 }, "snap": 0, "snapNearest": 0, "ticks": 5297292000 },
+    { "frame": 0, "rate": { "den": 1001, "num": 24000 }, "snap": 0, "snapNearest": 10594584000, "ticks": 5297292001 },
+    { "frameStart": 0, "rate": { "den": 1001, "num": 24000 }, "ticks": 0 },
+    { "frame": 0, "rate": { "den": 1001, "num": 24000 }, "snap": 0, "snapNearest": 10594584000, "ticks": 10594583999 },
+    {
+      "frame": 1,
+      "rate": { "den": 1001, "num": 24000 },
+      "snap": 10594584000,
+      "snapNearest": 10594584000,
+      "ticks": 10594584000
+    },
+    {
+      "frame": 1,
+      "rate": { "den": 1001, "num": 24000 },
+      "snap": 10594584000,
+      "snapNearest": 10594584000,
+      "ticks": 10594584001
+    },
+    {
+      "frame": 1,
+      "rate": { "den": 1001, "num": 24000 },
+      "snap": 10594584000,
+      "snapNearest": 10594584000,
+      "ticks": 15891876000
+    },
+    {
+      "frame": 1,
+      "rate": { "den": 1001, "num": 24000 },
+      "snap": 10594584000,
+      "snapNearest": 21189168000,
+      "ticks": 15891876001
+    },
+    { "frameStart": 1, "rate": { "den": 1001, "num": 24000 }, "ticks": 10594584000 },
+    {
+      "frame": 8,
+      "rate": { "den": 1001, "num": 24000 },
+      "snap": 84756672000,
+      "snapNearest": 95351256000,
+      "ticks": 95351255999
+    },
+    {
+      "frame": 9,
+      "rate": { "den": 1001, "num": 24000 },
+      "snap": 95351256000,
+      "snapNearest": 95351256000,
+      "ticks": 95351256000
+    },
+    {
+      "frame": 9,
+      "rate": { "den": 1001, "num": 24000 },
+      "snap": 95351256000,
+      "snapNearest": 95351256000,
+      "ticks": 95351256001
+    },
+    {
+      "frame": 9,
+      "rate": { "den": 1001, "num": 24000 },
+      "snap": 95351256000,
+      "snapNearest": 95351256000,
+      "ticks": 100648548000
+    },
+    {
+      "frame": 9,
+      "rate": { "den": 1001, "num": 24000 },
+      "snap": 95351256000,
+      "snapNearest": 105945840000,
+      "ticks": 100648548001
+    },
+    { "frameStart": 9, "rate": { "den": 1001, "num": 24000 }, "ticks": 95351256000 },
+    {
+      "frame": 99,
+      "rate": { "den": 1001, "num": 24000 },
+      "snap": 1048863816000,
+      "snapNearest": 1059458400000,
+      "ticks": 1059458399999
+    },
+    {
+      "frame": 100,
+      "rate": { "den": 1001, "num": 24000 },
+      "snap": 1059458400000,
+      "snapNearest": 1059458400000,
+      "ticks": 1059458400000
+    },
+    {
+      "frame": 100,
+      "rate": { "den": 1001, "num": 24000 },
+      "snap": 1059458400000,
+      "snapNearest": 1059458400000,
+      "ticks": 1059458400001
+    },
+    {
+      "frame": 100,
+      "rate": { "den": 1001, "num": 24000 },
+      "snap": 1059458400000,
+      "snapNearest": 1059458400000,
+      "ticks": 1064755692000
+    },
+    {
+      "frame": 100,
+      "rate": { "den": 1001, "num": 24000 },
+      "snap": 1059458400000,
+      "snapNearest": 1070052984000,
+      "ticks": 1064755692001
+    },
+    { "frameStart": 100, "rate": { "den": 1001, "num": 24000 }, "ticks": 1059458400000 },
+    {
+      "frame": 1798,
+      "rate": { "den": 1001, "num": 24000 },
+      "snap": 19049062032000,
+      "snapNearest": 19059656616000,
+      "ticks": 19059656615999
+    },
+    {
+      "frame": 1799,
+      "rate": { "den": 1001, "num": 24000 },
+      "snap": 19059656616000,
+      "snapNearest": 19059656616000,
+      "ticks": 19059656616000
+    },
+    {
+      "frame": 1799,
+      "rate": { "den": 1001, "num": 24000 },
+      "snap": 19059656616000,
+      "snapNearest": 19059656616000,
+      "ticks": 19059656616001
+    },
+    {
+      "frame": 1799,
+      "rate": { "den": 1001, "num": 24000 },
+      "snap": 19059656616000,
+      "snapNearest": 19059656616000,
+      "ticks": 19064953908000
+    },
+    {
+      "frame": 1799,
+      "rate": { "den": 1001, "num": 24000 },
+      "snap": 19059656616000,
+      "snapNearest": 19070251200000,
+      "ticks": 19064953908001
+    },
+    { "frameStart": 1799, "rate": { "den": 1001, "num": 24000 }, "ticks": 19059656616000 },
+    {
+      "frame": 107891,
+      "rate": { "den": 1001, "num": 24000 },
+      "snap": 1143060262344000,
+      "snapNearest": 1143070856928000,
+      "ticks": 1143070856927999
+    },
+    {
+      "frame": 107892,
+      "rate": { "den": 1001, "num": 24000 },
+      "snap": 1143070856928000,
+      "snapNearest": 1143070856928000,
+      "ticks": 1143070856928000
+    },
+    {
+      "frame": 107892,
+      "rate": { "den": 1001, "num": 24000 },
+      "snap": 1143070856928000,
+      "snapNearest": 1143070856928000,
+      "ticks": 1143070856928001
+    },
+    {
+      "frame": 107892,
+      "rate": { "den": 1001, "num": 24000 },
+      "snap": 1143070856928000,
+      "snapNearest": 1143070856928000,
+      "ticks": 1143076154220000
+    },
+    {
+      "frame": 107892,
+      "rate": { "den": 1001, "num": 24000 },
+      "snap": 1143070856928000,
+      "snapNearest": 1143081451512000,
+      "ticks": 1143076154220001
+    },
+    { "frameStart": 107892, "rate": { "den": 1001, "num": 24000 }, "ticks": 1143070856928000 },
+    { "frame": 0, "rate": { "den": 1001, "num": 30000 }, "snap": 0, "snapNearest": 0, "ticks": 0 },
+    { "frame": 0, "rate": { "den": 1001, "num": 30000 }, "snap": 0, "snapNearest": 0, "ticks": 1 },
+    { "frame": 0, "rate": { "den": 1001, "num": 30000 }, "snap": 0, "snapNearest": 0, "ticks": 4237833600 },
+    { "frame": 0, "rate": { "den": 1001, "num": 30000 }, "snap": 0, "snapNearest": 8475667200, "ticks": 4237833601 },
+    { "frameStart": 0, "rate": { "den": 1001, "num": 30000 }, "ticks": 0 },
+    { "frame": 0, "rate": { "den": 1001, "num": 30000 }, "snap": 0, "snapNearest": 8475667200, "ticks": 8475667199 },
+    {
+      "frame": 1,
+      "rate": { "den": 1001, "num": 30000 },
+      "snap": 8475667200,
+      "snapNearest": 8475667200,
+      "ticks": 8475667200
+    },
+    {
+      "frame": 1,
+      "rate": { "den": 1001, "num": 30000 },
+      "snap": 8475667200,
+      "snapNearest": 8475667200,
+      "ticks": 8475667201
+    },
+    {
+      "frame": 1,
+      "rate": { "den": 1001, "num": 30000 },
+      "snap": 8475667200,
+      "snapNearest": 8475667200,
+      "ticks": 12713500800
+    },
+    {
+      "frame": 1,
+      "rate": { "den": 1001, "num": 30000 },
+      "snap": 8475667200,
+      "snapNearest": 16951334400,
+      "ticks": 12713500801
+    },
+    { "frameStart": 1, "rate": { "den": 1001, "num": 30000 }, "ticks": 8475667200 },
+    {
+      "frame": 8,
+      "rate": { "den": 1001, "num": 30000 },
+      "snap": 67805337600,
+      "snapNearest": 76281004800,
+      "ticks": 76281004799
+    },
+    {
+      "frame": 9,
+      "rate": { "den": 1001, "num": 30000 },
+      "snap": 76281004800,
+      "snapNearest": 76281004800,
+      "ticks": 76281004800
+    },
+    {
+      "frame": 9,
+      "rate": { "den": 1001, "num": 30000 },
+      "snap": 76281004800,
+      "snapNearest": 76281004800,
+      "ticks": 76281004801
+    },
+    {
+      "frame": 9,
+      "rate": { "den": 1001, "num": 30000 },
+      "snap": 76281004800,
+      "snapNearest": 76281004800,
+      "ticks": 80518838400
+    },
+    {
+      "frame": 9,
+      "rate": { "den": 1001, "num": 30000 },
+      "snap": 76281004800,
+      "snapNearest": 84756672000,
+      "ticks": 80518838401
+    },
+    { "frameStart": 9, "rate": { "den": 1001, "num": 30000 }, "ticks": 76281004800 },
+    {
+      "frame": 99,
+      "rate": { "den": 1001, "num": 30000 },
+      "snap": 839091052800,
+      "snapNearest": 847566720000,
+      "ticks": 847566719999
+    },
+    {
+      "frame": 100,
+      "rate": { "den": 1001, "num": 30000 },
+      "snap": 847566720000,
+      "snapNearest": 847566720000,
+      "ticks": 847566720000
+    },
+    {
+      "frame": 100,
+      "rate": { "den": 1001, "num": 30000 },
+      "snap": 847566720000,
+      "snapNearest": 847566720000,
+      "ticks": 847566720001
+    },
+    {
+      "frame": 100,
+      "rate": { "den": 1001, "num": 30000 },
+      "snap": 847566720000,
+      "snapNearest": 847566720000,
+      "ticks": 851804553600
+    },
+    {
+      "frame": 100,
+      "rate": { "den": 1001, "num": 30000 },
+      "snap": 847566720000,
+      "snapNearest": 856042387200,
+      "ticks": 851804553601
+    },
+    { "frameStart": 100, "rate": { "den": 1001, "num": 30000 }, "ticks": 847566720000 },
+    {
+      "frame": 1798,
+      "rate": { "den": 1001, "num": 30000 },
+      "snap": 15239249625600,
+      "snapNearest": 15247725292800,
+      "ticks": 15247725292799
+    },
+    {
+      "frame": 1799,
+      "rate": { "den": 1001, "num": 30000 },
+      "snap": 15247725292800,
+      "snapNearest": 15247725292800,
+      "ticks": 15247725292800
+    },
+    {
+      "frame": 1799,
+      "rate": { "den": 1001, "num": 30000 },
+      "snap": 15247725292800,
+      "snapNearest": 15247725292800,
+      "ticks": 15247725292801
+    },
+    {
+      "frame": 1799,
+      "rate": { "den": 1001, "num": 30000 },
+      "snap": 15247725292800,
+      "snapNearest": 15247725292800,
+      "ticks": 15251963126400
+    },
+    {
+      "frame": 1799,
+      "rate": { "den": 1001, "num": 30000 },
+      "snap": 15247725292800,
+      "snapNearest": 15256200960000,
+      "ticks": 15251963126401
+    },
+    { "frameStart": 1799, "rate": { "den": 1001, "num": 30000 }, "ticks": 15247725292800 },
+    {
+      "frame": 107891,
+      "rate": { "den": 1001, "num": 30000 },
+      "snap": 914448209875200,
+      "snapNearest": 914456685542400,
+      "ticks": 914456685542399
+    },
+    {
+      "frame": 107892,
+      "rate": { "den": 1001, "num": 30000 },
+      "snap": 914456685542400,
+      "snapNearest": 914456685542400,
+      "ticks": 914456685542400
+    },
+    {
+      "frame": 107892,
+      "rate": { "den": 1001, "num": 30000 },
+      "snap": 914456685542400,
+      "snapNearest": 914456685542400,
+      "ticks": 914456685542401
+    },
+    {
+      "frame": 107892,
+      "rate": { "den": 1001, "num": 30000 },
+      "snap": 914456685542400,
+      "snapNearest": 914456685542400,
+      "ticks": 914460923376000
+    },
+    {
+      "frame": 107892,
+      "rate": { "den": 1001, "num": 30000 },
+      "snap": 914456685542400,
+      "snapNearest": 914465161209600,
+      "ticks": 914460923376001
+    },
+    { "frameStart": 107892, "rate": { "den": 1001, "num": 30000 }, "ticks": 914456685542400 },
+    {
+      "frame": 999999,
+      "rate": { "den": 1001, "num": 30000 },
+      "snap": 8475658724332800,
+      "snapNearest": 8475667200000000,
+      "ticks": 8475667199999999
+    },
+    {
+      "frame": 1000000,
+      "rate": { "den": 1001, "num": 30000 },
+      "snap": 8475667200000000,
+      "snapNearest": 8475667200000000,
+      "ticks": 8475667200000000
+    },
+    {
+      "frame": 1000000,
+      "rate": { "den": 1001, "num": 30000 },
+      "snap": 8475667200000000,
+      "snapNearest": 8475667200000000,
+      "ticks": 8475667200000001
+    },
+    {
+      "frame": 1000000,
+      "rate": { "den": 1001, "num": 30000 },
+      "snap": 8475667200000000,
+      "snapNearest": 8475667200000000,
+      "ticks": 8475671437833600
+    },
+    {
+      "frame": 1000000,
+      "rate": { "den": 1001, "num": 30000 },
+      "snap": 8475667200000000,
+      "snapNearest": 8475675675667200,
+      "ticks": 8475671437833601
+    },
+    { "frameStart": 1000000, "rate": { "den": 1001, "num": 30000 }, "ticks": 8475667200000000 },
+    { "frame": 0, "rate": { "den": 1001, "num": 60000 }, "snap": 0, "snapNearest": 0, "ticks": 0 },
+    { "frame": 0, "rate": { "den": 1001, "num": 60000 }, "snap": 0, "snapNearest": 0, "ticks": 1 },
+    { "frame": 0, "rate": { "den": 1001, "num": 60000 }, "snap": 0, "snapNearest": 0, "ticks": 2118916800 },
+    { "frame": 0, "rate": { "den": 1001, "num": 60000 }, "snap": 0, "snapNearest": 4237833600, "ticks": 2118916801 },
+    { "frameStart": 0, "rate": { "den": 1001, "num": 60000 }, "ticks": 0 },
+    { "frame": 0, "rate": { "den": 1001, "num": 60000 }, "snap": 0, "snapNearest": 4237833600, "ticks": 4237833599 },
+    {
+      "frame": 1,
+      "rate": { "den": 1001, "num": 60000 },
+      "snap": 4237833600,
+      "snapNearest": 4237833600,
+      "ticks": 4237833600
+    },
+    {
+      "frame": 1,
+      "rate": { "den": 1001, "num": 60000 },
+      "snap": 4237833600,
+      "snapNearest": 4237833600,
+      "ticks": 4237833601
+    },
+    {
+      "frame": 1,
+      "rate": { "den": 1001, "num": 60000 },
+      "snap": 4237833600,
+      "snapNearest": 4237833600,
+      "ticks": 6356750400
+    },
+    {
+      "frame": 1,
+      "rate": { "den": 1001, "num": 60000 },
+      "snap": 4237833600,
+      "snapNearest": 8475667200,
+      "ticks": 6356750401
+    },
+    { "frameStart": 1, "rate": { "den": 1001, "num": 60000 }, "ticks": 4237833600 },
+    {
+      "frame": 8,
+      "rate": { "den": 1001, "num": 60000 },
+      "snap": 33902668800,
+      "snapNearest": 38140502400,
+      "ticks": 38140502399
+    },
+    {
+      "frame": 9,
+      "rate": { "den": 1001, "num": 60000 },
+      "snap": 38140502400,
+      "snapNearest": 38140502400,
+      "ticks": 38140502400
+    },
+    {
+      "frame": 9,
+      "rate": { "den": 1001, "num": 60000 },
+      "snap": 38140502400,
+      "snapNearest": 38140502400,
+      "ticks": 38140502401
+    },
+    {
+      "frame": 9,
+      "rate": { "den": 1001, "num": 60000 },
+      "snap": 38140502400,
+      "snapNearest": 38140502400,
+      "ticks": 40259419200
+    },
+    {
+      "frame": 9,
+      "rate": { "den": 1001, "num": 60000 },
+      "snap": 38140502400,
+      "snapNearest": 42378336000,
+      "ticks": 40259419201
+    },
+    { "frameStart": 9, "rate": { "den": 1001, "num": 60000 }, "ticks": 38140502400 },
+    {
+      "frame": 99,
+      "rate": { "den": 1001, "num": 60000 },
+      "snap": 419545526400,
+      "snapNearest": 423783360000,
+      "ticks": 423783359999
+    },
+    {
+      "frame": 100,
+      "rate": { "den": 1001, "num": 60000 },
+      "snap": 423783360000,
+      "snapNearest": 423783360000,
+      "ticks": 423783360000
+    },
+    {
+      "frame": 100,
+      "rate": { "den": 1001, "num": 60000 },
+      "snap": 423783360000,
+      "snapNearest": 423783360000,
+      "ticks": 423783360001
+    },
+    {
+      "frame": 100,
+      "rate": { "den": 1001, "num": 60000 },
+      "snap": 423783360000,
+      "snapNearest": 423783360000,
+      "ticks": 425902276800
+    },
+    {
+      "frame": 100,
+      "rate": { "den": 1001, "num": 60000 },
+      "snap": 423783360000,
+      "snapNearest": 428021193600,
+      "ticks": 425902276801
+    },
+    { "frameStart": 100, "rate": { "den": 1001, "num": 60000 }, "ticks": 423783360000 },
+    {
+      "frame": 1798,
+      "rate": { "den": 1001, "num": 60000 },
+      "snap": 7619624812800,
+      "snapNearest": 7623862646400,
+      "ticks": 7623862646399
+    },
+    {
+      "frame": 1799,
+      "rate": { "den": 1001, "num": 60000 },
+      "snap": 7623862646400,
+      "snapNearest": 7623862646400,
+      "ticks": 7623862646400
+    },
+    {
+      "frame": 1799,
+      "rate": { "den": 1001, "num": 60000 },
+      "snap": 7623862646400,
+      "snapNearest": 7623862646400,
+      "ticks": 7623862646401
+    },
+    {
+      "frame": 1799,
+      "rate": { "den": 1001, "num": 60000 },
+      "snap": 7623862646400,
+      "snapNearest": 7623862646400,
+      "ticks": 7625981563200
+    },
+    {
+      "frame": 1799,
+      "rate": { "den": 1001, "num": 60000 },
+      "snap": 7623862646400,
+      "snapNearest": 7628100480000,
+      "ticks": 7625981563201
+    },
+    { "frameStart": 1799, "rate": { "den": 1001, "num": 60000 }, "ticks": 7623862646400 },
+    {
+      "frame": 107891,
+      "rate": { "den": 1001, "num": 60000 },
+      "snap": 457224104937600,
+      "snapNearest": 457228342771200,
+      "ticks": 457228342771199
+    },
+    {
+      "frame": 107892,
+      "rate": { "den": 1001, "num": 60000 },
+      "snap": 457228342771200,
+      "snapNearest": 457228342771200,
+      "ticks": 457228342771200
+    },
+    {
+      "frame": 107892,
+      "rate": { "den": 1001, "num": 60000 },
+      "snap": 457228342771200,
+      "snapNearest": 457228342771200,
+      "ticks": 457228342771201
+    },
+    {
+      "frame": 107892,
+      "rate": { "den": 1001, "num": 60000 },
+      "snap": 457228342771200,
+      "snapNearest": 457228342771200,
+      "ticks": 457230461688000
+    },
+    {
+      "frame": 107892,
+      "rate": { "den": 1001, "num": 60000 },
+      "snap": 457228342771200,
+      "snapNearest": 457232580604800,
+      "ticks": 457230461688001
+    },
+    { "frameStart": 107892, "rate": { "den": 1001, "num": 60000 }, "ticks": 457228342771200 },
+    {
+      "frame": 999999,
+      "rate": { "den": 1001, "num": 60000 },
+      "snap": 4237829362166400,
+      "snapNearest": 4237833600000000,
+      "ticks": 4237833599999999
+    },
+    {
+      "frame": 1000000,
+      "rate": { "den": 1001, "num": 60000 },
+      "snap": 4237833600000000,
+      "snapNearest": 4237833600000000,
+      "ticks": 4237833600000000
+    },
+    {
+      "frame": 1000000,
+      "rate": { "den": 1001, "num": 60000 },
+      "snap": 4237833600000000,
+      "snapNearest": 4237833600000000,
+      "ticks": 4237833600000001
+    },
+    {
+      "frame": 1000000,
+      "rate": { "den": 1001, "num": 60000 },
+      "snap": 4237833600000000,
+      "snapNearest": 4237833600000000,
+      "ticks": 4237835718916800
+    },
+    {
+      "frame": 1000000,
+      "rate": { "den": 1001, "num": 60000 },
+      "snap": 4237833600000000,
+      "snapNearest": 4237837837833600,
+      "ticks": 4237835718916801
+    },
+    { "frameStart": 1000000, "rate": { "den": 1001, "num": 60000 }, "ticks": 4237833600000000 }
+  ],
+  "fromRational": [
+    { "den": 90000, "num": 1, "pts": 90000, "ticks": 254016000000 },
+    { "den": 30000, "num": 1, "pts": 1001, "ticks": 8475667200 },
+    { "den": 3, "num": 1, "pts": -1, "ticks": -84672000000 },
+    { "den": 44100, "num": 1, "pts": 12345, "ticks": 71107200000 },
+    { "den": 24000, "num": 1001, "pts": 7, "ticks": 74162088000 },
+    { "den": 90000, "num": 1, "pts": 3000000000, "ticks": 8467200000000000 },
+    { "den": 7, "num": 1, "pts": 1, "ticks": 36288000000 },
+    { "den": 1000000, "num": 1, "pts": -7, "ticks": -1778112 },
+    { "den": -3, "num": 1, "pts": 5, "ticks": -423360000000 },
+    { "den": -3, "num": 1, "pts": -5, "ticks": 423360000000 },
+    { "den": 3, "num": -1, "pts": 5, "ticks": -423360000000 }
+  ],
+  "toRational": [
+    { "den": 90000, "floor": 0, "num": 1, "round": 0, "ticks": 0 },
+    { "den": 1000, "floor": 0, "num": 1, "round": 0, "ticks": 0 },
+    { "den": 30000, "floor": 0, "num": 1001, "round": 0, "ticks": 0 },
+    { "den": 48000, "floor": 0, "num": 1, "round": 0, "ticks": 0 },
+    { "den": 44100, "floor": 0, "num": 1, "round": 0, "ticks": 0 },
+    { "den": 7, "floor": 0, "num": 1, "round": 0, "ticks": 0 },
+    { "den": 7, "floor": 0, "num": -1, "round": 0, "ticks": 0 },
+    { "den": -7, "floor": 0, "num": 1, "round": 0, "ticks": 0 },
+    { "den": 90000, "floor": 0, "num": 1, "round": 0, "ticks": 1 },
+    { "den": 1000, "floor": 0, "num": 1, "round": 0, "ticks": 1 },
+    { "den": 30000, "floor": 0, "num": 1001, "round": 0, "ticks": 1 },
+    { "den": 48000, "floor": 0, "num": 1, "round": 0, "ticks": 1 },
+    { "den": 44100, "floor": 0, "num": 1, "round": 0, "ticks": 1 },
+    { "den": 7, "floor": 0, "num": 1, "round": 0, "ticks": 1 },
+    { "den": 7, "floor": 0, "num": -1, "round": 0, "ticks": 1 },
+    { "den": -7, "floor": -1, "num": 1, "round": 0, "ticks": 1 },
+    { "den": 90000, "floor": -1, "num": 1, "round": 0, "ticks": -1 },
+    { "den": 1000, "floor": -1, "num": 1, "round": 0, "ticks": -1 },
+    { "den": 30000, "floor": -1, "num": 1001, "round": 0, "ticks": -1 },
+    { "den": 48000, "floor": -1, "num": 1, "round": 0, "ticks": -1 },
+    { "den": 44100, "floor": -1, "num": 1, "round": 0, "ticks": -1 },
+    { "den": 7, "floor": -1, "num": 1, "round": 0, "ticks": -1 },
+    { "den": 7, "floor": 1, "num": -1, "round": 0, "ticks": -1 },
+    { "den": -7, "floor": 0, "num": 1, "round": 0, "ticks": -1 },
+    { "den": 90000, "floor": 90000, "num": 1, "round": 90000, "ticks": 254016000000 },
+    { "den": 1000, "floor": 1000, "num": 1, "round": 1000, "ticks": 254016000000 },
+    { "den": 30000, "floor": 29, "num": 1001, "round": 30, "ticks": 254016000000 },
+    { "den": 48000, "floor": 48000, "num": 1, "round": 48000, "ticks": 254016000000 },
+    { "den": 44100, "floor": 44100, "num": 1, "round": 44100, "ticks": 254016000000 },
+    { "den": 7, "floor": 7, "num": 1, "round": 7, "ticks": 254016000000 },
+    { "den": 7, "floor": -7, "num": -1, "round": -7, "ticks": 254016000000 },
+    { "den": -7, "floor": -7, "num": 1, "round": -7, "ticks": 254016000000 },
+    { "den": 90000, "floor": 30000, "num": 1, "round": 30000, "ticks": 84672000000 },
+    { "den": 1000, "floor": 333, "num": 1, "round": 333, "ticks": 84672000000 },
+    { "den": 30000, "floor": 9, "num": 1001, "round": 10, "ticks": 84672000000 },
+    { "den": 48000, "floor": 16000, "num": 1, "round": 16000, "ticks": 84672000000 },
+    { "den": 44100, "floor": 14700, "num": 1, "round": 14700, "ticks": 84672000000 },
+    { "den": 7, "floor": 2, "num": 1, "round": 2, "ticks": 84672000000 },
+    { "den": 7, "floor": -2, "num": -1, "round": -2, "ticks": 84672000000 },
+    { "den": -7, "floor": -3, "num": 1, "round": -2, "ticks": 84672000000 },
+    { "den": 90000, "floor": 3002, "num": 1, "round": 3003, "ticks": 8475000000 },
+    { "den": 1000, "floor": 33, "num": 1, "round": 33, "ticks": 8475000000 },
+    { "den": 30000, "floor": 0, "num": 1001, "round": 1, "ticks": 8475000000 },
+    { "den": 48000, "floor": 1601, "num": 1, "round": 1601, "ticks": 8475000000 },
+    { "den": 44100, "floor": 1471, "num": 1, "round": 1471, "ticks": 8475000000 },
+    { "den": 7, "floor": 0, "num": 1, "round": 0, "ticks": 8475000000 },
+    { "den": 7, "floor": 0, "num": -1, "round": 0, "ticks": 8475000000 },
+    { "den": -7, "floor": -1, "num": 1, "round": 0, "ticks": 8475000000 },
+    { "den": 90000, "floor": 7, "num": 1, "round": 7, "ticks": 19756805 },
+    { "den": 1000, "floor": 0, "num": 1, "round": 0, "ticks": 19756805 },
+    { "den": 30000, "floor": 0, "num": 1001, "round": 0, "ticks": 19756805 },
+    { "den": 48000, "floor": 3, "num": 1, "round": 4, "ticks": 19756805 },
+    { "den": 44100, "floor": 3, "num": 1, "round": 3, "ticks": 19756805 },
+    { "den": 7, "floor": 0, "num": 1, "round": 0, "ticks": 19756805 },
+    { "den": 7, "floor": 0, "num": -1, "round": 0, "ticks": 19756805 },
+    { "den": -7, "floor": -1, "num": 1, "round": 0, "ticks": 19756805 },
+    { "den": 90000, "floor": -450001, "num": 1, "round": -450000, "ticks": -1270080000003 },
+    { "den": 1000, "floor": -5001, "num": 1, "round": -5000, "ticks": -1270080000003 },
+    { "den": 30000, "floor": -150, "num": 1001, "round": -150, "ticks": -1270080000003 },
+    { "den": 48000, "floor": -240001, "num": 1, "round": -240000, "ticks": -1270080000003 },
+    { "den": 44100, "floor": -220501, "num": 1, "round": -220500, "ticks": -1270080000003 },
+    { "den": 7, "floor": -36, "num": 1, "round": -35, "ticks": -1270080000003 },
+    { "den": 7, "floor": 36, "num": -1, "round": 35, "ticks": -1270080000003 },
+    { "den": -7, "floor": 35, "num": 1, "round": 35, "ticks": -1270080000003 },
+    { "den": 90000, "floor": 3188775510, "num": 1, "round": 3188775510, "ticks": 9000000000000000 },
+    { "den": 1000, "floor": 35430839, "num": 1, "round": 35430839, "ticks": 9000000000000000 },
+    { "den": 30000, "floor": 1061863, "num": 1001, "round": 1061863, "ticks": 9000000000000000 },
+    { "den": 48000, "floor": 1700680272, "num": 1, "round": 1700680272, "ticks": 9000000000000000 },
+    { "den": 44100, "floor": 1562500000, "num": 1, "round": 1562500000, "ticks": 9000000000000000 },
+    { "den": 7, "floor": 248015, "num": 1, "round": 248016, "ticks": 9000000000000000 },
+    { "den": 7, "floor": -248015, "num": -1, "round": -248016, "ticks": 9000000000000000 },
+    { "den": -7, "floor": -248016, "num": 1, "round": -248016, "ticks": 9000000000000000 }
+  ],
+  "mulRatio": [
+    { "den": 1000, "num": 1001, "result": 0, "ticks": 0 },
+    { "den": 1001, "num": 1000, "result": 0, "ticks": 0 },
+    { "den": 2, "num": 3, "result": 0, "ticks": 0 },
+    { "den": 3, "num": 2, "result": 0, "ticks": 0 },
+    { "den": 7, "num": -1, "result": 0, "ticks": 0 },
+    { "den": -7, "num": 1, "result": 0, "ticks": 0 },
+    { "den": 24, "num": 25, "result": 0, "ticks": 0 },
+    { "den": 1000, "num": 1001, "result": 1, "ticks": 1 },
+    { "den": 1001, "num": 1000, "result": 0, "ticks": 1 },
+    { "den": 2, "num": 3, "result": 1, "ticks": 1 },
+    { "den": 3, "num": 2, "result": 0, "ticks": 1 },
+    { "den": 7, "num": -1, "result": -1, "ticks": 1 },
+    { "den": -7, "num": 1, "result": 0, "ticks": 1 },
+    { "den": 24, "num": 25, "result": 1, "ticks": 1 },
+    { "den": 1000, "num": 1001, "result": -2, "ticks": -1 },
+    { "den": 1001, "num": 1000, "result": -1, "ticks": -1 },
+    { "den": 2, "num": 3, "result": -2, "ticks": -1 },
+    { "den": 3, "num": 2, "result": -1, "ticks": -1 },
+    { "den": 7, "num": -1, "result": 0, "ticks": -1 },
+    { "den": -7, "num": 1, "result": 1, "ticks": -1 },
+    { "den": 24, "num": 25, "result": -2, "ticks": -1 },
+    { "den": 1000, "num": 1001, "result": 254270016000, "ticks": 254016000000 },
+    { "den": 1001, "num": 1000, "result": 253762237762, "ticks": 254016000000 },
+    { "den": 2, "num": 3, "result": 381024000000, "ticks": 254016000000 },
+    { "den": 3, "num": 2, "result": 169344000000, "ticks": 254016000000 },
+    { "den": 7, "num": -1, "result": -36288000000, "ticks": 254016000000 },
+    { "den": -7, "num": 1, "result": -36288000000, "ticks": 254016000000 },
+    { "den": 24, "num": 25, "result": 264600000000, "ticks": 254016000000 },
+    { "den": 1000, "num": 1001, "result": 84756672000, "ticks": 84672000000 },
+    { "den": 1001, "num": 1000, "result": 84587412587, "ticks": 84672000000 },
+    { "den": 2, "num": 3, "result": 127008000000, "ticks": 84672000000 },
+    { "den": 3, "num": 2, "result": 56448000000, "ticks": 84672000000 },
+    { "den": 7, "num": -1, "result": -12096000000, "ticks": 84672000000 },
+    { "den": -7, "num": 1, "result": -12096000000, "ticks": 84672000000 },
+    { "den": 24, "num": 25, "result": 88200000000, "ticks": 84672000000 },
+    { "den": 1000, "num": 1001, "result": 8483475000, "ticks": 8475000000 },
+    { "den": 1001, "num": 1000, "result": 8466533466, "ticks": 8475000000 },
+    { "den": 2, "num": 3, "result": 12712500000, "ticks": 8475000000 },
+    { "den": 3, "num": 2, "result": 5650000000, "ticks": 8475000000 },
+    { "den": 7, "num": -1, "result": -1210714286, "ticks": 8475000000 },
+    { "den": -7, "num": 1, "result": -1210714285, "ticks": 8475000000 },
+    { "den": 24, "num": 25, "result": 8828125000, "ticks": 8475000000 },
+    { "den": 1000, "num": 1001, "result": 19776561, "ticks": 19756805 },
+    { "den": 1001, "num": 1000, "result": 19737067, "ticks": 19756805 },
+    { "den": 2, "num": 3, "result": 29635207, "ticks": 19756805 },
+    { "den": 3, "num": 2, "result": 13171203, "ticks": 19756805 },
+    { "den": 7, "num": -1, "result": -2822401, "ticks": 19756805 },
+    { "den": -7, "num": 1, "result": -2822400, "ticks": 19756805 },
+    { "den": 24, "num": 25, "result": 20580005, "ticks": 19756805 },
+    { "den": 1000, "num": 1001, "result": -1271350080004, "ticks": -1270080000003 },
+    { "den": 1001, "num": 1000, "result": -1268811188815, "ticks": -1270080000003 },
+    { "den": 2, "num": 3, "result": -1905120000005, "ticks": -1270080000003 },
+    { "den": 3, "num": 2, "result": -846720000002, "ticks": -1270080000003 },
+    { "den": 7, "num": -1, "result": 181440000000, "ticks": -1270080000003 },
+    { "den": -7, "num": 1, "result": 181440000001, "ticks": -1270080000003 },
+    { "den": 24, "num": 25, "result": -1323000000004, "ticks": -1270080000003 },
+    { "den": 1001, "num": 1000, "result": 8991008991008991, "ticks": 9000000000000000 },
+    { "den": 3, "num": 2, "result": 6000000000000000, "ticks": 9000000000000000 },
+    { "den": 7, "num": -1, "result": -1285714285714286, "ticks": 9000000000000000 },
+    { "den": -7, "num": 1, "result": -1285714285714285, "ticks": 9000000000000000 }
+  ],
+  "units": [
+    { "perSecond": 44100, "ticks": 0, "units": 0 },
+    { "perSecond": 44100, "ticks": 5760000, "units": 1 },
+    { "perSecond": 44100, "ticks": 5760000000, "units": 1000 },
+    { "perSecond": 44100, "ticks": 254016000000, "units": 44100 },
+    { "perSecond": 44100, "ticks": 995328000000000, "units": 172800000 },
+    { "perSecond": 44100, "ticks": -5760000, "units": -1 },
+    { "floor": 0, "perSecond": 44100, "ticks": 0 },
+    { "floor": 0, "perSecond": 44100, "ticks": 1 },
+    { "floor": -1, "perSecond": 44100, "ticks": -1 },
+    { "floor": 44100, "perSecond": 44100, "ticks": 254016000000 },
+    { "floor": 14700, "perSecond": 44100, "ticks": 84672000000 },
+    { "floor": 1471, "perSecond": 44100, "ticks": 8475000000 },
+    { "floor": 3, "perSecond": 44100, "ticks": 19756805 },
+    { "floor": -220501, "perSecond": 44100, "ticks": -1270080000003 },
+    { "perSecond": 48000, "ticks": 0, "units": 0 },
+    { "perSecond": 48000, "ticks": 5292000, "units": 1 },
+    { "perSecond": 48000, "ticks": 5292000000, "units": 1000 },
+    { "perSecond": 48000, "ticks": 233377200000, "units": 44100 },
+    { "perSecond": 48000, "ticks": 914457600000000, "units": 172800000 },
+    { "perSecond": 48000, "ticks": -5292000, "units": -1 },
+    { "floor": 0, "perSecond": 48000, "ticks": 0 },
+    { "floor": 0, "perSecond": 48000, "ticks": 1 },
+    { "floor": -1, "perSecond": 48000, "ticks": -1 },
+    { "floor": 48000, "perSecond": 48000, "ticks": 254016000000 },
+    { "floor": 16000, "perSecond": 48000, "ticks": 84672000000 },
+    { "floor": 1601, "perSecond": 48000, "ticks": 8475000000 },
+    { "floor": 3, "perSecond": 48000, "ticks": 19756805 },
+    { "floor": -240001, "perSecond": 48000, "ticks": -1270080000003 },
+    { "perSecond": 96000, "ticks": 0, "units": 0 },
+    { "perSecond": 96000, "ticks": 2646000, "units": 1 },
+    { "perSecond": 96000, "ticks": 2646000000, "units": 1000 },
+    { "perSecond": 96000, "ticks": 116688600000, "units": 44100 },
+    { "perSecond": 96000, "ticks": 457228800000000, "units": 172800000 },
+    { "perSecond": 96000, "ticks": -2646000, "units": -1 },
+    { "floor": 0, "perSecond": 96000, "ticks": 0 },
+    { "floor": 0, "perSecond": 96000, "ticks": 1 },
+    { "floor": -1, "perSecond": 96000, "ticks": -1 },
+    { "floor": 96000, "perSecond": 96000, "ticks": 254016000000 },
+    { "floor": 32000, "perSecond": 96000, "ticks": 84672000000 },
+    { "floor": 3202, "perSecond": 96000, "ticks": 8475000000 },
+    { "floor": 7, "perSecond": 96000, "ticks": 19756805 },
+    { "floor": -480001, "perSecond": 96000, "ticks": -1270080000003 },
+    { "perSecond": 8000, "ticks": 0, "units": 0 },
+    { "perSecond": 8000, "ticks": 31752000, "units": 1 },
+    { "perSecond": 8000, "ticks": 31752000000, "units": 1000 },
+    { "perSecond": 8000, "ticks": 1400263200000, "units": 44100 },
+    { "perSecond": 8000, "ticks": 5486745600000000, "units": 172800000 },
+    { "perSecond": 8000, "ticks": -31752000, "units": -1 },
+    { "floor": 0, "perSecond": 8000, "ticks": 0 },
+    { "floor": 0, "perSecond": 8000, "ticks": 1 },
+    { "floor": -1, "perSecond": 8000, "ticks": -1 },
+    { "floor": 8000, "perSecond": 8000, "ticks": 254016000000 },
+    { "floor": 2666, "perSecond": 8000, "ticks": 84672000000 },
+    { "floor": 266, "perSecond": 8000, "ticks": 8475000000 },
+    { "floor": 0, "perSecond": 8000, "ticks": 19756805 },
+    { "floor": -40001, "perSecond": 8000, "ticks": -1270080000003 }
+  ],
+  "ranges": [
+    {
+      "a": { "duration": 100, "start": 0 },
+      "b": { "duration": 100, "start": 50 },
+      "containsBStart": true,
+      "end": 100,
+      "intersect": { "duration": 50, "start": 50 },
+      "overlaps": true
+    },
+    {
+      "a": { "duration": 100, "start": 0 },
+      "b": { "duration": 10, "start": 100 },
+      "containsBStart": false,
+      "end": 100,
+      "intersect": null,
+      "overlaps": false
+    },
+    {
+      "a": { "duration": 0, "start": 10 },
+      "b": { "duration": 100, "start": 0 },
+      "containsBStart": false,
+      "end": 10,
+      "intersect": null,
+      "overlaps": false
+    },
+    {
+      "a": { "duration": 100, "start": -50 },
+      "b": { "duration": 20, "start": 0 },
+      "containsBStart": true,
+      "end": 50,
+      "intersect": { "duration": 20, "start": 0 },
+      "overlaps": true
+    },
+    {
+      "a": { "duration": 100, "start": 0 },
+      "b": { "duration": 5, "start": 200 },
+      "containsBStart": false,
+      "end": 100,
+      "intersect": null,
+      "overlaps": false
+    }
+  ]
+}
