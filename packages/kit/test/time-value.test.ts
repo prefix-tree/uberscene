@@ -189,6 +189,17 @@ describe("math on Time", () => {
     expect(sorted.map((t) => t.ticks)).toEqual(["-1", "0", "1001/30000", "0.5", "2"].map((x) => T(x).ticks));
   });
 
+  it("throws past the limit on plus, and holds at MIN or MAX on plusClamped", () => {
+    const six = T("21600");
+    expect(() => six.plus(six)).toThrow(RangeError);
+    expect(six.plusClamped(six)).toBe(Time.MAX);
+    expect(six.negate().plusClamped(six.negate())).toBe(Time.MIN);
+    expect(Time.MAX.plusClamped(Time.ofTicks(1))).toBe(Time.MAX);
+    expect(Time.MAX.plusClamped(Time.ofTicks(-1)).ticks).toBe(Number.MAX_SAFE_INTEGER - 1);
+    expect(six.plusClamped(T("0.5")).equals(six.plus(T("0.5")))).toBe(true);
+    expect(Time.MIN.equals(Time.MAX.negate())).toBe(true);
+  });
+
   it("multiplies by whole numbers and ratios exactly, rounding down as craft-time does", () => {
     expect(T("0.1").times(3).equals(T("0.3"))).toBe(true);
     expect(T("1").times(1001, 1000).equals(T("1.001"))).toBe(true);

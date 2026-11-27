@@ -3,7 +3,7 @@ import { capabilitiesOf, moveRuns } from "@uberscene/kit/schema";
 import type { Json } from "../../patches/types";
 import type { Placement, ResolvedState } from "../../resolve/resolve";
 import { resolveScene, type SceneFn } from "../../resolve/scene";
-import { endT, lengthS, lengthT, minus, plus, S, startT, T } from "../../time";
+import { lengthSeconds, S, T } from "../../time";
 import {
   define,
   insertNode,
@@ -236,11 +236,11 @@ function extractionPlan(state: ResolvedState, id: string): { tracks: NodeSpec[];
       const p = scene.items.get(childId);
       const rn = scene.tree.byId.get(childId);
       if (!p || !rn || p.kind === "gap") continue;
-      const startTicks = plus(startT(item), startT(p));
-      if (startTicks >= minus(endT(item), EPS)) continue;
-      const start = S(startTicks);
-      const limitTicks = minus(endT(item), startTicks);
-      const limit = S(limitTicks);
+      const startAt = item.range.start.plus(p.range.start);
+      if (startAt.isAtOrAfter(item.range.end.minus(EPS))) continue;
+      const start = S(startAt);
+      const room = item.range.end.minus(startAt);
+      const limit = S(room);
       const spec = prefixed(nodeSpecOf(rn));
       const props: Record<string, Json | undefined> = {
         ...spec.props,
@@ -249,14 +249,14 @@ function extractionPlan(state: ResolvedState, id: string): { tracks: NodeSpec[];
         at: undefined,
         start,
       };
-      if (lengthT(p) > plus(limitTicks, EPS)) {
+      if (p.range.duration.isAfter(room.plus(EPS))) {
         if (p.source) {
           props.in = p.source.in;
           props.out = p.source.in + limit * p.source.speed;
           props.duration = undefined;
         } else props.duration = limit;
       } else if (typeof props.duration !== "number" && props.out === undefined) {
-        props.duration = lengthS(p);
+        props.duration = lengthSeconds(p);
       }
       if (volume !== 1 && capabilitiesOf(p.kind).audio) props.volume = Number(rn.props.volume ?? 1) * volume;
       children.push({ ...spec, props: Object.fromEntries(Object.entries(props).filter(([, v]) => v !== undefined)) });
@@ -269,5 +269,8 @@ function extractionPlan(state: ResolvedState, id: string): { tracks: NodeSpec[];
   const layout = state.tracks.find((t) => t.id === node.parent)?.layout;
   const anchored = typeof node.props.anchor === "string";
   const gapId = layout === "sequence" && !anchored ? fresh(`${id}-gap`) : null;
-  return { tracks, gap: gapId ? { id: gapId, kind: "gap", props: { id: gapId, duration: lengthS(item) } } : null };
+  return {
+    tracks,
+    gap: gapId ? { id: gapId, kind: "gap", props: { id: gapId, duration: lengthSeconds(item) } } : null,
+  };
 }

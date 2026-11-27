@@ -1,8 +1,8 @@
-import { ZERO_TICKS } from "@uberscene/kit/schema";
+import { Time } from "@uberscene/kit/schema";
 
 import type { PatchLog } from "../../patches/types";
 import type { Placement, ResolvedState } from "../../resolve/resolve";
-import { endT, lengthT, minus, plus, S, startS, startT, T } from "../../time";
+import { S, startSeconds, T } from "../../time";
 import {
   define,
   insertNode,
@@ -219,17 +219,17 @@ define({
     return ok;
   },
   apply: (a, log, ctx) => {
-    let cursor = ZERO_TICKS;
+    let cursor = Time.ZERO;
     for (const item of orderedItems(ctx.before, a.params.trackId)) {
       setProps(log, item.id, { start: S(cursor) });
-      cursor = plus(cursor, lengthT(item));
+      cursor = cursor.plus(item.range.duration);
     }
   },
   invert: (a, before) => ({
     type: "track/restorePositions",
     params: {
       trackId: a.params.trackId,
-      positions: orderedItems(before, a.params.trackId).map((i) => ({ id: i.id, start: startS(i) })),
+      positions: orderedItems(before, a.params.trackId).map((i) => ({ id: i.id, start: startSeconds(i) })),
     },
   }),
   fold: () => [],
@@ -276,7 +276,7 @@ define({
       for (let i = 1; i < items.length; i++) {
         const prev = items[i - 1] as Placement,
           next = items[i] as Placement;
-        if (startT(next) < minus(endT(prev), EPS))
+        if (next.range.start.isBefore(prev.range.end.minus(EPS)))
           return invalid({
             code: "UNSUPPORTED_ON_LAYOUT",
             message: `"${prev.id}" and "${next.id}" overlap; a sequence track cannot express overlaps`,
@@ -303,7 +303,7 @@ function orderedItems(state: Parameters<typeof rawNode>[0], trackId: string) {
       (i): i is NonNullable<typeof i> =>
         Boolean(i) && i!.kind !== "transition" && typeof rawProp(state, i!.id, "anchor") !== "string",
     )
-    .sort((x, y) => startT(x) - startT(y));
+    .sort((x, y) => x.range.start.compare(y.range.start));
 }
 
 /** The children a sequence orders: timed, not anchored, not a transition, gap or multicam; by resolved start. */
@@ -324,7 +324,7 @@ function betweenTransitions(state: ResolvedState, trackId: string): Placement[] 
 
 function toFree(log: PatchLog, state: ResolvedState, trackId: string): void {
   setProps(log, trackId, { layout: "free" });
-  for (const item of sequenced(state, trackId)) setProps(log, item.id, { start: startS(item) });
+  for (const item of sequenced(state, trackId)) setProps(log, item.id, { start: startSeconds(item) });
   for (const x of betweenTransitions(state, trackId))
     setProps(log, x.id, { on: (x.between as readonly [string, string])[0], edge: "out" });
   for (const gap of gapsOf(state, trackId)) log.append({ op: "remove", id: gap.id });
@@ -353,15 +353,15 @@ function undoToFree(before: ResolvedState, trackId: string): ActionInput[] {
 function plannedGaps(state: ResolvedState, trackId: string): { spec: NodeSpec; nextId: string }[] {
   const out: { spec: NodeSpec; nextId: string }[] = [];
   const taken = new Set<string>();
-  let cursor = ZERO_TICKS;
+  let cursor = Time.ZERO;
   for (const item of sequenced(state, trackId)) {
-    const hole = minus(startT(item), cursor);
-    if (hole > EPS) {
+    const hole = item.range.start.minus(cursor);
+    if (hole.isAfter(EPS)) {
       const id = uniqueId(state, `gap-${trackId}-${out.length + 1}`, taken);
       taken.add(id);
       out.push({ spec: { id, kind: "gap", props: { id, duration: S(hole) } }, nextId: item.id });
     }
-    cursor = endT(item);
+    cursor = item.range.end;
   }
   return out;
 }

@@ -74,6 +74,10 @@ function secondsTicks(seconds: number): number | null {
 export class Time {
   /** No time: the start of a composition, or an empty length. */
   static readonly ZERO = new Time(0);
+  /** The latest time there is, 2^53 - 1 ticks (about 9.85 hours). */
+  static readonly MAX = new Time(Number.MAX_SAFE_INTEGER);
+  /** The earliest time there is, the negative of `MAX`. */
+  static readonly MIN = new Time(-Number.MAX_SAFE_INTEGER);
 
   /** The count of 1/254,016,000,000 s this time is. A safe integer. */
   readonly ticks: number;
@@ -147,6 +151,15 @@ export class Time {
   /** `this + other`, exact. */
   plus(other: Time): Time {
     return Time.ofTicks(this.ticks + other.ticks);
+  }
+
+  /**
+   * `this + other`, held at `MIN` or `MAX` instead of throwing past them. For a reader that must place the rest of a
+   * file that says a time too long, and reports it: a sum at the limit is how it knows.
+   */
+  plusClamped(other: Time): Time {
+    const sum = this.ticks + other.ticks;
+    return sum >= Number.MAX_SAFE_INTEGER ? Time.MAX : sum <= -Number.MAX_SAFE_INTEGER ? Time.MIN : Time.ofTicks(sum);
   }
 
   /** `this - other`, exact. */

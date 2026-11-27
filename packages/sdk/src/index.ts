@@ -70,11 +70,11 @@ export { elementName, printElement, printLiteral, printProp, printValue } from "
 export { editStage, type StageEdit, stageOf } from "./source/stage";
 export { wrapMainTrack } from "./source/wrap-track";
 export {
-  endS as endSeconds,
-  endT as endTicks,
-  lengthS as lengthSeconds,
-  lengthT as lengthTicks,
-  sinceStart as secondsSinceStart,
-  startS as startSeconds,
-  startT as startTicks,
+  endSeconds,
+  endTicks,
+  lengthSeconds,
+  lengthTicks,
+  secondsSinceStart,
+  startSeconds,
+  startTicks,
 } from "./time";

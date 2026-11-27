@@ -9,7 +9,7 @@ import {
   timelineWords,
 } from "../resolve/captions";
 import type { Placement, ResolvedState } from "../resolve/resolve";
-import { startS } from "../time";
+import { startSeconds } from "../time";
 
 const children = (state: ResolvedState, p: Placement): Placement[] =>
   p.children.map((id) => state.items.get(id)).filter((c): c is Placement => c !== undefined);
@@ -22,7 +22,7 @@ export function playsOf(state: ResolvedState, asset: string): AssetPlay[] {
     if (!p.source || !sameAsset(p.source.asset, asset)) continue;
     if (p.kind !== "clip" && p.kind !== "audio") continue;
     if (p.track && hidden.has(p.track)) continue;
-    plays.push(assetPlay({ id: p.id, start: startS(p), source: p.source, children: children(state, p) }));
+    plays.push(assetPlay({ id: p.id, start: startSeconds(p), source: p.source, children: children(state, p) }));
   }
   return plays.sort((a, b) => a.start - b.start);
 }
@@ -31,7 +31,7 @@ export function playsOf(state: ResolvedState, asset: string): AssetPlay[] {
 export function playOf(state: ResolvedState, id: string): AssetPlay | null {
   const p = state.items.get(id);
   if (!p?.source || (p.kind !== "clip" && p.kind !== "audio")) return null;
-  return assetPlay({ id: p.id, start: startS(p), source: p.source, children: children(state, p) });
+  return assetPlay({ id: p.id, start: startSeconds(p), source: p.source, children: children(state, p) });
 }
 
 /** Every transcript word the timeline plays, at the time it plays, in timeline order. */
