@@ -149,7 +149,7 @@ const layersOf = new WeakMap<CollectedTree, Layers>();
 /**
  * A tree that is `base` with a few nodes made again. Its `byId` is the base's map with those nodes in their places,
  * and is only built when something reads it: a drag makes one such tree a step, and copying the whole map each time
- * cost more than the patch. `nodeIn` and `nodesIn` read the tree without building it.
+ * cost more than the patch. `nodeIn` and `hasNodeIn` read the tree without building it.
  */
 function layered(base: CollectedTree, root: CollectedNode, over: ReadonlyMap<string, CollectedNode>): CollectedTree {
   const tree = { root, errors: base.errors } as CollectedTree;
@@ -180,16 +180,6 @@ export function nodeIn(tree: CollectedTree, id: string): CollectedNode | undefin
 export function hasNodeIn(tree: CollectedTree, id: string): boolean {
   const layers = layersOf.get(tree);
   return layers ? layers.base.has(id) : tree.byId.has(id);
-}
-
-/** Every node of the tree, in the order `tree.byId.values()` gives them. */
-export function* nodesIn(tree: CollectedTree): IterableIterator<CollectedNode> {
-  const layers = layersOf.get(tree);
-  if (!layers) {
-    yield* tree.byId.values();
-    return;
-  }
-  for (const [id, node] of layers.base) yield layers.over.get(id) ?? node;
 }
 
 /** The tree this one is laid over and the nodes made again, when it is one with only props and text patched. */

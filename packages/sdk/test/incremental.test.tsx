@@ -22,9 +22,8 @@ import {
 } from "@uberscene/sdk";
 
 import { buildLarge } from "../fixtures/large";
-import { shortCuts } from "../src/resolve/cache";
+import { resolveFresh, shortCuts } from "../src/resolve/cache";
 import { type Dependent, dependentsOf } from "../src/resolve/dependents";
-import { resolveFresh } from "../src/resolve/resolve";
 import { CORPUS, treeOf } from "./editing/corpus";
 import { EDITS } from "./editing/edits";
 import { manifest as sampleManifest } from "./helpers";

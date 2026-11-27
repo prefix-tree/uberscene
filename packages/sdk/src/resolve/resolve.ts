@@ -41,7 +41,7 @@ import { parseTimeRef, resolveTimeRef } from "../manifest/timeref";
 import { type AssetEntry, type AssetManifest, assetIdOf, lookupAsset } from "../manifest/types";
 import type { PatchLog } from "../patches/types";
 import { T } from "../time";
-import { Cache, cachesOff, shortCuts, uncached } from "./cache";
+import { Cache, cachesOff, fresh, shortCuts, uncached } from "./cache";
 import {
   type AssetPlay,
   assetPlay,
@@ -532,13 +532,10 @@ export function resolve(tree: CollectedTree, manifest: AssetManifest, log?: Patc
   return state;
 }
 
-/**
- * The same answer as `resolve`, worked out from the tree and the log alone: no cache is read or written and no
- * earlier placement is handed back. Slow; it is what the tests hold a cached resolve to.
- */
-export function resolveFresh(tree: CollectedTree, manifest: AssetManifest, log?: PatchLog): ResolvedState {
-  return uncached(() => compute(tree, manifest, log));
-}
+// `resolveFresh` (in `./cache`) is this resolver with every cache off: it is given the way in here, so the tests can
+// hold a cached resolve to it without the package exporting it.
+fresh.resolve = (tree: CollectedTree, manifest: AssetManifest, log?: PatchLog): ResolvedState =>
+  uncached(() => compute(tree, manifest, log));
 
 /**
  * `previous` is the item map of the last resolve on the same log. A placement

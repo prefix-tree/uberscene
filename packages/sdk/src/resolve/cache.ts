@@ -1,3 +1,8 @@
+import type { AssetManifest } from "../manifest/types";
+import type { PatchLog } from "../patches/types";
+import type { ResolvedState } from "./resolve";
+import type { CollectedTree } from "./tree";
+
 // The resolver keeps what it worked out for a node, a props object or a track, keyed by that object, so an edit
 // derives again only what it touched. `uncached` runs a resolve with every one of those caches off: nothing is read
 // from them and nothing is written, so the result is derived from the tree and the log alone. The tests hold every
@@ -54,3 +59,15 @@ export const shortCuts = {
   /** A tree placed by walking it from its root, with no id map. */
   walked: 0,
 };
+
+/** Where the resolver leaves the way to resolve with its caches off. */
+export const fresh: { resolve?: (tree: CollectedTree, manifest: AssetManifest, log?: PatchLog) => ResolvedState } = {};
+
+/**
+ * The same answer as `resolve`, worked out from the tree and the log alone: no cache is read or written and no
+ * earlier placement is handed back. Slow; it is what the tests hold a cached resolve to.
+ */
+export function resolveFresh(tree: CollectedTree, manifest: AssetManifest, log?: PatchLog): ResolvedState {
+  if (!fresh.resolve) throw new Error("the resolver is not loaded");
+  return fresh.resolve(tree, manifest, log);
+}
