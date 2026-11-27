@@ -20,7 +20,45 @@ export interface ElementCapabilities {
   readonly childKinds: readonly string[];
   /** Where the element may appear. */
   readonly placementScope: PlacementScope;
+  /**
+   * What draws it. `canvas`: painted with the footage. `dom`: the overlay plane over the canvas. `both`: an
+   * adjustment, which filters the canvas beneath it and stands on the overlay plane. `none`: it has no picture of its
+   * own (sound, structure, or something its parent draws).
+   */
+  readonly plane: DrawPlane;
+  /** Puts footage on the canvas: what a blurred background and the overlays beneath the footage are measured against. */
+  readonly footage: boolean;
+  /**
+   * Its part on a track. `item`: something placed there, which a cut or an anchor can name. `between`: a transition,
+   * which joins its two neighbours. `empty`: a gap, time with nothing in it. `none`: not written on a track.
+   */
+  readonly sequenceRole: SequenceRole;
+  /** May be written straight in a `<Composition>`, where it makes the main track. */
+  readonly mainTrack: boolean;
+  /** Its words are its content (`text`), which the read-time check and the tools read. */
+  readonly hasText: boolean;
+  /** Its picture is free code or another composition: anything in the file may decide it. */
+  readonly freeCode: boolean;
+  /** Lasts as long as the video does: its own range says nothing about one frame. */
+  readonly spansVideo: boolean;
+  /** Takes a `<Mask>` that is drawn. */
+  readonly masked: boolean;
+  /**
+   * How a theme styles it. `look`: `style` is a text look (a preset name, or fields with `preset`). `props`: `style`
+   * names a preset of the element's own props. `none`: a theme holds no presets for it.
+   */
+  readonly themeStyle: ThemeStyle;
+  /** A theme's motion style fills its `enter` and `exit`. */
+  readonly themeMotion: boolean;
+  /** Made and changed by `element/create` and `element/update`: what sits on a track and is not media or a cut. */
+  readonly elementActions: boolean;
+  /** Plays a manifest asset by `src` (a clip, an audio): what "plays", beats, words and shots are read from. */
+  readonly playsAsset: boolean;
 }
+
+export type DrawPlane = "canvas" | "dom" | "both" | "none";
+export type SequenceRole = "item" | "between" | "empty" | "none";
+export type ThemeStyle = "look" | "props" | "none";
 
 export type VocabularyProps<S extends z.ZodType> = z.input<S> & { readonly children?: ReactNode };
 

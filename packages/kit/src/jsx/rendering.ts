@@ -3,12 +3,13 @@
  * player and the export do not draw is not offered); these are the remaining limits, which the `not-rendered` lint
  * reports, so a file that checks clean renders as written.
  */
+import { isDomOverlay, KIND_CAPABILITIES, kindsWhere } from "./capabilities";
 
 /** Masks render on these kinds, one per element. */
-export const MASKED_KINDS = ["clip", "nested"] as const;
+export const MASKED_KINDS = kindsWhere((kind) => kind.masked);
 
 /** The kinds drawn on the player's DOM overlay plane, over the canvas (a Motion or Three element is a layer). */
-const OVERLAY_KINDS = ["title", "shape", "svg", "sticker", "layer"] as const;
+const OVERLAY_KINDS = Object.keys(KIND_CAPABILITIES).filter(isDomOverlay);
 
 /** An enum prop where only some values render: a written value outside `values` gets `reason`. */
 export interface RenderedValues {

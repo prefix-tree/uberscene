@@ -224,4 +224,14 @@ export const SCHEMAS_BY_KIND = {
   ...DERIVED_SCHEMAS,
 } as Readonly<Record<string, z.ZodType>>;
 
+/**
+ * The kinds whose schema has `prop`, in the vocabulary's order: what takes a `blend`, a `follow`, `freezes`. The
+ * schema already says which elements take a prop, so no list of them is kept beside it.
+ */
+export function kindsWithProp(prop: string): readonly string[] {
+  return Object.values(ELEMENTS)
+    .filter((component) => prop in (component.schema as unknown as z.ZodObject).shape)
+    .map((component) => component.kind);
+}
+
 export type ElementKind = (typeof ELEMENTS)[keyof typeof ELEMENTS]["kind"];
