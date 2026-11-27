@@ -4,7 +4,7 @@ import { isMigratedKind, type MigratedKind } from "@uberscene/kit/schema";
 import type { RenderElement } from "./element";
 import { title } from "./title";
 
-export const RENDER_ELEMENTS: { readonly [K in MigratedKind]?: RenderElement<K> } = { title };
+const RENDER_ELEMENTS: { readonly [K in MigratedKind]?: RenderElement<K> } = { title };
 
 /**
  * How the layout check treats `kind`'s words, or undefined for a kind whose content is not words. `kind` is text
