@@ -76,6 +76,16 @@ describe("making a Time", () => {
     expect(() => Time.ofTicks(0.5)).toThrow(RangeError);
   });
 
+  it("names the count it refuses, in the words it always has", () => {
+    const why = "is past what a time can hold (about ±9.85 hours, 2^53 ticks), or not a whole count";
+    expect(() => Time.ofTicks(0.5)).toThrow(`0.5 ticks ${why}`);
+    expect(() => Time.ofTicks(2 ** 53)).toThrow(`9007199254740992 ticks ${why}`);
+    expect(() => Time.ofTicks(-(2 ** 53))).toThrow(`-9007199254740992 ticks ${why}`);
+    expect(() => Time.ofTicks(Number.NaN)).toThrow(`NaN ticks ${why}`);
+    expect(() => Time.ofTicks(Number.POSITIVE_INFINITY)).toThrow(`Infinity ticks ${why}`);
+    expect(Time.ofTicks(Number.MAX_SAFE_INTEGER)).toEqual(Time.MAX);
+  });
+
   it("refuses a time past 2^53 ticks (about 9.85 hours) instead of losing ticks", () => {
     expect(Time.seconds(MAX_SECONDS).toSeconds()).toBe(MAX_SECONDS);
     expect(() => Time.seconds(MAX_SECONDS + 1)).toThrow(RangeError);

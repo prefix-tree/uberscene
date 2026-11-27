@@ -88,8 +88,9 @@ export class Time {
 
   /** A count of ticks. Throws for a number that isn't a safe integer. */
   static ofTicks(ticks: number): Time {
-    const n = checked(ticks, `${ticks} ticks`);
-    return n === 0 ? Time.ZERO : new Time(n);
+    // The message is built only when the count is refused: a resolve makes thousands of times, and none of them throw.
+    if (!Number.isSafeInteger(ticks)) checked(ticks, `${ticks} ticks`);
+    return ticks === 0 ? Time.ZERO : new Time(ticks);
   }
 
   /**
