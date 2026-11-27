@@ -13,7 +13,7 @@ Each film becomes two vertical posts, 1080x1920:
   before its pictures' file (`music`). Liftoff's asks "How do you edit 60 years of launches?", answers "Footage. Music.
   An editor.", then turns: "BUT no After Effects. No Premiere. Just code." and "Building it to 10/10. Follow along." At 12 s `score.ts` comes up with
   the playing section lit, its light moving from 1969 to the 80s as the sound does, and at 20 s it switches to
-  `video.tsx`. The machine's asks "Can you see music?", and its score comes up as the lead joins, the lit chord in the
+  `video.tsx`. The machine's opens on its drop under "Today we're building: music as code." and "BUT no editor. Just code.", and its score comes up as the lead joins, the lit chord in the
   code the block landing above it.
 - **`<name>-post.mp4`**: just the film. A tall film fills the frame; a wide one sits across it over a blurred copy of
   itself, so there are no bars. (`post.tsx`.)

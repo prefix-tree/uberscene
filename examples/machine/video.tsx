@@ -4,8 +4,8 @@
 // lanes by pitch. The notes are the ones Strudel rendered (notes.ts, written with the song by scripts/music.ts), so
 // picture and sound share one clock.
 //
-// A lane is a Layer that starts a bar before its voice comes in, so its first notes are seen falling. Inside it
-// everything is computed from the time alone.
+// A lane is a Layer; it lights two seconds before its voice plays, as the first note comes into view, and goes dark
+// when the voice stops. Inside it everything is computed from the time alone.
 import type { ReactNode } from "react";
 
 import { Audio, Composition, googleFont, Layer, stepAt, Title, Track, useLayer } from "@uberscene/kit";
@@ -35,8 +35,8 @@ const C = {
 
 /** Seconds a beat lasts at 120 BPM; a bar is four. */
 const BEAT = 0.5;
-/** The film's length in beats: 16 bars, and two for the last chord. */
-const BEATS = 72;
+/** The film's length in beats: 18 bars, and two for the last chord. */
+const BEATS = 80;
 
 // The strike line and the pads under it sit inside TikTok's safe area (240 to 1260 down, 120 to 960 across); the
 // lanes run from the top of the frame, and below the pads there is only their light.
@@ -62,8 +62,6 @@ interface Voice {
   readonly id: string;
   readonly label: string;
   readonly color: string;
-  /** The beat its lane comes on: a bar before its first note. */
-  readonly entry: number;
   /** A block's height, when it is not as long as its note. */
   readonly height: number;
   readonly notes: readonly Note[];
@@ -84,46 +82,41 @@ const acrossOf = (list: readonly { readonly midi: number }[]): ((midi: number) =
 const bassAcross = acrossOf(NOTES.bass);
 const leadAcross = acrossOf(NOTES.lead);
 
-const VOICES: readonly Voice[] = (
-  [
-    { id: "kick", label: "KICK", color: C.kick, height: 56, notes: NOTES.kick.map((time) => ({ time })) },
-    { id: "snare", label: "SNARE", color: C.snare, height: 56, notes: NOTES.snare.map((time) => ({ time })) },
-    { id: "hats", label: "HATS", color: C.hats, height: 28, notes: NOTES.hats },
-    {
-      id: "bass",
-      label: "BASS",
-      color: C.bass,
-      height: 52,
-      notes: NOTES.bass.map((n, i) => ({
-        time: n.time,
-        across: bassAcross(n.midi),
-        ...(firstOfBar(n.time, NOTES.bass, i) ? { name: noteName(n.note) } : {}),
-      })),
-    },
-    {
-      id: "chords",
-      label: "CHORD",
-      color: C.chords,
-      height: 0,
-      notes: NOTES.chords.map((n, i) => ({
-        time: n.time,
-        length: n.length,
-        ...(firstOfBar(n.time, NOTES.chords, i) ? { name: CHORDS[n.chord] as string } : {}),
-      })),
-    },
-    {
-      id: "lead",
-      label: "LEAD",
-      color: C.lead,
-      height: 52,
-      notes: NOTES.lead.map((n) => ({ time: n.time, across: leadAcross(n.midi), level: n.level })),
-    },
-  ] as const
-).map((voice) => ({
-  ...voice,
-  // The lane comes on a bar before the bar of its first note, so that note is seen falling.
-  entry: Math.max(0, Math.floor((voice.notes[0] as Note).time / 2) * 4 - 4),
-}));
+const VOICES: readonly Voice[] = [
+  { id: "kick", label: "KICK", color: C.kick, height: 56, notes: NOTES.kick.map((time) => ({ time })) },
+  { id: "snare", label: "SNARE", color: C.snare, height: 56, notes: NOTES.snare.map((time) => ({ time })) },
+  { id: "hats", label: "HATS", color: C.hats, height: 28, notes: NOTES.hats },
+  {
+    id: "bass",
+    label: "BASS",
+    color: C.bass,
+    height: 52,
+    notes: NOTES.bass.map((n, i) => ({
+      time: n.time,
+      across: bassAcross(n.midi),
+      ...(firstOfBar(n.time, NOTES.bass, i) ? { name: noteName(n.note) } : {}),
+    })),
+  },
+  {
+    id: "chords",
+    label: "CHORD",
+    color: C.chords,
+    height: 0,
+    notes: NOTES.chords.map((n, i) => ({
+      time: n.time,
+      length: n.length,
+      ...(firstOfBar(n.time, NOTES.chords, i) ? { name: CHORDS[n.chord] as string } : {}),
+    })),
+  },
+  {
+    id: "lead",
+    label: "LEAD",
+    color: C.lead,
+    height: 52,
+    notes: NOTES.lead.map((n) => ({ time: n.time, across: leadAcross(n.midi), level: n.level })),
+  },
+];
+
 const laneX = (lane: number): number => LEFT + lane * LANE;
 
 // ── Time ─────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -194,7 +187,7 @@ function Pad({ lane, voice, lit }: { lane: number; voice: Voice; lit: number }) 
 
 /** One voice's lane, lit: its notes falling to the line, the burst as each sounds, and its pad. */
 function Lane({ lane }: { lane: number }) {
-  const { time: t, elapsed } = useLayer();
+  const { time: t } = useLayer();
   const voice = VOICES[lane] as Voice;
   const times = voice.notes.map((n) => n.time);
   const x = laneX(lane);
@@ -204,9 +197,10 @@ function Lane({ lane }: { lane: number }) {
   // A held note keeps its lane lit for as long as it sounds.
   const held = last?.length !== undefined && s < last.length ? 0.6 : 0;
   const hit = Math.max(held, Math.exp(-s / 0.1) * (last?.level ?? 1));
-  // On when its layer starts; dim again a beat after its last note, as the machine powers down.
-  const end = (times[times.length - 1] as number) + (voice.notes[voice.notes.length - 1]?.length ?? 0) + 2 * BEAT;
-  const power = settle(elapsed, 0.3) * (1 - settle(t - end, 0.5));
+  // Lit while it plays: from two seconds before a note, as the note comes into view, until a second after its last.
+  const next = voice.notes[stepAt(times, t) + 1];
+  const ended = last ? t - last.time - (last.length ?? 0) : Number.POSITIVE_INFINITY;
+  const power = Math.max(1 - settle(ended - 1, 0.5), next ? 1 - settle(next.time - t - 2, 0.3) : 0);
   return (
     <Stage t={t}>
       <rect x={x + 8} y={0} width={LANE - 16} height={LINE} fill={voice.color} opacity={(0.05 + 0.12 * hit) * power} />
@@ -325,7 +319,7 @@ function Ground() {
         {[0, 1, 2, 3, 4].map((n) => {
           const y = LINE - (first + n - beat) * BEAT * SPEED;
           const heavy = (first + n) % 4 === 0;
-          return first + n > 64 ? null : (
+          return first + n > BEATS - 8 ? null : (
             <rect
               key={first + n}
               x={LEFT}
@@ -337,7 +331,6 @@ function Ground() {
             />
           );
         })}
-        {VOICES.map((voice, lane) => beat < voice.entry && <Pad key={voice.id} lane={lane} voice={voice} lit={0} />)}
         <rect
           x={LEFT - 20}
           y={LINE - 4}
@@ -347,16 +340,16 @@ function Ground() {
           fill="#ffffff"
           opacity={0.75 + 0.25 * onBeat}
         />
-        {Array.from({ length: 16 }, (_, n) => (
+        {Array.from({ length: 18 }, (_, n) => (
           <rect
             key={n}
-            x={LEFT + 8 + n * 52}
+            x={LEFT + 8 + n * 46}
             y={LINE + PAD + 40}
-            width={n % 4 === 3 ? 36 : 42}
+            width={n % 4 === 1 ? 30 : 36}
             height={14}
             rx={5}
             fill="#ffffff"
-            opacity={bar > 15 ? 0.4 : n < bar ? 0.4 : n === bar ? 0.6 + 0.4 * onBeat : 0.08}
+            opacity={bar > 17 ? 0.4 : n < bar ? 0.4 : n === bar ? 0.6 + 0.4 * onBeat : 0.08}
           />
         ))}
       </Stage>
@@ -387,10 +380,11 @@ const HALO = { color: "rgba(10, 12, 17, 0.95)", blur: 26, y: 0 };
 
 /** The section's name, small, at the top left: what the machine is doing. */
 const SECTIONS = [
-  { id: "power-up", beat: 0, text: "POWER UP" },
-  { id: "build", beat: 16, text: "BUILD" },
-  { id: "drop", beat: 32, text: "DROP" },
-  { id: "power-down", beat: 48, text: "POWER DOWN" },
+  { id: "open", beat: 0, beats: 8, text: "DROP" },
+  { id: "power-up", beat: 8, beats: 16, text: "POWER UP" },
+  { id: "build", beat: 24, beats: 16, text: "BUILD" },
+  { id: "drop", beat: 40, beats: 16, text: "DROP" },
+  { id: "power-down", beat: 56, beats: 16, text: "POWER DOWN" },
 ] as const;
 
 export default function Video() {
@@ -406,21 +400,14 @@ export default function Video() {
           <Ground />
         </Layer>
         {VOICES.map((voice, lane) => (
-          <Layer
-            key={voice.id}
-            id={voice.id}
-            anchor="song"
-            at={`beat:${voice.entry}`}
-            duration={until(voice.entry)}
-            ground
-          >
+          <Layer key={voice.id} id={voice.id} anchor="song" at="beat:0" duration={until(0)} ground>
             <Lane lane={lane} />
           </Layer>
         ))}
-        <Layer id="drop-flash" anchor="song" at="beat:32" duration={1} ground>
+        <Layer id="drop-flash" anchor="song" at="beat:40" duration={1} ground>
           <Flash />
         </Layer>
-        <Layer id="end-flash" anchor="song" at="beat:64" duration={1} ground>
+        <Layer id="end-flash" anchor="song" at="beat:72" duration={1} ground>
           <Flash />
         </Layer>
       </Track>
@@ -432,7 +419,7 @@ export default function Video() {
             id={section.id}
             anchor="song"
             at={`beat:${section.beat}`}
-            duration={16 * BEAT}
+            duration={section.beats * BEAT}
             style={{ font: mono, size: 40, weight: 700, color: C.text, align: "left", shadow: HALO }}
             box={{ x: 160, y: 270, width: 600, height: 56, origin: "topLeft" }}
             enter={{ type: "fade", duration: 0.15 }}
@@ -443,8 +430,8 @@ export default function Video() {
         <Title
           id="end"
           anchor="song"
-          at="beat:64"
-          duration={until(64)}
+          at="beat:72"
+          duration={until(72)}
           style={{
             font: display,
             size: 104,

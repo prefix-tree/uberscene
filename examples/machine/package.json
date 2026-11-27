@@ -2,7 +2,7 @@
   "name": "@uberscene/example-machine",
   "version": "0.1.0",
   "private": true,
-  "description": "A music machine: thirty-six seconds drawn in code, where every part moves on a note of its Strudel score.",
+  "description": "A music machine: forty seconds drawn in code, where every part moves on a note of its Strudel score.",
   "license": "MIT",
   "type": "module",
   "scripts": {

@@ -57,13 +57,19 @@ const level = (list: readonly StrudelEvent[]): ((e: StrudelEvent) => number) => 
 };
 const hats = of("hats");
 const lead = of("lead", (e) => String(e.note));
+/** The chord of each bar: the opening two bars of the drop, then four sections of four. */
+const CHORD_OF_BAR = [0, 1, ...Array.from({ length: 16 }, (_, bar) => bar % 4)];
 const notes = {
   kick: of("kick").map((e) => r3(e.time)),
   snare: of("snare").map((e) => r3(e.time)),
   hats: hats.map((e) => ({ time: r3(e.time), level: level(hats)(e) })),
   bass: of("bass").map((e) => ({ time: r3(e.time), note: String(e.note).toLowerCase(), midi: midi(e.note) })),
-  // A chord a bar, so the bar says which.
-  chords: of("chords").map((e) => ({ time: r3(e.time), length: r3(e.duration), chord: Math.floor(e.time / 2) % 4 })),
+  // A chord a bar, so the bar says which: each section starts again from the first chord.
+  chords: of("chords").map((e) => ({
+    time: r3(e.time),
+    length: r3(e.duration),
+    chord: CHORD_OF_BAR[Math.floor(e.time / 2)] ?? 0,
+  })),
   // The lead and its answer can sound together: a note is its moment and its pitch.
   lead: lead.map((e) => ({ time: r3(e.time), midi: midi(e.note), level: level(lead)(e) })),
 };

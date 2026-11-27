@@ -2,7 +2,7 @@
   "assets": {
     "song": {
       "kind": "audio",
-      "duration": 39,
+      "duration": 43,
       "audio": {
         "sampleRate": 48000,
         "channels": 2,
@@ -399,6 +399,46 @@
           "i": 77,
           "start": 38.5,
           "end": 39
+        },
+        {
+          "i": 78,
+          "start": 39,
+          "end": 39.5
+        },
+        {
+          "i": 79,
+          "start": 39.5,
+          "end": 40
+        },
+        {
+          "i": 80,
+          "start": 40,
+          "end": 40.5
+        },
+        {
+          "i": 81,
+          "start": 40.5,
+          "end": 41
+        },
+        {
+          "i": 82,
+          "start": 41,
+          "end": 41.5
+        },
+        {
+          "i": 83,
+          "start": 41.5,
+          "end": 42
+        },
+        {
+          "i": 84,
+          "start": 42,
+          "end": 42.5
+        },
+        {
+          "i": 85,
+          "start": 42.5,
+          "end": 43
         }
       ],
       "tempo": 120

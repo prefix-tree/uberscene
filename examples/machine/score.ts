@@ -1,4 +1,4 @@
-// The machine's music, as a Strudel score: 16 bars at 120 BPM and a last chord, a cycle a bar, so beat N is at N / 2
+// The machine's music, as a Strudel score: 18 bars at 120 BPM and a last chord, a cycle a bar, so beat N is at N / 2
 // seconds. The film draws one lane for each voice named here with `.voice("…")`, and drops a block for each of its
 // notes. The score leans on what Strudel does in a few characters:
 //
@@ -11,11 +11,12 @@
 //   .degradeBy("<0 .3 .6 .9>")      notes dropping out at random, more each bar, as the machine powers down
 //   .gain(perlin.range(…))          hats that are never twice the same loudness
 //
-//   bars 1–4    power up    the kick alone, then euclidean hats (bar 2), the bass (bar 3), the snare and a riser
-//   bars 5–8    build       the chords come on, held; the lead and its echo from bar 7; the kick rolls into the drop
-//   bars 9–12   drop        everything: chord stabs on a euclidean five, the acid bass on sixteenths, a sub
-//   bars 13–16  power down  the lead stops, then notes fall out of every voice until the kick is alone again
-//   bars 17–18  the end     one last hit, the first chord ringing out
+//   bars 1–2    the drop    two bars of it first, so the film opens with every voice playing
+//   bars 3–6    power up    the kick alone, then euclidean hats (bar 4), the bass (bar 5), the snare and a riser
+//   bars 7–10   build       the chords come on, held; the lead and its echo from bar 9; the kick rolls into the drop
+//   bars 11–14  drop        everything: chord stabs on a euclidean five, the acid bass on sixteenths, a sub
+//   bars 15–18  power down  the lead stops, then notes fall out of every voice until the kick is alone again
+//   bars 19–20  the end     one last hit, the first chord ringing out
 //
 // `scripts/music.ts` renders it with @uberscene/render's `renderStrudel` (Strudel is fetched on first use: it is
 // AGPL-3.0-or-later and not part of UberScene), adds the WAV with that grid, and writes each voice's notes to
@@ -104,9 +105,9 @@ const end = `stack(
 )`;
 
 export const SCORE = {
-  code: `arrange([4, ${powerUp}], [4, ${build}], [4, ${drop}], [4, ${powerDown}], [2, ${end}], [2, silence])`,
+  code: `arrange([2, ${drop}], [4, ${powerUp}], [4, ${build}], [4, ${drop}], [4, ${powerDown}], [2, ${end}], [2, silence])`,
   cps: 0.5,
-  /** 18 bars and the last chord's tail. */
-  seconds: 39,
+  /** 20 bars and the last chord's tail. */
+  seconds: 43,
   bpm: 120,
 } as const;
