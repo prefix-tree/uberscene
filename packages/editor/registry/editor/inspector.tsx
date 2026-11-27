@@ -153,7 +153,7 @@ export function Inspector({ className }: { className?: string }) {
                 <TextField
                   multiline
                   label="Text"
-                  value={state.tree.byId.get(item.id)?.text ?? ""}
+                  value={item.text ?? ""}
                   disabled={access("text") !== "literal"}
                   onCommit={(text) => run({ type: "text/setContent", params: { id: item.id, text } })}
                 />

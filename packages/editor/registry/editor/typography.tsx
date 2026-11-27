@@ -13,50 +13,15 @@ import {
 import type { ReactNode } from "react";
 
 import { useEdit, useEditor } from "@uberscene/editor";
-import { capabilitiesOf, FONT_CATALOG, findFont } from "@uberscene/kit/schema";
-import type { ActionInput } from "@uberscene/sdk";
+import { FONT_CATALOG, findFont } from "@uberscene/kit/schema";
 
+import { lookPanelOf } from "./elements";
 import { type Access, ColorField, fail, Group, LockMark, NumberField, Row } from "./fields";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Toggle } from "@/components/ui/toggle";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 type Look = Record<string, unknown>;
-type Kind = "title" | "captions";
-
-/** What each kind's `style` holds, in the order a designer reads a text panel. */
-const KEYS: Record<Kind, ReadonlySet<string>> = {
-  title: new Set([
-    "preset",
-    "font",
-    "weight",
-    "size",
-    "lineHeight",
-    "letterSpacing",
-    "align",
-    "valign",
-    "italic",
-    "decoration",
-    "color",
-    "background",
-    "stroke",
-    "shadow",
-  ]),
-  captions: new Set([
-    "preset",
-    "font",
-    "weight",
-    "size",
-    "align",
-    "color",
-    "background",
-    "stroke",
-    "shadow",
-    "highlight",
-    "highlightBox",
-    "upcoming",
-  ]),
-};
 const WEIGHTS = [100, 200, 300, 400, 500, 600, 700, 800, 900];
 const WEIGHT_NAMES: Record<number, string> = {
   100: "Thin",
@@ -81,9 +46,9 @@ export function Typography({ id, onError }: { id: string; onError: (message: str
   const { state } = useEditor();
   const edit = useEdit();
   const item = state.items.get(id);
-  if (!item || capabilitiesOf(item.kind).themeStyle !== "look") return null;
-  const kind = item.kind as Kind;
-  const has = (key: string) => KEYS[kind].has(key);
+  const panel = item && lookPanelOf(item.kind);
+  if (!item || !panel) return null;
+  const has = (key: string) => panel.keys.has(key);
   // What the file writes (a preset name alone, an object, or nothing) and what the text looks like now.
   const rawStyle = state.tree.byId.get(id)?.props.style;
   const own: Look = typeof rawStyle === "string" ? { preset: rawStyle } : isLook(rawStyle) ? rawStyle : {};
@@ -102,17 +67,13 @@ export function Typography({ id, onError }: { id: string; onError: (message: str
     if (value === undefined || value === "") delete next[key];
     else next[key] = value;
     const style = Object.keys(next).length === 0 ? undefined : next;
-    const action =
-      kind === "title"
-        ? { type: "element/update", params: { id, props: { style: style ?? {} } } }
-        : { type: "caption/setStyle", params: { captionsId: id, style } };
-    onError(fail(edit.execute(action as ActionInput)));
+    onError(fail(edit.execute(panel.write(id, style))));
   };
   /** A colour as it shows: a theme token resolved through the theme. */
   const shown = (v: unknown): string | undefined =>
     typeof v !== "string" ? undefined : v.startsWith("$") ? String(state.theme.tokens[v.slice(1)] ?? v) : v;
 
-  const presets = Object.keys(state.theme.styles[kind === "title" ? "title" : "captions"] ?? {});
+  const presets = Object.keys(state.theme.styles[item.kind] ?? {});
   const family = String(now.font ?? "Inter");
   const families = [...new Set([family, ...state.fonts.map((f) => f.family), ...FONT_CATALOG.map((f) => f.family)])];
   const weights = findFont(family)?.weights ?? WEIGHTS;
@@ -234,7 +195,7 @@ export function Typography({ id, onError }: { id: string; onError: (message: str
               <ToggleGroupItem value="right" aria-label="Align right">
                 <AlignRight />
               </ToggleGroupItem>
-              {kind === "title" && (
+              {panel.justify && (
                 <ToggleGroupItem value="justify" aria-label="Justify">
                   <AlignJustify />
                 </ToggleGroupItem>

@@ -19,13 +19,13 @@
       "read": 31
     },
     "render": {
-      "compare": 23,
+      "compare": 19,
       "list": 1,
-      "cast": 12,
+      "cast": 11,
       "read": 1
     },
     "editor": {
-      "compare": 7,
+      "compare": 4,
       "list": 0,
       "cast": 0,
       "read": 0
