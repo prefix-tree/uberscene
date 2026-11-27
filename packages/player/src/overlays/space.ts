@@ -1,6 +1,11 @@
 import type { ElementBox, Transform } from "@uberscene/kit/schema";
-import { elapsedSeconds } from "@uberscene/kit/schema";
-import { followOf, type Placement, type ResolvedState } from "@uberscene/sdk/resolver";
+import {
+  followOf,
+  lengthSeconds,
+  type Placement,
+  type ResolvedState,
+  secondsSinceStart,
+} from "@uberscene/sdk/resolver";
 
 import { DEFAULT_DURATION, type GraphicAnimation, motionAt } from "../model/motion";
 import {
@@ -61,11 +66,11 @@ export function spaceOf(state: ResolvedState, p: Placement, t: number): Space {
  * a follower is not left carried off screen by an entrance not yet played or an exit already over.
  */
 function heldRel(leader: OverlayPlacement, t: number): number {
-  const rel = elapsedSeconds(t, leader.start);
+  const rel = secondsSinceStart(leader, t);
   const length = (a: GraphicAnimation | undefined): number =>
     a && a.type !== "none" ? Math.max(0, a.duration ?? DEFAULT_DURATION) : 0;
-  if (rel < 0) return Math.min(length(leader.props.enter), leader.duration);
-  if (rel > leader.duration) return Math.max(0, leader.duration - length(leader.props.exit));
+  if (rel < 0) return Math.min(length(leader.props.enter), lengthSeconds(leader));
+  if (rel > lengthSeconds(leader)) return Math.max(0, lengthSeconds(leader) - length(leader.props.exit));
   return rel;
 }
 
@@ -83,7 +88,14 @@ function chain(state: ResolvedState, p: Placement, t: number, spaces: Map<string
   const box = animatedBox(leader.props.box, children, rel);
   const { size, fit } = overlaySize(state, leader, children, rel);
   const layout = layoutRect(outer.frame, size, fit, transform, box);
-  const motion = motionAt(leader.props.enter, leader.props.exit, rel, leader.duration, layout.rect.w, layout.rect.h);
+  const motion = motionAt(
+    leader.props.enter,
+    leader.props.exit,
+    rel,
+    lengthSeconds(leader),
+    layout.rect.w,
+    layout.rect.h,
+  );
   const space: Space = {
     frame: { width: layout.rect.w, height: layout.rect.h },
     matrix: multiply(outer.matrix, multiply(layout.matrix, motion.matrix)),

@@ -17,3 +17,12 @@ export { isSceneAsset, type SceneUse } from "./resolve/scene3d";
 export * from "./resolve/speed";
 export * from "./resolve/subtitles";
 export * from "./resolve/tree";
+export {
+  endS as endSeconds,
+  endT as endTicks,
+  lengthS as lengthSeconds,
+  lengthT as lengthTicks,
+  sinceStart as secondsSinceStart,
+  startS as startSeconds,
+  startT as startTicks,
+} from "./time";

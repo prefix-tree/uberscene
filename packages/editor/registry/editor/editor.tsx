@@ -3,7 +3,7 @@ import { type ReactElement, type ReactNode, useEffect } from "react";
 import { Editor as Parts, useEdit, useEditor, useSelection } from "@uberscene/editor";
 import { frameStartSeconds, nearestFrame } from "@uberscene/kit/schema";
 import { usePlayer } from "@uberscene/player";
-import type { Executor } from "@uberscene/sdk";
+import { type Executor, startSeconds } from "@uberscene/sdk";
 
 import { Inspector } from "./inspector";
 import { Layers } from "./layers";
@@ -131,7 +131,7 @@ function Shortcuts() {
         // is 0.0666…, not 0.066667, which is in frame 3. The edit writes it to the file without float noise.
         const { fps, rate } = state.composition;
         const frames = Math.round(e.shiftKey ? fps : 1) * (e.key === "ArrowLeft" ? -1 : 1);
-        const start = frameStartSeconds(Math.max(0, nearestFrame(item.start, rate) + frames), rate);
+        const start = frameStartSeconds(Math.max(0, nearestFrame(startSeconds(item), rate) + frames), rate);
         edit.execute({ type: "clip/move", params: { id: item.id, place: { start } } });
       }
     };

@@ -1,4 +1,4 @@
-import { lookupAsset, type Placement, type ResolvedState } from "@uberscene/sdk/resolver";
+import { endSeconds, lookupAsset, type Placement, type ResolvedState, startSeconds } from "@uberscene/sdk/resolver";
 
 import { MOUNT_AHEAD_S, UNMOUNT_BEHIND_S } from "../constants";
 import { matteOf } from "../model/frame-plan";
@@ -33,7 +33,7 @@ export class DecoderPool {
         if (p.kind !== "clip" || !p.source) continue;
         const asset = lookupAsset(state.manifest, p.source.asset);
         if (!asset) continue;
-        if (t < p.start - MOUNT_AHEAD_S || t >= p.end + UNMOUNT_BEHIND_S) continue;
+        if (t < startSeconds(p) - MOUNT_AHEAD_S || t >= endSeconds(p) + UNMOUNT_BEHIND_S) continue;
         want.set(p.id, {
           p,
           children: p.children.map((id) => state.items.get(id)).filter((c): c is Placement => c !== undefined),
@@ -57,13 +57,13 @@ export class DecoderPool {
         const { source } = this.sources.acquire(w.p.source!.asset);
         const d = new ClipDecoder(source, w.p, w.children, speed);
         this.decoders.set(id, d);
-        void d.prime(Math.max(t, w.p.start));
+        void d.prime(Math.max(t, startSeconds(w.p)));
       }
       if (w.matte && !this.mattes.has(id)) {
         const { source } = this.sources.acquire(w.matte);
         const m = new ClipDecoder(source, w.p, w.children, speed, w.matte);
         this.mattes.set(id, m);
-        void m.prime(Math.max(t, w.p.start));
+        void m.prime(Math.max(t, startSeconds(w.p)));
       }
     }
     this.sources.sweep();
@@ -84,7 +84,7 @@ export class DecoderPool {
 
   /** After a seek: every decoder jumps to `t`. */
   seekAll(t: number): Promise<void> {
-    return Promise.all(this.all().map((d) => d.prime(Math.max(t, d.placement.start)))).then(() => undefined);
+    return Promise.all(this.all().map((d) => d.prime(Math.max(t, startSeconds(d.placement))))).then(() => undefined);
   }
 
   /** Resolves when every decoder has its first frame. */
