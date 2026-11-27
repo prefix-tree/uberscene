@@ -301,5 +301,14 @@ export function kindsWithProp<P extends string>(prop: P): readonly KindWith<P>[]
     .map((component) => component.kind as KindWith<P>);
 }
 
+/**
+ * Whether `kind`'s schema has `prop`: whether an element of it takes a `blend`, a `fade`, a `src`. Typed, so what
+ * follows knows the kind is one of those whose props have it.
+ */
+export function kindTakes<P extends string>(kind: Kind, prop: P): kind is KindWith<P> {
+  const schema = SCHEMAS_BY_KIND[kind] as unknown as Partial<z.ZodObject> | undefined;
+  return schema?.shape !== undefined && prop in schema.shape;
+}
+
 /** The kinds a file writes as tags: every kind but the items the resolver makes from props. */
 export type ElementKind = (typeof ELEMENTS)[keyof typeof ELEMENTS]["kind"];

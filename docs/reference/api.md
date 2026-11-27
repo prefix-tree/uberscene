@@ -534,7 +534,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/kit/schema`
 
-416 exports.
+417 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -719,6 +719,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `KINDS` | const | Every kind, in the vocabulary's order. |
 | `kindsWhere` | function | The kinds whose entry passes `test`, in the table's order. |
 | `kindsWithProp` | function | The kinds whose schema has `prop`, in the vocabulary's order. |
+| `kindTakes` | function | Whether `kind`'s schema has `prop`. |
 | `KindTraits` | type | What a kind's row writes of itself. |
 | `KindWith` | type | The kinds whose props have `P`. |
 | `KIT_ELEMENTS` | const | The kit's part of each kind that has a folder of its own. |
