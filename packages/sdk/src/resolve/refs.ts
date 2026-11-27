@@ -60,8 +60,13 @@ export interface RefKind {
   readonly targets?: (kind: string) => boolean;
   /** The forms of the reference grammar it is written in. */
   readonly accept: readonly RefForm[];
-  /** The references a node writes, each with the prop it sits at. */
-  readonly read: (node: CollectedNode, ctx: RefContext) => readonly Written[];
+  /**
+   * The references a node writes, each with the prop it sits at. It reads the node alone (its props and the items
+   * under it), so what it returns is kept for as long as the node is the same object.
+   */
+  readonly read: (node: CollectedNode) => readonly Written[];
+  /** What a written reference names in this file, where the text alone does not say (a duck: a track's id or a role). */
+  readonly aim?: (written: Written, ctx: RefContext) => RefTarget;
   /** Why this holder may not name this target where they stand (the camera's side), or null. */
   readonly scope?: (from: string, to: string, written: Written, ctx: RefContext) => string | null;
   /** Why this target cannot be read, though its kind is right, or null. */
@@ -104,6 +109,10 @@ const ON_AN_EDGE: ReadonlySet<string> = new Set(kindsWithProp("on"));
 const PUSHERS: ReadonlySet<string> = new Set(kindsWithProp("push"));
 const WITH_TIMES: ReadonlySet<string> = new Set(kindsWithProp("times"));
 
+const NOTHING: readonly Written[] = [];
+/** The props a time reference may sit at: a footage range's ends, and a caption cue's. */
+const MARKER_PROPS = ["in", "out", "start", "end"] as const;
+
 /** A reference written as an element's id, with the edges the prop takes. */
 function element(prop: string, text: unknown, edges: readonly ("start" | "mid" | "end")[] = []): Written[] {
   if (!str(text)) return [];
@@ -124,21 +133,22 @@ const WITH_EFFECTS: ReadonlySet<string> = new Set(kindsWithProp("effects"));
  * The links an element writes, each with the path of the value that holds it. The resolver has already taken each
  * one out of the props as an item under the element (`<id>.<path>.link`), or under one of its effects.
  */
-function links(node: CollectedNode): Written[] {
-  // An item the resolver made (a key, an effect) writes nothing itself: its links are its element's.
-  if (capabilitiesOf(node.kind).placementScope === "child") return [];
-  const out: Written[] = [];
+function links(node: CollectedNode): readonly Written[] {
+  // An item the resolver made (a key, an effect) writes nothing itself: its links are its element's. An element with
+  // nothing under it has no link either: most of a file, so this is the way out taken most.
+  if (node.children.length === 0 || capabilitiesOf(node.kind).placementScope === "child") return NOTHING;
+  let out: Written[] | undefined;
   const visit = (item: CollectedNode): void => {
     const text = props(item).type === "link" ? props(item).link : undefined;
     if (str(text) && item.id.endsWith(".link")) {
       const target = parseRef(text, ["prop"]);
       const prop = item.id.slice(node.id.length + 1, -".link".length);
-      if (target.type === "prop") out.push({ prop, text, target });
+      if (target.type === "prop") (out ??= []).push({ prop, text, target });
     }
     for (const child of item.children) if (capabilitiesOf(child.kind).placementScope === "child") visit(child);
   };
   for (const child of node.children) if (capabilitiesOf(child.kind).placementScope === "child") visit(child);
-  return out;
+  return out ?? NOTHING;
 }
 
 const duration = (node: CollectedNode): { match?: unknown; until?: unknown } =>
@@ -252,15 +262,16 @@ export const REF_KINDS: Readonly<Record<string, RefKind>> = {
     name: "duck",
     holders: (kind) => DUCKERS.has(kind),
     accept: ["track", "role"],
-    read: (node, ctx) => {
+    read: (node) => {
       const under = (props(node).duck as { under?: unknown } | undefined)?.under;
-      if (!str(under)) return [];
-      // Written bare: a track's id where one has it, else a role.
-      const target: RefTarget = ctx.tracks.some((t) => t.id === under)
-        ? { type: "track", id: under }
-        : { type: "role", role: under };
-      return [{ prop: "duck.under", text: under, target }];
+      return str(under) ? [{ prop: "duck.under", text: under, target: { type: "role", role: under } }] : NOTHING;
     },
+    // Written bare: a track's id where one has it, else a role. Which one depends on the file's tracks, not on the
+    // element, so it is settled each time the graph is built.
+    aim: (written, ctx) =>
+      ctx.tracks.some((t) => t.id === written.text)
+        ? { type: "track", id: written.text }
+        : { type: "role", role: written.text },
     phase: "frame",
     facet: "value",
     cardinality: "many",
@@ -274,8 +285,14 @@ export const REF_KINDS: Readonly<Record<string, RefKind>> = {
     name: "marker",
     holders: () => true,
     accept: ["marker"],
-    // A footage range's ends, and a caption cue's: the props a time reference may sit at.
-    read: (node) => (["in", "out", "start", "end"] as const).flatMap((prop) => marker(prop, props(node)[prop])),
+    read: (node) => {
+      let out: Written[] | undefined;
+      for (const prop of MARKER_PROPS) {
+        const at = props(node)[prop];
+        if (str(at)) for (const written of marker(prop, at)) (out ??= []).push(written);
+      }
+      return out ?? NOTHING;
+    },
     phase: "placement",
     facet: "time",
     cardinality: "one",
@@ -353,6 +370,31 @@ const EMPTY: RefGraph = {
   order: { time: [], space: [], value: [] },
 };
 
+/** What one node writes: for each way to refer it uses, its references. */
+type WrittenByKind = readonly { readonly kind: RefKind; readonly written: readonly Written[] }[];
+const WRITES_NOTHING: WrittenByKind = [];
+/**
+ * What each node writes, kept by the node itself. An edit makes a new node for the element it changes and for
+ * every element above it (the same rule the resolver's other per-node results rest on), so a drag reads three nodes
+ * again and takes the rest from here: reading every node of a long timeline on each step was most of the graph's
+ * cost.
+ */
+const writtenByNode = new WeakMap<CollectedNode, WrittenByKind>();
+
+function writtenOf(node: CollectedNode): WrittenByKind {
+  const known = writtenByNode.get(node);
+  if (known) return known;
+  let out: { kind: RefKind; written: readonly Written[] }[] | undefined;
+  for (const kind of KINDS) {
+    if (!kind.holders(node.kind)) continue;
+    const written = kind.read(node);
+    if (written.length > 0) (out ??= []).push({ kind, written });
+  }
+  const result = out ?? WRITES_NOTHING;
+  writtenByNode.set(node, result);
+  return result;
+}
+
 /** The ids a written reference names, among what exists. */
 function named(target: RefTarget, ctx: RefContext): string[] {
   switch (target.type) {
@@ -388,9 +430,9 @@ export function buildRefGraph(
     errors.set(kind.name, list);
   };
   for (const node of tree.byId.values()) {
-    for (const kind of KINDS) {
-      if (!kind.holders(node.kind)) continue;
-      for (const written of kind.read(node, ctx)) {
+    for (const { kind, written: all } of writtenOf(node)) {
+      for (const read of all) {
+        const written = kind.aim ? { ...read, target: kind.aim(read, ctx) } : read;
         const ids = named(written.target, ctx);
         if (ids.length === 0) {
           if (kind.report) fail(kind, "UNKNOWN_REF", node.id, written.prop, kind.report.unknown(written));
@@ -453,9 +495,24 @@ export function buildRefGraph(
       }
     }
   }
-  const order = { time: orderOf("time", edges, tree), space: orderOf("space", edges, tree), value: [] as string[] };
-  order.value = orderOf("value", edges, tree);
-  return { graph: { edges, from, to, order }, errors };
+  return { graph: { edges, from, to, order: lazyOrder(edges, tree) }, errors };
+}
+
+/** The order of each facet, worked out the first time it is read: most resolves read none, a frame reads one. */
+function lazyOrder(edges: readonly RefEdge[], tree: CollectedTree): RefGraph["order"] {
+  const known: Partial<Record<Facet, readonly string[]>> = {};
+  const of = (facet: Facet) => (known[facet] ??= orderOf(facet, edges, tree));
+  return {
+    get time() {
+      return of("time");
+    },
+    get space() {
+      return of("space");
+    },
+    get value() {
+      return of("value");
+    },
+  };
 }
 
 /** The elements in the references of one facet, each after the ones it names; those in a circle last, in file order. */
