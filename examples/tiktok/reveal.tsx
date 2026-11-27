@@ -5,21 +5,37 @@
 //
 // The film keeps its size and only moves, so nothing in it is scaled down; the split line is at y 840, and the code's
 // lit line is held inside TikTok's safe zone (y 240 to 1260), above the caption and buttons.
+//
+// The code can be several files, `pages`, each from a second of the film on, as tabs of the editor switching on a beat
+// (the music's score, then the pictures' file). A `hook` line can open the post for its first three seconds.
 import { z } from "zod";
 
-import { Clip, Composition, Layer, Track, useLayer } from "@uberscene/kit";
+import { Clip, Composition, Layer, Title, Track, useLayer } from "@uberscene/kit";
 
 import { CodeView } from "./code-view";
+import { display } from "./frame";
+
+const litSchema = z.array(z.object({ line: z.number(), from: z.number(), to: z.number() }));
+const pageSchema = z.object({
+  file: z.string(),
+  /** What the file plays, shown beside its name: "the music", "the pictures". */
+  label: z.string(),
+  code: z.string(),
+  /** The lines lit while what they write plays, in seconds of the film. */
+  lit: litSchema,
+  /** The second of the film this page comes up at. */
+  from: z.number(),
+});
 
 export const schema = z.object({
   film: z.string(),
   width: z.number(),
   height: z.number(),
   length: z.number(),
-  /** The film's source, and the lines lit while what they write is on screen, in seconds of the film. */
-  code: z.string(),
-  lit: z.array(z.object({ line: z.number(), from: z.number(), to: z.number() })),
-  file: z.string(),
+  /** The code shown below the film: the film's source, or several files, each from a second of the film on. */
+  pages: z.array(pageSchema).min(1),
+  /** A line over the first three seconds that says what the post is. */
+  hook: z.string().optional(),
   /** When the code comes up and when it goes, in seconds of the film. */
   split: z.number(),
   back: z.number(),
@@ -30,9 +46,15 @@ export const defaults: z.infer<typeof schema> = {
   width: 1080,
   height: 1920,
   length: 8,
-  code: "export default function Video() {\n  return <Composition />;\n}",
-  lit: [],
-  file: "video.tsx",
+  pages: [
+    {
+      file: "video.tsx",
+      label: "playing above",
+      code: "export default function Video() {\n  return <Composition />;\n}",
+      lit: [],
+      from: 0,
+    },
+  ],
   split: 2,
   back: 6,
 };
@@ -48,26 +70,23 @@ const DROP = 0.3;
 const easeInOut = (k: number): number => (k < 0.5 ? 4 * k * k * k : 1 - (-2 * k + 2) ** 3 / 2);
 
 /** The code, sliding up from below the frame as the layer starts and back down as it ends. */
-function Code(props: {
-  code: string;
-  lit: z.infer<typeof schema>["lit"];
-  length: number;
-  file: string;
-  split: number;
-}) {
+function Code(props: { pages: z.infer<typeof pageSchema>[]; length: number; split: number }) {
   const { elapsed, remaining } = useLayer();
   const up = Math.min(easeInOut(Math.min(1, elapsed / RISE)), easeInOut(Math.min(1, remaining / DROP)));
   const top = SPLIT_Y + (1 - up) * (H - SPLIT_Y);
+  // The window reads the film's clock, so its lines light as the film above plays them; the page is the last one up.
+  const t = props.split + elapsed;
+  const page = props.pages.filter((p) => p.from <= t).at(-1) ?? (props.pages[0] as z.infer<typeof pageSchema>);
   return (
     // The page under the code starts at the code's top edge, so the film above stays in view.
     <div style={{ position: "absolute", left: 0, right: 0, top, bottom: 0, background: "#0b0d12" }}>
       <CodeView
-        code={props.code}
-        lit={props.lit}
-        // The window reads the film's clock, so its lines light as the film above plays them.
-        t={props.split + elapsed}
+        key={page.file}
+        code={page.code}
+        lit={page.lit}
+        t={t}
         length={props.length}
-        file={`${props.file} · playing above`}
+        file={`${page.file} · ${page.label}`}
         x={24}
         y={18}
         w={W - 48}
@@ -82,7 +101,7 @@ function Code(props: {
 }
 
 export default function Reveal(props: z.infer<typeof schema>) {
-  const { film, width, height, length, code, lit, file, split, back } = props;
+  const { film, width, height, length, pages, hook, split, back } = props;
   const tall = height > width;
   const h = tall ? H : Math.round((W * height) / width);
   // Up: the film's centre moves so its middle shows above the split line.
@@ -115,9 +134,31 @@ export default function Reveal(props: z.infer<typeof schema>) {
       <Track id="code" layout="free">
         {/* A ground: it runs under the phone's caption and buttons, faded; its lit line is held inside the safe zone. */}
         <Layer id="source" start={split} duration={back - split} ground>
-          <Code code={code} lit={lit} length={length} file={file} split={split} />
+          <Code pages={pages} length={length} split={split} />
         </Layer>
       </Track>
+      {hook ? (
+        <Track id="hook-line" layout="free">
+          <Title
+            id="hook"
+            start={0}
+            duration={3}
+            style={{
+              font: display,
+              size: 92,
+              weight: 800,
+              color: "#ffffff",
+              align: "center",
+              shadow: { color: "rgba(0, 0, 0, 0.75)", blur: 30, y: 2 },
+            }}
+            box={{ x: W / 2, y: 760, width: 960, height: 260, origin: "center" }}
+            enter={{ type: "fade", duration: 0.2 }}
+            exit={{ type: "fade", duration: 0.3 }}
+          >
+            {hook}
+          </Title>
+        </Track>
+      ) : null}
     </Composition>
   );
 }

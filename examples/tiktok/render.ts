@@ -31,6 +31,13 @@ interface Film {
    * middle third, each end moved to the nearest beat when the film has music.
    */
   readonly reveal?: readonly [number, number];
+  /** A line over the reveal's first three seconds, saying what the post is. */
+  readonly hook?: string;
+  /**
+   * The film's music as a Strudel score (from examples/): shown first in the reveal, its sections lit as they play,
+   * until `until`, when the editor switches to the film's file.
+   */
+  readonly music?: { readonly file: string; readonly until: number };
 }
 
 const FILMS: Record<string, Film> = {
@@ -44,10 +51,14 @@ const FILMS: Record<string, Film> = {
   // The code comes up for the build, as the lightning strikes, and the film takes the frame back on the drop.
   orbit: { file: "orbit/video.tsx", needs: "pnpm --filter @uberscene/example-orbit prepare-media", reveal: [8, 16] },
   // The code comes up for the Shuttle, and the film takes the frame back on the drop, as the Falcon Heavy lights.
+  // The hook says what it is; the code comes up for Apollo with the music's score, switches to the pictures' file as
+  // Atlantis lights, and the film takes the frame back on the drop, as the Falcon Heavy lights.
   liftoff: {
     file: "liftoff/video.tsx",
     needs: "pnpm --filter @uberscene/example-liftoff prepare-media",
-    reveal: [16, 24],
+    reveal: [12, 24],
+    hook: "This video is code.\nSo is the music.",
+    music: { file: "liftoff/score.ts", until: 16 },
   },
 };
 
@@ -112,9 +123,19 @@ for (const [name, film] of Object.entries(FILMS)) {
   // 4. The three posts.
   const props = { code, lit, film: id, width, height, length, file: basename(file), hook: "This video is code." };
   const [split, back] = film.reveal ?? middleThird(video.state, length);
+  const picture = { file: basename(file), label: film.music ? "the pictures" : "playing above", code, lit };
+  const pages = film.music
+    ? (() => {
+        const score = readFileSync(join(examples, film.music.file), "utf8");
+        return [
+          { file: basename(film.music.file), label: "the music", code: score, lit: scoreLit(score), from: 0 },
+          { ...picture, from: film.music.until },
+        ];
+      })()
+    : [{ ...picture, from: 0 }];
   for (const [kind, page, extra] of [
     ["code", "frame.tsx", props],
-    ["reveal", "reveal.tsx", { film: id, width, height, length, code, lit, file: basename(file), split, back }],
+    ["reveal", "reveal.tsx", { film: id, width, height, length, pages, split, back, hook: film.hook }],
     ["post", "post.tsx", { film: id, width, height, length }],
   ] as const) {
     if (kinds && !kinds.includes(kind)) continue;
@@ -143,6 +164,28 @@ for (const [name, film] of Object.entries(FILMS)) {
       if (layout.issues.length > 0) process.stderr.write(formatLayout(layout));
     }
   }
+}
+
+/**
+ * The lines of a Strudel score to light: each section's `const name = \`stack(` block, every line of it, while the
+ * section plays. The sections' times come from the score's own `arrange([cycles, \${name}], …)` and its `cps`.
+ * Lines go in bottom-up, so the line the window keeps in view is the block's first.
+ */
+function scoreLit(code: string): { line: number; from: number; to: number }[] {
+  const lines = code.split("\n");
+  const cps = Number(/cps:\s*([\d.]+)/.exec(code)?.[1] ?? 0.5);
+  const lit: { line: number; from: number; to: number }[] = [];
+  let at = 0;
+  for (const [, cycles, name] of code.matchAll(/\[(\d+),\s*\$\{(\w+)\}\]/g)) {
+    const from = at / cps;
+    at += Number(cycles);
+    const first = lines.findIndex((l) => l.startsWith(`const ${name} = `));
+    if (first < 0) continue;
+    let last = first;
+    while (last < lines.length - 1 && !lines[last]?.trimEnd().endsWith("`;")) last++;
+    for (let line = last; line >= first; line--) lit.push({ line, from: round(from), to: round(at / cps) });
+  }
+  return lit;
 }
 
 /** The middle third of a film, each end moved to the nearest beat of its music when it has some. */

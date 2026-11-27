@@ -9,6 +9,9 @@ Each film becomes two vertical posts, 1080x1920:
   source rises into the bottom, lighting each line as what it writes comes on screen; then the code drops away and the
   film fills the frame again. For a film cut to music the stretch runs from one section to the next (orbit: the code
   comes up for the build and goes on the drop), so both moves land on beats. (`reveal.tsx`.)
+  A film can open on a hook line for its first three seconds (`hook`), and show its music's Strudel score before its
+  pictures' file (`music`): Liftoff's reveal says "This video is code. So is the music.", brings up `score.ts` with
+  the playing section lit, and switches to `video.tsx` as Atlantis lights.
 - **`<name>-post.mp4`**: just the film. A tall film fills the frame; a wide one sits across it over a blurred copy of
   itself, so there are no bars. (`post.tsx`.)
 
