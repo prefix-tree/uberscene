@@ -38,7 +38,7 @@ The props of `<Audio>` that set a layer's level:
 <!-- sync: props Audio volume fade duck -->
 | prop | type | default | what it is |
 |---|---|---|---|
-| `volume` | number (0..4) \| { at, value, easing }[] |  | A gain: 1 plays the source as it is, 0 mutes it, 2 is twice as loud; keys change it over time. |
+| `volume` | number (0..4) \| { at, value, easing }[] \| { link, scale, offset, delay } |  | A gain: 1 plays the source as it is, 0 mutes it, 2 is twice as loud; keys change it over time, or a link sets it. |
 | `fade` | { in, out } |  | Seconds the sound fades in at the start and out at the end. |
 | `duck` | { under, to, attack, release } |  | Turns this sound down while another plays: `under` is a track id or a track role (`dialogue`), `to` the volume it falls to, `attack` and `release` the seconds it takes to fall and recover. |
 <!-- /sync -->

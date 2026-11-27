@@ -69,8 +69,8 @@ A stretch of a video or image asset, trimmed by seconds, transcript words or cam
 | `blend` | "normal" \| "multiply" \| "screen" \| "overlay" \| "darken" \| … 13 more |  |  | How it mixes with what is under it, as CSS `mix-blend-mode` does. |
 | `effects` | { type, enabled }[] |  |  | Effects drawn on it, in order: each `{ type, ...params }`, a param written as keys to animate it. |
 | `blendOpacity` | number (0..1) |  |  | How strongly it blends: multiplied into its opacity. |
-| `volume` | number (0..4) \| { at, value, easing }[] |  |  | A gain: 1 plays the source as it is, 0 mutes it, 2 is twice as loud; keys change it over time. |
-| `pan` | number (-1..1) \| { at, value, easing }[] |  |  | Where it sits between the speakers, from -1 (left) to 1 (right); keys move it. |
+| `volume` | number (0..4) \| { at, value, easing }[] \| { link, scale, offset, delay } |  |  | A gain: 1 plays the source as it is, 0 mutes it, 2 is twice as loud; keys change it over time, or a link sets it. |
+| `pan` | number (-1..1) \| { at, value, easing }[] \| { link, scale, offset, delay } |  |  | Where it sits between the speakers, from -1 (left) to 1 (right); keys move it, or a link sets it. |
 | `fade` | { in, out } |  |  | Seconds the sound fades in at the start and out at the end. |
 | `duck` | { under, to, attack, release } |  |  | Turns this sound down while another plays: `under` is a track id or a track role (`dialogue`), `to` the volume it falls to, `attack` and `release` the seconds it takes to fall and recover. |
 | `frame` | { focus } |  |  | Reframe to the composition's aspect: the resolver writes `transform.crop` from the source size and this focus, unless a crop is written. |
@@ -503,7 +503,7 @@ A sequence written once as a component and placed like a clip.
 | `of` | any \| string |  | yes | A pure helper component returning tracks, or a file reference. Validated at collect time. |
 | `in` | number (0..∞) \| string |  |  | Where in the nested sequence it starts, in its own seconds. |
 | `out` | number (0..∞) \| string |  |  | Where in the nested sequence it ends, as `in`. |
-| `volume` | number (0..4) \| { at, value, easing }[] |  |  | A gain on all its sound: 1 as it is, 0 muted; keys change it over time. |
+| `volume` | number (0..4) \| { at, value, easing }[] \| { link, scale, offset, delay } |  |  | A gain on all its sound: 1 as it is, 0 muted; keys change it over time. |
 
 Timed, visual, audible, trims its source, transformable. Children: `mask`. [All elements](https://uberscene.prefixtree.xyz/reference/elements/)
 
@@ -571,8 +571,8 @@ A stretch of a sound asset: volume and pan (constant or keys), fades, ducking un
 | `speed` | number (0.1..20) \| { at, value, easing }[] |  |  | Playback rate: 2 plays twice as fast and half as long; keys ramp it. |
 | `freezes` | { start, duration, source }[] |  |  | Frames held on screen while the clip's time stands still. |
 | `reverse` | boolean | `false` |  | Plays the trimmed source backwards. |
-| `volume` | number (0..4) \| { at, value, easing }[] |  |  | A gain: 1 plays the source as it is, 0 mutes it, 2 is twice as loud; keys change it over time. |
-| `pan` | number (-1..1) \| { at, value, easing }[] |  |  | Where it sits between the speakers, from -1 (left) to 1 (right); keys move it. |
+| `volume` | number (0..4) \| { at, value, easing }[] \| { link, scale, offset, delay } |  |  | A gain: 1 plays the source as it is, 0 mutes it, 2 is twice as loud; keys change it over time, or a link sets it. |
+| `pan` | number (-1..1) \| { at, value, easing }[] \| { link, scale, offset, delay } |  |  | Where it sits between the speakers, from -1 (left) to 1 (right); keys move it, or a link sets it. |
 | `fade` | { in, out } |  |  | Seconds the sound fades in at the start and out at the end. |
 | `duck` | { under, to, attack, release } |  |  | Turns this sound down while another plays: `under` is a track id or a track role (`dialogue`), `to` the volume it falls to, `attack` and `release` the seconds it takes to fall and recover. |
 

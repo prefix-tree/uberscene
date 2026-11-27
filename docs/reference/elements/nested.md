@@ -33,6 +33,6 @@ The coffee footage is Pixabay videos [209419](https://pixabay.com/videos/id-2094
 | `of` | any \| string |  | yes | A pure helper component returning tracks, or a file reference. Validated at collect time. |
 | `in` | number (0..∞) \| string |  |  | Where in the nested sequence it starts, in its own seconds. |
 | `out` | number (0..∞) \| string |  |  | Where in the nested sequence it ends, as `in`. |
-| `volume` | number (0..4) \| { at, value, easing }[] |  |  | A gain on all its sound: 1 as it is, 0 muted; keys change it over time. |
+| `volume` | number (0..4) \| { at, value, easing }[] \| { link, scale, offset, delay } |  |  | A gain on all its sound: 1 as it is, 0 muted; keys change it over time. |
 
 Timed, visual, audible, trims its source, transformable. Children: `mask`. [All elements](/reference/elements/)

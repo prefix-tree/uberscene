@@ -198,6 +198,13 @@ export function isLink(value: unknown): value is Link {
 export const animatable = <S extends z.ZodType>(value: S) =>
   z.union([value, keysSchema(value), generatorSchema(value), linkSchema]).transform((v) => v as z.output<S>);
 
+/**
+ * A number written as a constant, as keys, or as a link to another element's value, and not as a generator: a
+ * sound's level and its pan, which the mixer reads from keys alone.
+ */
+export const linked = <S extends z.ZodType>(value: S) =>
+  z.union([value, keysSchema(value), linkSchema]).transform((v) => v as z.output<S>);
+
 /** Which point of an element's box `box.x` and `box.y` place: a corner, the middle of an edge, or the centre. */
 export const BOX_ORIGINS = [
   "topLeft",
@@ -367,14 +374,14 @@ export const visualProps = {
   blendOpacity: z.number().min(0).max(1).optional(),
 };
 
-/** A gain: 1 plays the source as it is, 0 mutes it, 2 is twice as loud; keys change it over time. */
-export const volumeSchema = keyed(z.number().min(0).max(4));
+/** A gain: 1 plays the source as it is, 0 mutes it, 2 is twice as loud; keys change it over time, or a link sets it. */
+export const volumeSchema = linked(z.number().min(0).max(4));
 
 export const audioProps = {
-  /** A gain: 1 plays the source as it is, 0 mutes it, 2 is twice as loud; keys change it over time. */
+  /** A gain: 1 plays the source as it is, 0 mutes it, 2 is twice as loud; keys change it over time, or a link sets it. */
   volume: volumeSchema.optional(),
-  /** Where it sits between the speakers, from -1 (left) to 1 (right); keys move it. */
-  pan: keyed(z.number().min(-1).max(1)).optional(),
+  /** Where it sits between the speakers, from -1 (left) to 1 (right); keys move it, or a link sets it. */
+  pan: linked(z.number().min(-1).max(1)).optional(),
   /** Seconds the sound fades in at the start and out at the end. */
   fade: z
     .strictObject({ in: z.number().nonnegative().optional(), out: z.number().nonnegative().optional() })

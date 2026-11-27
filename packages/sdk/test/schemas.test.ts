@@ -95,6 +95,20 @@ describe("element schemas", () => {
     expect(isKeyframeProperty("opacity")).toBe(false);
   });
 
+  it("a sound's level and pan take a link, as the resolver always read one, and still no generator", () => {
+    const clip = (more: object) => ELEMENTS.Clip.schema.safeParse({ id: "c", src: "asset:a", ...more }).success;
+    expect(clip({ volume: { link: "talk.volume", scale: -0.5, offset: 1 } })).toBe(true);
+    expect(clip({ pan: { link: "talk.volume" } })).toBe(true);
+    expect(clip({ volume: [{ at: 0, value: 0 }] })).toBe(true);
+    expect(clip({ volume: { type: "wiggle", amount: 0.1 } })).toBe(false);
+    expect(ELEMENTS.Audio.schema.safeParse({ id: "a", src: "asset:a", volume: { link: "talk.volume" } }).success).toBe(
+      true,
+    );
+    expect(ELEMENTS.Nested.schema.safeParse({ id: "n", of: "file:x", volume: { link: "c.volume" } }).success).toBe(
+      true,
+    );
+  });
+
   it("Svg takes src or content, not both", () => {
     expect(ELEMENTS.Svg.schema.safeParse({ id: "v", src: "asset:logo", content: "<svg/>" }).success).toBe(false);
     expect(ELEMENTS.Svg.schema.safeParse({ id: "v" }).success).toBe(false);
