@@ -1,6 +1,7 @@
 import traverseModule from "@babel/traverse";
 import * as t from "@babel/types";
 
+import type { TextRun } from "@uberscene/kit/schema";
 import { ELEMENTS, findFont, MAIN_TRACK_ID } from "@uberscene/kit/schema";
 
 import { type NodeSpec, nodeSpecOf } from "../actions/types";
@@ -14,7 +15,7 @@ import { declaredIdentifiers } from "./lint/rules/fonts";
 import { identifier } from "./lint/rules/theme";
 import type { Range } from "./parse";
 import { parseSource } from "./parse";
-import { escapeText, Identifier, isPlainAttribute, printElement, printLiteral, printProp, printValue } from "./print";
+import { Identifier, isPlainAttribute, printElement, printLiteral, printProp, printRuns, printValue } from "./print";
 import { wrapMainTrack } from "./wrap-track";
 
 const traverse = ((traverseModule as unknown as { default?: typeof traverseModule }).default ??
@@ -27,8 +28,9 @@ function elementImports(text: string): SourceEdit[] {
   traverse(ast, {
     JSXOpeningElement(path) {
       const name = path.node.name;
-      if (t.isJSXIdentifier(name) && Object.hasOwn(ELEMENTS, name.name) && !path.scope.hasBinding(name.name))
-        missing.add(name.name);
+      if (!t.isJSXIdentifier(name)) return;
+      const known = Object.hasOwn(ELEMENTS, name.name) || name.name === "Mark";
+      if (known && !path.scope.hasBinding(name.name)) missing.add(name.name);
     },
   });
   if (!missing.size) return [];
@@ -294,7 +296,7 @@ export function fold(
           edits.push(e);
         }
         if (net.text !== undefined) {
-          const e = textEdit(site, net.text);
+          const e = textEdit(site, net.text, net.runs);
           if (e) edits.push(e);
           else skipped.push({ id, reason: "cannot set text on this element" });
         }
@@ -523,7 +525,12 @@ export function foldToSource(text: string, log: PatchLog, state: ResolvedState, 
       const folded = applyEdits(current, edits);
       // Only a printed element can bring a tag the file does not import: an insert, a bake, or the main track wrapped
       // around its clips. A drag that changes values skips this whole parse of the file, which the editor runs per step.
-      const printed = wrapped || baked.length > 0 || allEdits.some((e) => e.kind === "insert" || e.kind === "bake");
+      const printed =
+        wrapped ||
+        baked.length > 0 ||
+        allEdits.some(
+          (e) => e.kind === "insert" || e.kind === "bake" || (e.kind === "text" && e.text.includes("<Mark")),
+        );
       const imports = printed ? elementImports(folded) : [];
       const withImports = applyEdits(folded, imports);
       const declarations = fontDeclarations(withImports, fonts);
@@ -757,8 +764,8 @@ function keyedObject(text: string, site: PropSite, value: Readonly<Record<string
   return out;
 }
 
-function textEdit(site: ElementSite, value: string): SourceEdit | null {
-  const children = escapeText(value);
+function textEdit(site: ElementSite, value: string, runs?: readonly TextRun[]): SourceEdit | null {
+  const children = printRuns(value, runs);
   if (site.childrenRange) return { kind: "text", id: site.id, range: site.childrenRange, text: children };
   const slash = site.range[1] - 2;
   return { kind: "text", id: site.id, range: [slash, site.range[1]], text: `>${children}</${site.name}>` };

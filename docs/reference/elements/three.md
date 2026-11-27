@@ -27,20 +27,17 @@ The player draws it once the host calls `installFreeCodeLibraries()` ([Free code
 | `anchor` | "start" \| string |  |  | Overlays: start relative to another element's start, or to its end with `id.end`. |
 | `at` | string |  |  | With `anchor`: a word, shot, silence or beat of the anchor's source (`word:14655`, `beat:16`); the start is where the anchor plays it, plus `offset`. |
 | `offset` | number |  |  | Seconds added to the start that `anchor` and `at` give; negative starts earlier. |
-| `duration` | number (> 0) \| "fill" \| "source" \| { match } \| { until } |  |  | How long it plays: seconds; `"source"` for the whole trimmed source; `"fill"` to run to the end of the composition; `{ match: id }` for as long as another element; `{ until: id }` to end when another element ends. |
+| `duration` | number (> 0) \| "fill" \| "source" \| { match } \| { until, at } |  |  | How long it plays: seconds; `"source"` for the whole trimmed source; `"fill"` to run to the end of the composition; `{ match: id }` for as long as another element; `{ until: id }` to end when another element ends, or `{ until: id, at: "word:54.end" }` when it plays that word, shot, silence or beat of its source. |
 | `enter` | { type, duration, easing } |  |  | How it comes in: a fade, slide, scale or wipe over its first seconds, with an easing. |
 | `exit` | { type, duration, easing } |  |  | How it goes out, over its last seconds, as `enter`. |
 | `box` | { x, y, width, height, origin } |  |  | The rectangle it occupies, in pixels from the frame's top left as in CSS: `x` and `y` place the point `origin` names (its top left by default), `width` and `height` size it, and its content fills it as `fit` says. Left out, the whole frame. `transform` applies after. |
 | `transform` | { scale, rotation, anchor, opacity, borderRadius, crop } |  |  | How it is turned and shown: scale, rotation, anchor, opacity, rounded corners and crop. |
+| `follow` | string |  |  | Another overlay's id: this one moves with it. Its `box` is then read in that element's box (pixels from its top left, centred in it when `x` or `y` is left out), and that element's transform, entrance and exit carry it, up the chain. Its opacity, crop and corners stay its own. |
 | `effects` | { type, enabled }[] |  |  | Effects drawn on it, in order: each `{ type, ...params }`, a param written as keys to animate it. |
 | `blend` | "normal" \| "multiply" \| "screen" \| "overlay" \| "darken" \| … 13 more |  |  | How the layer mixes with what is under it, as CSS `mix-blend-mode` does. Only `normal` renders ([What renders](/reference/rendering)). |
-| `ground` | boolean |  |  | The layer is a ground that other things sit on: a wall behind a game, a scrim that darkens footage under a title. The layout check then treats it like a background: it is not held to the safe zone and is not said to cover the captions. |
-| `camera` | { position, lookAt, fov, near, far, zoom, orthographic } |  |  | The camera: `position` and `lookAt` as `[x, y, z]`, `fov` in degrees, clipping planes, zoom, or orthographic. `position`, `lookAt` and `fov` may be keys, in the shot's time when the tag has a `shot`. |
+| `ground` | boolean |  |  | A ground that other things sit on: a card under a cut-out speaker, a wall behind a game, a scrim that darkens footage under a title. The layout check treats it like a background: it is not held to the safe zone and is not said to cover the captions. |
+| `camera` | { position, lookAt, fov, near, far, zoom, orthographic } |  |  | The camera: `position` and `lookAt` as `[x, y, z]`, `fov` in degrees, clipping planes, zoom, or orthographic. |
 | `background` | string |  |  | The scene's background colour; left out, transparent over what is beneath. |
 | `setup` | any |  |  | Builds the scene once from `{ scene, camera, renderer, THREE, width, height }`, and may return `update(frame)` for every frame. |
-| `shot` | any |  |  | A 3D shot from `defineShot`: its module builds the scene, and this tag places it. |
-| `in` | number (0..∞) |  |  | Where in the shot's own time the layer starts, in seconds: at the layer's start the shot is at `in`, and a frame `s` seconds later it is at `in + s`. Trimming the layer's start moves `start` and `in` together; keys stay put. |
-| `objects` | object |  |  | The shot's objects by id, each `{ position, rotation, scale }` as `[x, y, z]` or keys in shot time. |
-| `inputs` | object |  |  | Values for the inputs the shot declares: numbers (or keys in shot time), flags, words, or `"marker:ID"`. |
 
 Timed, visual, transformable. No children. [All elements](/reference/elements/)

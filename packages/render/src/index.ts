@@ -19,6 +19,7 @@ export {
 export {
   describeAt,
   formatAt,
+  formatEvents,
   formatTimeline,
   type HeardElement,
   type InspectOptions,
@@ -67,9 +68,19 @@ export {
   type StillStretch,
 } from "./motion-check";
 export { type CodecModes, codecModes } from "./native/codecs";
+export { checkReadTime, type ReadTimeIssue } from "./read-check";
 export { draftPath, type ExportSource, type RenderOptions, type RenderResult, renderVideo } from "./renderer";
-export { DEFAULT_SKILL_DIR, installSkill, type SkillInstallOptions, type SkillInstallResult } from "./skills";
+export {
+  DEFAULT_SKILL_DIR,
+  installSkill,
+  installSkills,
+  SETUP_SKILL,
+  SKILL,
+  type SkillInstallOptions,
+  type SkillInstallResult,
+} from "./skills";
 export { renderStill, type StillOptions, type StillResult } from "./still";
+export { checkSync, formatSync, type SyncIssue, type SyncPoint, type SyncReport } from "./sync-check";
 export { browserCacheDir, CHROME_MILESTONE, findChrome, installChrome } from "./web/chrome";
 export {
   describeThings,

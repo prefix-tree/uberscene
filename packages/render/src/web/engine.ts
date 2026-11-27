@@ -8,7 +8,7 @@ import type { AssetManifest } from "@uberscene/sdk";
 import type { FontFile } from "../fonts";
 import { BROWSER_CODECS, type CodecModes, ensureCodecBinary, usesNative } from "../native/codecs";
 import type { NativeEncoded } from "../native/wire";
-import { CHROME_MILESTONE, findChrome, wrongChrome } from "./chrome";
+import { anyChrome, CHROME_MILESTONE, findChrome, otherChromeWarning, wrongChrome } from "./chrome";
 import type {
   AudioRequest,
   BoundsOptions,
@@ -24,7 +24,7 @@ import { type PageServer, servePage } from "./server";
 const PLAYER_WARNING = "[uberscene] ";
 /** Bytes read from the page per call: base64 over the DevTools protocol, so kept well under its message limit. */
 const READ_CHUNK = 4 * 1024 * 1024;
-const FLAGS = [
+export const FLAGS = [
   // HTML-in-Canvas: the export captures the page's DOM, WebGL and canvases with drawElementImage.
   "--enable-features=CanvasDrawElement",
   // A paint is not held back to the display's refresh rate.
@@ -131,7 +131,8 @@ export class BrowserEngine {
         );
       });
       const wrong = wrongChrome(browser.version(), executablePath);
-      if (wrong) throw new Error(wrong);
+      if (wrong && !anyChrome()) throw new Error(wrong);
+      if (wrong) options.warn?.(otherChromeWarning(browser.version(), executablePath));
       const pages: Page[] = [];
       const tabs = Math.max(1, Math.floor(options.tabs ?? 1));
       for (let i = 0; i < tabs; i++)

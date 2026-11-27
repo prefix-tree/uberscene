@@ -1,4 +1,4 @@
-import type { TrackFlag, TrackLayout, TrackRole, TransitionType } from "@uberscene/kit/schema";
+import type { TextRun, TrackFlag, TrackLayout, TrackRole, TransitionType } from "@uberscene/kit/schema";
 
 import type { TimeRef } from "../../manifest/timeref";
 import type { Json } from "../../patches/types";
@@ -42,21 +42,42 @@ export interface CompositionActions {
 }
 
 export interface TrackActions {
-  /** Adds an empty track at `position` (last by default), with an optional layout, role and name. */
-  "track/add": { trackId: Id; position?: number; layout?: TrackLayout; role?: TrackRole; name?: string };
+  /**
+   * Adds an empty track at `position` (last by default), with an optional layout, role and name. Positions count the
+   * composition's rows in file order, a camera's tracks in the camera's place. The track lands after the row below
+   * it and in that row's parent, so above one of the camera's tracks it is the camera's too; `camera` decides at the
+   * camera's edge (true: inside, false: outside).
+   */
+  "track/add": {
+    trackId: Id;
+    position?: number;
+    layout?: TrackLayout;
+    role?: TrackRole;
+    name?: string;
+    camera?: boolean;
+  };
   /** Deletes a track and everything on it. */
   "track/remove": { trackId: Id };
   /** The undo of track/remove: puts the track back where it was, with its contents. */
-  "track/restore": { trackId: Id; node: NodeSpec; position: number };
+  "track/restore": { trackId: Id; node: NodeSpec; position: number; camera?: boolean };
   /**
    * Copies a track and its contents to `position` (below the source by default), named "<name> Copy"; `idMap` names the
    * copies, other ids get a `_<trackId>` suffix, and anchors inside the track follow the copies.
    */
-  "track/duplicate": { sourceTrackId: Id; trackId: Id; idMap: Readonly<Record<Id, Id>>; position?: number };
+  "track/duplicate": {
+    sourceTrackId: Id;
+    trackId: Id;
+    idMap: Readonly<Record<Id, Id>>;
+    position?: number;
+    camera?: boolean;
+  };
   /** Sets the track's name. */
   "track/rename": { trackId: Id; name: string };
-  /** Moves the track to `position` in the stack. */
-  "track/reorder": { trackId: Id; position: number };
+  /**
+   * Moves the track to `position` in the stack, counted as in track/add. Moved above one of the camera's tracks it
+   * joins the camera, and moved away it leaves; `camera` decides at the camera's edge.
+   */
+  "track/reorder": { trackId: Id; position: number; camera?: boolean };
   /** Turns one track flag on or off: `locked`, `hidden`, `muted` or `solo`. */
   "track/setFlag": { trackId: Id; flag: TrackFlag; value: boolean };
   /**
@@ -181,10 +202,19 @@ export interface ClipActions {
   "clip/setAnchor": { id: Id; anchor?: Id | "start"; offset?: number };
 }
 
-/**
- * One key as a file writes it: `value` at `at` seconds into the element; `easing` leaves it. A shot's keys are in
- * its own time; one the file ties to a marker (`at: "marker:reveal"`) is read and kept as written.
- */
+/** A generator as a file writes it, in place of a number or a key list. */
+export type GeneratorJson =
+  | {
+      readonly type: "wiggle";
+      readonly base?: number | readonly KeyJson[];
+      readonly amount: number;
+      readonly frequency?: number;
+      readonly seed?: number;
+    }
+  | { readonly type: "drift"; readonly base?: number | readonly KeyJson[]; readonly speed: number }
+  | { readonly type: "loop"; readonly keys: readonly KeyJson[]; readonly mode?: "repeat" | "pingpong" };
+
+/** One key as a file writes it: `value` at `at` seconds into the element; `easing` leaves it. */
 export interface KeyJson {
   readonly at: number;
   readonly value: Json;
@@ -239,6 +269,12 @@ export interface KeyActions {
   "key/remove": { id: Id; path: string; at: number };
   /** Replaces the keys on `path` with `keys`; none removes the value. */
   "key/setAll": { id: Id; path: string; keys: readonly KeyJson[] };
+  /**
+   * Writes a generator at `path` in place of the value (`{ type: "wiggle", amount: 2 }`), or (`null`) takes it off.
+   * The number or keys already there become what it is added to (its `base`), and stay as the value when it is
+   * taken off. The key actions then work on those keys as before.
+   */
+  "generator/set": { id: Id; path: string; generator: GeneratorJson | null };
 }
 
 export interface TransitionActions {
@@ -300,7 +336,11 @@ export interface OverlayActions {
   /** Sets literal props on a title, shape, svg, sticker, adjustment layer, nested scene or layer. */
   "element/update": Overlay["update"];
   /** Replaces a title's text. */
-  "text/setContent": { id: Id; text: string };
+  /**
+   * A title's text. With `runs`, its marked words (`<Mark>`) as ranges of the new text; without, the marks it had are
+   * carried onto the new text where their words still are.
+   */
+  "text/setContent": { id: Id; text: string; runs?: TextRun[] };
   /**
    * Replaces a <Nested> scene by its contents: one free track per inner track, inserted below, every item at the time
    * it played; on a sequence a <Gap> keeps its slot.
@@ -327,6 +367,49 @@ export interface CaptionActions {
   "caption/setAnimation": { captionsId: Id; animation: string };
   /** Replaces every literal cue with `nodes`; empty `nodes` lets the cues generated from `src` come back. */
   "caption/setAll": { captionsId: Id; nodes: readonly NodeSpec[]; after?: Id | null };
+}
+
+/** A camera value as a file writes it: a number, or keys over the video's time. */
+export type CameraValue = number | readonly KeyJson[];
+
+/** A camera's `push` as a file writes it. */
+export interface CameraPush {
+  readonly on: readonly Id[];
+  readonly keep?: readonly Id[];
+  readonly margin?: number;
+  readonly duration?: number;
+  readonly easing?: string;
+}
+
+export interface CameraActions {
+  /**
+   * Puts a camera around `tracks`, which must be next to each other in the file: everything on them then moves,
+   * zooms and turns together, and tracks outside stay fixed to the screen. The tracks keep their place in the stack.
+   * A composition has one camera.
+   */
+  "camera/add": {
+    cameraId: Id;
+    tracks: readonly Id[];
+    x?: CameraValue;
+    y?: CameraValue;
+    zoom?: CameraValue;
+    rotation?: CameraValue;
+    push?: CameraPush;
+  };
+  /** Sets the camera's values: `x` and `y` in pixels, `zoom` (1 is as written), `rotation` in degrees. Keys go through key/add. */
+  "camera/update": { cameraId: Id; x?: number; y?: number; zoom?: number; rotation?: number };
+  /** Takes the camera away and leaves its tracks where they were, fixed to the screen. */
+  "camera/remove": { cameraId: Id };
+  /**
+   * Lets the camera make room for the elements in `push.on` as each starts, or (`null`) stops it. With a push, the
+   * camera's `x`, `y` and `zoom` are numbers: where the view starts.
+   */
+  "camera/setPush": { cameraId: Id; push: CameraPush | null };
+  /**
+   * Turns the moves a push makes into keys on the camera's `x`, `y` and `zoom`, and removes the push: the moves can
+   * then be changed by hand, and no longer follow the elements.
+   */
+  "camera/bakePush": { cameraId: Id };
 }
 
 export interface MarkerActions {
@@ -374,14 +457,6 @@ export interface MulticamActions {
   "multicam/flatten": { id: Id };
 }
 
-export interface ShotActions {
-  /**
-   * Sets a value of a `<Three shot>`: `objects.<id>.<position|rotation|scale>` as `[x, y, z]`, `camera.<position|lookAt|fov>`,
-   * or `inputs.<name>`. A path with keys is changed with `key/update` instead; a channel the shot computes is refused.
-   */
-  "shot/set": { id: Id; path: string; value?: Json };
-}
-
 export interface LayerActions {
   /**
    * Sets a <Layer>'s duration, anchor, offset or start; the escape hatch for timing a Layer. A new anchor drops a word
@@ -412,11 +487,11 @@ export type ActionMap = CompositionActions &
   AudioActions &
   OverlayActions &
   CaptionActions &
+  CameraActions &
   MarkerActions &
   MaskActions &
   MulticamActions &
   LayerActions &
-  ShotActions &
   SourceActions;
 
 export type ActionType = keyof ActionMap;
@@ -450,6 +525,8 @@ export const AUTO_GROUP_TYPES: ReadonlySet<ActionType> = new Set<ActionType>([
   "clip/setSpeed",
   "key/move",
   "key/update",
+  "generator/set",
+  "camera/update",
   "composition/updateSettings",
   "composition/setBackground",
   "theme/setToken",

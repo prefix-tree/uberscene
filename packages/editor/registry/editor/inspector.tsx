@@ -3,7 +3,7 @@ import { useState } from "react";
 
 import { useEdit, useEditor, useSelection } from "@uberscene/editor";
 import { knobsOf, SCHEMAS_BY_KIND } from "@uberscene/kit/schema";
-import { type ActionInput, trimValue } from "@uberscene/sdk";
+import { type ActionInput, lengthSeconds, startSeconds, trimValue } from "@uberscene/sdk";
 
 import { type Access, fail, Group, NumberField, Row, TextField } from "./fields";
 import { Typography } from "./typography";
@@ -81,7 +81,12 @@ export function Inspector({ className }: { className?: string }) {
             className="ml-auto text-destructive"
             aria-label="Delete"
             onClick={() => {
-              run({ type: "element/remove", params: { id: item.id } });
+              // Taking a camera away leaves its tracks where they are.
+              run(
+                item.kind === "camera"
+                  ? { type: "camera/remove", params: { cameraId: item.id } }
+                  : { type: "element/remove", params: { id: item.id } },
+              );
               select(null);
             }}
           >
@@ -96,32 +101,55 @@ export function Inspector({ className }: { className?: string }) {
               <Badge variant="secondary">{item.kind}</Badge>
               <span className="truncate font-mono text-xs text-muted-foreground">{item.id}</span>
             </div>
-            <Group title="Timing">
-              <Row label="Start" access={access("start")}>
-                <NumberField
-                  value={round(item.start)}
-                  step={0.1}
-                  disabled={access("start") !== "literal"}
-                  onCommit={(v) =>
-                    run({ type: "clip/move", params: { id: item.id, place: { start: Math.max(0, v) } } })
-                  }
-                />
-              </Row>
-              <Row label="Duration" access={access("duration")}>
-                <NumberField
-                  value={round(item.duration)}
-                  step={0.1}
-                  disabled={access("duration") !== "literal"}
-                  onCommit={(v) =>
-                    // For footage the out edge is a time in the source file, at the clip's speed.
-                    run({
-                      type: "clip/trim",
-                      params: { id: item.id, edge: "out", value: trimValue(item, item.start + Math.max(0.05, v)) },
-                    })
-                  }
-                />
-              </Row>
-            </Group>
+            {item.kind === "camera" && item.props.push !== undefined && (
+              <div className="flex flex-col gap-2 rounded-md border p-2 text-xs text-muted-foreground">
+                <span>
+                  The camera makes room by itself as elements come in. Its x, y and zoom below are where the view
+                  starts.
+                </span>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  data-editor-bake-push=""
+                  onClick={() => run({ type: "camera/bakePush", params: { cameraId: item.id } })}
+                >
+                  Turn its moves into keys
+                </Button>
+              </div>
+            )}
+            {/* A camera has no time of its own: its values hold for the whole video, or change by keys. */}
+            {item.kind !== "camera" && (
+              <Group title="Timing">
+                <Row label="Start" access={access("start")}>
+                  <NumberField
+                    value={round(startSeconds(item))}
+                    step={0.1}
+                    disabled={access("start") !== "literal"}
+                    onCommit={(v) =>
+                      run({ type: "clip/move", params: { id: item.id, place: { start: Math.max(0, v) } } })
+                    }
+                  />
+                </Row>
+                <Row label="Duration" access={access("duration")}>
+                  <NumberField
+                    value={round(lengthSeconds(item))}
+                    step={0.1}
+                    disabled={access("duration") !== "literal"}
+                    onCommit={(v) =>
+                      // For footage the out edge is a time in the source file, at the clip's speed.
+                      run({
+                        type: "clip/trim",
+                        params: {
+                          id: item.id,
+                          edge: "out",
+                          value: trimValue(item, startSeconds(item) + Math.max(0.05, v)),
+                        },
+                      })
+                    }
+                  />
+                </Row>
+              </Group>
+            )}
             {item.kind === "title" && (
               <Group title="Text">
                 <TextField

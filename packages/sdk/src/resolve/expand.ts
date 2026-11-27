@@ -4,7 +4,7 @@
 // `expandKeys` makes those items from the props, after the patch log is overlaid and before the props are parsed, so
 // an edit that writes a key list is read the same way as a file that does.
 
-import { capabilitiesOf } from "@uberscene/kit/schema";
+import { CAMERA_FIELDS, capabilitiesOf, generatorSeed, isGenerator } from "@uberscene/kit/schema";
 
 import { createPatchLog } from "../patches/log";
 import type { Json, PatchLog } from "../patches/types";
@@ -80,7 +80,7 @@ interface Expansion {
 
 /** One element's props without their keys, effects, speed keys and holds, and the items they make. Null when none. */
 function expandNode(node: CollectedNode): Expansion | null {
-  if (capabilitiesOf(node.kind).placementScope !== "track") return null;
+  if (node.kind !== "camera" && capabilitiesOf(node.kind).placementScope !== "track") return null;
   const props: Record<string, unknown> = { ...node.props };
   const derived: CollectedNode[] = [];
   const item = (path: string, kind: string, itemProps: Record<string, unknown>, children: CollectedNode[] = []) => {
@@ -110,6 +110,36 @@ function expandNode(node: CollectedNode): Expansion | null {
         ...(k.easing !== undefined ? { easing: k.easing } : {}),
       }),
     );
+  /**
+   * A generator written at `value` as an item, and what it is over: its `base` (a number, keys, or nothing), or a
+   * loop's `keys`. Anything else comes back as it is.
+   */
+  const generator = (
+    value: unknown,
+    path: string,
+    how: { property?: string; param?: string },
+  ): { readonly over: unknown; readonly made?: CollectedNode } => {
+    if (!isGenerator(value)) return { over: value };
+    const { type, base, keys, ...params } = value;
+    const over = type === "loop" ? keys : base;
+    const times = isKeyList(over) ? over.map((k) => Number(k.at)) : [];
+    return {
+      over,
+      made: item(`${path}.generator`, "generator", {
+        ...how,
+        type,
+        ...params,
+        ...(type === "wiggle" && params.seed === undefined ? { seed: generatorSeed(node.id, path) } : {}),
+        ...(type === "loop" && times.length > 1 ? { span: [Math.min(...times), Math.max(...times)] } : {}),
+      }),
+    };
+  };
+  /** `value` with a generator written there made an item: what is left is a constant, keys, or nothing. */
+  const settle = (value: unknown, path: string, property: string): unknown => {
+    const g = generator(value, path, { property });
+    if (g.made) derived.push(g.made);
+    return g.over;
+  };
   /** The keys at `value`, if it is a list; their first value stands in as the constant where one is required. */
   const take = (value: unknown, path: string, property: string): unknown => {
     if (!isKeyList(value)) return value;
@@ -117,10 +147,62 @@ function expandNode(node: CollectedNode): Expansion | null {
     return value[0]?.value;
   };
 
+  if (node.kind === "camera") {
+    // A camera's keys are the same items, named `camera.x`…; its first key stands in as the constant.
+    for (const f of Object.keys(CAMERA_FIELDS)) {
+      if (isGenerator(props[f])) {
+        const over = settle(props[f], f, `camera.${f}`);
+        if (over === undefined) delete props[f];
+        else props[f] = over;
+      }
+      if (isKeyList(props[f])) props[f] = take(props[f], f, `camera.${f}`);
+    }
+    return derived.length === 0 ? null : { props, derived };
+  }
+
+  if (node.kind === "shape") shapeKeys(props, settle, take);
+
   const transform = props.transform;
   if (transform && typeof transform === "object" && !Array.isArray(transform)) {
     const t: Record<string, unknown> = { ...(transform as Record<string, unknown>) };
     let touched = false;
+    // A generator first: it leaves its base where it was written, which the lines below read as they always did.
+    const unwrap = (holder: Record<string, unknown>, field: string, path: string): void => {
+      if (!isGenerator(holder[field])) return;
+      const over = settle(holder[field], path, path);
+      if (over === undefined) delete holder[field];
+      else holder[field] = over;
+      touched = true;
+    };
+    for (const f of TRANSFORM_FIELDS) unwrap(t, f, `transform.${f}`);
+    if (isGenerator(t.scale)) {
+      // One generator moves both axes alike: the same wobble, so the element grows and shrinks, not shears.
+      const x = generator(t.scale, "transform.scale.x", { property: "transform.scale.x" });
+      const y = generator(t.scale, "transform.scale.y", { property: "transform.scale.y" });
+      if (x.made && y.made) derived.push(x.made, { ...y.made, props: { ...y.made.props, seed: x.made.props.seed } });
+      if (x.over === undefined) delete t.scale;
+      else t.scale = x.over;
+      touched = true;
+    }
+    for (const pair of ["scale", "anchor"] as const) {
+      const v = t[pair];
+      if (v && typeof v === "object" && !Array.isArray(v) && !isKeyList(v)) {
+        const xy: Record<string, unknown> = { ...(v as Record<string, unknown>) };
+        if (isGenerator(xy.x) || isGenerator(xy.y)) {
+          const missing = pair === "scale" ? 1 : 0.5;
+          unwrap(xy, "x", `transform.${pair}.x`);
+          unwrap(xy, "y", `transform.${pair}.y`);
+          t[pair] = { x: xy.x ?? missing, y: xy.y ?? missing };
+        }
+      }
+    }
+    if (t.crop && typeof t.crop === "object" && !Array.isArray(t.crop)) {
+      const c: Record<string, unknown> = { ...(t.crop as Record<string, unknown>) };
+      if (CROP_FIELDS.some((f) => isGenerator(c[f]))) {
+        for (const f of CROP_FIELDS) unwrap(c, f, `transform.crop.${f}`);
+        t.crop = c;
+      }
+    }
     for (const f of TRANSFORM_FIELDS) {
       if (isKeyList(t[f])) {
         take(t[f], `transform.${f}`, `transform.${f}`);
@@ -183,6 +265,12 @@ function expandNode(node: CollectedNode): Expansion | null {
     const b: Record<string, unknown> = { ...(box as Record<string, unknown>) };
     let touched = false;
     for (const axis of ["x", "y"] as const) {
+      if (isGenerator(b[axis])) {
+        const over = settle(b[axis], `box.${axis}`, `box.${axis}`);
+        if (over === undefined) delete b[axis];
+        else b[axis] = over;
+        touched = true;
+      }
       if (isKeyList(b[axis])) {
         take(b[axis], `box.${axis}`, `box.${axis}`);
         delete b[axis];
@@ -232,9 +320,12 @@ function expandNode(node: CollectedNode): Expansion | null {
       const { type, enabled, ...rest } = (e ?? {}) as Record<string, unknown>;
       const params: Record<string, unknown> = {};
       const keyed: CollectedNode[] = [];
-      for (const [name, value] of Object.entries(rest)) {
+      for (const [name, written] of Object.entries(rest)) {
+        const g = generator(written, `effects.${i}.${name}`, { param: name });
+        if (g.made) keyed.push(g.made);
+        const value = g.over;
         if (isKeyList(value)) keyed.push(...keyItems(`effects.${i}.${name}`, value, { param: name }));
-        else params[name] = value;
+        else if (value !== undefined) params[name] = value;
       }
       const fx = item(`effects.${i}`, "effect", { type, params, ...(enabled !== undefined ? { enabled } : {}) }, keyed);
       derived.push(fx);
@@ -243,6 +334,44 @@ function expandNode(node: CollectedNode): Expansion | null {
   }
 
   return derived.length === 0 ? null : { props, derived };
+}
+
+/**
+ * A shape's own values that change: its size, its colours, its outline's thickness and dash offset, and its points.
+ * Each one's first key stays written as the constant, so a theme preset's `fill` or `stroke` never shows through a
+ * keyed one, and a stroke keeps the `color` and `thickness` it must have. Properties are named `shape.<path>`.
+ */
+function shapeKeys(
+  props: Record<string, unknown>,
+  settle: (value: unknown, path: string, property: string) => unknown,
+  take: (value: unknown, path: string, property: string) => unknown,
+): void {
+  /** A number that takes generators and keys, at `field` of `holder` (written at `path`). */
+  const numeric = (holder: Record<string, unknown>, field: string, path: string, missing?: number): void => {
+    if (isGenerator(holder[field])) {
+      const over = settle(holder[field], path, `shape.${path}`) ?? missing;
+      if (over === undefined) delete holder[field];
+      else holder[field] = over;
+    }
+    if (isKeyList(holder[field])) holder[field] = take(holder[field], path, `shape.${path}`);
+  };
+  /** A value that takes keys only (a colour, a list of points). */
+  const keyedOnly = (holder: Record<string, unknown>, field: string, path: string): void => {
+    if (isKeyList(holder[field])) holder[field] = take(holder[field], path, `shape.${path}`);
+  };
+  numeric(props, "width", "width");
+  numeric(props, "height", "height");
+  keyedOnly(props, "fill", "fill");
+  keyedOnly(props, "points", "points");
+  const stroke = props.stroke;
+  if (stroke && typeof stroke === "object" && !Array.isArray(stroke)) {
+    const s: Record<string, unknown> = { ...(stroke as Record<string, unknown>) };
+    keyedOnly(s, "color", "stroke.color");
+    // A thickness must be written: a wobble with no `base` is around 0.
+    numeric(s, "thickness", "stroke.thickness", 0);
+    numeric(s, "dashOffset", "stroke.dashOffset");
+    props.stroke = s;
+  }
 }
 
 /**

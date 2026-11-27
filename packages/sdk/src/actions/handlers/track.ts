@@ -1,5 +1,8 @@
+import { ZERO_TICKS } from "@uberscene/kit/schema";
+
 import type { PatchLog } from "../../patches/types";
 import type { Placement, ResolvedState } from "../../resolve/resolve";
+import { endT, lengthT, minus, plus, S, startS, startT, T } from "../../time";
 import {
   define,
   insertNode,
@@ -15,10 +18,52 @@ import {
 import { type ActionInput, invalid, type NodeSpec, nodeSpecOf, ok } from "../types";
 import { restoreTiming } from "./clip-timing";
 
-const EPS = 1e-6;
+/** A microsecond, in ticks: a hole or an overlap smaller than this is none. */
+const EPS = T(1e-6);
 
-function trackIndex(state: Parameters<typeof rawNode>[0], trackId: string): number {
-  return state.tree.root.children.findIndex((c) => c.id === trackId);
+type Tree = Parameters<typeof rawNode>[0];
+type Row = { readonly id: string; readonly kind: string; readonly parent: string };
+
+/**
+ * What the composition holds, in file order, with a camera's tracks in the camera's place: positions count these
+ * rows, so they mean the same with a camera and without.
+ */
+function rows(state: Tree): Row[] {
+  const root = state.tree.root;
+  return root.children.flatMap((c) =>
+    c.kind === "camera"
+      ? c.children.filter((t) => t.kind === "track").map((t) => ({ id: t.id, kind: t.kind, parent: c.id }))
+      : [{ id: c.id, kind: c.kind, parent: root.id }],
+  );
+}
+
+function trackIndex(state: Tree, trackId: string): number {
+  return rows(state).findIndex((c) => c.id === trackId);
+}
+
+/** Whether a track is written inside the camera. */
+function inCamera(state: Tree, trackId: string): boolean {
+  return rawNode(state, trackId)?.parent !== state.tree.root.id;
+}
+
+/**
+ * Where a track goes to stand at `position` among `list` (the rows without it): after the row below it, and in that
+ * row's parent, so a track put above one of the camera's is the camera's too. `camera` decides at the camera's
+ * edge: true puts it inside (first, when the row below is outside), false outside (after the camera, when the row
+ * below is inside).
+ */
+function trackPlace(
+  state: Tree,
+  list: readonly Row[],
+  position: number,
+  camera?: boolean,
+): { parent: string; after: string | null } {
+  const root = state.tree.root;
+  const cam = root.children.find((c) => c.kind === "camera")?.id;
+  const below = position <= 0 ? undefined : list[Math.min(position, list.length) - 1];
+  const belowInside = below !== undefined && below.parent === cam;
+  if (cam !== undefined && (camera ?? belowInside)) return { parent: cam, after: belowInside ? below.id : null };
+  return { parent: root.id, after: belowInside ? (cam as string) : (below?.id ?? null) };
 }
 
 define({
@@ -28,15 +73,20 @@ define({
       ? invalid({ code: "DUPLICATE_ID", message: `"${a.params.trackId}" exists` })
       : ok,
   apply: (a, log, ctx) => {
-    const tracks = ctx.before.tree.root.children.filter((c) => c.kind === "track");
-    const pos = a.params.position ?? tracks.length;
-    const after = pos <= 0 ? null : (tracks[Math.min(pos, tracks.length) - 1]?.id ?? null);
+    const tracks = rows(ctx.before).filter((c) => c.kind === "track");
+    const { parent, after } = trackPlace(
+      ctx.before,
+      tracks,
+      a.params.position ?? tracks.length,
+      // A track added without a position goes on top of the stack, over the camera and not in it.
+      a.params.camera ?? (a.params.position === undefined ? false : undefined),
+    );
     const props: Record<string, never> = { id: a.params.trackId } as never;
     const p = props as Record<string, unknown>;
     if (a.params.layout) p.layout = a.params.layout;
     if (a.params.role) p.role = a.params.role;
     if (a.params.name) p.name = a.params.name;
-    insertNode(log, "composition", after, { id: a.params.trackId, kind: "track", props, children: [] });
+    insertNode(log, parent, after, { id: a.params.trackId, kind: "track", props, children: [] });
   },
   invert: (a) => ({ type: "track/remove", params: { trackId: a.params.trackId } }),
   fold: () => [],
@@ -55,6 +105,7 @@ define({
       trackId: a.params.trackId,
       node: nodeSpecOf(rawNode(before, a.params.trackId)!),
       position: trackIndex(before, a.params.trackId),
+      ...(inCamera(before, a.params.trackId) ? { camera: true } : {}),
     },
   }),
   fold: () => [],
@@ -65,9 +116,8 @@ define({
   validate: (a, state) =>
     rawNode(state, a.params.trackId) ? invalid({ code: "DUPLICATE_ID", message: `"${a.params.trackId}" exists` }) : ok,
   apply: (a, log, ctx) => {
-    const siblings = ctx.before.tree.root.children;
-    const after = a.params.position <= 0 ? null : (siblings[a.params.position - 1]?.id ?? null);
-    insertNode(log, "composition", after, a.params.node);
+    const { parent, after } = trackPlace(ctx.before, rows(ctx.before), a.params.position, a.params.camera ?? false);
+    insertNode(log, parent, after, a.params.node);
   },
   invert: (a) => ({ type: "track/remove", params: { trackId: a.params.trackId } }),
   fold: () => [],
@@ -104,10 +154,9 @@ define({
       children: (spec.children ?? []).map(copy),
     });
     const pos = a.params.position ?? trackIndex(ctx.before, source.id) + 1;
-    const siblings = ctx.before.tree.root.children;
-    const after = pos <= 0 ? null : (siblings[pos - 1]?.id ?? null);
+    const { parent, after } = trackPlace(ctx.before, rows(ctx.before), pos, a.params.camera);
     const spec = copy(nodeSpecOf(source));
-    insertNode(log, "composition", after, {
+    insertNode(log, parent, after, {
       ...spec,
       props: { ...spec.props, name: `${String(source.props.name ?? source.id)} Copy` },
     });
@@ -142,14 +191,18 @@ define({
       ? ok
       : invalid({ code: "ELEMENT_NOT_FOUND", message: "track does not exist" }),
   apply: (a, log, ctx) => {
-    const siblings = ctx.before.tree.root.children.filter((c) => c.id !== a.params.trackId);
+    const siblings = rows(ctx.before).filter((c) => c.id !== a.params.trackId);
     const pos = Math.max(0, Math.min(a.params.position, siblings.length));
-    const after = pos === 0 ? null : (siblings[pos - 1]?.id ?? null);
-    log.append({ op: "move", id: a.params.trackId, parent: "composition", after });
+    const { parent, after } = trackPlace(ctx.before, siblings, pos, a.params.camera);
+    log.append({ op: "move", id: a.params.trackId, parent, after });
   },
   invert: (a, before) => ({
     type: "track/reorder",
-    params: { trackId: a.params.trackId, position: trackIndex(before, a.params.trackId) },
+    params: {
+      trackId: a.params.trackId,
+      position: trackIndex(before, a.params.trackId),
+      camera: inCamera(before, a.params.trackId),
+    },
   }),
   fold: () => [],
 });
@@ -166,17 +219,17 @@ define({
     return ok;
   },
   apply: (a, log, ctx) => {
-    let cursor = 0;
+    let cursor = ZERO_TICKS;
     for (const item of orderedItems(ctx.before, a.params.trackId)) {
-      setProps(log, item.id, { start: cursor });
-      cursor += item.duration;
+      setProps(log, item.id, { start: S(cursor) });
+      cursor = plus(cursor, lengthT(item));
     }
   },
   invert: (a, before) => ({
     type: "track/restorePositions",
     params: {
       trackId: a.params.trackId,
-      positions: orderedItems(before, a.params.trackId).map((i) => ({ id: i.id, start: i.start })),
+      positions: orderedItems(before, a.params.trackId).map((i) => ({ id: i.id, start: startS(i) })),
     },
   }),
   fold: () => [],
@@ -223,7 +276,7 @@ define({
       for (let i = 1; i < items.length; i++) {
         const prev = items[i - 1] as Placement,
           next = items[i] as Placement;
-        if (next.start < prev.end - EPS)
+        if (startT(next) < minus(endT(prev), EPS))
           return invalid({
             code: "UNSUPPORTED_ON_LAYOUT",
             message: `"${prev.id}" and "${next.id}" overlap; a sequence track cannot express overlaps`,
@@ -250,7 +303,7 @@ function orderedItems(state: Parameters<typeof rawNode>[0], trackId: string) {
       (i): i is NonNullable<typeof i> =>
         Boolean(i) && i!.kind !== "transition" && typeof rawProp(state, i!.id, "anchor") !== "string",
     )
-    .sort((x, y) => x.start - y.start);
+    .sort((x, y) => startT(x) - startT(y));
 }
 
 /** The children a sequence orders: timed, not anchored, not a transition, gap or multicam; by resolved start. */
@@ -271,7 +324,7 @@ function betweenTransitions(state: ResolvedState, trackId: string): Placement[] 
 
 function toFree(log: PatchLog, state: ResolvedState, trackId: string): void {
   setProps(log, trackId, { layout: "free" });
-  for (const item of sequenced(state, trackId)) setProps(log, item.id, { start: item.start });
+  for (const item of sequenced(state, trackId)) setProps(log, item.id, { start: startS(item) });
   for (const x of betweenTransitions(state, trackId))
     setProps(log, x.id, { on: (x.between as readonly [string, string])[0], edge: "out" });
   for (const gap of gapsOf(state, trackId)) log.append({ op: "remove", id: gap.id });
@@ -300,15 +353,15 @@ function undoToFree(before: ResolvedState, trackId: string): ActionInput[] {
 function plannedGaps(state: ResolvedState, trackId: string): { spec: NodeSpec; nextId: string }[] {
   const out: { spec: NodeSpec; nextId: string }[] = [];
   const taken = new Set<string>();
-  let cursor = 0;
+  let cursor = ZERO_TICKS;
   for (const item of sequenced(state, trackId)) {
-    const hole = item.start - cursor;
+    const hole = minus(startT(item), cursor);
     if (hole > EPS) {
       const id = uniqueId(state, `gap-${trackId}-${out.length + 1}`, taken);
       taken.add(id);
-      out.push({ spec: { id, kind: "gap", props: { id, duration: hole } }, nextId: item.id });
+      out.push({ spec: { id, kind: "gap", props: { id, duration: S(hole) } }, nextId: item.id });
     }
-    cursor = item.end;
+    cursor = endT(item);
   }
   return out;
 }

@@ -14,7 +14,9 @@ export function paramsAt(items: Items, effect: Placement, rel: number): Params {
   const base = (effect.props.params ?? {}) as Params;
   const keys = effect.children
     .map((id) => items.get(id))
-    .filter((k): k is Placement => k?.kind === "keyframe" && typeof k.props.param === "string");
+    .filter(
+      (k): k is Placement => (k?.kind === "keyframe" || k?.kind === "generator") && typeof k.props.param === "string",
+    );
   if (keys.length === 0) return base;
   const out: Record<string, unknown> = { ...base };
   for (const name of new Set(keys.map((k) => k.props.param as string)))

@@ -1,7 +1,15 @@
 // Where an asset plays on a resolved timeline: the rule the resolver places captions by, read from the state.
 import { lookupAsset } from "../manifest/types";
-import { type AssetPlay, assetPlay, sameAsset, type TimelineWord, timelineWords } from "../resolve/captions";
+import {
+  type AssetPlay,
+  assetPlay,
+  onTimeline,
+  sameAsset,
+  type TimelineWord,
+  timelineWords,
+} from "../resolve/captions";
 import type { Placement, ResolvedState } from "../resolve/resolve";
+import { startS } from "../time";
 
 const children = (state: ResolvedState, p: Placement): Placement[] =>
   p.children.map((id) => state.items.get(id)).filter((c): c is Placement => c !== undefined);
@@ -14,7 +22,7 @@ export function playsOf(state: ResolvedState, asset: string): AssetPlay[] {
     if (!p.source || !sameAsset(p.source.asset, asset)) continue;
     if (p.kind !== "clip" && p.kind !== "audio") continue;
     if (p.track && hidden.has(p.track)) continue;
-    plays.push(assetPlay({ id: p.id, start: p.start, source: p.source, children: children(state, p) }));
+    plays.push(assetPlay({ id: p.id, start: startS(p), source: p.source, children: children(state, p) }));
   }
   return plays.sort((a, b) => a.start - b.start);
 }
@@ -23,7 +31,7 @@ export function playsOf(state: ResolvedState, asset: string): AssetPlay[] {
 export function playOf(state: ResolvedState, id: string): AssetPlay | null {
   const p = state.items.get(id);
   if (!p?.source || (p.kind !== "clip" && p.kind !== "audio")) return null;
-  return assetPlay({ id: p.id, start: p.start, source: p.source, children: children(state, p) });
+  return assetPlay({ id: p.id, start: startS(p), source: p.source, children: children(state, p) });
 }
 
 /** Every transcript word the timeline plays, at the time it plays, in timeline order. */
@@ -39,3 +47,41 @@ export function spokenWords(state: ResolvedState): (TimelineWord & { readonly as
   }
   return out.sort((a, b) => a.start - b.start || a.i - b.i);
 }
+
+/** A beat, shot or silence of an asset at the time the timeline plays it. */
+export interface TimelineEntry {
+  readonly asset: string;
+  /** The clip or audio that plays it. */
+  readonly play: string;
+  readonly i: number;
+  /** When it starts in the finished video, and in the asset. */
+  readonly time: number;
+  readonly sourceTime: number;
+}
+
+/**
+ * Every beat, shot or silence the timeline plays, at the time it plays, in timeline order: the manifest's entries of
+ * each asset, through each clip or audio that plays it. Entries trimmed out of every play are left out.
+ */
+export function timelineEntries(state: ResolvedState, kind: "beats" | "shots" | "silences"): TimelineEntry[] {
+  const assets = new Set<string>();
+  for (const p of state.items.values())
+    if (p.source && (p.kind === "clip" || p.kind === "audio")) assets.add(p.source.asset);
+  const out: TimelineEntry[] = [];
+  for (const ref of assets) {
+    const asset = lookupAsset(state.manifest, ref);
+    const entries = asset?.[kind];
+    if (!asset || !entries || entries.length === 0) continue;
+    for (const play of playsOf(state, ref))
+      for (const e of entries) {
+        // An entry that starts where the play ends belongs to what comes after it.
+        if (e.start >= play.out - 1e-6) continue;
+        const time = onTimeline(e.start, [play]);
+        if (time !== null) out.push({ asset: asset.id, play: play.id, i: e.i, time, sourceTime: e.start });
+      }
+  }
+  return out.sort((a, b) => a.time - b.time || a.i - b.i);
+}
+
+/** Every beat of music the timeline plays, at the time it plays. */
+export const timelineBeats = (state: ResolvedState): TimelineEntry[] => timelineEntries(state, "beats");

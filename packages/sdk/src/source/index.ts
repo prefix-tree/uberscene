@@ -260,7 +260,8 @@ export function buildSourceIndex(text: string): SourceIndex {
       if (name === null) return;
       if (/^[a-z]/.test(name)) {
         const host = nearestElement(path);
-        if (host === "Track" || host === "Composition") strays.push({ name, range: rangeOf(path.node), parent: host });
+        if (host === "Track" || host === "Composition" || host === "Camera")
+          strays.push({ name, range: rangeOf(path.node), parent: host });
         return;
       }
       const parent = enclosingElementId(path);

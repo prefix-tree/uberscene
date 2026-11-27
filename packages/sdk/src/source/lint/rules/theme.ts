@@ -131,10 +131,32 @@ export const themeLiterals: Rule = {
           }
         });
       }
+      // A title's <Mark>s colour words in its text, where the props above do not reach.
+      if (site.kind === "title" && site.childrenRange) {
+        const [from, to] = site.childrenRange;
+        const children = index.text.slice(from, to);
+        for (const m of children.matchAll(MARK_COLOR)) {
+          const value = m[2] as string;
+          if (NOT_COLORS.has(value)) continue;
+          const token = byValue.get(value.toLowerCase());
+          const at = from + (m.index ?? 0);
+          out.push({
+            rule: "theme-literals",
+            severity: "warning",
+            message: `a <Mark> in "${site.id}" has the literal ${m[1]} ${value}; use ${token ? `$${token}` : "a palette token"} so a theme change reaches it`,
+            range: [at, at + m[0].length],
+            id: site.id,
+            prop: "children",
+          });
+        }
+      }
     }
     return out;
   },
 };
+
+/** A colour a `<Mark>` writes as a plain string (a token, which starts with `$`, is not one). */
+const MARK_COLOR = /<Mark\b[^>]*?\b(color|background)="([^"$][^"]*)"/g;
 
 /** What to write so a font that is not available becomes so. */
 function fix(family: string): string {

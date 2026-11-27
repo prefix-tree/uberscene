@@ -6,10 +6,17 @@ import {
   TRANSITION_TYPES,
   type Transform,
 } from "@uberscene/kit/schema";
-import { lookupAsset, type Placement, type ResolvedState } from "@uberscene/sdk/resolver";
+import {
+  type AssetEntry,
+  lookupAsset,
+  type Placement,
+  type ResolvedState,
+  secondsSinceStart,
+} from "@uberscene/sdk/resolver";
 
 import { devWarn } from "../warn";
-import { backdropTracks } from "./backdrop";
+import { backdropTracks, trackBands } from "./backdrop";
+import { trackCamera } from "./camera";
 import { type PostEffect, postEffects } from "./effects";
 import type { ClipRect } from "./motion";
 import { effectPipeline, type ShaderPass, type TransitionPass, transitionPass } from "./shaders";
@@ -58,6 +65,8 @@ export interface DrawOp {
   readonly fallbackFilter?: string;
   readonly borderRadius: number;
   readonly mask?: MaskSpec;
+  /** What `clip`'s rectangles go through before they cut: the camera, for an element under one. */
+  readonly clipMatrix?: Matrix2D;
   /** The part shown, in composition pixels (a wipe). */
   readonly clip?: readonly ClipRect[];
   /** Vignette and grain, drawn over the element's own pixels. */
@@ -68,6 +77,19 @@ export interface DrawOp {
   readonly transition?: TransitionPass;
   /** With a built-in shader transition: the opacity a crossfade gives, for a painter without WebGL. */
   readonly fallbackOpacity?: number;
+  /** The canvas it paints on, when the file's track order needs more than one (`trackBands`); left out for the first. */
+  readonly band?: number;
+  /**
+   * `cutout`: the matte asset decoded beside the footage at the same source time, whose luminance becomes the
+   * picture's alpha before its effects. `shrink` and `feather` are in composition pixels.
+   */
+  readonly matte?: MatteSpec;
+}
+
+export interface MatteSpec {
+  readonly asset: string;
+  readonly shrink: number;
+  readonly feather: number;
 }
 
 /** A composition background gradient, as the schema writes it. CSS angles: 0 points up, 180 (the default) runs down. */
@@ -88,6 +110,10 @@ export interface FramePlan {
   readonly clear?: true;
   /** `background.type: "blur"`: this op's picture, blurred to cover the frame, goes under everything. */
   readonly backgroundBlur?: { readonly id: string };
+  /** How many canvases the ops are spread over (`DrawOp.band`), when more than one. */
+  readonly bands?: number;
+  /** A band above the first: an adjustment changes only the pixels already there, not the clear ground around them. */
+  readonly atop?: true;
   readonly ops: readonly DrawOp[];
   readonly warnings: readonly string[];
 }
@@ -134,32 +160,55 @@ export function buildFramePlan(state: ResolvedState, t: number, resolveNested?: 
   // shortcut: with overlays beneath the footage the background is a CSS ground under the canvas, so blur shows as its colour; paint the blur on that ground to drop this.
   if (blur && clear) warnings.push("background mode blur is drawn as a colour under backdrop overlays");
 
+  const bands = trackBands(state);
+  /** An op on its track's canvas; the first canvas is not written, so a file with one band plans as it always did. */
+  const banded = (op: DrawOp, track: string): DrawOp => {
+    const band = bands.bandOf.get(track) ?? 0;
+    return band > 0 ? { ...op, band } : op;
+  };
   for (const item of visiblePlacements(state, t)) {
     const p = item.placement;
     if (p.kind === "clip" || p.kind === "nested") {
-      const op = mediaOp(state, item, t, resolveNested, warnings);
-      if (op) ops.push(op);
+      const drawn = mediaOp(state, item, t, resolveNested, warnings);
+      const view = drawn ? trackCamera(state, item.track.id, t) : null;
+      // The camera goes on last, over the element's own placement and a transition's slide, so both follow the view.
+      const op =
+        drawn && view
+          ? { ...drawn, matrix: multiply(view, drawn.matrix), ...(drawn.clip ? { clipMatrix: view } : {}) }
+          : drawn;
+      if (op) ops.push(banded(op, item.track.id));
+      if (op && op.blend !== "source-over" && (bands.bandOf.get(item.track.id) ?? 0) > 0)
+        warnings.push(
+          `"${p.id}" blends with the footage on its own run of tracks only: an overlay track sits between it and the footage beneath`,
+        );
       const dip = item.transition && !op?.transition && transitionLook(item.transition, comp.width, comp.height).dip;
-      if (op && dip) ops.push(dipOp(item.transition!.placement, dip, comp.width, comp.height));
+      if (op && dip) ops.push(banded(dipOp(item.transition!.placement, dip, comp.width, comp.height), item.track.id));
     } else if (p.kind === "adjustment") {
       if (p.props.enabled === false) continue;
-      const { shaders, ...filters } = effectPipeline(state, item.children, p.id, t - p.start, { shaders: true });
+      const { shaders, ...filters } = effectPipeline(state, item.children, p.id, secondsSinceStart(p, t), {
+        shaders: true,
+      });
       if (ops.length === 0) continue;
       // Vignette and grain darken and speckle everything beneath, before the adjustment's other effects.
-      const post = postEffects(state.items, item.children, frameIndex(t, comp.rate), t - p.start);
-      ops.push({
-        id: p.id,
-        kind: "adjustment",
-        rect: { x: 0, y: 0, w: comp.width, h: comp.height },
-        matrix: { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 },
-        fit: "stretch",
-        opacity: Number(p.props.opacity ?? 1),
-        blend: blendOf(p.props.blend),
-        ...filters,
-        borderRadius: 0,
-        ...(post ? { post } : {}),
-        ...(shaders ? { shaders } : {}),
-      });
+      const post = postEffects(state.items, item.children, frameIndex(t, comp.rate), secondsSinceStart(p, t));
+      ops.push(
+        banded(
+          {
+            id: p.id,
+            kind: "adjustment",
+            rect: { x: 0, y: 0, w: comp.width, h: comp.height },
+            matrix: { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 },
+            fit: "stretch",
+            opacity: Number(p.props.opacity ?? 1),
+            blend: blendOf(p.props.blend),
+            ...filters,
+            borderRadius: 0,
+            ...(post ? { post } : {}),
+            ...(shaders ? { shaders } : {}),
+          },
+          item.track.id,
+        ),
+      );
     }
   }
   const footage =
@@ -171,9 +220,29 @@ export function buildFramePlan(state: ResolvedState, t: number, resolveNested?: 
     ...(gradient ? { backgroundGradient: gradient } : {}),
     ...(clear ? { clear: true as const } : {}),
     ...(footage ? { backgroundBlur: { id: footage.id } } : {}),
+    ...(bands.count > 1 ? { bands: bands.count } : {}),
     ops,
     warnings,
   };
+}
+
+/**
+ * The part of a plan one canvas paints. The first band has the background (or the clear ground over a backdrop);
+ * the ones above are clear, so what lies between the canvases shows through. An adjustment covers the footage of
+ * every band beneath it as well as its own, so it is in each of them, after their ops.
+ */
+export function bandPlan(plan: FramePlan, band: number): FramePlan {
+  if (!plan.bands) return plan;
+  const ops = plan.ops.filter((op) => {
+    const own = op.band ?? 0;
+    return own === band || (op.kind === "adjustment" && own > band);
+  });
+  const { backgroundBlur, ...rest } = plan;
+  if (band === 0) {
+    const blur = backgroundBlur && ops.some((o) => o.id === backgroundBlur.id) ? { backgroundBlur } : {};
+    return { ...rest, ...blur, ops };
+  }
+  return { ...rest, clear: true, atop: true, ops };
 }
 
 /** The composition's background as the painter draws it: a colour, or a gradient (whose first colour is `background`). */
@@ -202,7 +271,7 @@ function mediaOp(
 ): DrawOp | null {
   const p = item.placement;
   const comp = state.composition;
-  const rel = t - p.start;
+  const rel = secondsSinceStart(p, t);
   const transform = animatedTransform(p.props.transform as Transform | undefined, item.children, rel);
   const box = animatedBox(p.props.box as ElementBox | undefined, item.children, rel);
   const fit = (p.props.fit as FitMode | undefined) ?? "contain";
@@ -278,6 +347,7 @@ function mediaOp(
   }
   const size = { width: asset.width ?? comp.width, height: asset.height ?? comp.height };
   const layout = layoutRect(comp, size, fit, transform, box);
+  const matte = matteOf(state, p, asset);
   return {
     ...common,
     kind: asset.kind === "image" ? "image" : "video",
@@ -286,7 +356,20 @@ function mediaOp(
     rect: layout.rect,
     matrix: shift(layout.matrix),
     ...(layout.crop ? { crop: layout.crop, cropReference: size } : {}),
+    ...(matte ? { matte } : {}),
   };
+}
+
+/** The matte a clip's `cutout` cuts with: only for footage whose matte is a video in the manifest (the resolver reports the rest). */
+export function matteOf(state: ResolvedState, p: Placement, asset: AssetEntry): MatteSpec | null {
+  const cutout = p.props.cutout;
+  if (cutout === undefined || cutout === false || p.kind !== "clip" || asset.kind !== "video" || !asset.matte)
+    return null;
+  if (lookupAsset(state.manifest, asset.matte)?.kind !== "video") return null;
+  const given =
+    typeof cutout === "object" && cutout !== null ? (cutout as { shrink?: unknown; feather?: unknown }) : {};
+  const px = (v: unknown): number => (typeof v === "number" && Number.isFinite(v) && v > 0 ? v : 0);
+  return { asset: asset.matte, shrink: px(given.shrink), feather: px(given.feather) };
 }
 
 /** A dip to black or white over everything drawn so far: an adjustment that maps the picture to the colour, `amount` of the way. */

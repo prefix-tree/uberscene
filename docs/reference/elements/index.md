@@ -12,6 +12,7 @@ The elements a file is written in: the timeline (clips, tracks, transitions, cap
 <PreviewCard code title="<Composition>" link="/reference/elements/composition" src="previews/elements/composition" text="The video: frame rate, size, background and theme. It ends where its content ends. Clips written straight in it play in order, as its main track." />
 <PreviewCard code title="<Track>" link="/reference/elements/track" src="previews/elements/track" text="A row of elements, drawn over the clips written straight in the composition and the tracks before it. A sequence track plays its children back to back; a free track (layout=&quot;free&quot;) places each at its own start." />
 <PreviewCard code title="<Clip>" link="/reference/elements/clip" src="previews/elements/clip" text="A stretch of a video or image asset, trimmed by seconds, transcript words or camera shots, with speed, fit and transform." />
+<PreviewCard code title="<Camera>" link="/reference/elements/camera" src="previews/elements/camera" text="One view over the tracks written inside it: they move, zoom and turn together, by a constant or by keys on the video's clock. Tracks outside it stay fixed to the screen. A composition has one, or none." />
 <PreviewCard code title="<Gap>" link="/reference/elements/gap" src="previews/elements/gap" text="Empty time between clips on a sequence track." />
 <PreviewCard code title="<Transition>" link="/reference/elements/transition" src="previews/elements/transition" text="A blend between the two clips it sits between on a sequence track." />
 <PreviewCard code title="<Marker>" link="/reference/elements/marker" text="A named point on the timeline." />
@@ -62,7 +63,8 @@ The elements a file is written in: the timeline (clips, tracks, transitions, cap
 
 | element | timed | visual | audio | trims source | transformable | children allowed |
 |---|---|---|---|---|---|---|
-| [`<Composition>`](/reference/elements/composition) |  |  |  |  |  | `track`, `marker`, `captions` |
+| [`<Composition>`](/reference/elements/composition) |  |  |  |  |  | `track`, `camera`, `marker`, `captions` |
+| [`<Camera>`](/reference/elements/camera) |  |  |  |  |  | `track` |
 | [`<Track>`](/reference/elements/track) |  |  |  |  |  | `clip`, `audio`, `gap`, `transition`, `title`, `shape`, `svg`, `sticker`, `adjustment`, `nested`, `layer`, `multicam` |
 | [`<Clip>`](/reference/elements/clip) | yes | yes | yes | yes | yes | `mask` |
 | [`<Audio>`](/reference/elements/audio) | yes |  | yes | yes |  |  |

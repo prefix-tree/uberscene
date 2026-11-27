@@ -7,12 +7,15 @@ import {
   type DrawOp,
   type DrawRect,
   type MediaResolver,
+  spaceOf,
+  trackCamera,
 } from "@uberscene/player/engine";
 import { buildSourceIndex, lookupAsset, type ResolvedState, type SourceIndex, type SubjectBox } from "@uberscene/sdk";
 
 import type { FontFile } from "./fonts";
+import { checkReadTime } from "./read-check";
 import { type ExportSource, openEngine } from "./renderer";
-import type { InkBounds as OverlayBounds } from "./web/page/protocol";
+import type { InkBounds as OverlayBounds, TextFit } from "./web/page/protocol";
 
 /** Margins as fractions of the frame's height (top, bottom) and width (left, right). */
 export interface Insets {
@@ -38,7 +41,14 @@ export const SAFE_ZONES = {
 } as const satisfies Record<string, Insets>;
 export type SafeZoneName = keyof typeof SAFE_ZONES;
 
-export type LayoutRule = "frame-edge" | "safe-zone" | "captions" | "subject";
+export type LayoutRule =
+  | "frame-edge"
+  | "safe-zone"
+  | "captions"
+  | "subject"
+  | "text-over-text"
+  | "text-fit"
+  | "read-time";
 
 /**
  * One element breaking one rule over a run of consecutive samples, described for a reader who cannot see the
@@ -56,10 +66,15 @@ export interface LayoutIssue {
   readonly to: number;
   /** The worst moment: furthest past the edge, or the largest overlap. */
   readonly at: number;
-  /** The element's ink at `at`; for an overlap, the part of it that overlaps. */
-  readonly box: DrawRect;
+  /** The element's ink at `at`; for an overlap, the part of it that overlaps. Not on `read-time`, a rule of time. */
+  readonly box?: DrawRect;
   /** What it breaks at `at`: the frame, the safe zone, or the captions' or subject's box it overlaps. */
-  readonly area: DrawRect;
+  readonly area?: DrawRect;
+  /** `text-fit`: the title's whole text as laid out in its box at `at`. */
+  readonly text?: TextFit;
+  /** `read-time`: seconds on screen, and seconds its words need. */
+  readonly seconds?: number;
+  readonly needs?: number;
   /** What is wrong, in one plain sentence. */
   readonly message: string;
   /** The smallest change that clears it at `at`, in props to edit. */
@@ -114,14 +129,20 @@ export const SLACK = 2;
 /** A subject box is used this many seconds either side of the time it was sampled at. */
 const SUBJECT_REACH = 1;
 
-type Run = { -readonly [K in keyof LayoutIssue]: LayoutIssue[K] } & { n: number; worst: number };
+/** An issue found in sampled frames: it has a box and an area. */
+type Sampled = LayoutIssue & { readonly box: DrawRect; readonly area: DrawRect };
+type Run = { -readonly [K in keyof Sampled]: Sampled[K] } & { n: number; worst: number };
 
 /**
  * Samples the composition and reports every overlay (titles, shapes, SVG, stickers, layers, and captions), and every
  * part a layer's code named with `data-name`, that
  * leaves the frame, leaves the safe zone, covers captions (not captions themselves), or covers the subject, as runs
  * of consecutive offending samples. Overlays beneath the footage, and ones whose ink fills the frame (backgrounds),
- * are not checked; neither is a moment where an element is fainter than 10%.
+ * are not checked; neither is a moment where an element is fainter than 10%. Titles on screen for less time than their
+ * words take to read are reported too (`read-time`, see `checkReadTime`), from the timeline rather than the frames.
+ * Titles are also checked against each other (`text-over-text`: one title's ink over another's) and against their
+ * own box (`text-fit`: the whole text, as it is once every word shows, spills out of the box, or wraps in a box the
+ * file gave a width; its `text` holds the measurement, its `area` the safe zone a wider box must stay in).
  */
 export async function checkLayout(options: LayoutCheckOptions): Promise<LayoutCheckResult> {
   const { state } = options;
@@ -220,6 +241,22 @@ export async function checkLayout(options: LayoutCheckOptions): Promise<LayoutCh
           }
         }
       }
+      // Titles over titles: each pair once, reported on the one drawn later (over the other).
+      const titles = shown.filter((b) => b.kind === "title");
+      for (let j = 1; j < titles.length; j++)
+        for (let i = 0; i < j; i++) {
+          const hit = collision(titles[j]!.parts, titles[i]!.parts);
+          if (hit) report("text-over-text", titles[j]!, n, hit.size, hit.mine, hit.theirs, titles[i]!.id, said);
+        }
+      // Titles whose whole text does not fit its box, or wraps in a box the file gave a width.
+      for (const b of titles) {
+        if (!b.text) continue;
+        const spill = misfit(b.text);
+        if (spill <= 0) continue;
+        report("text-fit", b, n, spill, b.rect, safe, undefined, said);
+        const run = open.get(`text-fit|${b.id}|`);
+        if (run && run.at === frameStartSeconds(n, rate)) run.text = b.text;
+      }
     }
   } finally {
     await engine.close();
@@ -236,11 +273,18 @@ export async function checkLayout(options: LayoutCheckOptions): Promise<LayoutCh
         box: rounded(issue.box),
         area: rounded(issue.area),
       },
-      placedOf(state, issue.id),
+      placedOf(state, issue.id, issue.at),
     );
     const spot = options.source.file && index ? locate(options.source.file, index, state, issue.id, issue.kind) : null;
     return spot ? { ...described, source: spot } : described;
   });
+  // Read time is a rule of the timeline, not of a frame: worked out from the resolved state.
+  for (const r of checkReadTime(state, { from: options.from, to: options.to })) {
+    const issue: LayoutIssue = { rule: "read-time", ...r, at: r.from };
+    const spot =
+      options.source.file && index ? locate(options.source.file, index, state, r.id, r.kind, "duration") : null;
+    result.push(spot ? { ...issue, source: spot } : issue);
+  }
   // As a compiler lists them: by place in the file, then by time; issues with no place come last, by time.
   const place = (i: LayoutIssue): number =>
     i.source ? i.source.line * 1e6 + i.source.column : Number.POSITIVE_INFINITY;
@@ -319,16 +363,35 @@ export const rect = (r: DrawRect): string => `x ${r.x}..${r.x + r.w}, y ${r.y}..
 const SIDE = { left: "on the left", top: "at the top", right: "on the right", bottom: "at the bottom" } as const;
 const signed = (v: number): string => (v > 0 ? `+${v}` : `${v}`);
 
-/** Where an element is placed now: its `box` as written, which axes keyframes move, and the frame's size. */
+/**
+ * Where an element is placed now: its `box` as written, which axes keyframes move, and the size of the frame its box
+ * is read in (its parent's box when it has a `parent`).
+ */
 interface Placed {
   readonly box: { readonly x?: unknown; readonly y?: unknown; readonly origin?: unknown } | undefined;
   readonly keyed: { readonly x: boolean; readonly y: boolean };
   readonly W: number;
   readonly H: number;
+  /**
+   * The camera and the parents over the element when the issue was at its worst: how its own pixels become the
+   * screen's.
+   */
+  readonly view?: { readonly a: number; readonly b: number; readonly c: number; readonly d: number };
 }
 
-/** The `box` values that move an element by (dx, dy): the new number where it has one, else from the centre. */
-function boxMove(at: Placed, dx: number, dy: number): string {
+/**
+ * A move of (dx, dy) screen pixels in the numbers of an element under a camera or a parent: their zoom, scale and turn
+ * undone.
+ */
+function throughCamera(view: NonNullable<Placed["view"]>, dx: number, dy: number): [number, number] {
+  const det = view.a * view.d - view.b * view.c;
+  if (Math.abs(det) < 1e-9) return [dx, dy];
+  return [Math.round((view.d * dx - view.c * dy) / det), Math.round((view.a * dy - view.b * dx) / det)];
+}
+
+/** The `box` values that move an element by (dx, dy) on screen: the new number where it has one, else from the centre. */
+function boxMove(at: Placed, screenDx: number, screenDy: number): string {
+  const [dx, dy] = at.view ? throughCamera(at.view, screenDx, screenDy) : [screenDx, screenDy];
   const centred = at.box?.origin === undefined || at.box.origin === "center";
   const props: string[] = [];
   let centre = false;
@@ -366,7 +429,7 @@ function moveText(kind: string, dx: number, dy: number, at?: Placed): string {
 }
 
 /** Where element `id` is placed now, or undefined for one the file does not place (a part a layer draws). */
-function placedOf(state: ResolvedState, id: string): Placed | undefined {
+function placedOf(state: ResolvedState, id: string, t: number): Placed | undefined {
   const item = state.items.get(id);
   if (!item || item.kind === "part") return undefined;
   const keyed = (axis: "x" | "y"): boolean =>
@@ -376,11 +439,31 @@ function placedOf(state: ResolvedState, id: string): Placed | undefined {
   const written = item.props.box as Placed["box"];
   // The captions' box is the lower safe area, each field written replacing that one.
   const box = item.kind === "captions" ? { ...captionBox(state.composition), ...written } : written;
-  return { box, keyed: { x: keyed("x"), y: keyed("y") }, W: state.composition.width, H: state.composition.height };
+  const camera = trackCamera(state, item.track, t);
+  const space = spaceOf(state, item, t);
+  const s = space.matrix;
+  // The camera goes on last, after the chain of what it follows, as the player draws it.
+  const view = space.isRoot
+    ? camera
+    : camera
+      ? {
+          a: camera.a * s.a + camera.c * s.b,
+          b: camera.b * s.a + camera.d * s.b,
+          c: camera.a * s.c + camera.c * s.d,
+          d: camera.b * s.c + camera.d * s.d,
+        }
+      : s;
+  return {
+    box,
+    keyed: { x: keyed("x"), y: keyed("y") },
+    W: space.frame.width,
+    H: space.frame.height,
+    ...(view ? { view: { a: view.a, b: view.b, c: view.c, d: view.d } } : {}),
+  };
 }
 
 /** Fills in `message` and `fix` from the measurements and where the element is placed now. */
-function describe(issue: LayoutIssue, at?: Placed): LayoutIssue {
+function describe(issue: Sampled, at?: Placed): LayoutIssue {
   const { box, area } = issue;
   const who = `${issue.kind} "${issue.id}"`;
   const when = issue.from === issue.to ? `at ${s2(issue.from)}` : `from ${s2(issue.from)} to ${s2(issue.to)}`;
@@ -418,7 +501,13 @@ function describe(issue: LayoutIssue, at?: Placed): LayoutIssue {
           : 0;
     return { ...issue, message, fix: moveText(issue.kind, dx, dy, at) };
   }
-  const other = issue.rule === "subject" ? "the subject" : `captions "${issue.with}"`;
+  if (issue.rule === "text-fit" && issue.text) return { ...issue, ...fitWords(issue.text, issue.area, who, when) };
+  const other =
+    issue.rule === "subject"
+      ? "the subject"
+      : issue.rule === "text-over-text"
+        ? `title "${issue.with}"`
+        : `captions "${issue.with}"`;
   const message = `${who} covers ${other} ${when}.`;
   // The shortest way out of the overlap, one axis at a time.
   const moves: [number, number][] = [
@@ -433,7 +522,48 @@ function describe(issue: LayoutIssue, at?: Placed): LayoutIssue {
   return {
     ...issue,
     message,
-    fix: `${moveText(issue.kind, Math.round(dx), Math.round(dy), at)}, then check again: the move may run into something else`,
+    fix: `${moveText(issue.kind, Math.round(dx), Math.round(dy), at)}${issue.rule === "text-over-text" ? `, or start it after "${issue.with}" ends` : ""}, then check again: the move may run into something else`,
+  };
+}
+
+/** How far a title's text spills out of its box, in pixels: across past its sides, or down past its height by more
+ * than a quarter of a line (the room above and below the letters). 1 for a soft wrap in a box the file gave a width.
+ * 0 when it fits. */
+function misfit(f: TextFit): number {
+  const wide = Math.max(-f.content.x, f.content.x + f.content.w - f.box.w);
+  const tall = f.lines * f.lineHeight - f.box.h;
+  const over = Math.max(wide > SLACK ? wide : 0, tall > Math.max(SLACK, f.lineHeight / 4) ? tall : 0);
+  if (over > 0) return over;
+  return f.fixedWidth && f.lines > f.written ? 1 : 0;
+}
+
+/** The message and the fix of a `text-fit` issue; `safe` caps a wider box at the safe zone's width. */
+function fitWords(f: TextFit, safe: DrawRect, who: string, when: string): { message: string; fix: string } {
+  const lines = `${f.lines} line${f.lines === 1 ? "" : "s"}`;
+  const wide = Math.max(-f.content.x, f.content.x + f.content.w - f.box.w);
+  const need = Math.ceil(f.lines * f.lineHeight);
+  const box = { w: Math.round(f.box.w), h: Math.round(f.box.h) };
+  if (need - f.box.h > Math.max(SLACK, f.lineHeight / 4))
+    return {
+      message: `${who} does not fit its box: ${lines} of ${Math.round(f.lineHeight)} px need ${need} px, the box is ${box.h} px high, ${when}.`,
+      fix: `make box.height ${need}, or style.size ${Math.floor((f.size * f.box.h) / need)} or less, or cut words`,
+    };
+  if (wide > SLACK) {
+    const width = Math.ceil(f.content.w);
+    return {
+      message: `${who} does not fit its box: its text is ${width} px wide, the box is ${box.w} px wide, ${when}.`,
+      fix: `make box.width ${width}, or style.size ${Math.floor((f.size * f.box.w) / f.content.w)} or less`,
+    };
+  }
+  const natural = Math.ceil(f.natural);
+  const size = Math.floor((f.size * f.box.w) / f.natural);
+  const breakIt = "or write a line break where it should break";
+  return {
+    message: `${who} wraps onto ${lines} in a ${box.w} px wide box; on one line it is ${natural} px, ${when}.`,
+    fix:
+      natural <= safe.w
+        ? `widen box.width to ${natural}, make style.size ${size} or less, ${breakIt}`
+        : `make style.size ${size} or less, ${breakIt} (on one line it is wider than the safe zone)`,
   };
 }
 
@@ -442,7 +572,15 @@ function describe(issue: LayoutIssue, at?: Placed): LayoutIssue {
  * element a helper generated, the call to the helper; for one a loop made, the JSX in the loop. Null when the file
  * shows no single place for it.
  */
-function locate(file: string, index: SourceIndex, state: ResolvedState, id: string, kind: string): SourceSpot | null {
+function locate(
+  file: string,
+  index: SourceIndex,
+  state: ResolvedState,
+  id: string,
+  kind: string,
+  /** A prop to point at first, when the element writes it. */
+  prop?: string,
+): SourceSpot | null {
   if (kind === "part") {
     // A part is found by its name where the file writes it; a name the file builds is found at its layer.
     const slash = id.lastIndexOf("/");
@@ -469,7 +607,9 @@ function locate(file: string, index: SourceIndex, state: ResolvedState, id: stri
     helper: string | undefined,
     loop = false;
   if (site) {
-    at = (site.props.get("box") ?? site.props.get(kind === "captions" ? "style" : "transform") ?? site).range[0];
+    const first = prop ? site.props.get(prop) : undefined;
+    at = (first ?? site.props.get("box") ?? site.props.get(kind === "captions" ? "style" : "transform") ?? site)
+      .range[0];
   } else if (call) {
     at = call.range[0];
     helper = call.helper;

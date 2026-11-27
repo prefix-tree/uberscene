@@ -2,6 +2,7 @@
 // registries, themes and fonts as the resolver reads them, the easing curves, and the hooks a host installs to draw
 // free code. A video file imports `@uberscene/kit`; this entry is for the resolver, the player and editors.
 
+export * from "./color";
 export { COMPONENT_NAMES, COMPONENTS, type ComponentEntry } from "./components/index";
 export * from "./easing";
 export { type GaussOutside, type GaussWhat, gaussScale, gaussSources, gaussSteps } from "./effects/gauss";
@@ -29,6 +30,7 @@ export {
 } from "./effects/registry";
 export { type ColourFunction, fusedColourSource } from "./effects/shapes";
 export { BLOCK_ASPECTS } from "./jsx/block-meta";
+export { type Box, type DrawRect, fitRect, type Placed, placeAxis, placeBox } from "./jsx/box";
 export * from "./jsx/capabilities";
 export * from "./jsx/curves";
 export * from "./jsx/define";
@@ -36,12 +38,25 @@ export * from "./jsx/effect-params";
 export * from "./jsx/elements";
 export * from "./jsx/engines";
 export * from "./jsx/enums";
+export * from "./jsx/generators";
 export { knobsOf } from "./jsx/knobs";
+export { isTextMark, type MarkProps, markSchema, moveRuns, type TextRun, themedRuns } from "./jsx/mark";
+export * from "./jsx/read-time";
 export * from "./jsx/rendering";
-export { BOX_ORIGIN_POINT, BOX_ORIGINS, type BoxOrigin, type ElementBox, type Transform } from "./jsx/schemas/common";
+export {
+  BOX_ORIGIN_POINT,
+  BOX_ORIGINS,
+  type BoxOrigin,
+  type ElementBox,
+  type GeneratorOf,
+  type KeyOf,
+  type Transform,
+} from "./jsx/schemas/common";
 export { defaultTransitionParams, isBuiltInTransition, TRANSITION_PARAMS } from "./jsx/schemas/transition";
 export * from "./jsx/shaders";
 export { installLayerClock } from "./jsx/use-t";
 export { clamp01, round3 } from "./math";
 export * from "./theme";
+export * from "./ticks";
 export * from "./time";
+export { Time, TimeRange } from "./time-value";

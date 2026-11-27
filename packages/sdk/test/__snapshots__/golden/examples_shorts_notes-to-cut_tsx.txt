@@ -1,0 +1,34 @@
+composition composition 30/1 frames 1080
+hook layer 0-119
+ask layer 119-423
+build layer 423-607
+check layer 607-840
+close layer 840-1080
+in-ask audio 116-125 source 0-9 x1
+in-build audio 420-429 source 0-9 x1
+in-check audio 604-613 source 0-9 x1
+in-close audio 837-846 source 0-9 x1
+message audio 128-132 source 0-4 x1
+reply audio 267-270 source 0-4 x1
+command-1 audio 435-436 source 0-2 x1
+command-2 audio 501-502 source 0-2 x1
+place-1 audio 655-668 source 0-14 x1
+place-2 audio 715-728 source 0-14 x1
+build-up audio 780-840 source 0-60 x1
+last audio 1026-1080 source 0-54 x1
+said captions 0-1080
+said-1 caption 9-44
+said-2 caption 44-78
+said-3 caption 78-112
+said-4 caption 128-185
+said-5 caption 267-341
+said-6 caption 341-386
+said-7 caption 432-477
+said-8 caption 477-510
+said-9 caption 616-649
+said-10 caption 649-714
+said-11 caption 714-773
+said-12 caption 849-911
+scenes track 0-1080
+sounds track 0-1080
+composition composition 0-1080

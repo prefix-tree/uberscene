@@ -30,7 +30,7 @@ export interface Motion {
 
 export const STILL: Motion = { opacity: 1, matrix: IDENTITY, clip: null, draw: null };
 
-const DEFAULT_DURATION = 0.5;
+export const DEFAULT_DURATION = 0.5;
 /** How far a slide travels: a quarter of the element's size, at most this many pixels (a title's box is the frame). */
 const SLIDE = 0.25;
 const SLIDE_MAX = 160;

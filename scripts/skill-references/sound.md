@@ -14,8 +14,10 @@ One thing decides where every cut lands. Pick it first:
   `--bpm 120 --first-beat 0.3` sets them), and every cut, punch, title and sound effect anchors to one:
   `anchor="song" at="beat:16"`. Nothing is timed by hand, so picture and music can't drift, and they stay together
   when the song is trimmed. Give each shot its beats (`60 / tempo` seconds each) plus 0.1 s, in order on one track, so
-  the next covers it and no frame is empty at a cut; and check the beats against the sound
-  with `look --at song@beat:16,song@beat:32 --listen all`. Sections of the song are sections of the film: a new part
+  the next covers it and no frame is empty at a cut. Then measure it: `npx uberscene video.tsx --check-sync` lists
+  every cut and start against its nearest beat and names each one that misses, with no browser
+  ([sync.md](sync.md)); and check the beats against the sound with
+  `look --at song@beat:16,song@beat:32 --listen all`. Sections of the song are sections of the film: a new part
   of the song, a new part of the story.
 - **Neither**: the picture sets the pace, and the music only keeps it moving. Let a cut land on a strong beat where you
   can.
@@ -30,6 +32,16 @@ Never stretch or squeeze a voice to fit a slot: change the picture.
 | Music | a free track, `role="music"` | 0.6-0.8 alone, `duck={{ under: "dialogue", to: 0.15 }}` under a voice | `duration="fill"`, `fade={{ in: 0.5, out: 1.5 }}` |
 | Effects | a free track, `role="effects"` | 0.4-0.8 | on visible actions only |
 | Ambience | a free track, `role="ambience"` | 0.1-0.3 | room tone, a city, under a quiet stretch |
+
+The props of `<Audio>` that set a layer's level:
+
+<!-- sync: props Audio volume fade duck -->
+| prop | type | default | what it is |
+|---|---|---|---|
+| `volume` | number (0..4) \| { at, value, easing }[] |  | A gain: 1 plays the source as it is, 0 mutes it, 2 is twice as loud; keys change it over time. |
+| `fade` | { in, out } |  | Seconds the sound fades in at the start and out at the end. |
+| `duck` | { under, to, attack, release } |  | Turns this sound down while another plays: `under` is a track id or a track role (`dialogue`), `to` the volume it falls to, `attack` and `release` the seconds it takes to fall and recover. |
+<!-- /sync -->
 
 - **Duck by role, not by hand**: `duck={{ under: "dialogue", to: 0.15, attack: 0.2, release: 0.6 }}` follows every
   edit of the voice. Keys on `volume` are for a moment the music must swell or drop.

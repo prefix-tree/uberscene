@@ -67,7 +67,7 @@ the element, and `edge`, `"in"` or `"out"`. It plays at that edge, against whate
 
 ```tsx
 <Track id="over" layout="free">
-  <Clip id="pip" src="asset:product" in="shot:1" out="shot:1.end" start={{ at: "hook", offset: 1 }} />
+  <Clip id="pip" src="asset:product" in="shot:1" out="shot:1.end" anchor="hook" offset={1} />
   <Transition id="pip-in" on="pip" edge="in" type="wipe" duration={0.6} />
   <Transition id="pip-out" on="pip" edge="out" type="crossfade" duration={0.6} />
 </Track>

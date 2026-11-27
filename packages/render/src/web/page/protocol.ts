@@ -149,6 +149,29 @@ export interface InkBounds {
   readonly backdrop: boolean;
   /** For a part (kind `part`): the id of the element whose code drew it. Its own id is `<that id>/<its name>`. */
   readonly of?: string;
+  /** For a title: its whole text laid out in its box, as it is once every word is shown. */
+  readonly text?: TextFit;
+}
+
+/**
+ * A title's text laid out in its box, measured in the box's own pixels (before any transform), with all of its text
+ * shown whatever the animation shows just now.
+ */
+export interface TextFit {
+  /** The box the text is laid out in. */
+  readonly box: { readonly w: number; readonly h: number };
+  /** The lines the text takes, and the lines the file writes (its line breaks plus one). */
+  readonly lines: number;
+  readonly written: number;
+  /** Where the text lies, from the box's top left: past the box where it does not fit. */
+  readonly content: { readonly x: number; readonly y: number; readonly w: number; readonly h: number };
+  /** The width of its widest line with no wrapping. */
+  readonly natural: number;
+  /** Whether the file gives the box a width, rather than the frame's. */
+  readonly fixedWidth: boolean;
+  /** The font size and the height of one line, in pixels. */
+  readonly size: number;
+  readonly lineHeight: number;
 }
 
 export interface BoundsOptions {

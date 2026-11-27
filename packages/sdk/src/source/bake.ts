@@ -3,6 +3,7 @@ import { capabilitiesOf } from "@uberscene/kit/schema";
 import { nodeSpecOf } from "../actions/types";
 import type { ResolvedState } from "../resolve/resolve";
 import type { CollectedNode } from "../resolve/tree";
+import { startT } from "../time";
 import { lineRange, type SourceEdit } from "./edits";
 import { buildSourceIndex, type SourceIndex } from "./index";
 import { printElement } from "./print";
@@ -52,7 +53,7 @@ function bakeGeneratedChildren(text: string, parentId: string, state: ResolvedSt
   if (!site) return [];
   const generated = [...state.items.values()]
     .filter((p) => p.editable === "generated" && p.parent === parentId && !state.tree.byId.has(p.id))
-    .sort((a, b) => a.start - b.start);
+    .sort((a, b) => startT(a) - startT(b));
   const parentKind = state.tree.byId.get(parentId)?.kind ?? site.kind;
   const asChildren =
     generated.length > 0 && generated.every((p) => capabilitiesOf(parentKind).childKinds.includes(p.kind));

@@ -1,6 +1,6 @@
 # 0033. Time in ticks
 
-> Status: accepted.
+> Status: accepted. Its resolver storage of seconds is superseded by [0044](./0044-timeline-time-in-ticks.md).
 
 ## Context
 

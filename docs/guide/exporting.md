@@ -28,6 +28,35 @@ The export loads a file the way the editor does: it may import `react`, `zod` an
 `.tsx` modules inside the project, plus what `--import` offers. A file that imports anything else fails with the same message in both, so a file that exports
 also opens in the editor.
 
+## Several exports in one go
+
+`uberscene queue` exports a list of videos in order and prints one summary at the end: a wide and a tall cut of the
+same file, one export per set of props, a draft beside the final.
+
+```json
+{
+  "jobs": [
+    { "file": "video.tsx", "out": "out/wide.mp4" },
+    { "file": "video.tsx", "props": { "aspect": "9:16" }, "out": "out/tall.mp4", "quality": "high" },
+    { "file": "teaser.tsx", "from": 2, "to": 8, "out": "out/teaser.webm" }
+  ]
+}
+```
+
+```sh
+npx uberscene queue jobs.json
+```
+
+- A job needs `file` and `out`. `props`, `from`, `to`, `codec`, `quality`, `bitrate`, `manifest`, `draft` and
+  `silent` mean what the options of the same name mean. Paths are relative to the queue file, and the folder an
+  `out` names is made when it is missing. The file can also be the list of jobs alone.
+- Every job is checked before the first one renders: a missing file, an unknown codec, `quality` beside `bitrate`,
+  two jobs writing one file. Each message names its job, so a typo in the last job is found in a second.
+- `--media`, `--tabs`, `--font`, `--import`, `--keyframe` and `--continue` apply to every job.
+- The first job that fails stops the queue, and the rest are listed as skipped. With `--continue-on-error` every job
+  runs. A failed job writes nothing and leaves an older file at its `out` as it was.
+- The command exits 0 when every job rendered and 1 otherwise. `--json` prints the summary as JSON.
+
 ## Formats
 
 | `--out` | Writes |
@@ -55,6 +84,11 @@ differently. A binary of any other version is refused before the export starts.
 | Download it ahead of time, for a Docker image or a CI cache | `npx uberscene browser install` |
 | Keep the cache somewhere else | `UBERSCENE_BROWSER_CACHE` |
 | Use your own Chrome 157 instead of downloading one | `UBERSCENE_CHROMIUM` |
+| Draw on another Chrome anyway, where Chrome 157 cannot be had | `UBERSCENE_CHROMIUM` and `UBERSCENE_ANY_CHROME=1` |
+
+`UBERSCENE_ANY_CHROME=1` is for a machine that cannot download Chrome for Testing, such as a sandbox with a fixed
+Chromium. The export warns, then draws: text may differ a little from the tests and from other machines, so do not
+use it for goldens or for an export that must match another one.
 
 The capture uses HTML-in-Canvas (`drawElementImage`), which Chrome ships behind a flag the export turns on.
 

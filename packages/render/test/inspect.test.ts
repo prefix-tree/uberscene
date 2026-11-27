@@ -122,8 +122,11 @@ cuts: 3.40 hook→broll (x1)
       "elements",
       "effects",
       "keyframes",
+      "generators",
       "words",
       "cuts",
+      "music",
+      "beats",
       "errors",
     ]);
     expect(rows.elements.find((e: { id: string }) => e.id === "broll")).toMatchObject({ start: 3.4, startFrame: 102 });
@@ -293,5 +296,67 @@ export default function Video() {
     expect(output).not.toMatch(/layer\s+card\s+ground/);
     const rows = JSON.parse(inspect(ground, video.state, { json: true }).output);
     expect(JSON.stringify(rows)).toContain('"ground":true');
+  });
+
+  it("says so for a shape, an SVG and a sticker too", async () => {
+    const file = join(dir, "ground-shapes.tsx");
+    writeFileSync(
+      file,
+      `import { Composition, Shape, Svg, Track } from "@uberscene/kit";
+export const manifest = { assets: {} };
+export default function Video() {
+  return (
+    <Composition fps={30} width={640} height={360}>
+      <Track id="t" layout="free">
+        <Shape id="panel" start={0} duration={2} type="rectangle" fill="#ffffff" ground />
+        <Shape id="note" start={0} duration={2} type="rectangle" fill="#ffffff" />
+        <Svg id="frame" start={0} duration={2} content="<svg viewBox='0 0 1 1'><rect width='1' height='1'/></svg>" ground />
+      </Track>
+    </Composition>
+  );
+}
+`,
+    );
+    const video = await loadVideo(file);
+    expect(video.state.errors).toEqual([]);
+    const { output } = inspect(file, video.state, {});
+    expect(output).toMatch(/shape\s+panel\s+ground/);
+    expect(output).toMatch(/svg\s+frame\s+ground/);
+    expect(output).not.toMatch(/shape\s+note\s+ground/);
+  });
+});
+
+describe("inspect, an overlay that follows another", () => {
+  it("says which it follows and where that carries it", async () => {
+    const file = join(dir, "follow.tsx");
+    writeFileSync(
+      file,
+      `import { Composition, Shape, Track } from "@uberscene/kit";
+export const manifest = { assets: {} };
+export default function Video() {
+  return (
+    <Composition fps={30} width={640} height={360}>
+      <Track id="rig" layout="free">
+        <Shape id="arm" start={0} duration={2} type="rectangle" width={40} height={100}
+          box={{ x: 100, y: 40, width: 40, height: 100 }} transform={{ anchor: { x: 0.5, y: 0 }, rotation: 90 }} />
+        <Shape id="hand" follow="arm" start={0} duration={2} type="rectangle" width={20} height={20}
+          box={{ x: 20, y: 100, width: 20, height: 20, origin: "center" }} />
+      </Track>
+    </Composition>
+  );
+}
+`,
+    );
+    const video = await loadVideo(file);
+    expect(video.state.errors).toEqual([]);
+    const [view] = resolveMoments(video.state, parseMoments("1")).moments;
+    const seen = describeAt(video.state, view!).seen;
+    // The hand's (20, 100) in the turned arm is (20, 40) on screen.
+    expect(seen.find((s) => s.id === "hand")).toMatchObject({ follow: "arm", placedAt: { x: 20, y: 40 } });
+    expect(seen.find((s) => s.id === "arm")?.follow).toBeUndefined();
+    const { output } = inspect(file, video.state, { at: "1" });
+    expect(output).toContain(`follows "arm" (at x 20, y 40)`);
+    const rows = JSON.parse(inspect(file, video.state, { json: true }).output) as { elements: { id: string }[] };
+    expect(rows.elements.find((e) => e.id === "hand")).toMatchObject({ follow: "arm" });
   });
 });

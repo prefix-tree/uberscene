@@ -19,6 +19,7 @@ export {
   type GainPoint,
 } from "./model/audio-plan";
 export { OVERLAY_KINDS } from "./model/backdrop";
+export { type CameraValues, cameraValuesAt, trackCamera } from "./model/camera";
 export { paramsAt } from "./model/effects";
 export { buildFramePlan, type DrawOp } from "./model/frame-plan";
 export { frameIndex, placementSourceTime } from "./model/time";
@@ -26,6 +27,7 @@ export { animatedBox, animatedTransform, boundsOf, type DrawRect } from "./model
 export { isVisibleAt, visiblePlacements } from "./model/visible";
 export { makeNestedResolver } from "./nested";
 export { captionBox } from "./overlays/caption-placement";
+export { rootSpace, type Space, spaceOf, spacesAt } from "./overlays/space";
 export { Compositor } from "./render/compositor";
 export { CanvasPainter, coversCanvas } from "./render/painter";
 export type {

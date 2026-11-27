@@ -26,6 +26,7 @@ sentences), [Multicam highlights](/recipes/highlights) (shots and silences).
 | Start at a time | `start={1}` on a free track. |
 | Start with another element | `anchor="hook"`, plus `offset` seconds. |
 | Last a time, or as long as something else | `duration={3}`, `"source"`, `"fill"`, `{ match }`, `{ until }`. |
+| End on a word, a shot or a beat | <code v-pre>duration={{ until: "talk", at: "word:54.end" }}</code>. |
 | Cut or start on a word, a shot or a pause | `in="word:12"`, `at="word:12"`. |
 
 ## Sequence tracks place by order
@@ -94,6 +95,7 @@ An anchor that points at nothing, or a loop of anchors, is an error.
 | `"fill"` | To the end of the video, however long it becomes. |
 | `{ match: "card" }` | As long as `card`, whenever it starts. |
 | `{ until: "card" }` | Until `card` ends, wherever this one starts. |
+| `{ until: "talk", at: "word:54.end" }` | Until `talk` has said word 54. |
 
 `until` lets elements that come in at different times leave together. A ready-made component takes it too, so a card
 or a lower third can last as long as the clip it sits over:
@@ -104,6 +106,21 @@ or a lower third can last as long as the clip it sits over:
 ```
 
 An element that starts after the one it waits for has ended has no length, and that is an error.
+
+With `at`, it ends where that element plays a word, a shot, a silence or a beat of its source, the same moments an
+anchor's `at` names ([Time by words](#time-references)). A title that starts on one word and ends on another needs no
+seconds at all, and follows both when the clip is trimmed, moved or sped up:
+
+```tsx
+<Title id="quote" anchor="talk" at="word:42" duration={{ until: "talk", at: "word:54.end" }}>
+  wouldn't it be amazing
+</Title>
+<Clip id="shot" src="asset:pour" anchor="song" at="beat:8" duration={{ until: "song", at: "beat:16" }} />
+```
+
+To hold it a little past the word, so it can still be read, end it on a later word, or give seconds. A word the clip
+trims out is an error on `duration`; splitting the clip moves the length to the half that says the word, and trimming
+the word away keeps the seconds it had.
 
 ## Time by words, shots and pauses {#time-references}
 
@@ -156,14 +173,14 @@ on that beat when the music is trimmed or moved.
 <Track id="shots" layout="free">
   <Clip id="s1" src="asset:pour" anchor="song" at="beat:0" in={2} duration={2.1} fit="cover" />
   <Clip id="s2" src="asset:steam" anchor="song" at="beat:4" in={0.5} duration={2.1} fit="cover" />
+  <Title id="drop" anchor="song" at="beat:32" duration={1.5}>Now.</Title>
 </Track>
-<Title id="drop" anchor="song" at="beat:32" duration={1.5}>Now.</Title>
 ```
 
 `in="beat:0"` starts the song on its first beat and `out="beat:63.end"` ends it on a whole bar of four. Each shot
 starts on its beat. Beats are never exactly a whole number of frames apart, so give a shot a little more than its
 beats (at 120 BPM four beats is 2 s: `duration={2.1}`) and write the shots in order on one track: the next one covers
-the last, and no frame is left empty at a cut. `inspect` and `look` take `song@beat:16` as a moment.
+the last, and no frame is left empty at a cut. `inspect` and `look` take `song@beat:16` as a moment. `--check-sync` then says, without a browser, whether every cut and start is on its beat ([Sync](./sync)).
 [Cut on the beat](/examples/beats) is a whole film made this way.
 
 ::: warning Limits of `at`

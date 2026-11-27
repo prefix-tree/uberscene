@@ -12,12 +12,13 @@ npx uberscene lint video.tsx                      # exits 0
 npx uberscene video.tsx --check-layout            # exits 0, or 3 for issues you keep and name
 npx uberscene video.tsx --check-motion            # every stretch where nothing moves for a second or more
 npx uberscene inspect video.tsx                   # the timeline: lengths, cuts, words
+npx uberscene video.tsx --check-sync              # with music: every cut and start against its beat (sync.md)
 npx uberscene look video.tsx --at <beats> --listen all --out review.png
 ```
 
 From `inspect` and the sheet, check:
 
-- every title is on screen at least 0.5 s plus 0.3 s per word;
+- every title is on screen at least 0.5 s plus 0.3 s per word (`--check-layout` reports `read-time`);
 - no stretch longer than 4 s with nothing new (a dead beat);
 - no text smaller than 28 px at 1080 ([text.md](text.md));
 - the sound: `lufs` about -14, `truePeakDb` at most -2, no silence you didn't mean ([sound.md](sound.md));
@@ -37,7 +38,7 @@ what they see first, what they read. Then ask:
 | Is there one thing to look at in each frame? | two titles fighting, the accent on everything |
 | Does each cut carry motion? | a scene that stops, then the next starts from rest ([motion.md](motion.md)) |
 | Can every word be read in time, at phone size? | a line gone before it's read; text on a busy sky |
-| Does the sound do something? | music under it, nothing landing on a hit |
+| Does the sound do something? | music under it, nothing landing on a hit; `--check-sync` shows cuts `near` a beat or none `on` one |
 | Does it end on the payoff? | a long logo spin after the point |
 | Does anything look like a default? | the theme's palette as it is, every title the same fade ([look.md](look.md)) |
 
@@ -73,12 +74,13 @@ Render only after the person has seen the sheet, unless they asked for the file 
 |---|---|
 | A stretch where nothing moves (`--check-motion` lists them) | Look at it on a `--motion` strip; give it a move from [motion.md](motion.md), or cut it shorter |
 | The hero is small | Frame tighter: scale or crop the clip (`transform.scale` with an `anchor` on the subject) until it fills 15 % of the width or more (`where` measures a graphic; look at a `--still` for footage) |
-| A title gone before it's read | Hold it 0.5 s plus 0.3 s per word; cut words before shortening the hold |
+| A title gone before it's read | Hold it 0.5 s plus 0.3 s per word; cut words before shortening the hold. End it on a later word (`duration={{ until: "talk", at: "word:N" }}`) rather than in seconds, so it follows the cut |
 | A sound early or late | Anchor it to its picture element, one frame after (`offset={0.033}` at 30 fps) |
 | The music ends mid-phrase | End the bed on its own end, or fade it over 1-2 s to the last frame |
 | A cut feels like a stop | Key both sides moving the same way through the cut ([motion.md](motion.md)) |
 | A landing differs between the preview and the render | Something carries state between frames; draw it as a function of the time (`useLayer()`, `spring()`) |
 | Text cut at the edge | Every word fully in the frame or fully out; `--check-layout` lists what leaves the safe area |
+| Lines that touch, a title that wraps or spills out of its box | `--check-layout` reports `text-over-text` and `text-fit`, with the box or size that fixes it |
 | A zoom used for energy | Cut on the beat instead; hold a good shot for a whole beat |
 | Labels and words nobody asked for | Only the words in the plan go on screen |
 | Glow, gradients, lens flares | Name them in the plan's banned line, then remove them |

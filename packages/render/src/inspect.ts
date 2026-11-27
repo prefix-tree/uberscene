@@ -1,24 +1,44 @@
 // `uberscene inspect video.tsx`: the timeline read back as an editor reads it, in text or as flat JSON rows, and what
 // is on screen and heard at chosen moments. It runs the resolver and the player's model only: no browser, no media.
 import type { Knob } from "@uberscene/kit";
-import { capabilitiesOf, type ElementBox, rateLabel, round3 } from "@uberscene/kit/schema";
+import {
+  capabilitiesOf,
+  type ElementBox,
+  frameStartSeconds,
+  rateLabel,
+  round3,
+  secondsToTicks,
+} from "@uberscene/kit/schema";
 import {
   animatedBox,
   animatedTransform,
   buildGainEnvelope,
+  type CameraValues,
+  cameraValuesAt,
   paramsAt,
   placementSourceTime,
+  spaceOf,
   visiblePlacements,
 } from "@uberscene/player/engine";
 import {
   type ElementRow,
+  EVENT_KINDS,
+  type EventKind,
+  type EventRow,
+  endSeconds,
+  followOf,
+  lengthSeconds,
+  listenRange,
   lookupAsset,
   type Moment,
   parseMoments,
   type ResolvedState,
   resolveMoments,
+  secondsSinceStart,
   spokenWords,
+  startSeconds,
   type TimelineRows,
+  timelineEvents,
   timelineRows,
 } from "@uberscene/sdk";
 
@@ -29,6 +49,15 @@ export interface SeenElement {
   readonly id: string;
   readonly kind: string;
   readonly track: string;
+  /** Set when the track is inside the camera: `box` and `transform` are then the element's own, before the camera. */
+  readonly camera?: true;
+  /** The overlay it moves with (`follow`): `box` is then read in that element's box, before its transform. */
+  readonly follow?: string;
+  /**
+   * With a `follow`: where the point its `box.x` and `box.y` name lands in composition pixels, carried by what it
+   * follows (a coordinate left out is that element's centre), before its own transform and the camera.
+   */
+  readonly placedAt?: { readonly x: number; readonly y: number };
   /** 0..1 through the element. */
   readonly progress: number;
   /** The second of its asset on screen, for footage. */
@@ -58,6 +87,8 @@ export interface HeardElement {
 }
 
 export interface MomentView extends Moment {
+  /** The camera's values at this moment, in a file with one: what it does to every element marked `camera`. */
+  readonly camera?: CameraValues;
   /** What is drawn, the top of the picture first. */
   readonly seen: readonly SeenElement[];
   readonly heard: readonly HeardElement[];
@@ -70,22 +101,45 @@ export interface MomentView extends Moment {
 const typeName = (type: unknown): string =>
   typeof type === "string" ? type : String((type as { name?: unknown } | null)?.name ?? "custom");
 
+/** Where the point an element's `box.x`, `box.y` name lands once what it follows carries it. */
+function placedAt(
+  state: ResolvedState,
+  p: Parameters<typeof spaceOf>[1],
+  children: Parameters<typeof animatedBox>[1],
+  t: number,
+): { x: number; y: number } {
+  const space = spaceOf(state, p, t);
+  const box = animatedBox(p.props.box as never, children, secondsSinceStart(p, t)) as
+    | { x?: unknown; y?: unknown }
+    | undefined;
+  const x = typeof box?.x === "number" ? box.x : space.frame.width / 2;
+  const y = typeof box?.y === "number" ? box.y : space.frame.height / 2;
+  const m = space.matrix;
+  return { x: Math.round(m.a * x + m.c * y + m.e), y: Math.round(m.b * x + m.d * y + m.f) };
+}
+
 /** What is on screen and heard at one moment. */
 export function describeAt(state: ResolvedState, moment: Moment): MomentView {
-  const t = moment.time;
+  // The frame it names, as drawn: the moment's time is rounded to the ms, and 0.333 is in frame 9 at 30 fps, not 10.
+  const t = frameStartSeconds(moment.frame, state.composition.rate);
+  const at = secondsToTicks(t);
+  const within = (start: number, end: number): boolean => at >= secondsToTicks(start) && at < secondsToTicks(end);
   const seen: SeenElement[] = [];
   for (const { placement: p, track, children, transition } of visiblePlacements(state, t)) {
     // A clip at the very end of the transition it leaves through draws nothing.
     if (transition?.role === "out" && transition.progress >= 1) continue;
-    const rel = t - p.start;
+    const rel = secondsSinceStart(p, t);
     const transform = restless(animatedTransform(p.props.transform as never, children, rel) as Record<string, unknown>);
     const box = placed(animatedBox(p.props.box as never, children, rel));
     const text = p.kind === "title" ? state.tree.byId.get(p.id)?.text : undefined;
+    const follow = followOf(p);
     seen.push({
       id: p.id,
       kind: p.kind,
       track: track.id,
-      progress: round3(p.duration > 0 ? Math.min(1, Math.max(0, rel / p.duration)) : 0),
+      ...(track.camera !== undefined ? { camera: true as const } : {}),
+      ...(follow !== undefined ? { follow, placedAt: placedAt(state, p, children, t) } : {}),
+      progress: round3(lengthSeconds(p) > 0 ? Math.min(1, Math.max(0, rel / lengthSeconds(p))) : 0),
       ...(p.source ? { sourceTime: round3(placementSourceTime(p, children, t)) } : {}),
       ...(text ? { text } : {}),
       ...(box ? { box } : {}),
@@ -107,21 +161,28 @@ export function describeAt(state: ResolvedState, moment: Moment): MomentView {
     if (track.hidden || track.muted || (anySolo && !track.solo)) continue;
     for (const p of state.items.values()) {
       if (p.track !== track.id || p.parent === null || !capabilitiesOf(p.kind).audio) continue;
-      // Ends carry float fuzz from the resolver: a sound is over at its end, to the microsecond.
-      if (!(t >= p.start && t < p.end - 1e-6) || !p.source) continue;
+      // In ticks, as the mixer and the player count: a sound plays from its start up to its end.
+      if (!within(startSeconds(p), endSeconds(p)) || !p.source) continue;
       const asset = lookupAsset(state.manifest, p.source.asset);
       if (!asset || asset.kind === "image" || (asset.kind === "video" && !asset.audio)) continue;
-      const gain = envelopeAt(buildGainEnvelope(p, track, state, p.start, p.end), t, 1);
+      const gain = envelopeAt(buildGainEnvelope(p, track, state, startSeconds(p), endSeconds(p)), t, 1);
       heard.push({ id: p.id, track: track.id, asset: asset.id, gain: Math.round(gain * 100) / 100 });
     }
   }
 
-  const word = spokenWords(state).find((w) => t >= w.start && t < w.end);
+  const word = spokenWords(state).find((w) => within(w.start, w.end));
   const caption = [...state.items.values()].find(
-    (p) => p.kind === "caption" && state.items.get(p.parent ?? "")?.kind === "captions" && t >= p.start && t < p.end,
+    (p) =>
+      p.kind === "caption" &&
+      state.items.get(p.parent ?? "")?.kind === "captions" &&
+      within(startSeconds(p), endSeconds(p)),
   );
+  const view = cameraValuesAt(state, t);
   return {
     ...moment,
+    ...(view
+      ? { camera: { x: round3(view.x), y: round3(view.y), zoom: round3(view.zoom), rotation: round3(view.rotation) } }
+      : {}),
     seen,
     heard,
     ...(word ? { word: { i: word.i, text: word.text, clip: word.play } } : {}),
@@ -184,6 +245,8 @@ export function formatTimeline(file: string, rows: TimelineRows): string {
   const words = new Map<string, TimelineRows["words"][number][]>();
   for (const w of rows.words) words.set(w.clip, [...(words.get(w.clip) ?? []), w]);
 
+  const music = new Map(rows.music.map((m) => [m.clip, m]));
+
   const line = (e: ElementRow): string => {
     const when =
       e.end > e.start
@@ -197,10 +260,18 @@ export function formatTimeline(file: string, rows: TimelineRows): string {
       parts.push(
         `asset:${e.asset} ${seconds(e.in ?? 0)}–${seconds(e.out ?? 0)}${e.speed !== 1 ? ` at ${e.speed}x` : ""}`,
       );
+    const m = music.get(e.id);
+    if (m) parts.push(`${m.tempo !== undefined ? `${round3(m.tempo)} BPM  ` : ""}beat:${m.first}–${m.last}`);
     if (e.text) parts.push(quote(e.text));
     if (e.label) parts.push(`"${e.label}"`);
     if (e.anchor)
       parts.push(`anchor ${e.anchor}${e.at !== undefined ? ` at ${e.at}` : ""}${e.offset ? ` +${e.offset}` : ""}`);
+    if (e.follows)
+      parts.push(
+        "match" in e.follows
+          ? `as long as ${e.follows.match}`
+          : `until ${e.follows.until}${e.follows.at !== undefined ? ` ${e.follows.at}` : " ends"}`,
+      );
     const said = words.get(e.id);
     if (said?.length) {
       const first = said[0] as (typeof said)[number],
@@ -216,7 +287,11 @@ export function formatTimeline(file: string, rows: TimelineRows): string {
 
   for (const track of [...rows.tracks].sort((a, b) => a.order - b.order)) {
     const flags = [track.hidden && "hidden", track.muted && "muted", track.solo && "solo"].filter(Boolean);
-    lines.push(`track ${track.id} (${track.layout}${flags.length ? `, ${flags.join(", ")}` : ""})`);
+    lines.push(
+      `track ${track.id} (${[track.layout, track.role === "general" ? undefined : track.role, ...flags]
+        .filter((part) => part !== undefined)
+        .join(", ")})`,
+    );
     for (const e of rows.elements) if (e.track === track.id && e.parent === track.id) lines.push(line(e));
   }
   const loose = rows.elements.filter((e) => e.track === null && e.kind !== "caption");
@@ -230,6 +305,10 @@ export function formatTimeline(file: string, rows: TimelineRows): string {
   if (rows.cuts.length > 0)
     lines.push(
       `cuts: ${rows.cuts.map((cut) => `${seconds(cut.time)} ${cut.from}→${cut.to}${cut.transition ? ` (${cut.transition})` : ""}`).join(", ")}`,
+    );
+  for (const m of rows.music)
+    lines.push(
+      `music: ${m.clip}  ${m.tempo !== undefined ? `${round3(m.tempo)} BPM  ` : ""}a beat every ${seconds(m.beatSeconds)} s  beat:${m.first} at ${seconds(rows.beats.find((b) => b.clip === m.clip)?.time ?? m.from)} s to beat:${m.last}  (beats ${m.grid})`,
     );
   return `${lines.join("\n")}\n`;
 }
@@ -268,6 +347,8 @@ export function formatAt(views: readonly MomentView[]): string {
           `${s.transition.role === "in" ? "coming in" : "going out"} through ${s.transition.id} at ${Math.round(s.transition.progress * 100)}%`,
         );
       if (s.box) parts.push(`box ${paramList(s.box)}`);
+      if (s.follow !== undefined)
+        parts.push(`follows "${s.follow}"${s.placedAt ? ` (at x ${s.placedAt.x}, y ${s.placedAt.y})` : ""}`);
       if (s.transform) parts.push(`transform ${paramList(flat(s.transform))}`);
       for (const fx of s.effects)
         parts.push(`${fx.id}(${fx.type}${Object.keys(fx.params).length ? ` ${paramList(fx.params)}` : ""})`);
@@ -298,6 +379,12 @@ export interface InspectOptions {
   readonly json?: boolean;
   /** The file's `schema` values, listed before the timeline (and as `knobs` in the JSON). */
   readonly knobs?: readonly Knob[];
+  /** Every moment of the video in one list, in time order, instead of the timeline. */
+  readonly events?: boolean;
+  /** (events) only a stretch: `all`, a range such as `2..6`, or an element's id. */
+  readonly in?: string;
+  /** (events) only these kinds, comma-separated: beat, word, cut, start, end, marker, shot, silence. */
+  readonly kinds?: string;
 }
 
 export interface InspectResult {
@@ -309,6 +396,9 @@ export interface InspectResult {
 
 /** The timeline of a resolved file, or its moments, as text or JSON. `file` is the name printed. */
 export function inspect(file: string, state: ResolvedState, options: InspectOptions = {}): InspectResult {
+  if (options.events) return inspectEvents(state, options);
+  if (options.in !== undefined || options.kinds !== undefined)
+    return { output: "", errors: ["--in and --kinds go with --events"] };
   const rows = timelineRows(state);
   const knobs = options.knobs ?? [];
   if (options.at === undefined)
@@ -324,4 +414,46 @@ export function inspect(file: string, state: ResolvedState, options: InspectOpti
     output: options.json ? `${JSON.stringify({ ...rows, at: views }, null, 2)}\n` : formatAt(views),
     errors,
   };
+}
+
+function inspectEvents(state: ResolvedState, options: InspectOptions): InspectResult {
+  if (options.at !== undefined) return { output: "", errors: ["--events lists moments itself; leave out --at"] };
+  let range: { from?: number; to?: number } = {};
+  if (options.in !== undefined) {
+    const found = listenRange(state, options.in, "list the events of");
+    if ("error" in found) return { output: "", errors: [found.error] };
+    range = found;
+  }
+  const kinds = options.kinds?.split(",").map((k) => k.trim());
+  const unknown = kinds?.filter((k) => !(EVENT_KINDS as readonly string[]).includes(k)) ?? [];
+  if (unknown.length > 0)
+    return { output: "", errors: [`--kinds: "${unknown.join('", "')}" is not one of ${EVENT_KINDS.join(", ")}`] };
+  const events = timelineEvents(state, { ...range, ...(kinds ? { kinds: kinds as EventKind[] } : {}) });
+  return { output: options.json ? `${JSON.stringify({ events }, null, 2)}\n` : formatEvents(events), errors: [] };
+}
+
+/** Each event on a line: its second, its frame, its kind, what it belongs to, and the beat it is nearest. */
+export function formatEvents(events: readonly EventRow[]): string {
+  if (events.length === 0) return "no events\n";
+  return events
+    .map((e) => {
+      const what = e.kind === "word" ? quote(e.label ?? "") : (e.label ?? "");
+      const parts = [
+        seconds(e.time).padStart(7),
+        `f${e.frame}`.padEnd(6),
+        e.kind.padEnd(7),
+        `${e.of}${e.i !== undefined ? ` ${e.i}` : ""}`,
+      ];
+      if (what) parts.push(what);
+      if (e.nearestBeat) {
+        const { clip, i, offsetMs } = e.nearestBeat;
+        parts.push(
+          offsetMs === 0
+            ? `on ${clip}@beat:${i}`
+            : `${Math.abs(offsetMs)} ms ${offsetMs > 0 ? "after" : "before"} ${clip}@beat:${i}`,
+        );
+      }
+      return `${parts.join("  ")}\n`;
+    })
+    .join("");
 }

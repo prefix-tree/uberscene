@@ -26,6 +26,27 @@ function frontmatter(md: string): Record<string, string> {
   );
 }
 
+const words = Array.from({ length: 40 }, (_, i) => ({ i, text: `w${i}`, start: i * 0.4, end: i * 0.4 + 0.3 }));
+/** Media for the examples that use footage: a talk with a transcript, and b-roll in three shots. */
+const MANIFEST = {
+  assets: {
+    talk: { id: "talk", kind: "video", duration: 20, fps: 30, width: 1920, height: 1080, transcript: { words } },
+    broll: {
+      id: "broll",
+      kind: "video",
+      duration: 12,
+      fps: 30,
+      width: 1920,
+      height: 1080,
+      shots: [
+        { i: 0, start: 0, end: 4 },
+        { i: 1, start: 4, end: 9 },
+        { i: 2, start: 9, end: 12 },
+      ],
+    },
+  },
+};
+
 test("SKILL.md has the frontmatter the Agent Skills format asks for, and only its portable keys", () => {
   const fm = frontmatter(text);
   assert.equal(fm.name, "uberscene");
@@ -54,32 +75,26 @@ test("every relative link in the skill resolves", () => {
 });
 
 test("the whole files in SKILL.md resolve with no errors", () => {
-  const words = Array.from({ length: 40 }, (_, i) => ({ i, text: `w${i}`, start: i * 0.4, end: i * 0.4 + 0.3 }));
-  const manifest = {
-    assets: {
-      talk: { id: "talk", kind: "video", duration: 20, fps: 30, width: 1920, height: 1080, transcript: { words } },
-      broll: {
-        id: "broll",
-        kind: "video",
-        duration: 12,
-        fps: 30,
-        width: 1920,
-        height: 1080,
-        shots: [
-          { i: 0, start: 0, end: 4 },
-          { i: 1, start: 4, end: 9 },
-          { i: 2, start: 9, end: 12 },
-        ],
-      },
-    },
-  };
   const files = [...text.matchAll(/```tsx\n([\s\S]*?)```/g)]
     .map((m) => m[1] as string)
     .filter((code) => code.includes("export default"));
   assert.ok(files.length > 0, "SKILL.md shows at least one whole file");
   for (const code of files) {
-    const state = resolve(collectModule(loadModule(code) as never), manifest as never);
+    const state = resolve(collectModule(loadModule(code) as never), MANIFEST as never);
     assert.deepEqual(state.errors, []);
+  }
+});
+
+test("every example the skill shows from examples/skill resolves with no errors", () => {
+  // These are the files the synced sections copy in (`<!-- sync: example ... -->`); a file that carries its own
+  // manifest uses it, the rest get the one above.
+  const dir = join(root, "examples", "skill");
+  const files = readdirSync(dir).filter((f) => f.endsWith(".tsx"));
+  assert.ok(files.length > 0);
+  for (const file of files) {
+    const mod = loadModule(readFileSync(join(dir, file), "utf8")) as { manifest?: unknown };
+    const state = resolve(collectModule(mod as never), (mod.manifest ?? MANIFEST) as never);
+    assert.deepEqual(state.errors, [], file);
   }
 });
 
@@ -122,4 +137,33 @@ test("the marketplace lists the plugin, and both name it the same", () => {
   assert.ok(entry, "the marketplace lists the plugin");
   assert.ok(!String(entry.source).includes(".."));
   assert.ok(existsSync(join(root, entry.source, ".claude-plugin", "plugin.json")));
+});
+
+// The setup skill beside it: how an agent installs, checks and upgrades UberScene before it makes a video.
+const setup = join(plugin, "skills", "uberscene-setup");
+const setupText = readFileSync(join(setup, "SKILL.md"), "utf8");
+
+test("the setup skill has the Agent Skills frontmatter, its folder's name, and stays short", () => {
+  const fm = frontmatter(setupText);
+  assert.equal(fm.name, "uberscene-setup");
+  assert.equal(fm.name, setup.split("/").at(-1), "the name is the folder's");
+  assert.ok((fm.description ?? "").length > 0 && (fm.description ?? "").length <= 1024);
+  assert.ok(setupText.split("\n").length < 500);
+});
+
+test("the setup skill's check file resolves with no errors and no media", () => {
+  const files = [...setupText.matchAll(/```tsx\n([\s\S]*?)```/g)]
+    .map((m) => m[1] as string)
+    .filter((code) => code.includes("export default"));
+  assert.equal(files.length, 1, "the setup skill shows one whole file");
+  const state = resolve(collectModule(loadModule(files[0] as string) as never), { assets: {} } as never);
+  assert.deepEqual(state.errors, []);
+});
+
+test("the setup skill installs what the main skill's loop needs, and names commands the CLI has", () => {
+  assert.ok(text.includes("npm install uberscene @uberscene/kit react zod"));
+  assert.ok(setupText.includes("npm install uberscene @uberscene/kit react zod"));
+  const cli = readFileSync(join(root, "packages", "render", "src", "cli.ts"), "utf8");
+  for (const command of ["browser install", "skills install", "codecs install", "blocks update", "inspect", "look"])
+    assert.ok(cli.includes(`uberscene ${command}`), `the CLI has uberscene ${command}`);
 });

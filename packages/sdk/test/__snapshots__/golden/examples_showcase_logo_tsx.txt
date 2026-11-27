@@ -1,0 +1,6 @@
+composition composition 30/1 frames 180
+particles layer 0-180
+tagline layer 96-180
+scene track 0-180
+text track 0-180
+composition composition 0-180

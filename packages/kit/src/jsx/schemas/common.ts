@@ -33,13 +33,24 @@ export const timeRefSchema = z.union([
     ),
 ]);
 
+/** A word, shot, silence or beat of an element's source, as `at` names it on an anchor or a duration's `until`. */
+const momentSchema = z
+  .string()
+  .regex(
+    /^(word|shot|silence|beat):\d+(\.end)?$/,
+    'at looks like "word:12", "word:12.end", "shot:3", "silence:1" or "beat:16"',
+  );
+
 const durationSchema = z.union([
   z.number().positive(),
   z.literal("fill"),
   z.literal("source"),
   z.strictObject({ match: idSchema }),
-  /** Lasts until the element named ends, wherever this one starts. */
-  z.strictObject({ until: idSchema }),
+  /**
+   * Lasts until the element named ends, wherever this one starts; with `at`, until that element plays a word, shot,
+   * silence or beat of its source (`{ until: "talk", at: "word:54.end" }`), which follows it when the cut changes.
+   */
+  z.strictObject({ until: idSchema, at: momentSchema.optional() }),
 ]);
 
 /** Props shared by everything that occupies time on a track. */
@@ -56,18 +67,13 @@ export const timedProps = {
     ])
     .optional(),
   /** With `anchor`: a word, shot, silence or beat of the anchor's source (`word:14655`, `beat:16`); the start is where the anchor plays it, plus `offset`. */
-  at: z
-    .string()
-    .regex(
-      /^(word|shot|silence|beat):\d+(\.end)?$/,
-      'at looks like "word:12", "word:12.end", "shot:3", "silence:1" or "beat:16"',
-    )
-    .optional(),
+  at: momentSchema.optional(),
   /** Seconds added to the start that `anchor` and `at` give; negative starts earlier. */
   offset: z.number().optional(),
   /**
    * How long it plays: seconds; `"source"` for the whole trimmed source; `"fill"` to run to the end of the
-   * composition; `{ match: id }` for as long as another element; `{ until: id }` to end when another element ends.
+   * composition; `{ match: id }` for as long as another element; `{ until: id }` to end when another element ends,
+   * or `{ until: id, at: "word:54.end" }` when it plays that word, shot, silence or beat of its source.
    */
   duration: durationSchema.optional(),
 };
@@ -86,10 +92,76 @@ const keysSchema = <S extends z.ZodType>(value: S) => z.array(keySchema(value)).
 
 /**
  * A value written as a constant, or as a list of keys when it changes over time. The resolver takes the keys out
- * before it parses the props (`expandKeys` in the SDK), so a parsed prop holds the constant, or nothing.
+ * before it parses the props (`expandKeys` in the SDK), so a parsed prop holds the constant, or nothing. For a value
+ * that bends time and cannot be generated (`speed`).
+ */
+export const keyed = <S extends z.ZodType>(value: S) =>
+  z.union([value, keysSchema(value)]).transform((v) => v as z.output<S>);
+
+/** One key of a value, as a generator's `base` or a loop's `keys` hold it. */
+export interface KeyOf<V> {
+  at: number;
+  value: V;
+  easing?: z.infer<typeof zEasing> | undefined;
+}
+
+/**
+ * A generator written in place of a value of type `V`: a `wiggle` or a `drift` added to a `base` (a value or keys),
+ * or a `loop` of keys.
+ */
+export type GeneratorOf<V> =
+  | {
+      type: "wiggle";
+      base?: V | KeyOf<V>[] | undefined;
+      amount: number;
+      frequency?: number | undefined;
+      seed?: number | undefined;
+    }
+  | { type: "drift"; base?: V | KeyOf<V>[] | undefined; speed: number }
+  | { type: "loop"; keys: KeyOf<V>[]; mode?: "repeat" | "pingpong" | undefined };
+
+/**
+ * Motion that is computed, in place of a value: a wobble or a steady drift added to the value (`base`: a number or
+ * keys; left out, what the value is anyway), or a key list played again and again.
+ */
+const generatorSchema = <S extends z.ZodType>(value: S): z.ZodType<GeneratorOf<z.output<S>>, GeneratorOf<z.input<S>>> =>
+  // Named, so a declaration file writes `GeneratorOf<number>` on each animatable prop and not the union in full:
+  // spelled out on every one, the element table's type is longer than the compiler will write.
+  z.discriminatedUnion("type", [
+    z.strictObject({
+      type: z.literal("wiggle"),
+      /** What the wobble is added to: a number or keys. Left out, the value's default. */
+      base: z.union([value, keysSchema(value)]).optional(),
+      /** The most it adds or takes away, in the value's own units: degrees for a rotation, pixels for `box.x`. */
+      amount: z.number(),
+      /** Wobbles a second. */
+      frequency: z.number().positive().max(60).default(1),
+      /** Which wobble: the same seed gives the same one. Left out, each element and prop gets its own. */
+      seed: z.number().int().optional(),
+    }),
+    z.strictObject({
+      type: z.literal("drift"),
+      /** What the drift is added to: a number or keys. Left out, the value's default. */
+      base: z.union([value, keysSchema(value)]).optional(),
+      /** How much it adds each second, from the element's start, in the value's own units. */
+      speed: z.number(),
+    }),
+    z.strictObject({
+      type: z.literal("loop"),
+      /** The keys to play again and again: from the first key's time to the last's. */
+      keys: z.array(keySchema(value)).min(2),
+      /** `repeat` starts over at the end; `pingpong` plays back and forth. */
+      mode: z.enum(["repeat", "pingpong"]).default("repeat"),
+    }),
+  ]) as unknown as z.ZodType<GeneratorOf<z.output<S>>, GeneratorOf<z.input<S>>>;
+
+/**
+ * A value written as a constant, as a list of keys when it changes over time, or as a generator when it is computed
+ * (`{ type: "wiggle", amount: 2 }`). The resolver takes keys and generators out before it parses the props
+ * (`expandKeys` in the SDK), so a parsed prop holds the constant, or nothing.
  */
 export const animatable = <S extends z.ZodType>(value: S) =>
-  z.union([value, keysSchema(value)]).transform((v) => v as z.output<S>);
+  z.union([value, keysSchema(value), generatorSchema(value)]).transform((v) => v as z.output<S>);
 
 /** Which point of an element's box `box.x` and `box.y` place: a corner, the middle of an edge, or the centre. */
 export const BOX_ORIGINS = [
@@ -222,11 +294,30 @@ export const fitProp = {
   fit: zFitMode.optional(),
 };
 
+const followProp = {
+  /**
+   * Another overlay's id: this one moves with it. Its `box` is then read in that element's box (pixels from its top
+   * left, centred in it when `x` or `y` is left out), and that element's transform, entrance and exit carry it, up
+   * the chain. Its opacity, crop and corners stay its own.
+   */
+  follow: idSchema.optional(),
+};
+
 /** What everything drawn over the picture takes: where it sits, how it mixes with what is under it, its effects. */
-export const overlayProps = { ...transformProp, ...blendProp, ...effectsProp };
+export const overlayProps = { ...transformProp, ...followProp, ...blendProp, ...effectsProp };
+
+/** For graphics other things sit on. */
+export const groundProp = {
+  /**
+   * A ground that other things sit on: a card under a cut-out speaker, a wall behind a game, a scrim that darkens
+   * footage under a title. The layout check treats it like a background: it is not held to the safe zone and is not
+   * said to cover the captions.
+   */
+  ground: z.boolean().optional(),
+};
 
 /** Where an element sits and how it is turned, with its effects, without `fit` or blending: a layer's. */
-export const placedProps = { ...transformProp, ...effectsProp };
+export const placedProps = { ...transformProp, ...followProp, ...effectsProp };
 
 /** An adjustment's effects: drawn over everything beneath it. */
 export const adjustmentEffectsProp = effectsProp;
@@ -242,13 +333,13 @@ export const visualProps = {
 };
 
 /** A gain: 1 plays the source as it is, 0 mutes it, 2 is twice as loud; keys change it over time. */
-export const volumeSchema = animatable(z.number().min(0).max(4));
+export const volumeSchema = keyed(z.number().min(0).max(4));
 
 export const audioProps = {
   /** A gain: 1 plays the source as it is, 0 mutes it, 2 is twice as loud; keys change it over time. */
   volume: volumeSchema.optional(),
   /** Where it sits between the speakers, from -1 (left) to 1 (right); keys move it. */
-  pan: animatable(z.number().min(-1).max(1)).optional(),
+  pan: keyed(z.number().min(-1).max(1)).optional(),
   /** Seconds the sound fades in at the start and out at the end. */
   fade: z
     .strictObject({ in: z.number().nonnegative().optional(), out: z.number().nonnegative().optional() })

@@ -1,11 +1,14 @@
 // The resolved timeline as flat rows: one array per kind of thing, each row with its id, its seconds and its frames.
 // Flat rows are what jq, a short script or a SQL table take as they are.
-import { framesUntil, nearestFrame, type Rate, round3 } from "@uberscene/kit/schema";
+import { framesUntil, type Rate, round3 } from "@uberscene/kit/schema";
 
 import type { ResolveError } from "../resolve/errors";
 import { derivedOrigin } from "../resolve/expand";
+import { followOf } from "../resolve/follow";
 import type { Placement, ResolvedState } from "../resolve/resolve";
-import { spokenWords } from "./plays";
+import { endS, endT, lengthS, plus, startS, startT, T } from "../time";
+import { type BeatRow, beatRows, type MusicRow, musicRows } from "./music";
+import { spokenWords, timelineBeats } from "./plays";
 
 export interface ElementRow {
   readonly id: string;
@@ -29,6 +32,8 @@ export interface ElementRow {
   readonly anchor?: string;
   readonly at?: string | number;
   readonly offset?: number;
+  /** Where its length comes from, when another element gives it: `{ until, at? }` or `{ match }`, as the file writes it. */
+  readonly follows?: { readonly until: string; readonly at?: string } | { readonly match: string };
   /** A transition's type and the two clips it joins. */
   readonly type?: string;
   readonly from?: string;
@@ -38,8 +43,10 @@ export interface ElementRow {
   readonly edge?: "in" | "out";
   /** A marker's label. */
   readonly label?: string;
-  /** A layer the file marks as a ground for other things. */
+  /** A layer, shape, SVG or sticker the file marks as a ground for other things. */
   readonly ground?: true;
+  /** The overlay it moves with, its `follow` prop (`follows` above is where its length comes from). */
+  readonly follow?: string;
 }
 
 export interface EffectRow {
@@ -98,18 +105,38 @@ export interface TimelineRows {
   readonly tracks: readonly {
     readonly id: string;
     readonly layout: string;
+    /** What the track is for, when the file says: `music`, `dialogue`, `effects`… */
+    readonly role?: string;
     readonly order: number;
     readonly hidden: boolean;
     readonly muted: boolean;
     readonly solo: boolean;
     readonly locked: boolean;
+    /** The camera the track is inside, which moves everything on it. */
+    readonly camera?: string;
   }[];
   readonly elements: readonly ElementRow[];
   readonly effects: readonly EffectRow[];
   readonly keyframes: readonly KeyframeRow[];
+  /** Values that are computed: a wiggle, a drift or a loop, each on one property of one element. */
+  readonly generators: readonly GeneratorRow[];
   readonly words: readonly WordRow[];
   readonly cuts: readonly CutRow[];
+  /** The music the timeline plays: each clip or audio whose asset has beats. */
+  readonly music: readonly MusicRow[];
+  /** Every beat of that music, at the time it plays. */
+  readonly beats: readonly BeatRow[];
   readonly errors: readonly ResolveError[];
+}
+
+/** A generator on a value: what it is, where, and its params (a wiggle's seed filled in). */
+export interface GeneratorRow {
+  readonly id: string;
+  readonly element: string;
+  /** The prop it is written at: `transform.rotation`, `effects.0.radius`, a camera's `zoom`. */
+  readonly property: string;
+  readonly type: string;
+  readonly params: Readonly<Record<string, unknown>>;
 }
 
 /** Children of an element that are rows of their own, or that only shape its timing. */
@@ -118,6 +145,7 @@ const NOT_ELEMENTS = new Set([
   "track",
   "effect",
   "keyframe",
+  "generator",
   "speedKey",
   "freeze",
   "mask",
@@ -128,10 +156,12 @@ const NOT_ELEMENTS = new Set([
 /** The flat rows of a resolved timeline. */
 export function timelineRows(state: ResolvedState): TimelineRows {
   const { rate } = state.composition;
-  const frame = (t: number): number => nearestFrame(t, rate);
+  // The first frame that shows it: an element, word or cut at 0.51 s is first seen on frame 16 at 30 fps, not 15.
+  const frame = (t: number): number => framesUntil(t, rate);
   const elements: ElementRow[] = [];
   const effects: EffectRow[] = [];
   const keyframes: KeyframeRow[] = [];
+  const generators: GeneratorRow[] = [];
   const order = new Map<string, number>();
 
   for (const p of state.items.values()) {
@@ -145,14 +175,24 @@ export function timelineRows(state: ResolvedState): TimelineRows {
         params: (p.props.params ?? {}) as Record<string, unknown>,
         order: n,
       });
+    } else if (p.kind === "generator") {
+      const origin = derivedOrigin(p.id);
+      const { id: _id, property: _p, param: _q, type, ...params } = p.props;
+      generators.push({
+        id: p.id,
+        element: origin?.id ?? p.parent ?? "",
+        property: origin ? origin.path.replace(/\.generator$/, "") : String(p.props.property ?? p.props.param ?? ""),
+        type: String(type),
+        params,
+      });
     } else if (p.kind === "keyframe") {
       const origin = derivedOrigin(p.id);
       keyframes.push({
         id: p.id,
         element: origin?.id ?? p.parent ?? "",
         property: origin ? origin.path.replace(/\.\d+$/, "") : String(p.props.property ?? ""),
-        at: round3(p.start),
-        frame: frame(p.start),
+        at: round3(startS(p)),
+        frame: frame(startS(p)),
         value: p.props.value,
         ...(typeof p.props.easing === "string" ? { easing: p.props.easing } : {}),
       });
@@ -175,11 +215,11 @@ export function timelineRows(state: ResolvedState): TimelineRows {
       const a = clips[i] as Placement,
         b = clips[i + 1] as Placement;
       // Clips with a gap between them do not cut to each other; overlays on a track are placed, not cut.
-      if (b.start > a.end + 1e-6) continue;
+      if (startT(b) > plus(endT(a), T(1e-6))) continue;
       const over = transitions.find((t) => t.between?.[0] === a.id && t.between[1] === b.id);
       cuts.push({
-        time: round3(b.start),
-        frame: frame(b.start),
+        time: round3(startS(b)),
+        frame: frame(startS(b)),
         track: track.id,
         from: a.id,
         to: b.id,
@@ -188,6 +228,7 @@ export function timelineRows(state: ResolvedState): TimelineRows {
     }
   }
   cuts.sort((a, b) => a.time - b.time);
+  const played = timelineBeats(state);
 
   return {
     composition: {
@@ -198,15 +239,18 @@ export function timelineRows(state: ResolvedState): TimelineRows {
     tracks: state.tracks.map((t) => ({
       id: t.id,
       layout: t.layout,
+      ...(t.role !== undefined ? { role: t.role } : {}),
       order: t.order,
       hidden: t.hidden,
       muted: t.muted,
       solo: t.solo,
       locked: t.locked,
+      ...(t.camera !== undefined ? { camera: t.camera } : {}),
     })),
     elements,
     effects,
     keyframes: keyframes.sort((a, b) => a.at - b.at),
+    generators,
     words: spokenWords(state).map((w) => ({
       asset: w.asset,
       clip: w.play,
@@ -217,12 +261,15 @@ export function timelineRows(state: ResolvedState): TimelineRows {
       startFrame: frame(w.start),
     })),
     cuts,
+    music: musicRows(state, played),
+    beats: beatRows(state, played),
     errors: state.errors,
   };
 }
 
 function elementRow(state: ResolvedState, p: Placement, frame: (t: number) => number): ElementRow {
   const props = p.props;
+  const follow = followOf(p);
   // A title's words are the element's children, kept on its node; a caption's are a prop.
   const text = p.kind === "title" ? state.tree.byId.get(p.id)?.text : p.kind === "caption" ? props.text : undefined;
   return {
@@ -230,11 +277,11 @@ function elementRow(state: ResolvedState, p: Placement, frame: (t: number) => nu
     kind: p.kind,
     track: p.track,
     parent: p.parent,
-    start: round3(p.start),
-    end: round3(p.end),
-    duration: round3(p.end - p.start),
-    startFrame: frame(p.start),
-    endFrame: frame(p.end),
+    start: round3(startS(p)),
+    end: round3(endS(p)),
+    duration: round3(lengthS(p)),
+    startFrame: frame(startS(p)),
+    endFrame: frame(endS(p)),
     ...(p.source
       ? { asset: p.source.asset, in: round3(p.source.in), out: round3(p.source.out), speed: p.source.speed }
       : {}),
@@ -242,6 +289,7 @@ function elementRow(state: ResolvedState, p: Placement, frame: (t: number) => nu
     ...(typeof props.anchor === "string" ? { anchor: props.anchor } : {}),
     ...(typeof props.at === "string" || typeof props.at === "number" ? { at: props.at } : {}),
     ...(typeof props.offset === "number" ? { offset: props.offset } : {}),
+    ...followsOf(props.duration),
     ...(p.kind === "transition" && typeof props.type === "string" ? { type: props.type } : {}),
     ...(p.kind === "transition" && typeof props.type !== "string" ? { type: shaderName(props.type) } : {}),
     ...(p.between ? { from: p.between[0], to: p.between[1] } : {}),
@@ -249,7 +297,8 @@ function elementRow(state: ResolvedState, p: Placement, frame: (t: number) => nu
       ? { on: p.props.on, edge: p.props.edge === "in" ? ("in" as const) : ("out" as const) }
       : {}),
     ...(typeof props.label === "string" ? { label: props.label } : {}),
-    ...(p.kind === "layer" && props.ground === true ? { ground: true as const } : {}),
+    ...(props.ground === true ? { ground: true as const } : {}),
+    ...(follow !== undefined ? { follow } : {}),
   };
 }
 
@@ -257,4 +306,13 @@ function elementRow(state: ResolvedState, p: Placement, frame: (t: number) => nu
 function shaderName(type: unknown): string {
   const name = (type as { name?: unknown } | null)?.name;
   return typeof name === "string" ? name : "custom";
+}
+
+/** The `follows` of a row: the element (and moment) a `duration={{ until }}` or `{{ match }}` takes its length from. */
+function followsOf(duration: unknown): Pick<ElementRow, "follows"> {
+  if (typeof duration !== "object" || duration === null) return {};
+  const d = duration as { until?: unknown; at?: unknown; match?: unknown };
+  if (typeof d.until === "string")
+    return { follows: { until: d.until, ...(typeof d.at === "string" ? { at: d.at } : {}) } };
+  return typeof d.match === "string" ? { follows: { match: d.match } } : {};
 }

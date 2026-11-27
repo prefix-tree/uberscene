@@ -2,6 +2,8 @@
   "$schema": "https://unpkg.com/knip@5/schema-jsonc.json",
   // Binaries the tests and scripts run from the system, not from node_modules.
   "ignoreBinaries": ["ffmpeg", "ffprobe"],
+  // What a prepare script downloads to make an example's media (examples/interview/scripts/prepare.sh).
+  "ignore": ["examples/*/.work/**"],
   "rules": { "exports": "error", "types": "error", "enumMembers": "error" },
   "workspaces": {
     ".": {
@@ -14,8 +16,12 @@
         "docs/.vitepress/theme/index.ts",
         "docs/.vitepress/theme/playground/mount.tsx",
         "docs/.vitepress/theme/playground/starters.ts",
-        // A 3D shot in an edit: a video file and the shot module it imports, loaded by path like any cut file.
-        "examples/3d/*.tsx"
+        // A 3D scene in an edit: the video file, loaded by path like any cut file, and the scene file it plays, whose
+        // exports the player reads as a module.
+        "examples/3d/*.tsx",
+        "examples/3d/*.scene.js",
+        // The interview edit: its media is made by a script, so nothing imports the file.
+        "examples/interview/*.tsx"
       ],
       // Run through its binary by scripts/check-packages.mjs.
       "ignoreDependencies": ["@arethetypeswrong/cli"]
@@ -32,7 +38,9 @@
       "ignoreDependencies": ["@fontsource/.+"]
     },
     "packages/render": {
-      "entry": ["bench/**/*.{ts,tsx}", "scripts/*.{ts,mjs}"]
+      "entry": ["bench/**/*.{ts,tsx}", "scripts/*.{ts,mjs}"],
+      // `uberscene matte` finds ONNX Runtime for the web on disk and serves it to its page; nothing imports it.
+      "ignoreDependencies": ["onnxruntime-web"]
     },
     "packages/graphics": {
       "entry": ["test/**/*.{ts,tsx}"]
@@ -64,6 +72,18 @@
     "examples/shorts": {
       // Cut files, loaded by path with loadVideo; the blocks are copies whose meta and schema the CLI reads.
       "entry": ["*.tsx", "cards/*.tsx", "blocks/*.tsx", "test/**/*.ts"]
+    },
+    "examples/skill": {
+      // The skill's examples: copied into its pages by scripts/gen-docs.ts and resolved by scripts/skill.test.ts.
+      "entry": ["*.tsx"]
+    },
+    "examples/tiktok": {
+      // Cut files, loaded by path with loadVideo from render.ts.
+      "entry": ["*.tsx", "*.ts"]
+    },
+    "examples/founding": {
+      // A cut file, loaded by path; media/bed.ts writes its music.
+      "entry": ["*.tsx", "media/*.ts", "test/**/*.ts"]
     },
     "blocks": {
       // Each block's file is read by `uberscene blocks` and copied into projects; each demo is a cut file.

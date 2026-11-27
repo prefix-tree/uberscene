@@ -24,9 +24,10 @@ const OVERLAY_CHILDREN = ["effect", "keyframe", "mask"] as const;
 export const KIND_CAPABILITIES: Readonly<Record<string, ElementCapabilities>> = {
   composition: with_({
     container: true,
-    childKinds: ["track", "marker", "captions"],
+    childKinds: ["track", "camera", "marker", "captions"],
     placementScope: "none",
   }),
+  camera: with_({ container: true, childKinds: ["track"], placementScope: "composition" }),
   track: with_({
     container: true,
     placementScope: "composition",
@@ -131,6 +132,7 @@ export const KIND_CAPABILITIES: Readonly<Record<string, ElementCapabilities>> = 
   }),
   effect: with_({ container: true, childKinds: ["keyframe"], placementScope: "child" }),
   keyframe: with_({ placementScope: "child" }),
+  generator: with_({ placementScope: "child" }),
   speedKey: with_({ placementScope: "child" }),
   freeze: with_({ placementScope: "child" }),
 };

@@ -29,9 +29,14 @@ references.
 | Mix layers | `blend` (`multiply`, `screen`, `overlay`…); on a clip, `blendOpacity` for how strongly |
 | Show part of a clip | `<Mask>`: a rect, ellipse, polygon or drawn path, with `feather`, `inverted` and `opacity` |
 | Animate anything | In place of a value, a list of keys `{ at, value, easing? }` (`at` in seconds into the element): `transform.scale` (one list moves both axes), `rotation`, `opacity`, `anchor.x`/`.y`, `borderRadius`, `crop.*`, `box.x`/`.y`, `volume`, `pan`, `speed` and every effect param. `easing` shapes the move from that key to the next |
+| Change a shape | Keys on a `<Shape>`'s `width`, `height`, `fill`, `stroke.color`, `stroke.thickness`, `stroke.dashOffset` and `points`: colours move through OKLab (a theme token works as a key), points of one count morph point by point. Draw a line on with `dashArray: [length]` and `dashOffset` keyed from that length to 0 |
+| Move many things as one | `<Camera id x y zoom rotation>` around the `<Track>`s that move: `x`, `y` are where the view has gone (at `x={180}` everything sits 180 px left), `zoom` closes in about the centre, each a number or keys in the video's seconds. Tracks outside it stay fixed to the screen. One per composition. `push={{ on: [ids] }}` lets it make room by itself: as each named element starts, the view pans (or, when it must, pulls back) just enough to hold it with what is on screen; write the elements where they belong, off the frame if need be, and leave `x`, `y`, `zoom` as numbers |
+| Keep it moving | In place of a number, a generator: `{ type: "wiggle", amount, frequency? }` (a wobble added to the value), `{ type: "drift", speed }` (a steady change), each over an optional `base` (a number or keys), or `{ type: "loop", keys, mode? }`. On `transform`, `box.x`/`.y` (with a `base`), effect params and a camera's values. The same `seed` on several elements moves them together |
+| Move with another element | `follow="arm"` on a title, shape, SVG, sticker or layer: its `box` is then pixels from that element's box's top left (centred in it when `x` or `y` is left out), and that element's place, rotation, scale and `enter`/`exit` carry it, up the chain. Opacity stays its own. Both on the same side of a `<Camera>`; an SVG read from a file can't be followed; a circle of follows is an error |
 | Join clips | `<Transition type duration>` between two clips of a track: `crossfade`, `dipToBlack`, `dipToWhite`, `wipe`, `slide`, `push`, `iris`, `clockWipe`, `blinds`, `filmBurn`, `pixelDissolve`, `zoom`. With `on="pip" edge="in"` it brings one element in, or takes it out with `edge="out"` |
 | Correct and grade | `effects={[{ type, ...params }]}` on the element, in order: `exposure`, `whiteBalance`, `brightness`, `contrast`, `saturation`, `vibrance`, `hue`, `levels`, `curves`, `shadowsHighlights`, `lut` (a `.cube` file added with `uberscene add`) |
 | Give a look | `grayscale`, `sepia`, `invert`, `duotone`, `vignette`, `grain`, `lightLeak`, `chromaticAberration`, `halftone`, `pixelate`, `scanlines`, `fractalNoise` |
+| Cut out a person | `cutout` on a `<Clip>` whose asset names a matte (`"matte": "talk.matte"` in the manifest): a greyscale video of the same frames, white where the person is. `{ shrink, feather }` tidies the edge. Made outside UberScene for now |
 | Fix footage | `colorKey` (green screen), `recolor` (one colour into another: a red cup made green), `regionBlur` (hide a face or a plate), `cornerPin` (put a picture on a screen), `blur`, `zoomBlur` |
 | Style text and graphics | `glow`, `outline`, `shadow`, `longShadow`, `bevel` on a title, shape or layer |
 | Affect everything below | `<Adjustment effects={[…]}>`, for its time, on every track beneath it |
@@ -69,7 +74,7 @@ look, and fix before going on:
 For a small edit (a trim, a word, a colour), skip to the loop: make it, check it, look at that moment, report.
 
 **Done** means the full video renders, every check passes and you can say its number (the exit codes, the loudness,
-the sizes), and your report says what changed. Until then keep going: a failed render, a warning or a missing font is
+the sizes, and with music how many cuts are on the beat), and your report says what changed. Until then keep going: a failed render, a warning or a missing font is
 an ordinary obstacle, so fix it and go on rather than asking whether to continue. Stop only for what the person alone
 can give (footage, the brand, a decision on the story), and then say exactly what you need.
 
@@ -80,6 +85,8 @@ can give (footage, the brand, a decision on the story), and then say exactly wha
 | More than one scene, transitions, any animation | [motion.md](references/motion.md), then [motion-catalog.md](references/motion-catalog.md) for a technique by name |
 | Titles, labels, captions | [text.md](references/text.md) |
 | Music, a voice-over, sound effects | [sound.md](references/sound.md) |
+| Cutting to music, or checking that cuts are on the beat | [sync.md](references/sync.md) |
+| An interview in the kinetic-type style: caps, flash cards, a cut-out speaker | [interview-edit.md](references/interview-edit.md) |
 | The pass before you hand it over | [review.md](references/review.md) |
 
 ## The loop
@@ -90,6 +97,8 @@ Work in this order, and check after each stage.
    ```sh
    npm install uberscene @uberscene/kit react zod
    ```
+   When a command is not found, Node is too old, Chrome will not download, or after an upgrade, follow the
+   `uberscene-setup` skill.
 2. **Add each media file to the manifest.** Put a transcript next to a recording with the same name (`talk.json` from
    Whisper or ElevenLabs, or `talk.srt`, `talk.vtt`) to get its words:
    ```sh
@@ -106,8 +115,13 @@ Work in this order, and check after each stage.
    ```
    `--at` says what is on screen and heard at each moment, with effect values after keyframes and the word being said.
    A moment is an element's id (with `.start`, `.mid` or `.end`), a transition's id (both sides of the cut), `word:14`
-   (or `hook@word:14`), `shot:1`, `marker:intro`, seconds (`4.5`), a frame (`90f`) or a range (`2..6/0.5`). `--json`
-   prints flat rows for `jq`.
+   (or `hook@word:14`), `shot:1`, `silence:2`, `beat:16` (or `song@beat:16`), `marker:intro`, seconds (`4.5`), a
+   frame (`90f`) or a range (`2..6/0.5`). `--json` prints flat rows for `jq`, with the music's `beats` among them.
+   With music, read the sync in numbers, since you cannot hear it ([sync.md](references/sync.md)):
+   ```sh
+   npx uberscene inspect video.tsx --events --in 2..6   # every beat, word, cut, start and end, in time order
+   npx uberscene video.tsx --check-sync                 # each cut and start against its nearest beat; exits 3 on a miss
+   ```
 5. **Check it.** Every command prints `warning: <id>: <message>` for each problem in the file; fix them all. `lint`
    reads the file's text for what breaks editing or an export (ids, timing, assets, free code off the clock, props
    spelled an older way); it exits 1 on an error, and `--fix` writes the fixes that have one right answer. The
@@ -171,13 +185,17 @@ Work in this order, and check after each stage.
    `.mp4` is H.264 and AAC, `.webm` VP9 and Opus, `.mp3` or `.wav` the sound alone. The first export downloads a
    Chrome to draw with. Commands find `uberscene.json` in the file's folder or a folder above it. Media is found in the file's folder,
    beside the manifest, in `media/` beside it, or in `--media <dir>`.
+   Several cuts at once (a wide and a tall one, one per set of props): list them in a queue file,
+   `{ "jobs": [{ "file": "video.tsx", "out": "out/wide.mp4" }, ...] }`, and run `npx uberscene queue jobs.json`.
 
 Scale the check to the change: a one-word trim needs no still; new graphics always do.
 
 ## The file
 
+<!-- sync: example the-file.tsx -->
 ```tsx
 import { z } from "zod";
+
 import { Captions, Clip, Composition, LowerThird, Title, Track, Transition } from "@uberscene/kit";
 
 // What a person may change without touching the edit.
@@ -200,8 +218,21 @@ export default function Video({ product, who }: z.infer<typeof schema>) {
           in="shot:1"
           out="shot:1.end"
           fit="cover"
-          transform={{ scale: [{ at: 0, value: 1, easing: "easeInOutSine" }, { at: 5, value: 1.1 }] }}
-          effects={[{ type: "vibrance", amount: [{ at: 0, value: 0 }, { at: 1, value: 0.3 }] }]}
+          transform={{
+            scale: [
+              { at: 0, value: 1, easing: "easeInOutSine" },
+              { at: 5, value: 1.1 },
+            ],
+          }}
+          effects={[
+            {
+              type: "vibrance",
+              amount: [
+                { at: 0, value: 0 },
+                { at: 1, value: 0.3 },
+              ],
+            },
+          ]}
         />
       </Track>
       <Track id="text">
@@ -215,6 +246,7 @@ export default function Video({ product, who }: z.infer<typeof schema>) {
   );
 }
 ```
+<!-- /sync -->
 
 - The default export returns one `<Composition fps width height>`. There is no duration: the video lasts until its
   last element ends.
@@ -328,9 +360,11 @@ Give the video one look and say it once.
     <Count to={1200} />
   </Layer>
   ```
-- **Backgrounds go on the lowest track**, beneath the footage. A layer that other things sit on but that is drawn
-  above footage (a scrim under a title, the wall of a game) takes `ground`: `<Layer id="scrim" ground>`. The layout
-  check then treats it as a background.
+- **Tracks draw in the order the file writes them, footage included.** A background goes on the first track; a card
+  between two footage tracks is over the footage before it and under the footage after it (a colour card under a
+  cut-out speaker). Anything other things sit on (a card, a scrim under a title, the wall of a game) takes `ground`,
+  on a `<Layer>`, `<Shape>`, `<Svg>` or `<Sticker>`: `<Shape id="card" ground …>`. The layout check then treats it as
+  a background. A clip's `blend` mixes with footage, not with a shape under it.
 
 What each element and prop actually draws, and the few it does not:
 [references/rendering.md](references/rendering.md).
@@ -352,6 +386,8 @@ What each element and prop actually draws, and the few it does not:
 
 - Every command runs with no `warning:` lines, `lint` exits 0, and `--check-layout` and `--check-motion` exit 0, or
   3 only for issues and holds you chose to keep and said so.
+- With music: `--check-sync` exits 0, and you can say how many cuts and starts are on the beat and why each of the
+  others is where it is ([sync.md](references/sync.md)).
 - Ids are literal and unique, no sequence track has `start`, there is at most one `<Captions>`, and every `src` is in
   the manifest.
 - Each clip has `in`/`out` or `duration`, not both. Every `$token` and `style` exists in the theme.
@@ -369,10 +405,14 @@ What each element and prop actually draws, and the few it does not:
 - [references/story.md](references/story.md): the one thing, three storylines, the shape, words, the plan comment.
 - [references/kinds.md](references/kinds.md): what a launch, an explainer, an interview, a vertical short, numbers,
   a music cut and a logo sting each need.
+- [references/interview-edit.md](references/interview-edit.md): a kinetic interview edit, by capability and by tool:
+  what works, what each check misses, the cut-out, and sound you cannot hear.
 - [references/look.md](references/look.md): where the look comes from, adjectives turned into values, and defaults to
   avoid.
 - [references/text.md](references/text.md): sizes, read times, placement and captions.
 - [references/sound.md](references/sound.md): what sets the clock, the layers, effects on actions, and levels.
+- [references/sync.md](references/sync.md): the music against the picture in numbers: `--check-sync`,
+  `inspect --events`, the `beats` rows, every JSON field, and the loop for cutting on the beat.
 - [references/review.md](references/review.md): the pass before you hand it over, and the report.
 - [references/motion.md](references/motion.md): how scenes hand over at a cut and keep moving; read it before
   animating a video of more than one scene.

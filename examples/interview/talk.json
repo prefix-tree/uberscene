@@ -1,0 +1,539 @@
+{
+  "words": [
+    {
+      "word": "I",
+      "start": 2.0,
+      "end": 2.48
+    },
+    {
+      "word": "always",
+      "start": 2.48,
+      "end": 2.66
+    },
+    {
+      "word": "think",
+      "start": 2.66,
+      "end": 2.86
+    },
+    {
+      "word": "about",
+      "start": 2.86,
+      "end": 3.22
+    },
+    {
+      "word": "what",
+      "start": 3.22,
+      "end": 3.88
+    },
+    {
+      "word": "compelling",
+      "start": 3.88,
+      "end": 4.96
+    },
+    {
+      "word": "things",
+      "start": 4.96,
+      "end": 5.42
+    },
+    {
+      "word": "humanity",
+      "start": 5.42,
+      "end": 5.8
+    },
+    {
+      "word": "can",
+      "start": 5.8,
+      "end": 6.26
+    },
+    {
+      "word": "do,",
+      "start": 6.26,
+      "end": 6.88
+    },
+    {
+      "word": "right?",
+      "start": 6.94,
+      "end": 7.22
+    },
+    {
+      "word": "Someone",
+      "start": 7.64,
+      "end": 7.82
+    },
+    {
+      "word": "sat",
+      "start": 7.82,
+      "end": 8.1
+    },
+    {
+      "word": "down",
+      "start": 8.1,
+      "end": 8.4
+    },
+    {
+      "word": "when",
+      "start": 8.4,
+      "end": 8.58
+    },
+    {
+      "word": "they",
+      "start": 8.58,
+      "end": 8.7
+    },
+    {
+      "word": "were",
+      "start": 8.7,
+      "end": 8.8
+    },
+    {
+      "word": "thinking",
+      "start": 8.8,
+      "end": 8.98
+    },
+    {
+      "word": "about",
+      "start": 8.98,
+      "end": 9.22
+    },
+    {
+      "word": "the",
+      "start": 9.22,
+      "end": 9.38
+    },
+    {
+      "word": "voyagers,",
+      "start": 9.38,
+      "end": 9.8
+    },
+    {
+      "word": "when",
+      "start": 10.14,
+      "end": 10.38
+    },
+    {
+      "word": "they",
+      "start": 10.38,
+      "end": 10.5
+    },
+    {
+      "word": "were",
+      "start": 10.5,
+      "end": 10.64
+    },
+    {
+      "word": "building",
+      "start": 10.64,
+      "end": 10.94
+    },
+    {
+      "word": "up",
+      "start": 10.94,
+      "end": 11.18
+    },
+    {
+      "word": "the",
+      "start": 11.18,
+      "end": 11.36
+    },
+    {
+      "word": "trajectory,",
+      "start": 11.36,
+      "end": 11.8
+    },
+    {
+      "word": "when",
+      "start": 11.92,
+      "end": 12.12
+    },
+    {
+      "word": "we",
+      "start": 12.12,
+      "end": 12.24
+    },
+    {
+      "word": "were",
+      "start": 12.24,
+      "end": 12.38
+    },
+    {
+      "word": "building",
+      "start": 12.38,
+      "end": 12.66
+    },
+    {
+      "word": "up",
+      "start": 12.66,
+      "end": 12.96
+    },
+    {
+      "word": "these",
+      "start": 12.96,
+      "end": 13.5
+    },
+    {
+      "word": "amazing",
+      "start": 13.5,
+      "end": 14.72
+    },
+    {
+      "word": "pieces",
+      "start": 14.72,
+      "end": 15.28
+    },
+    {
+      "word": "of",
+      "start": 15.28,
+      "end": 15.44
+    },
+    {
+      "word": "hardware",
+      "start": 15.44,
+      "end": 15.88
+    },
+    {
+      "word": "and",
+      "start": 15.88,
+      "end": 16.44
+    },
+    {
+      "word": "said,",
+      "start": 16.44,
+      "end": 16.62
+    },
+    {
+      "word": "you",
+      "start": 16.76,
+      "end": 16.78
+    },
+    {
+      "word": "know,",
+      "start": 16.78,
+      "end": 16.94
+    },
+    {
+      "word": "wouldn't",
+      "start": 17.46,
+      "end": 17.52
+    },
+    {
+      "word": "it",
+      "start": 17.52,
+      "end": 17.66
+    },
+    {
+      "word": "be",
+      "start": 17.66,
+      "end": 17.76
+    },
+    {
+      "word": "amazing",
+      "start": 17.76,
+      "end": 18.22
+    },
+    {
+      "word": "if",
+      "start": 18.22,
+      "end": 18.82
+    },
+    {
+      "word": "we",
+      "start": 18.82,
+      "end": 19.02
+    },
+    {
+      "word": "could",
+      "start": 19.02,
+      "end": 19.24
+    },
+    {
+      "word": "send",
+      "start": 19.24,
+      "end": 19.44
+    },
+    {
+      "word": "a",
+      "start": 19.44,
+      "end": 19.58
+    },
+    {
+      "word": "message",
+      "start": 19.58,
+      "end": 19.88
+    },
+    {
+      "word": "into",
+      "start": 19.88,
+      "end": 20.22
+    },
+    {
+      "word": "the",
+      "start": 20.22,
+      "end": 20.46
+    },
+    {
+      "word": "stars?",
+      "start": 20.46,
+      "end": 20.7
+    },
+    {
+      "word": "Wouldn't",
+      "start": 21.26,
+      "end": 21.38
+    },
+    {
+      "word": "it",
+      "start": 21.38,
+      "end": 21.52
+    },
+    {
+      "word": "be",
+      "start": 21.52,
+      "end": 21.62
+    },
+    {
+      "word": "amazing",
+      "start": 21.62,
+      "end": 22.08
+    },
+    {
+      "word": "if",
+      "start": 22.08,
+      "end": 22.3
+    },
+    {
+      "word": "we",
+      "start": 22.3,
+      "end": 22.42
+    },
+    {
+      "word": "could",
+      "start": 22.42,
+      "end": 22.56
+    },
+    {
+      "word": "understand",
+      "start": 22.56,
+      "end": 23.16
+    },
+    {
+      "word": "all",
+      "start": 23.16,
+      "end": 23.52
+    },
+    {
+      "word": "of",
+      "start": 23.52,
+      "end": 23.68
+    },
+    {
+      "word": "these",
+      "start": 23.68,
+      "end": 23.84
+    },
+    {
+      "word": "planets",
+      "start": 23.84,
+      "end": 24.22
+    },
+    {
+      "word": "in",
+      "start": 24.22,
+      "end": 24.92
+    },
+    {
+      "word": "this",
+      "start": 24.92,
+      "end": 25.14
+    },
+    {
+      "word": "grand",
+      "start": 25.14,
+      "end": 25.42
+    },
+    {
+      "word": "voyage",
+      "start": 25.42,
+      "end": 25.82
+    },
+    {
+      "word": "on",
+      "start": 25.82,
+      "end": 26.0
+    },
+    {
+      "word": "the",
+      "start": 26.0,
+      "end": 26.12
+    },
+    {
+      "word": "way",
+      "start": 26.12,
+      "end": 26.24
+    },
+    {
+      "word": "out?",
+      "start": 26.24,
+      "end": 26.52
+    },
+    {
+      "word": "Wouldn't",
+      "start": 26.52,
+      "end": 27.14
+    },
+    {
+      "word": "it",
+      "start": 27.14,
+      "end": 27.26
+    },
+    {
+      "word": "be",
+      "start": 27.26,
+      "end": 27.38
+    },
+    {
+      "word": "amazing",
+      "start": 27.38,
+      "end": 27.84
+    },
+    {
+      "word": "if",
+      "start": 27.84,
+      "end": 28.52
+    },
+    {
+      "word": "we",
+      "start": 28.52,
+      "end": 28.74
+    },
+    {
+      "word": "could",
+      "start": 28.74,
+      "end": 28.98
+    },
+    {
+      "word": "punch",
+      "start": 28.98,
+      "end": 29.56
+    },
+    {
+      "word": "farther",
+      "start": 29.56,
+      "end": 29.94
+    },
+    {
+      "word": "and",
+      "start": 29.94,
+      "end": 30.12
+    },
+    {
+      "word": "farther",
+      "start": 30.12,
+      "end": 30.42
+    },
+    {
+      "word": "and",
+      "start": 30.42,
+      "end": 30.56
+    },
+    {
+      "word": "farther",
+      "start": 30.56,
+      "end": 30.94
+    },
+    {
+      "word": "beyond",
+      "start": 30.94,
+      "end": 31.4
+    },
+    {
+      "word": "our",
+      "start": 31.4,
+      "end": 32.12
+    },
+    {
+      "word": "capability",
+      "start": 32.12,
+      "end": 32.58
+    },
+    {
+      "word": "inside",
+      "start": 32.58,
+      "end": 33.18
+    },
+    {
+      "word": "of",
+      "start": 33.18,
+      "end": 33.4
+    },
+    {
+      "word": "our",
+      "start": 33.4,
+      "end": 33.56
+    },
+    {
+      "word": "solar",
+      "start": 33.56,
+      "end": 33.76
+    },
+    {
+      "word": "system?",
+      "start": 33.76,
+      "end": 34.24
+    },
+    {
+      "word": "So",
+      "start": 34.82,
+      "end": 34.88
+    },
+    {
+      "word": "always",
+      "start": 34.88,
+      "end": 35.06
+    },
+    {
+      "word": "think",
+      "start": 35.06,
+      "end": 35.28
+    },
+    {
+      "word": "about",
+      "start": 35.28,
+      "end": 35.64
+    },
+    {
+      "word": "the",
+      "start": 35.64,
+      "end": 36.32
+    },
+    {
+      "word": "persistence,",
+      "start": 36.32,
+      "end": 36.8
+    },
+    {
+      "word": "the",
+      "start": 37.48,
+      "end": 37.9
+    },
+    {
+      "word": "heart,",
+      "start": 37.9,
+      "end": 38.9
+    },
+    {
+      "word": "the",
+      "start": 39.16,
+      "end": 39.22
+    },
+    {
+      "word": "nature",
+      "start": 39.22,
+      "end": 39.56
+    },
+    {
+      "word": "of...",
+      "start": 39.56,
+      "end": 39.98
+    }
+  ]
+}

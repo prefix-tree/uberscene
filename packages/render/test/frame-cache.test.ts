@@ -87,6 +87,54 @@ describe("frame keys", () => {
     expect(await changed(video(), video({ fps: 25 }))).toEqual(FRAMES);
   });
 
+  it("a camera's values and keys change every frame it is over", async () => {
+    const under = (camera: string) =>
+      video()
+        .replace("import { Clip,", "import { Camera, Clip,")
+        .replace(/(<Composition [^>]*>)/, `$1\n<Camera id="cam" ${camera}>`)
+        .replace("</Composition>", "</Camera>\n</Composition>");
+    expect(await changed(under("zoom={1.2}"), under("zoom={1.2}"))).toEqual([]);
+    expect(await changed(under("zoom={1.2}"), under("zoom={1.5}"))).toEqual(FRAMES);
+    const keyed = (to: number) => under(`x={[{ at: 0, value: 0 }, { at: 3, value: ${to} }]}`);
+    expect(await changed(keyed(100), keyed(200))).toEqual(FRAMES);
+    // Putting a camera in is an edit to every frame, though it shows them as written.
+    expect(await changed(video(), under("zoom={1}"))).toEqual(FRAMES);
+  });
+
+  it("a pushed camera's frames change when the element it makes room for moves", async () => {
+    // A title that starts at 0.5 s, placed off the frame's right edge: the push pans to it from then on.
+    const pushed = (x: number) =>
+      video({
+        more: `<Title id="late" start={0.5} duration={3} box={{ x: ${x}, y: 180, origin: "center" }}>Late</Title>`,
+      })
+        .replace("import { Clip,", "import { Camera, Clip,")
+        .replace(/(<Composition [^>]*>)/, `$1\n<Camera id="cam" push={{ on: ["late"] }}>`)
+        .replace("</Composition>", "</Camera>\n</Composition>");
+    expect(await changed(pushed(700), pushed(700))).toEqual([]);
+    expect(await changed(pushed(700), pushed(800))).toEqual(FRAMES);
+  });
+
+  it("an edit to a followed element changes the frames its follower is on, though it is not on screen then", async () => {
+    // The arm shows only before frame 30 (0.9 s); the hand that moves with it shows only at frame 90.
+    const rig = (x: number) =>
+      video({
+        more: `<Title id="arm" start={0} duration={0.9} box={{ x: ${x}, y: 100, width: 100, height: 40 }}>Arm</Title>
+        <Title id="hand" follow="arm" start={2.5} duration={1} box={{ x: 0, y: 40, width: 100, height: 40 }}>Hand</Title>`,
+      });
+    expect(await changed(rig(100), rig(100))).toEqual([]);
+    expect(await changed(rig(100), rig(200))).toEqual([6, 90]);
+  });
+
+  it("a generator's params change the frames its element is on, and no others", async () => {
+    const wobbly = (amount: number) =>
+      video({
+        more: `<Title id="late" start={2.5} duration={1} transform={{ rotation: { type: "wiggle", amount: ${amount} } }}>Late</Title>`,
+      });
+    expect(await changed(wobbly(2), wobbly(2))).toEqual([]);
+    // The title is on screen at frame 90 only.
+    expect(await changed(wobbly(2), wobbly(5))).toEqual([90]);
+  });
+
   it("a comment or a helper nobody draws changes nothing, until free code is on screen", async () => {
     const helper = "const unused = 1;";
     expect(await changed(video(), video({ top: helper }))).toEqual([]);

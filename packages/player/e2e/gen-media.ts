@@ -10,6 +10,7 @@ import { join } from "node:path";
  * - tone.ogg: 20 s of a 660 Hz Opus tone.
  * - logo.png: a red square.
  * - solid.webm: 2 s of solid blue, VP9, no audio.
+ * - solid.matte.webm: its matte, black on the left half and white on the right.
  * - bars.mp4: the same picture as H.264 + AAC, used when the browser decodes it.
  */
 export const mediaDir = join(import.meta.dirname, "app", "public");
@@ -69,6 +70,19 @@ export default function generate(): void {
     "lavfi",
     "-i",
     "color=c=blue:size=640x360:rate=30:duration=2",
+    "-c:v",
+    "libvpx-vp9",
+    "-g",
+    "30",
+    "-pix_fmt",
+    "yuv420p",
+  ]);
+  // The matte of solid.webm, for `cutout`: black on the left half, white on the right.
+  run("solid.matte.webm", [
+    "-f",
+    "lavfi",
+    "-i",
+    "color=c=black:size=640x360:rate=30:duration=2,drawbox=x=320:y=0:w=320:h=360:color=white:t=fill",
     "-c:v",
     "libvpx-vp9",
     "-g",

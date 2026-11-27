@@ -3,7 +3,7 @@
 <h1 align="center">UberScene</h1>
 
 <p align="center">
-  <b>A whole multimedia pipeline written as code.</b>
+  <b>Editing, animation and compositing as code, so AI can drive them natively.</b>
 </p>
 
 <p align="center">
@@ -41,6 +41,11 @@ captions, audio, transitions, effects, and any React, Motion or three.js on top.
 <p align="center">
   <a href="https://uberscene.prefixtree.xyz/examples/recolor"><img src="docs/public/readme/recolor.gif" width="640" alt="A short of espresso into a red paper cup; an agent is asked to change red cup color to green and writes one line, a recolor effect; the same short plays with the cup green"></a>
   <br><sub><b>One prompt, one line.</b> "change red cup color to green" adds a <code>recolor</code> effect to the file, and the same short plays green. <a href="https://uberscene.prefixtree.xyz/examples/recolor">The file →</a></sub>
+</p>
+
+<p align="center">
+  <a href="examples/interview"><img src="docs/public/readme/interview.gif" width="640" alt="An interview edit: WOULDN'T IT BE AMAZING in giant caps beside a black and white cut-out of the speaker, IF WE COULD SEND A MESSAGE INTO THE STARS on a blue card with a spacecraft, then tall caps stacking beside him as he talks, and SOMEONE, SAT DOWN as flash cards"></a>
+  <br><sub><b>An interview, cut to its words.</b> 38 seconds of a NASA talk in kinetic type, every title anchored to a word he says. <a href="examples/interview">The file →</a></sub>
 </p>
 
 ## Why

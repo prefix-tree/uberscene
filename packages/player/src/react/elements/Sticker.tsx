@@ -1,5 +1,8 @@
-import { stickerPlaceholder, stickerSize } from "../../overlays/content";
+import { secondsSinceStart } from "@uberscene/sdk/resolver";
+
+import { stickerPlaceholder } from "../../overlays/content";
 import { dataAttrs, type ElementProps, overlayStyle } from "../../overlays/layout";
+import { overlaySize } from "../../overlays/size";
 import { useMediaUrl } from "./Svg";
 
 /**
@@ -10,8 +13,8 @@ export function Sticker(p: ElementProps) {
   const props = p.placement.props as Record<string, unknown>;
   const src = String(props.src ?? "");
   const url = useMediaUrl(src.startsWith("asset:") ? src : null);
-  const size = stickerSize(p);
-  const style = overlayStyle(p, { width: size, height: size });
+  const { size } = overlaySize(p.state, p.placement, p.children, secondsSinceStart(p.placement, p.time));
+  const style = overlayStyle(p, size);
   return (
     <div
       {...dataAttrs(p.placement)}

@@ -1,16 +1,18 @@
 import { z } from "zod";
 
-import { zBlendMode, zEasing, zShapeType, zTextAnimationType } from "../enums";
-import { isShot, type ShotDefinition } from "../shot";
+import { zBlendMode, zShapeType, zTextAnimationType } from "../enums";
 import {
   adjustmentEffectsProp,
+  animatable,
   assetRefSchema,
   colorSchema,
   entranceProps,
   fitProp,
   fontWeightSchema,
   gradientSchema,
+  groundProp,
   idSchema,
+  keyed,
   overlayProps,
   placedProps,
   shadowSchema,
@@ -89,7 +91,7 @@ export const titleSchema = z.strictObject({
 });
 
 const fillSchema = z.union([
-  colorSchema,
+  keyed(colorSchema),
   z.strictObject({
     type: z.enum(["solid", "gradient", "none"]),
     color: colorSchema.optional(),
@@ -99,11 +101,14 @@ const fillSchema = z.union([
 ]);
 
 const strokeSchema = z.strictObject({
-  color: colorSchema,
-  thickness: z.number().nonnegative(),
+  /** The outline's colour, or keys to change it (moved in OKLab). */
+  color: keyed(colorSchema),
+  /** The outline's thickness in pixels, or keys or a generator. */
+  thickness: animatable(z.number().nonnegative()),
   opacity: z.number().min(0).max(1).optional(),
   dashArray: z.array(z.number().nonnegative()).optional(),
-  dashOffset: z.number().optional(),
+  /** How far along the dashes start, in pixels, or keys: from the dash length to 0 draws a line on. */
+  dashOffset: animatable(z.number()).optional(),
   lineCap: z.enum(["butt", "round", "square"]).optional(),
   lineJoin: z.enum(["miter", "round", "bevel"]).optional(),
   gradient: gradientSchema.optional(),
@@ -112,18 +117,22 @@ const strokeSchema = z.strictObject({
 export const shapeSchema = z.strictObject({
   ...timedProps,
   ...overlayProps,
+  ...groundProp,
   ...entranceProps,
   /** A theme preset for shapes. */
   style: idSchema.optional(),
   /** Which shape it draws. */
   type: zShapeType,
-  /** The shape's box, in pixels; left out, 200. */
-  width: z.number().positive().optional(),
-  /** The shape's box height, in pixels; left out, 200. */
-  height: z.number().positive().optional(),
-  /** A polygon's or path's corners, as fractions of the box from its top left. */
-  points: z.array(vec2Schema).optional(),
-  /** A colour, or `{ type, color, gradient, opacity }` for a gradient or no fill. */
+  /** The shape's box width, in pixels, or keys or a generator; left out, 200. */
+  width: animatable(z.number().positive()).optional(),
+  /** The shape's box height, in pixels, or keys or a generator; left out, 200. */
+  height: animatable(z.number().positive()).optional(),
+  /**
+   * A polygon's or path's corners, as fractions of the box from its top left, or keys of such lists: two keys with
+   * as many points move point by point (a morph); otherwise the shape changes at the key.
+   */
+  points: keyed(z.array(vec2Schema)).optional(),
+  /** A colour, or keys of colours (moved in OKLab), or `{ type, color, gradient, opacity }` for a gradient or no fill. */
   fill: fillSchema.optional(),
   /** The outline: colour, thickness in pixels, opacity, dashes, caps and joins. */
   stroke: strokeSchema.optional(),
@@ -147,6 +156,7 @@ export const svgSchema = z
   .strictObject({
     ...timedProps,
     ...overlayProps,
+    ...groundProp,
     ...fitProp,
     /** A theme preset for svg elements. */
     style: idSchema.optional(),
@@ -171,6 +181,7 @@ export const svgSchema = z
 export const stickerSchema = z.strictObject({
   ...timedProps,
   ...overlayProps,
+  ...groundProp,
   ...entranceProps,
   /** A theme preset for stickers. */
   style: idSchema.optional(),
@@ -213,45 +224,10 @@ export const layerSchema = z.strictObject({
   ...placedProps,
   /** How the layer mixes with what is under it, as CSS `mix-blend-mode` does. */
   blend: zBlendMode.optional(),
-  /**
-   * The layer is a ground that other things sit on: a wall behind a game, a scrim that darkens footage under a
-   * title. The layout check then treats it like a background: it is not held to the safe zone and is not said to
-   * cover the captions.
-   */
-  ground: z.boolean().optional(),
+  ...groundProp,
 });
 
 const vec3Schema = z.tuple([z.number(), z.number(), z.number()]);
-
-/** A marker's time, `"marker:ID"`: where the parent edit has it, in the shot's own seconds once resolved. */
-const markerRefSchema = z
-  .string()
-  .regex(/^marker:[A-Za-z_][A-Za-z0-9_-]*$/, 'marker references look like "marker:reveal"');
-
-/**
- * A shot value: a constant, or keys in shot time. A key's `at` may name a marker, so a pose lands on a cut or a beat
- * of the parent edit wherever either moves.
- */
-const shotAnimatable = <S extends z.ZodType>(value: S) =>
-  z.union([
-    value,
-    z
-      .array(
-        z.strictObject({ at: z.union([z.number().nonnegative(), markerRefSchema]), value, easing: zEasing.optional() }),
-      )
-      .min(1),
-  ]);
-
-/** One placed object of a shot: each channel a constant or keys in shot time. */
-const shotObjectSchema = z.strictObject({
-  /** Metres from the scene's origin, y up. */
-  position: shotAnimatable(vec3Schema).optional(),
-  /** Degrees about x, y and z, applied in that order. */
-  rotation: shotAnimatable(vec3Schema).optional(),
-  scale: shotAnimatable(vec3Schema).optional(),
-});
-
-const shotInputSchema = z.union([shotAnimatable(z.number()), z.boolean(), markerRefSchema, z.string()]);
 
 // biome-ignore-start lint/suspicious/noExplicitAny: the kit does not depend on three; its objects are any here so pasted three.js type-checks.
 /** What `<Three setup>` gets once: the scene, its camera and renderer, and the three.js namespace. */
@@ -288,15 +264,12 @@ export type ThreeSetupFunction = (setup: ThreeSetupArgs) => ThreeSetupResult;
  */
 export const threeSchema = layerSchema.extend({
   engine: z.literal("three"),
-  /**
-   * The camera: `position` and `lookAt` as `[x, y, z]`, `fov` in degrees, clipping planes, zoom, or orthographic.
-   * `position`, `lookAt` and `fov` may be keys, in the shot's time when the tag has a `shot`.
-   */
+  /** The camera: `position` and `lookAt` as `[x, y, z]`, `fov` in degrees, clipping planes, zoom, or orthographic. */
   camera: z
     .strictObject({
-      position: shotAnimatable(vec3Schema).optional(),
-      lookAt: shotAnimatable(vec3Schema).optional(),
-      fov: shotAnimatable(z.number().min(1).max(179)).optional(),
+      position: vec3Schema.optional(),
+      lookAt: vec3Schema.optional(),
+      fov: z.number().min(1).max(179).optional(),
       near: z.number().positive().optional(),
       far: z.number().positive().optional(),
       zoom: z.number().positive().optional(),
@@ -307,17 +280,6 @@ export const threeSchema = layerSchema.extend({
   background: colorSchema.optional(),
   /** Builds the scene once from `{ scene, camera, renderer, THREE, width, height }`, and may return `update(frame)` for every frame. */
   setup: z.custom<ThreeSetupFunction>((v) => typeof v === "function", "setup must be a function").optional(),
-  /** A 3D shot from `defineShot`: its module builds the scene, and this tag places it. */
-  shot: z.custom<ShotDefinition>(isShot, "shot must be what defineShot returns").optional(),
-  /**
-   * Where in the shot's own time the layer starts, in seconds: at the layer's start the shot is at `in`, and a frame
-   * `s` seconds later it is at `in + s`. Trimming the layer's start moves `start` and `in` together; keys stay put.
-   */
-  in: z.number().nonnegative().optional(),
-  /** The shot's objects by id, each `{ position, rotation, scale }` as `[x, y, z]` or keys in shot time. */
-  objects: z.record(idSchema, shotObjectSchema).optional(),
-  /** Values for the inputs the shot declares: numbers (or keys in shot time), flags, words, or `"marker:ID"`. */
-  inputs: z.record(z.string(), shotInputSchema).optional(),
 });
 
 /** One step of a Motion sequence: a selector inside the tag, its keyframes, and options (`duration`, `at`, `ease`…). */

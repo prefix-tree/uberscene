@@ -14,7 +14,7 @@ import {
 
 import type { ResolvedState } from "@uberscene/sdk/resolver";
 
-import { backdropTracks } from "../model/backdrop";
+import { backdropTracks, trackBands } from "../model/backdrop";
 import { compositionBackground } from "../model/frame-plan";
 import { indexLayerInteriors } from "../overlays/layer-interiors";
 import { PlayerCore, type PlayerOptions } from "../player";
@@ -161,6 +161,16 @@ export const PlayerView = forwardRef<PlayerRef, PlayerViewProps>(function Player
     return () => core.attachCanvas(null);
   }, [core]);
 
+  // A canvas for each run of footage tracks above the first, when overlay tracks sit between them.
+  const bandCount = trackBands(state).count;
+  const upperRefs = useRef(new Map<number, HTMLCanvasElement>());
+  useLayoutEffect(() => {
+    for (let band = 1; band < bandCount; band++) core.attachCanvas(upperRefs.current.get(band) ?? null, band);
+    return () => {
+      for (let band = 1; band < bandCount; band++) core.attachCanvas(null, band);
+    };
+  }, [core, bandCount]);
+
   // Scale the DOM layer with the box the canvas is shown in.
   useEffect(() => {
     const root = rootRef.current;
@@ -227,9 +237,38 @@ export const PlayerView = forwardRef<PlayerRef, PlayerViewProps>(function Player
         height={height}
         style={{ position: "absolute", inset: 0, width: "100%", height: "100%", display: "block", zIndex: 1 }}
       />
-      <div data-dom-layer="" style={{ ...layerStyle, zIndex: 2 }}>
+      {/* Tracks stack in the order the file writes them: the overlays above each run of footage, then the next run's canvas. */}
+      {Array.from({ length: bandCount - 1 }, (_, i) => i + 1).flatMap((band) => [
+        <div key={`dom-${band}`} data-dom-layer={`band-${band - 1}`} style={{ ...layerStyle, zIndex: band * 2 }}>
+          <DomLayer state={state} interiors={interiors} slot={band - 1} />
+        </div>,
+        <canvas
+          key={`canvas-${band}`}
+          ref={(el) => {
+            if (el) upperRefs.current.set(band, el);
+            else upperRefs.current.delete(band);
+          }}
+          data-band={band}
+          width={width}
+          height={height}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            display: "block",
+            zIndex: band * 2 + 1,
+            pointerEvents: "none",
+          }}
+        />,
+      ])}
+      <div data-dom-layer="" style={{ ...layerStyle, zIndex: bandCount * 2 }}>
         <TimeAttrs />
-        <DomLayer state={state} interiors={interiors} />
+        {bandCount > 1 ? (
+          <DomLayer state={state} interiors={interiors} slot={bandCount - 1} />
+        ) : (
+          <DomLayer state={state} interiors={interiors} />
+        )}
       </div>
       {controls && <Controls />}
     </div>

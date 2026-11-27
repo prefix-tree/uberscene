@@ -9,7 +9,7 @@ after every change.
 | Whether the file keeps to the conventions an editor relies on | `uberscene lint video.tsx` |
 | What plays when, and which words each clip says | `uberscene inspect video.tsx` |
 | What it looks like | `uberscene look video.tsx` |
-| Whether anything leaves the frame, the safe zone, or covers the captions or the speaker | `uberscene video.tsx --check-layout` |
+| Whether anything leaves the frame, the safe zone, or covers the captions or the speaker; whether titles overlap or fit their box; whether every title stays long enough to read | `uberscene video.tsx --check-layout` |
 | Whether anything stays still that shouldn't | `uberscene video.tsx --check-motion` ([Motion check](/reference/cli#motion-check)) |
 | Where each thing sits at a moment | `uberscene where video.tsx --at 2.6` |
 | Whether the exported file is sound | `ffprobe` and `ffmpeg` |
@@ -113,10 +113,23 @@ after an edit only the frames that changed are drawn again: an agent can look af
 
 The [CLI reference](/reference/cli#look) has every option.
 
+## Check the sync with the music
+
+`--check-sync` reads the timeline, with no browser, and prints each cut and each start on screen against its nearest
+beat of the music: on the beat, just off it (an issue, with the `beat:N` to tie it to), or elsewhere. `inspect
+--events` lists every moment of the video in one list, beats included, as text or JSON.
+
+```sh
+npx uberscene video.tsx --check-sync
+npx uberscene inspect video.tsx --events --in 2..6
+```
+
+[Sync: the music against the picture](./sync) explains the output and every field.
+
 ## Check the layout
 
 `--check-layout` finds anything drawn over the picture that leaves the frame, leaves a platform's safe zone, or
-covers the captions or the speaker. It reports each problem like a compiler: where it is in the file, when it
+covers the captions or the speaker, and any title gone before it can be read. It reports each problem like a compiler: where it is in the file, when it
 happens, and the smallest fix.
 
 ```sh
@@ -140,6 +153,43 @@ It writes no file, and exits with 3 when it finds a problem, so a script can sto
 | `safe-zone` | It is inside the frame but outside the safe zone. |
 | `captions` | It overlaps a line of captions. |
 | `subject` | It overlaps the subject, such as the speaker's face. |
+| `text-over-text` | A title's ink overlaps another title's: a descender in the line below, a highlight box over the line above. Reported once per pair, on the title drawn over the other. |
+| `text-fit` | A title's text spills out of its box (wider than the box, or more lines than its height holds), or wraps in a box the file gives a `width`. |
+| `read-time` | A title is on screen for less than 0.5 s plus 0.3 s a word, by more than a frame. |
+
+**Text that fits** is judged on a title's whole text, as it is once every word shows, laid out in its box: a title
+that types in is checked from its first frame, not when its last letter lands. Its text is too wide when a word runs
+past the box's sides, and too tall when its lines need more than a quarter of a line over the box's height (the
+room above and below the letters). A title that wraps onto more lines than the file writes is reported only when the
+file gives its box a `width`; one laid out across the frame wraps as a paragraph does, and a line break written in
+the text is never reported.
+
+```text
+video.tsx:235:11: text-fit: title "hook-2" does not fit its box: its text is 1069 px wide, the box is 1040 px wide, from 0.50 s to 1.00 s.
+  fix: make box.width 1069, or style.size 321 or less
+
+video.tsx:417:11: text-over-text: title "craft-2" covers title "craft-1" from 16.02 s to 17.52 s.
+  fix: move it down 6 px (box.y 250, a narrower box.width, or a smaller style.size), or start it after "craft-1" ends, then check again: the move may run into something else
+```
+
+A wrap reads `title "head" wraps onto 2 lines in a 200 px wide box; on one line it is 312 px`, with the width that
+keeps it on one line (capped at the safe zone), the size that does, or a line break.
+
+**Read time** is worked out from the timeline, not from frames: a title's resolved start and end (after anchors, words
+and the end of what holds it) against 0.5 s to find it plus 0.3 s a word. A title that types in needs its
+`animation.in` on top; one that comes word by word needs the time until its last word shows. Fades and slides add
+nothing: words can be read while they move. The issue points at the title's `duration` and gives `seconds` (what it
+has) and `needs`:
+
+```text
+video.tsx:7:54: read-time: "flash" is on screen 0.40 s; 3 words need 1.40 s to be read
+  7 |         <Title id="flash" anchor="talk" at="word:11" duration={0.4}>SOMEONE SAT DOWN</Title>
+    |                                                      ^
+  fix: hold it 1.40 s or more (duration), or cut words
+```
+
+Hold the title past the moment the speaker moves on rather than shortening it, or cut words. Captions are not
+checked: speech sets their pace.
 
 `--safe-zone` takes `tiktok`, `reels` or `shorts` (each platform's published zone for 1080×1920), `title-safe` (the
 default) or `action-safe`, or your own `top,right,bottom,left` fractions.
@@ -152,7 +202,9 @@ It samples every frame (or every `--step` seconds, between `--from` and `--to`) 
 actually draws, after its entrance, exit, keyframes and transform, so a slide that crosses the edge between two
 samples is still caught. Hollow graphics count by the cells their ink touches, so corner brackets round a face don't
 cover it. Overlays beneath the footage, ones that fill the frame and ones fainter than 10% are not checked. Subject
-boxes are mapped through each clip's crop, fit and transform.
+boxes are mapped through each clip's crop, fit and transform. For `text-fit`, each title's whole text is also laid out
+once more in a hidden box of the same size, with no animation or transform, and its lines, its width and its width on
+one line are read from the browser's layout.
 
 From code: `checkLayout({ state, media, source: { ...video.source, file }, safeZone, subject })`, and
 `formatLayout(result)` for the text.
@@ -160,7 +212,10 @@ From code: `checkLayout({ state, media, source: { ...video.source, file }, safeZ
 
 ::: details The report as JSON
 `--json` prints the same report as data. `from` and `to` are the first and last samples with the problem; `at` is the
-worst one, where `box` is the element's ink and `area` is what it breaks. Pixels are counted from the top left.
+worst one, where `box` is the element's ink and `area` is what it breaks. Pixels are counted from the top left. A
+`read-time` issue has no `box` or `area`; it has `seconds` and `needs`. A `text-fit` issue has `text`, the measurement
+(`box`, `lines`, `written`, `content`, `natural`, `size`, `lineHeight`), and its `area` is the safe zone a wider box must
+stay in.
 
 ```json
 {
@@ -195,15 +250,18 @@ It is reported as the part `diagram/lamp-label`, at the line that names it, and 
 time for the same thing. Its advice is a move in pixels to make in the layer's code. Code that names nothing is
 checked as before, as one layer. A part that is faded out or not displayed is not measured.
 
-A layer that is a ground for other things, such as a scrim that darkens the footage under a title, says so with
-the `ground` prop. The check then treats it like a background beneath the footage: it is not held to the safe zone
-and is not said to cover the captions. `uberscene inspect` marks it `ground`. `<Three>` and `<Motion>` are layers and
-take the prop too.
+A graphic that is a ground for other things says so with the `ground` prop: a scrim that darkens the footage under
+a title, or a card that a cut-out speaker sits on. The check then treats it like a background beneath the footage:
+it is not held to the safe zone and is not said to cover the captions. `uberscene inspect` marks it `ground`.
+`<Layer>`, `<Shape>`, `<Svg>` and `<Sticker>` take the prop; `<Three>` and `<Motion>` are layers and take it too.
+Nothing marks itself: a small callout on the same track is still checked, which is why the prop is yours to set.
 
 ```tsx
 <Layer id="scrim" anchor="talk" duration={{ until: "talk" }} ground>
   <div style={{ position: "absolute", inset: 0, background: "linear-gradient(transparent 60%, #0b1530)" }} />
 </Layer>
+<Shape id="card" start={2} duration={6} type="rectangle" fill="#ffffff" ground
+  box={{ x: 960, y: 600, width: 1200, height: 700, origin: "center" }} />
 ```
 
 ## Where things are at a moment

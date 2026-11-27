@@ -22,14 +22,28 @@ export const CHROME_MILESTONE = "157";
 const USE_OURS = `set UBERSCENE_CHROMIUM to a Chrome ${CHROME_MILESTONE} binary`;
 
 /**
+ * Whether `UBERSCENE_ANY_CHROME=1` lets the export run on a Chrome of another milestone: for a machine that cannot
+ * download Chrome for Testing and has another Chrome or Chromium, at the price of text drawn a little differently
+ * from the tests and from other machines.
+ */
+export function anyChrome(): boolean {
+  return process.env.UBERSCENE_ANY_CHROME === "1";
+}
+
+/**
  * Why a browser reporting `version` (as Playwright gives it, "157.0.8080.0") cannot run the export, or null when it
  * can. The export runs on Chrome `CHROME_MILESTONE` only: text, WebGL and the capture are drawn and tested on that
- * one, and another milestone draws text a little differently.
+ * one, and another milestone draws text a little differently. `UBERSCENE_ANY_CHROME=1` lets another milestone run.
  */
 export function wrongChrome(version: string, executablePath: string): string | null {
   const major = /(\d+)\./.exec(version)?.[1];
   if (major === CHROME_MILESTONE) return null;
-  return `the export runs on Chrome ${CHROME_MILESTONE} only, and ${executablePath} is Chrome ${version}; unset UBERSCENE_CHROMIUM to use the Chrome for Testing the export downloads (\`uberscene browser install\`), or ${USE_OURS}`;
+  return `the export runs on Chrome ${CHROME_MILESTONE} only, and ${executablePath} is Chrome ${version}; unset UBERSCENE_CHROMIUM to use the Chrome for Testing the export downloads (\`uberscene browser install\`), ${USE_OURS}, or set UBERSCENE_ANY_CHROME=1 to draw on it anyway`;
+}
+
+/** What the export warns when `UBERSCENE_ANY_CHROME=1` lets it run on another milestone. */
+export function otherChromeWarning(version: string, executablePath: string): string {
+  return `drawing on Chrome ${version} (${executablePath}) because UBERSCENE_ANY_CHROME=1: the export is tested on Chrome ${CHROME_MILESTONE}, and text may be drawn a little differently`;
 }
 
 /** Where downloaded browsers live: `UBERSCENE_BROWSER_CACHE`, else `~/.cache/uberscene/browsers`. */

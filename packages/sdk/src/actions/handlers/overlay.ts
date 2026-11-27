@@ -1,8 +1,9 @@
-import { capabilitiesOf } from "@uberscene/kit/schema";
+import { capabilitiesOf, moveRuns } from "@uberscene/kit/schema";
 
 import type { Json } from "../../patches/types";
 import type { Placement, ResolvedState } from "../../resolve/resolve";
 import { resolveScene, type SceneFn } from "../../resolve/scene";
+import { endT, lengthS, lengthT, minus, plus, S, startT, T } from "../../time";
 import {
   define,
   insertNode,
@@ -19,7 +20,8 @@ import {
 } from "../handler-kit";
 import { type ActionInput, invalid, type NodeSpec, nodeSpecOf, ok, type PlacementSpec } from "../types";
 
-const EPS = 1e-6;
+/** A microsecond, in ticks: what is closer than this to an edge is on it. */
+const EPS = T(1e-6);
 /** Nested props that re-time or re-draw the scene as a whole; the extracted elements could not carry them. */
 const EXTRACT_BLOCKERS = ["in", "out", "transform", "fit", "blend", "blendOpacity", "emphasis"] as const;
 
@@ -109,11 +111,18 @@ define({
       ? ok
       : invalid({ code: "INVALID_PARAMS", message: "only titles have text content" });
   },
-  apply: (a, log) => log.append({ op: "text", id: a.params.id, text: a.params.text }),
-  invert: (a, before) => ({
-    type: "text/setContent",
-    params: { id: a.params.id, text: rawNode(before, a.params.id)?.text ?? "" },
-  }),
+  apply: (a, log, ctx) => {
+    const was = rawNode(ctx.before, a.params.id);
+    const runs = a.params.runs ?? moveRuns(was?.text ?? "", was?.runs ?? [], a.params.text);
+    log.append({ op: "text", id: a.params.id, text: a.params.text, runs });
+  },
+  invert: (a, before) => {
+    const was = rawNode(before, a.params.id);
+    return {
+      type: "text/setContent",
+      params: { id: a.params.id, text: was?.text ?? "", runs: (was?.runs ?? []).map((r) => ({ ...r })) },
+    };
+  },
   fold: () => [],
 });
 
@@ -167,7 +176,8 @@ define({
     const plan = extractionPlan(state, a.params.id);
     let after = trackId;
     for (const track of plan.tracks) {
-      insertNode(log, state.tree.root.id, after, track);
+      // Beside the track the scene was on: inside the camera when that track is.
+      insertNode(log, rawNode(state, trackId)?.parent ?? state.tree.root.id, after, track);
       after = track.id;
     }
     if (plan.gap) insertNode(log, trackId, siblingAfter(state, a.params.id), plan.gap);
@@ -226,9 +236,11 @@ function extractionPlan(state: ResolvedState, id: string): { tracks: NodeSpec[];
       const p = scene.items.get(childId);
       const rn = scene.tree.byId.get(childId);
       if (!p || !rn || p.kind === "gap") continue;
-      const start = item.start + p.start;
-      if (start >= item.end - EPS) continue;
-      const limit = item.end - start;
+      const startTicks = plus(startT(item), startT(p));
+      if (startTicks >= minus(endT(item), EPS)) continue;
+      const start = S(startTicks);
+      const limitTicks = minus(endT(item), startTicks);
+      const limit = S(limitTicks);
       const spec = prefixed(nodeSpecOf(rn));
       const props: Record<string, Json | undefined> = {
         ...spec.props,
@@ -237,14 +249,14 @@ function extractionPlan(state: ResolvedState, id: string): { tracks: NodeSpec[];
         at: undefined,
         start,
       };
-      if (p.duration > limit + EPS) {
+      if (lengthT(p) > plus(limitTicks, EPS)) {
         if (p.source) {
           props.in = p.source.in;
           props.out = p.source.in + limit * p.source.speed;
           props.duration = undefined;
         } else props.duration = limit;
       } else if (typeof props.duration !== "number" && props.out === undefined) {
-        props.duration = p.duration;
+        props.duration = lengthS(p);
       }
       if (volume !== 1 && capabilitiesOf(p.kind).audio) props.volume = Number(rn.props.volume ?? 1) * volume;
       children.push({ ...spec, props: Object.fromEntries(Object.entries(props).filter(([, v]) => v !== undefined)) });
@@ -257,5 +269,5 @@ function extractionPlan(state: ResolvedState, id: string): { tracks: NodeSpec[];
   const layout = state.tracks.find((t) => t.id === node.parent)?.layout;
   const anchored = typeof node.props.anchor === "string";
   const gapId = layout === "sequence" && !anchored ? fresh(`${id}-gap`) : null;
-  return { tracks, gap: gapId ? { id: gapId, kind: "gap", props: { id: gapId, duration: item.duration } } : null };
+  return { tracks, gap: gapId ? { id: gapId, kind: "gap", props: { id: gapId, duration: lengthS(item) } } : null };
 }

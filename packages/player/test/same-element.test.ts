@@ -1,12 +1,13 @@
 import { collectModule, createPatchLog, resolve } from "@uberscene/sdk";
 
 import * as sample from "../../sdk/fixtures/sample";
+import { rootSpace } from "../src/overlays/space";
 import { fixtureManifest } from "./helpers/state";
 import { type ElementCellProps, sameElement, visiblePlacements } from "./internal";
 
 function cell(state: ReturnType<typeof resolve>, id: string, time: number): ElementCellProps {
   const item = visiblePlacements(state, time).find((v) => v.placement.id === id)!;
-  return { item, state, time, interior: null };
+  return { item, state, time, interior: null, space: rootSpace(state) };
 }
 
 describe("sameElement", () => {

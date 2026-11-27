@@ -1,3 +1,5 @@
+import { lengthSeconds } from "@uberscene/sdk/resolver";
+
 import { type ClipRect, effect } from "./motion";
 import type { TransitionRole } from "./visible";
 
@@ -39,7 +41,8 @@ export function transitionLook(t: TransitionRole, W: number, H: number): Transit
       if (!between) return { opacity: 1, dip: role === "in" ? 1 - p : p };
       if (role === "out") return { opacity: 1 };
       // A triangle that holds at full for `holdDuration` around the midpoint.
-      const hold = x.duration > 0 ? Math.max(0, Math.min(1, Number(params.holdDuration ?? 0.1) / x.duration)) : 1;
+      const hold =
+        lengthSeconds(x) > 0 ? Math.max(0, Math.min(1, Number(params.holdDuration ?? 0.1) / lengthSeconds(x))) : 1;
       const ramp = (1 - hold) / 2;
       const dip = ramp <= 0 ? 1 : Math.min(1, p / ramp, (1 - p) / ramp);
       return { opacity: p >= 0.5 ? 1 : 0, dip };

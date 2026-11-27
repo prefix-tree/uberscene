@@ -1,0 +1,20 @@
+{
+  "name": "@uberscene/example-skill",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The examples the agent skill shows, as files: typechecked here, resolved by scripts/skill.test.ts, and copied into the skill's synced sections by pnpm docs:gen.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@uberscene/kit": "workspace:*",
+    "react": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/react": "catalog:",
+    "typescript": "catalog:"
+  }
+}

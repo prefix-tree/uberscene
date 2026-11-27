@@ -93,7 +93,7 @@ function codecCacheDir(env: NodeJS.ProcessEnv = process.env): string {
 }
 
 /** This package's root: the folder of the nearest `package.json` named `@uberscene/render` above this module. */
-function packageRoot(): string {
+export function packageRoot(): string {
   let dir = dirname(fileURLToPath(import.meta.url));
   for (;;) {
     const manifest = join(dir, "package.json");

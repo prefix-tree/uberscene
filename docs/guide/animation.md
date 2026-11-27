@@ -68,14 +68,118 @@ The title fades in over its first 0.4 seconds, fast at first and slowing down at
 | `volume`, `pan` | Its sound. |
 | `speed` | A clip's playback rate. |
 | Every param of every effect | A blur that clears, a LUT that comes in. |
+| A shape's `width`, `height`, `fill`, `points`, `stroke.color`, `stroke.thickness`, `stroke.dashOffset` | Its size, colour, outline and corners. See [Shapes that change](#shapes). |
 
-Anything else is a constant: a font, a colour, a fit.
+Anything else is a constant: a font, a title's colour, a fit.
+
+### Shapes that change {#shapes}
+
+A [`<Shape>`](/reference/elements/shape) takes keys on its own values, so it can grow, change colour, draw its line on
+and change shape.
+
+<Example src="previews/guide/shape-keys" alt="An orange dot that grows and turns violet, a teal line drawing itself on, and a red pentagon turning into a yellow house">
+
+<<< @/../examples/showcase/guide/shape-keys.tsx
+
+</Example>
+
+- **Size.** `width` and `height` take keys and generators, as `transform` does. The shape grows from its box's
+  `origin`, so a box with `origin: "center"` grows from the middle.
+- **Colour.** `fill` (a colour, not a gradient) and `stroke.color` take keys of colours: hex, `rgb()`, `hsl()`, a
+  CSS name, or a theme token such as `$primary`. The colour moves through OKLab, a space where equal steps look equal,
+  so red to blue passes through a clear purple and not a muddy grey.
+- **Drawing a line on.** Give the stroke one dash as long as the line (`dashArray: [700]`) and key `dashOffset` from
+  that length to 0. `stroke.thickness` takes keys and generators too.
+- **Changing shape.** `points` takes keys of point lists. Two keys with as many points move point by point; with a
+  different number of points the shape changes at the key.
+
+```tsx
+<Shape id="dot" type="circle" width={[{ at: 0, value: 60 }, { at: 1.6, value: 180 }]}
+  fill={[{ at: 0, value: "$primary" }, { at: 1.6, value: "#7b5cff" }]} />
+```
 
 ### Easing
 
 The easing names are CSS's, in camelCase (`linear`, `ease`, `easeIn`, `easeOut`, `easeInOut`), the usual curves by name
 (`easeInOutSine`, `easeOutBack`, `easeInOutQuad`…), and `spring`. The [`<Clip>`](/reference/elements/clip) reference
 lists them all. For a move that needs more, draw it yourself in a [`<Layer>`](./free-code).
+
+## Motion without keys {#generators}
+
+Some movement is not a move from here to there: a card that is never quite still, a frame that closes in slowly, a
+light that pulses. Keys for those are busywork, and they are the same on every element. In place of a number or a
+list of keys, a value can be a generator: an object with a `type`.
+
+<Example src="previews/guide/generated" alt="Three cards: an orange one wobbling and bobbing, a teal one growing steadily, a red one fading in and out">
+
+<<< @/../examples/showcase/guide/generated.tsx
+
+</Example>
+
+| `type` | What it does | Its params |
+|---|---|---|
+| `wiggle` | A smooth wobble **added** to the value. It never repeats exactly. | `amount`: the most it adds or takes away, in the value's own units (degrees for a rotation, pixels for `box.x`). `frequency`: wobbles a second, 1 when left out. `seed`: which wobble. |
+| `drift` | A steady change **added** to the value, from the element's start. | `speed`: how much it adds each second. |
+| `loop` | A key list played again and again. | `keys`: two or more. `mode`: `repeat` (the default) starts over, `pingpong` plays back and forth. |
+
+A `wiggle` and a `drift` are added to a `base`: a number, or a list of keys, so a wobble goes on top of a keyed move.
+
+```tsx
+transform={{ rotation: { type: "wiggle", amount: 2 } }}                       // about the default, 0
+transform={{ scale: { type: "drift", base: 0.8, speed: 0.06 } }}              // from 0.8, growing
+transform={{ rotation: { type: "wiggle", amount: 3, base: [{ at: 0, value: 0 }, { at: 1, value: 90 }] } }}
+```
+
+- **The same every time.** A generator is worked out from the time and its params alone, so a frame is the same in
+  the preview and the export, and scrubbing back shows what was there before.
+- **Seeds.** Left out, a wiggle's seed comes from the element's id and the prop, so no two elements wobble alike.
+  Give several elements the same `seed`, `amount` and `frequency` to move them together: a card's frame, its picture
+  and its label on one seed bob as one.
+- **Where.** Everything keys can move in `transform` and `box`, every numeric param of an effect, a camera's
+  `x`, `y`, `zoom` and `rotation`, and a shape's `width`, `height`, `stroke.thickness` and `stroke.dashOffset`.
+  Not `speed`, `volume` or `pan`: those take a number or keys.
+- **On `box.x` and `box.y`** a wiggle or a drift needs a `base`, the place it is added to; without one the element
+  is centred and there is nothing to add to, which is an error that says so.
+- **On a pushed camera** a generator goes on top of the moves the push makes: a `drift` on `zoom` beside `push`
+  closes in slowly while the camera still makes room. See [the camera](./camera).
+
+## Following another element {#follow}
+
+A hand moves with its forearm, and the forearm with the arm. Keys copied from one to the next drift apart as soon as
+one of them changes. Give an overlay a `follow` and it moves with that one instead.
+
+<Example src="previews/guide/follow" alt="An orange upper arm swings from its shoulder; a teal forearm bends at its lower end, a white hand at the forearm's end, and the word hello riding beside the hand">
+
+<<< @/../examples/showcase/guide/follow.tsx
+
+</Example>
+
+```tsx
+<Shape id="arm" ... box={{ x: 480, y: 110, width: 36, height: 170, origin: "top" }} transform={{ rotation: 20 }} />
+<Shape id="hand" follow="arm" ... box={{ x: 18, y: 170, origin: "center" }} />
+```
+
+- **Its box is read in the box of what it follows.** `box.x` and `box.y` are pixels from that box's top left, before
+  it turns or scales; a coordinate left out centres it there. Above, the hand sits at the bottom middle of the arm.
+- **What it takes from what it follows:** where that element is, its rotation and scale (about that element's own
+  `anchor`), and its `enter` and `exit` moves, so a card that slides in brings its label with it. Each link up the
+  chain adds its own.
+- **What stays its own:** opacity, crop and corner rounding. Fading the arm does not fade the hand; fade both, or
+  give the hand the same keys.
+- **Time.** Each element plays its keys on its own clock. An element places its followers even outside its own start
+  and duration: before it starts, where its entrance leaves it; after it ends, where it stood before its exit began,
+  so a follower is not left carried off screen. The follower's own timing decides when it shows.
+- **What can follow and be followed:** titles, shapes, SVG, stickers and layers. Both sit on the same side of a
+  [camera](./camera): on tracks inside it, or outside. An SVG read from a file (`src`) can't be followed yet, since
+  its size is only known once it is drawn; write its markup in `content`.
+- **Mistakes the resolver names:** a `follow` that does not exist, one that is not an overlay, an SVG read from a
+  file, two elements on different sides of the camera, and a chain that comes back to where it started (it names
+  every element in the circle).
+- **Removing an element others follow** hands its followers to what it followed, or to none, in the same edit, and
+  writes their numbers again so they stay where they were drawn: its rotation is added to theirs and its scale
+  multiplied in. A keyed value is taken where it stands when the follower starts. Undo puts it back.
+- The [layout check](./checking) and `uberscene inspect` report where a follower really is, after the chain, and a
+  fix the layout check suggests is in the follower's own numbers.
 
 ## Effects {#effects}
 
@@ -175,6 +279,9 @@ The editor reads keys and effects where they are written. Dragging a key in the 
 value in the inspector writes it into the list. The [actions](/reference/actions) find a key by the element's id, the
 path of the prop and its time (`key/add`, `key/move`…), and an effect by its place in the list (`effect/update`,
 `effect/toggle`…).
+
+`generator/set` writes a generator at a path, or takes it off. The number or keys that were there become its `base`
+and stay as the value when it comes off, and the key actions go on working on those keys underneath it.
 
 A list written by code, such as a variable or a `.map`, cannot be edited key by key: the editor locks the whole prop,
 as it does any prop the file computes.

@@ -1,10 +1,12 @@
 import { type CSSProperties, type ReactNode, useEffect, useLayoutEffect, useRef } from "react";
 
 import { layerEngine } from "@uberscene/kit/schema";
+import { secondsSinceStart } from "@uberscene/sdk/resolver";
 
 import { layerClock } from "../../model/time";
 import { layerContent } from "../../overlays/content";
 import { dataAttrs, type ElementProps, overlayStyle } from "../../overlays/layout";
+import { overlaySize } from "../../overlays/size";
 import { themeTokens } from "../../overlays/svg-element";
 import { devWarn } from "../../warn";
 import { LayerContext } from "../context";
@@ -13,7 +15,8 @@ import { holdCssAnimations } from "../hold-animations";
 /** Arbitrary React inside the composition, driven by `useLayer()` and `useT()` through LayerContext. */
 export function Layer(p: ElementProps & { readonly interior: ReactNode }) {
   const comp = p.state.composition;
-  const style = overlayStyle(p, { width: comp.width, height: comp.height });
+  const { size } = overlaySize(p.state, p.placement, p.children, secondsSinceStart(p.placement, p.time));
+  const style = overlayStyle(p, size);
   const clock = layerClock(p.placement, p.time, comp.fps);
   const ref = useRef<HTMLDivElement>(null);
   // Every render, not only when time moves: an interior that mounts new CSS animations must not let them run free.

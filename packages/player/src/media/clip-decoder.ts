@@ -1,4 +1,4 @@
-import type { Placement } from "@uberscene/sdk/resolver";
+import { type Placement, secondsSinceStart } from "@uberscene/sdk/resolver";
 
 import {
   FRAME_WAIT_MS,
@@ -27,7 +27,7 @@ export class DecodeError extends Error {
 
   /** `error` from `decoder`, named once: an error that already names its clip is passed on as it is. */
   static of(decoder: ClipDecoder, error: unknown): DecodeError {
-    return error instanceof DecodeError ? error : new DecodeError(decoder.id, decoder.placement.source?.asset, error);
+    return error instanceof DecodeError ? error : new DecodeError(decoder.id, decoder.asset, error);
   }
 }
 
@@ -60,21 +60,26 @@ export class ClipDecoder {
   private _placement: Placement;
   private _children: readonly Placement[];
 
+  /** The asset it decodes: the placement's own, or another of the same frames read at the same times (a matte). */
+  readonly asset: string | undefined;
+
   constructor(
     private readonly source: FrameSource,
     placement: Placement,
     children: readonly Placement[],
     private readonly effectiveSpeed: () => number,
+    asset?: string,
   ) {
     this.id = placement.id;
-    this.sourceKey = sourceKeyOf(placement);
+    this.asset = asset ?? placement.source?.asset;
+    this.sourceKey = sourceKeyOf(placement, asset);
     this._placement = placement;
     this._children = children;
   }
 
   /** Asset and direction: everything else (trim, speed, freezes) may change under a live decoder. */
-  static sourceKey(p: Placement): string {
-    return sourceKeyOf(p);
+  static sourceKey(p: Placement, asset?: string): string {
+    return sourceKeyOf(p, asset);
   }
 
   get placement(): Placement {
@@ -342,7 +347,9 @@ export class ClipDecoder {
       let best: Frame | null = null;
       let index = -1;
       for (let i = 0; i < this.queue.length; i++) {
-        if (this.queue[i]!.timestamp <= st) {
+        // The same slack as forward: a container's ms-rounded stamp (0.067 for 0.0667) would otherwise lose its turn,
+        // and the frame before it would show twice.
+        if (this.queue[i]!.timestamp <= st + PICK_EPS) {
           best = this.queue[i]!;
           index = i;
         }
@@ -405,7 +412,7 @@ export class ClipDecoder {
   }
 
   private activeFreeze(t: number): Placement | null {
-    const rel = t - this.placement.start;
+    const rel = secondsSinceStart(this.placement, t);
     for (const c of this.children) {
       if (c.kind !== "freeze") continue;
       const fs = Number(c.props.start ?? 0),
@@ -445,7 +452,7 @@ export class ClipDecoder {
   }
 }
 
-function sourceKeyOf(p: Placement): string {
+function sourceKeyOf(p: Placement, asset?: string): string {
   const s = p.source;
-  return s ? `${s.asset}|${p.props.reverse === true ? "r" : "f"}` : p.id;
+  return s ? `${asset ?? s.asset}|${p.props.reverse === true ? "r" : "f"}` : p.id;
 }

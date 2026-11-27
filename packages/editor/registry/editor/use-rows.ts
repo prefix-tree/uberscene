@@ -11,6 +11,8 @@ export function useRows() {
     return {
       ...rows,
       byTrack: rows.tracks.map((t) => ({ track: t, rows: rows.elements.filter((e) => e.track === t.id) })),
+      /** The camera, when the file has one: it moves every track that names it. */
+      camera: rows.elements.find((e) => e.kind === "camera"),
     };
   }, [state]);
 }

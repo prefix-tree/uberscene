@@ -100,12 +100,12 @@ The motion style fills in the movement the file leaves out:
 
 To keep one element still, give it an `enter` of type `none`.
 
-## Backgrounds beneath the footage
+## Graphics beneath and between the footage
 
-Overlays draw above the footage, so a background graphic on top of a clip would hide it. Put a background on a track
-**below every track that holds footage**: overlays there draw beneath the footage, in the preview and the export
-alike, and the composition background goes under them. A plain gradient needs no track at all:
-<code v-pre>&lt;Composition background={{ type: "gradient", gradient }}&gt;</code>.
+Tracks draw in the order the file writes them, the first at the bottom, whatever they hold. So a background goes on
+a track **before** the footage, and a card that a cut-out speaker should sit on goes on a track **between** the
+footage beneath it and the speaker above it. The composition background is under all of it. A plain gradient needs no
+track at all: <code v-pre>&lt;Composition background={{ type: "gradient", gradient }}&gt;</code>.
 
 ```tsx
 <Track id="backdrop" layout="free">
@@ -114,10 +114,14 @@ alike, and the composition background goes under them. A plain gradient needs no
   </Layer>
 </Track>
 <Track id="main">…clips…</Track>
-<Track id="notes" layout="free">…callouts above the footage…</Track>
+<Track id="cards" layout="free">…a card over the clips…</Track>
+<Track id="cutout" layout="free">…the speaker, cut out, over the card…</Track>
+<Track id="notes" layout="free">…callouts on top…</Track>
 ```
 
-Footage that blends (`blend="multiply"`, say) blends with the clips beneath it, not with the backdrop.
+Two limits. Footage that blends (`blend="multiply"`, say) blends with the footage beneath it up to the nearest
+overlay track, not with that overlay or anything under it; the check says so. An `<Adjustment>` changes the footage
+beneath it, on both sides of a card, and leaves overlays as they are.
 
 ## Fonts
 

@@ -8,7 +8,15 @@ import { join } from "node:path";
 
 import { frameStartSeconds, motionBlurOf, shutterTimes } from "@uberscene/kit/schema";
 import type { MediaResolver } from "@uberscene/player/engine";
-import type { Placement, ResolvedState } from "@uberscene/sdk";
+import {
+  endSeconds,
+  followOf,
+  lengthTicks,
+  lookupAsset,
+  type Placement,
+  type ResolvedState,
+  startSeconds,
+} from "@uberscene/sdk";
 
 import type { FontFile } from "./fonts";
 import type { ExportSource } from "./renderer";
@@ -67,13 +75,18 @@ function stable(value: unknown, flags: { free: boolean }, seen = new Set<object>
   }
 }
 
-/** The placements that can draw at `t`: the ones on the timeline there, with everything inside them. */
+/**
+ * The placements that can draw at `t`: the ones on the timeline there, with everything inside them, and the elements
+ * they follow, which place them even while not on screen themselves.
+ */
 function drawnAt(state: ResolvedState, t: number): Placement[] {
   const out = new Map<string, Placement>();
-  const covers = (p: Placement): boolean => t >= p.start - 1e-6 && t <= p.end + 1e-6;
+  const covers = (p: Placement): boolean => t >= startSeconds(p) - 1e-6 && t <= endSeconds(p) + 1e-6;
   const add = (p: Placement): void => {
     if (out.has(p.id)) return;
     out.set(p.id, p);
+    const leader = state.items.get(followOf(p) ?? "");
+    if (leader) add(leader);
     for (const id of p.children) {
       const child = state.items.get(id);
       // Captions hold a cue for every line said; only the one on screen draws.
@@ -82,7 +95,7 @@ function drawnAt(state: ResolvedState, t: number): Placement[] {
   };
   for (const p of state.items.values()) {
     if (p.kind === "composition" || p.kind === "track") out.set(p.id, p);
-    else if (!SILENT.has(p.kind) && p.end > p.start && covers(p)) {
+    else if (!SILENT.has(p.kind) && lengthTicks(p) > 0 && covers(p)) {
       const parent = state.items.get(p.parent ?? "");
       // A child is added with its parent; a multicam's generated clips name it as their parent and are added here.
       if (!parent || parent.kind === "track" || parent.kind === "composition" || parent.kind === "multicam") add(p);
@@ -166,7 +179,12 @@ export class FrameKeys {
   /** See `wholeKey`: the whole file, every asset it plays, and `extra`. */
   async whole_(extra: unknown): Promise<string> {
     const assets = new Set<string>();
-    for (const p of this.input.state.items.values()) if (p.source) assets.add(p.source.asset.replace(/^asset:/, ""));
+    for (const p of this.input.state.items.values()) {
+      if (!p.source) continue;
+      assets.add(p.source.asset.replace(/^asset:/, ""));
+      const matte = matteAsset(this.input.state, p);
+      if (matte) assets.add(matte);
+    }
     const stats = await Promise.all([...assets].sort().map(async (id) => `${id}=${await this.stat(id)}`));
     const hash = createHash("sha256");
     hash.update(this.shared);
@@ -197,12 +215,14 @@ export class FrameKeys {
             track: p.track,
             parent: p.parent,
             // The composition, a track and the captions run the video's whole length, which is not theirs to say.
-            ...(WHOLE.has(p.kind) ? {} : { start: p.start, end: p.end }),
+            ...(WHOLE.has(p.kind) ? {} : { start: startSeconds(p), end: endSeconds(p) }),
             source: p.source,
             between: p.between,
             interior: p.interior,
             text: tree.byId.get(p.id)?.text,
             props: p.props,
+            // The manifest is not hashed, so the matte a cutout cuts with is named here, its file's stat with it.
+            ...(matteAsset(state, p) ? { matte: `asset:${matteAsset(state, p)}` } : {}),
           },
           flags,
         );
@@ -299,4 +319,10 @@ export function trimCache(dir: string, cap = CACHE_CAP_BYTES): void {
       total -= f.size;
     } catch {}
   }
+}
+
+/** The matte a clip with `cutout` draws with, by asset id, from the manifest; none for anything else. */
+function matteAsset(state: ResolvedState, p: Placement): string | undefined {
+  if (!p.source || p.props.cutout === undefined || p.props.cutout === false) return undefined;
+  return lookupAsset(state.manifest, p.source.asset)?.matte;
 }

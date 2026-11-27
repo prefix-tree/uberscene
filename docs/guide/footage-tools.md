@@ -28,6 +28,70 @@ To tune a key:
 
 It compares colour, not brightness, so the shadowed and lit parts of the screen go together.
 
+## Cut out a person
+
+Footage with no green screen needs a matte: a greyscale video of the same frames, white where the person is and black
+where the background is. `uberscene matte` makes one with a matting model, writes it beside the footage, and names it
+on the footage's manifest entry; then set `cutout` on the clip:
+
+```bash
+npm i -D onnxruntime-web
+npx uberscene matte talk.mp4 --accept-licence
+```
+
+```text
+talk.matte.webm: 878 frames, 1920x1080, matte of talk as talk.matte in uberscene.json
+  rvm-resnet50 (GPL-3.0), wasm (4 threads): 0.72 s a frame, 706 s in all
+  soft edge 1.2% (most 1.6%), change between frames 0.1% (most 27.9% at 1.67 s), subject 27.2% of the picture
+```
+
+```tsx
+<Track id="cards" layout="free">
+  <Shape id="card" start={0} duration={6} type="rectangle" fill="#1d4ed8" ground width={1920} height={1080}
+    box={{ x: 960, y: 540, origin: "center" }} />
+</Track>
+<Track id="speaker" layout="free">
+  <Clip id="talk-cut" src="asset:talk" start={0} in="word:12" out="word:30.end" cutout
+    effects={[{ type: "grayscale" }, { type: "contrast", amount: 0.2 }]} />
+</Track>
+```
+
+- Where the matte is black the clip is transparent, so the tracks drawn before it show. Tracks draw in the order the
+  file writes them, footage included, so the card's track comes first. `ground` tells the layout check the card is
+  something to sit on, not a callout.
+- The matte follows the clip: the same trims, speed, freezes, `reverse`, crop and `box`. Each matte frame is read at
+  the same source time as the footage's.
+- The cut is made before `effects`, so a black-and-white grade changes the person and not what shows through.
+- `cutout` with `shrink: 2, feather: 1` tidies the edge, in pixels of the composition: `shrink` pulls the edge in (to
+  lose a rim of the old background), `feather` softens it.
+- A clip with `cutout` and no matte is an error that says what to add; `uberscene lint` reports it as
+  `cutout-without-matte`.
+
+### Making the matte
+
+`uberscene matte` runs the model on every frame in Chrome, with ONNX Runtime for the web, and writes
+`<name>.matte.webm`: one grey frame for each frame of the footage, at its size and rate. It adds the matte to the
+manifest as `<id>.matte`, and sets `matte`, `matteModel` (which model made it) and `subjects` (where the person is,
+every half second, which `--check-layout` uses) on the footage. A matte already there is kept unless `--force`.
+
+| Model | Licence | On 4 CPU cores, 1080p | Edges |
+|---|---|---|---|
+| `rvm-resnet50` (default) | GPL-3.0 | about 0.6 s a frame | the best: hair kept, clean around hands |
+| `rvm-mobilenet` | GPL-3.0 | about 0.25 s a frame | close to it, a little rougher |
+| `u2net-human` | Apache-2.0 | about 1.5 s a frame | clean, but hair as a smooth blob |
+
+UberScene lists these models, it does not ship them. The first use of one shows its licence and downloads it from its
+own source into `~/.cache/uberscene/models` (or `UBERSCENE_MODEL_CACHE`), checked against its SHA-256. Running a model
+and using its mattes carries no conditions; passing the model file on does, under its licence. On a terminal it asks
+once; `--accept-licence` (or `UBERSCENE_ACCEPT_LICENCE=<name>`) accepts it for scripts and agents. `uberscene matte
+models` lists them, `--model <name>` picks one, and `UBERSCENE_MODEL_REGISTRY` adds your own, as a JSON file of the
+same shape as the package's `models.json`.
+
+What it prints says what it cannot show you: a **soft edge** above about 5% is a blurry matte; a large **change between
+frames** at one moment is a flicker to look at there, or a cut in the footage (above, the take cuts from a title
+card to the speaker at 1.67 s); a **subject** under 1% of the picture means it found no one.
+What makes a good matte, and the faults to look for on white and on a colour, is in the skill's interview reference.
+
 ## Hiding a face, a plate or a screen
 
 [`regionBlur`](/reference/effects/regionBlur) blurs inside a box. Give the box keys to follow what it hides:

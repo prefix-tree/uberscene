@@ -1,0 +1,22 @@
+composition composition 30/1 frames 750
+hook layer 0-90
+direct-off layer 90-300
+direct-on layer 90-300
+shadow-off layer 300-540
+shadow-on layer 300-540
+ambient-off layer 540-750
+ambient-on layer 540-750
+direct layer 90-300
+shadow layer 300-540
+ambient layer 540-750
+subtitles captions 0-750
+s-hook caption 6-87
+s-1a caption 96-192
+s-1b caption 192-294
+s-2a caption 306-420
+s-2b caption 420-534
+s-3a caption 546-642
+s-3b caption 642-744
+scenes track 0-750
+labels track 0-750
+composition composition 0-750

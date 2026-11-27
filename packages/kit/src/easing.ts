@@ -1,5 +1,6 @@
 // The easing curves every moving value uses, and the one function that reads a curve of keys. The player draws with
 // them, the editor splits curves with them, and speed ramps integrate them, so all three agree on every frame.
+import { mixColor } from "./color";
 import type { Easing } from "./jsx/enums";
 import { clamp01 } from "./math";
 
@@ -221,14 +222,29 @@ export interface CurveKey {
 }
 
 /**
+ * How the values of a curve move between two keys: `number` (numbers, and lists of numbers of one length), `color`
+ * (CSS colours, through OKLab) or `points` (lists of `{ x, y }` of one length, point by point). Anything a kind cannot
+ * read steps.
+ */
+export type CurveBlend = "number" | "color" | "points";
+
+/** How a key list on `property` moves: shape colours as colours, a shape's points point by point, else as numbers. */
+export function blendFor(property: string | undefined): CurveBlend {
+  if (property === "shape.fill" || property === "shape.stroke.color") return "color";
+  if (property === "shape.points") return "points";
+  return "number";
+}
+
+/**
  * The value of a curve at `t`, keys sorted by `at`. It holds before the first key and after the last; between two keys
- * it moves by the easing of the key it leaves. Numbers, and lists of numbers of one length, move; anything else steps.
+ * it moves by the easing of the key it leaves, as `blend` says (`CurveBlend`); what it cannot move steps.
  * `easeBy` replaces the easing lookup (the player passes one that warns on an unknown name).
  */
 export function curveAt(
   keys: readonly CurveKey[],
   t: number,
   easeBy: (name: string | undefined, x: number) => number = ease,
+  blend: CurveBlend = "number",
 ): unknown {
   const first = keys[0];
   if (!first) return undefined;
@@ -241,6 +257,11 @@ export function curveAt(
     if (t < a.at || t >= b.at) continue;
     const span = b.at - a.at;
     const u = span <= 0 ? 1 : easeBy(a.easing, (t - a.at) / span);
+    if (blend === "color")
+      return typeof a.value === "string" && typeof b.value === "string"
+        ? (mixColor(a.value, b.value, u) ?? a.value)
+        : a.value;
+    if (blend === "points") return pointsBetween(a.value, b.value, u) ?? a.value;
     if (typeof a.value === "number" && typeof b.value === "number") return a.value + (b.value - a.value) * u;
     if (numberList(a.value) && numberList(b.value) && a.value.length === b.value.length) {
       const to = b.value;
@@ -249,6 +270,19 @@ export function curveAt(
     return a.value;
   }
   return last.value;
+}
+
+/** Two lists of `{ x, y }` of one length, `u` of the way from the first to the second; null for anything else. */
+function pointsBetween(from: unknown, to: unknown, u: number): { x: number; y: number }[] | null {
+  if (!pointList(from) || !pointList(to) || from.length !== to.length) return null;
+  return from.map((p, i) => ({ x: p.x + (to[i]!.x - p.x) * u, y: p.y + (to[i]!.y - p.y) * u }));
+}
+
+function pointList(v: unknown): v is readonly { readonly x: number; readonly y: number }[] {
+  return (
+    Array.isArray(v) &&
+    v.every((p) => typeof p === "object" && p !== null && typeof p.x === "number" && typeof p.y === "number")
+  );
 }
 
 function numberList(v: unknown): v is readonly number[] {

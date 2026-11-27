@@ -1,3 +1,5 @@
+import type { TextRun } from "@uberscene/kit/schema";
+
 import type { Json } from "../../patches/types";
 import type { CollectedNode, LayerInterior } from "../../resolve/tree";
 
@@ -48,6 +50,8 @@ export interface NodeSpec {
   readonly kind: string;
   readonly props: Readonly<Record<string, Json | undefined>>;
   readonly text?: string;
+  /** A title's marked words (`<Mark>`), as character ranges of `text`. */
+  readonly runs?: readonly TextRun[];
   readonly children?: readonly NodeSpec[];
   /** A Layer's handles: the component inside it and its props, kept so a Layer put back has them again. */
   readonly interior?: LayerInterior;
@@ -69,6 +73,7 @@ export function nodeSpecOf(node: CollectedNode): NodeSpec {
     kind: node.kind,
     props,
     ...(node.text !== undefined ? { text: node.text } : {}),
+    ...(node.runs?.length ? { runs: node.runs.map((r) => ({ ...r })) } : {}),
     children: node.children.map(nodeSpecOf),
     ...(node.interior ? { interior: { component: node.interior.component, props: { ...node.interior.props } } } : {}),
   };
@@ -84,6 +89,7 @@ export function nodeOfSpec(spec: NodeSpec, parent: string | null): CollectedNode
     editable: "literal",
     lockedProps: [],
     ...(spec.text !== undefined ? { text: spec.text } : {}),
+    ...(spec.runs?.length ? { runs: spec.runs } : {}),
     children: (spec.children ?? []).map((c) => nodeOfSpec(c, spec.id)),
     ...(spec.interior ? { interior: spec.interior } : {}),
   };

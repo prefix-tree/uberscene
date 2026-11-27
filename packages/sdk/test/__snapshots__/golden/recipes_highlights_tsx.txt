@@ -1,0 +1,16 @@
+composition composition 30/1 frames 750
+mc multicam 0-750
+a angle 0-750
+b angle 0-750
+cut-1 cut 0-750
+cut-2 cut 0-750
+cut-3 cut 0-750
+dense clip 0-74 source 156-230 x1
+lower title 15-135
+mc.cut-1 clip 0-300 source 0-300 x1
+mc.cut-2 clip 300-750 source 300-750 x1
+mc.cut-3 clip 750-750 source 750-750 x1
+cams track 0-750
+pull track 0-750
+overlays track 0-750
+composition composition 0-750

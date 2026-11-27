@@ -1,4 +1,4 @@
-import { frameAtSeconds, frameStartSeconds } from "@uberscene/kit/schema";
+import { frameStartSeconds, framesUntil, nearestFrame, round3 } from "@uberscene/kit/schema";
 import type { MediaResolver } from "@uberscene/player/engine";
 import type { ResolvedState } from "@uberscene/sdk";
 
@@ -43,8 +43,10 @@ export async function renderStill(options: StillOptions): Promise<StillResult> {
   const { state } = options;
   const { rate, width, height, duration } = state.composition;
   if (!(options.time >= 0 && options.time < duration))
-    throw new Error(`time ${options.time} is outside the composition (0 to ${duration} s)`);
-  const frame = frameAtSeconds(options.time, rate);
+    throw new Error(`time ${options.time} is outside the composition (0 to ${round3(duration)} s)`);
+  // The frame nearest the time asked, as `look` and `inspect --at` pick it, and never past the last frame the export
+  // draws: a composition of 0.30000000000000004 s at 30 fps has frames 0 to 8, and 0.3 s is frame 8.
+  const frame = Math.min(nearestFrame(options.time, rate), framesUntil(duration, rate) - 1);
   const jpeg = /\.jpe?g$/i.test(options.out);
   const warnings: string[] = [];
   const name = options.cacheDir

@@ -2511,18 +2511,26 @@ html:has(.VPContent.has-sidebar) .VPSidebar {
   line-height: 1.55;
   color: var(--cc-ink-2);
 }
-/* The roadmap row: one wide card, its icon beside the words. */
-.cc-features-group.wide a.cc-feature {
-  display: grid;
-  grid-template-columns: 40px minmax(0, 1fr);
-  column-gap: 18px;
-  row-gap: 4px;
+/* The roadmap: under a rule of its own, dashed cards on no ground, so nothing planned reads as shipped. */
+.vp-doc p.cc-features-divider {
+  grid-column: 1 / -1;
+  margin: 16px 0 -16px;
+  padding-top: 28px;
+  border-top: 1px dashed var(--cc-rule);
+  font-family: var(--cc-mono);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cc-ink);
+}
+.cc-features-group.roadmap a.cc-feature {
   border-style: dashed;
   background: transparent;
 }
-.cc-features-group.wide .cc-feature-icon {
-  grid-row: span 2;
-  margin: 0;
+.cc-features-group.roadmap .cc-feature-icon {
+  background: transparent;
+  border: 1px dashed currentColor;
 }
 @media (max-width: 960px) {
   .cc-features {
@@ -2629,10 +2637,9 @@ html:has(.VPContent.has-sidebar) .VPSidebar {
 .vp-doc a.home-link:hover::after {
   transform: translateX(3px);
 }
-.vp-doc p.home-run {
-  margin: 40px 0 10px;
-  font-size: 15px;
-  color: var(--cc-grey);
+/* The agent picker under the hero's buttons: the main way in. */
+.home-hero .cc-agents {
+  margin-top: 36px;
 }
 /* The command as a light pill, like a key on the page, not a terminal. */
 .home-hero .cc-command {
@@ -2695,6 +2702,301 @@ html:has(.VPContent.has-sidebar) .VPSidebar {
 @media (prefers-reduced-motion: reduce) {
   .vp-doc a.home-link::after {
     transition: none;
+  }
+}
+
+/* ── The landing page, pared back: a centred hero with one film, then numbered sections on hairlines. ─────────── */
+.home.p {
+  --p-line: color-mix(in srgb, var(--cc-ink) 14%, transparent);
+}
+.home.p section.p-hero,
+.home.p section.p-section {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 96px 24px;
+  border: 0;
+  background: none;
+}
+.home.p section.p-section {
+  border-top: 1px solid var(--p-line);
+}
+.home.p .p-hero {
+  text-align: center;
+}
+.vp-doc p.p-mark {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 28px;
+  font-family: var(--cc-mono);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cc-ink);
+}
+.p-mark img {
+  display: block;
+}
+.home.p.vp-doc h1.p-title {
+  max-width: 900px;
+  margin: 0 auto;
+  font-family: var(--cc-display);
+  font-size: clamp(48px, 7.5vw, 104px);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  text-transform: none;
+  text-wrap: balance;
+}
+.p-title em {
+  font-style: normal;
+  color: var(--cc-accent);
+}
+.home.p.vp-doc p.p-lead {
+  max-width: 560px;
+  margin: 28px auto 0 !important;
+  font-size: 19px;
+  line-height: 1.55;
+  color: var(--cc-ink-2);
+}
+.p-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 36px;
+}
+.vp-doc a.p-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 13px 20px;
+  border: 1px solid color-mix(in srgb, var(--cc-ink) 40%, transparent);
+  border-radius: 0;
+  background: transparent;
+  color: var(--cc-ink);
+  font-family: var(--cc-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
+}
+.vp-doc a.p-btn:hover {
+  background: var(--cc-ink);
+  color: var(--cc-paper);
+}
+.vp-doc a.p-btn.primary {
+  border-color: var(--cc-ink);
+  background: var(--cc-ink);
+  color: var(--cc-paper);
+}
+.vp-doc a.p-btn.primary:hover {
+  border-color: var(--cc-accent);
+  background: var(--cc-accent);
+  color: #121212;
+}
+.vp-doc p.p-note {
+  margin: 16px 0 0;
+  font-family: var(--cc-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cc-grey);
+}
+.vp-doc figure.p-film {
+  margin: 64px 0 0;
+}
+.p-film video {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--p-line);
+  border-radius: 0;
+  background: #000;
+}
+.vp-doc .p-film figcaption {
+  margin-top: 12px;
+  font-family: var(--cc-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cc-grey);
+  text-align: left;
+}
+.vp-doc p.p-label {
+  margin: 0 0 20px;
+  font-family: var(--cc-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cc-grey);
+}
+.p-label span {
+  margin-right: 10px;
+  color: var(--cc-ink);
+}
+.home.p.vp-doc .p-section h2 {
+  margin: 0 0 40px;
+  padding: 0;
+  border: 0;
+  font-family: var(--cc-display);
+  font-size: clamp(40px, 5vw, 64px);
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  text-transform: none;
+}
+.home.p.vp-doc p.p-sub {
+  max-width: 640px;
+  margin: -16px 0 32px !important;
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--cc-ink-2);
+}
+.vp-doc ol.p-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--p-line);
+  border-left: 1px solid var(--p-line);
+  list-style: none;
+  counter-reset: p;
+}
+.vp-doc ol.p-grid li {
+  position: relative;
+  margin: 0;
+  padding: 32px 32px 36px;
+  border-right: 1px solid var(--p-line);
+  border-bottom: 1px solid var(--p-line);
+  counter-increment: p;
+}
+.vp-doc ol.p-grid li::after {
+  content: counter(p, decimal-leading-zero);
+  position: absolute;
+  top: 18px;
+  right: 20px;
+  font-family: var(--cc-mono);
+  font-size: 11px;
+  color: var(--cc-grey);
+}
+.home.p.vp-doc .p-grid h3 {
+  margin: 0 0 12px;
+  padding: 0;
+  font-family: inherit;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+  text-transform: none;
+}
+.home.p.vp-doc .p-grid p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--cc-ink-2);
+}
+.vp-doc .p-next li > span {
+  display: inline-block;
+  margin-bottom: 14px;
+  font-family: var(--cc-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cc-accent);
+}
+.home.p .p-section .cc-agents {
+  max-width: none;
+}
+@media (max-width: 900px) {
+  .vp-doc ol.p-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .home.p section.p-hero,
+  .home.p section.p-section {
+    padding: 64px 16px;
+  }
+  .vp-doc ol.p-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .vp-doc ol.p-grid li {
+    padding: 26px 22px 28px;
+  }
+  .vp-doc a.p-btn {
+    padding: 12px 16px;
+  }
+}
+.vp-doc p.p-more {
+  margin: 24px 0 0;
+  font-family: var(--cc-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.vp-doc ul.p-films {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--p-line);
+  border-left: 1px solid var(--p-line);
+  list-style: none;
+}
+.vp-doc ul.p-films li {
+  margin: 0;
+  border-right: 1px solid var(--p-line);
+  border-bottom: 1px solid var(--p-line);
+}
+.vp-doc .p-films a {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px 20px 24px;
+  color: var(--cc-ink);
+  text-decoration: none;
+}
+.p-films video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  margin-bottom: 12px;
+  object-fit: cover;
+  background: #000;
+}
+.p-film-kind {
+  font-family: var(--cc-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cc-grey);
+}
+.p-film-title {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.vp-doc .p-films a:hover .p-film-title {
+  color: var(--cc-accent);
+}
+@media (max-width: 600px) {
+  .vp-doc ul.p-films {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .vp-doc .p-films a {
+    padding: 12px 12px 16px;
+  }
+  .p-film-title {
+    font-size: 15px;
   }
 }
 

@@ -22,11 +22,12 @@ import {
 } from "../packages/kit/src/schema";
 import { type BlockInfo, listBlocks } from "../packages/render/src/blocks";
 import { listHandlers } from "../packages/sdk/src/index";
-import { readApiExports } from "./api-exports";
+import { readApiExports, readDeclaration } from "./api-exports";
 import { EFFECT_DEMOS, effectExample, TRANSITION_TEXT, transitionExample } from "./effect-example";
 import { syncGeneratedFiles } from "./generated-files";
 import { motionEntries, motionIndex, motionPage, motionReference, motionSidebar } from "./motion-catalog";
 import { readPropDocs, STYLED } from "./prop-docs";
+import { fence, fillSections, type SyncGenerator } from "./skill-sync";
 
 /**
  * Generated reference pages: the element table from the Zod schemas and the
@@ -134,6 +135,10 @@ const ELEMENT_DOCS: Record<string, readonly (readonly [element: string, summary:
       "Clip",
       "A stretch of a video or image asset, trimmed by seconds, transcript words or camera shots, with speed, fit and transform.",
     ],
+    [
+      "Camera",
+      "One view over the tracks written inside it: they move, zoom and turn together, by a constant or by keys on the video's clock. Tracks outside it stay fixed to the screen. A composition has one, or none.",
+    ],
     ["Gap", "Empty time between clips on a sequence track."],
     ["Transition", "A blend between the two clips it sits between on a sequence track."],
     ["Marker", "A named point on the timeline."],
@@ -238,6 +243,28 @@ function usedIn(name: string): string | null {
   return hits.length > 0 ? `**Used in:** ${hits.join(" · ")}` : null;
 }
 
+/** What an element's page says beyond its props: written here, after the props and `style`. */
+const ELEMENT_NOTES: Record<string, string> = {
+  Title: [
+    "### Coloured words: `<Mark>`",
+    "",
+    "Words inside a title drawn their own way, as part of its text:",
+    "",
+    "```tsx",
+    '<Title id="q" style={{ color: "$text" }}>into the <Mark color="$accent">stars</Mark></Title>',
+    "```",
+    "",
+    "| prop | type | description |",
+    "|---|---|---|",
+    '| `color` | string | The words\' colour: a colour, or a theme token such as `"$accent"`. |',
+    '| `weight` | number, `"normal"` or `"bold"` | Their weight. |',
+    "| `italic` | boolean | Set them in italics. |",
+    "| `background` | string | A colour behind them: a highlight. |",
+    "",
+    "A `<Mark>` has no id and no time of its own, and holds text only (marks do not nest). Typewriter and word-by-word animations count its words with the rest. Editing the title's text keeps a mark on its words while they are still there.",
+  ].join("\n"),
+};
+
 const ENGINE_NOTE =
   "The player draws it once the host calls `installFreeCodeLibraries()` ([Free code](/guide/free-code#three-js-and-motion)); the export draws it the same way, in headless Chrome ([Exporting](/guide/exporting)).";
 
@@ -341,6 +368,7 @@ function elementPage(name: string, summary: string): string {
           `| \`${field}\` | ${typeOf(s, 6)} | ${defaultOf(s.default)} | ${describe(`style:${name}`, field)} |`,
       ),
     );
+  if (ELEMENT_NOTES[name]) lines.push("", ELEMENT_NOTES[name]);
   lines.push(
     "",
     `${traits.length ? `${capital(traits.join(", "))}. ` : ""}${
@@ -806,9 +834,58 @@ write(
 );
 write(join(skillRefs, "rendering.md"), `${forAgent(renderingPage(), false)}\n`);
 write(join(skillRefs, "motion-catalog.md"), `${forAgent(motionReference(), false)}\n`);
-// Written by hand (scripts/skill-references/), and copied in: this folder holds only what this script writes.
-for (const name of readdirSync(join(root, "scripts", "skill-references")))
-  write(join(skillRefs, name), readFileSync(join(root, "scripts", "skill-references", name), "utf8"));
+// The skill's pages written by hand: both SKILL.md files, and the references in scripts/skill-references/, which are
+// copied in (that folder holds only what this script writes). Their synced sections are filled from the code first.
+const skillSyncProblems: string[] = [];
+const usedExamples = new Set<string>();
+const SKILL_EXAMPLES = join(root, "examples", "skill");
+const skillSync: Record<string, SyncGenerator> = {
+  /** `example <file>`: a file of examples/skill/, which is typechecked there and resolved by scripts/skill.test.ts. */
+  example([file, ...rest]) {
+    if (!file || rest.length) throw new Error("takes one file of examples/skill/");
+    const path = join(SKILL_EXAMPLES, file);
+    if (!existsSync(path)) throw new Error(`examples/skill/${file} does not exist`);
+    usedExamples.add(file);
+    return fence(file, readFileSync(path, "utf8"));
+  },
+  /** `api <specifier> <export>...`: each export's declaration and JSDoc as its source writes them. */
+  api([specifier, ...names]) {
+    if (!specifier || !names.length) throw new Error("takes an entry and one or more of its exports");
+    return fence("api.ts", names.map((name) => readDeclaration(specifier, name)).join("\n\n"));
+  },
+  /** `props <Element> <prop>...`: those props of an element, with type, default and JSDoc, as the reference has them. */
+  props([name, ...props]) {
+    const component = name ? { ...ELEMENTS, ...ENGINE_LAYERS }[name as keyof typeof ELEMENTS] : undefined;
+    if (!component || !props.length) throw new Error("takes an element and one or more of its props");
+    const schema = z.toJSONSchema(component.schema as z.ZodType, { unrepresentable: "any", io: "input" }) as JsonSchema;
+    const rows = props.map((prop) => {
+      const s = schema.properties?.[prop];
+      if (!s) throw new Error(`<${name}> has no prop ${prop}`);
+      return `| \`${prop}\` | ${typeOf(s, 6)} | ${defaultOf(s.default)} | ${describe(`element:${name}`, prop)} |`;
+    });
+    return ["| prop | type | default | what it is |", "|---|---|---|---|", ...rows].join("\n");
+  },
+};
+const skillPage = (path: string): string => {
+  const synced = fillSections(relative(root, path), readFileSync(path, "utf8"), skillSync);
+  skillSyncProblems.push(...synced.problems);
+  return synced.text;
+};
+for (const skillName of ["uberscene", "uberscene-setup"]) {
+  const path = join(root, "plugins", "uberscene", "skills", skillName, "SKILL.md");
+  write(path, skillPage(path));
+}
+for (const name of readdirSync(join(root, "scripts", "skill-references"))) {
+  const source = join(root, "scripts", "skill-references", name);
+  const text = skillPage(source);
+  write(source, text);
+  write(join(skillRefs, name), text);
+}
+for (const file of readdirSync(SKILL_EXAMPLES))
+  if (/\.tsx?$/.test(file) && !usedExamples.has(file))
+    skillSyncProblems.push(
+      `examples/skill/${file} is in no synced section; show it with <!-- sync: example ${file} -->`,
+    );
 // The CLI page's synopsis is the `--help` text's usage lines, so the two cannot differ; the rest of the page is
 // written by hand, and the check fails on a flag the help names that the page never mentions.
 const cliPage = join(out, "cli.md");
@@ -918,7 +995,7 @@ const problems: string[] = syncGeneratedFiles(root, generated, {
   ],
   obsolete: ["docs/reference/elements.md", "docs/reference/effects.md", "docs/reference/graphics"],
 });
-problems.push(...apiProblems);
+problems.push(...apiProblems, ...skillSyncProblems);
 problems.push(...[...new Set(undocumented)].map((u) => `no JSDoc: ${u}`));
 if (problems.length) {
   console.error(

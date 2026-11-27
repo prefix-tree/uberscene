@@ -1,11 +1,21 @@
-import { isShot } from "@uberscene/kit";
-import { type CurveKey, capabilitiesOf, curveAt } from "@uberscene/kit/schema";
+import {
+  blendFor,
+  type CurveBlend,
+  type CurveKey,
+  capabilitiesOf,
+  curveAt,
+  type Ticks,
+  ticksPerFrame,
+  tidySeconds,
+} from "@uberscene/kit/schema";
 
 import { parseTimeRef } from "../../manifest/timeref";
 import { lookupAsset } from "../../manifest/types";
 import type { Json } from "../../patches/types";
 import { isKeyList } from "../../resolve/expand";
 import type { Placement as ResolvedPlacement, ResolvedState } from "../../resolve/resolve";
+import { SHAPE_KEY_PATHS } from "../../resolve/shape-keys";
+import { endS, endT, lengthT, minus, plus, S, sinceStart, startS, startT, T } from "../../time";
 import { carry, carryRemoval, carrySplit, carryTrim } from "../carry";
 import {
   define,
@@ -52,9 +62,18 @@ function sourceLimit(state: ResolvedState, item: ResolvedPlacement): number {
  */
 /**
  * A time the trim works out (an edge minus a start) without the noise floating point leaves: 6.267 - 3 is
- * 3.2670000000000003, which is written into the file as it is. Twelve significant digits keep every frame exact.
+ * 3.2670000000000003, which would be written into the file as it is. Not twelve significant digits: from 10 s up they
+ * move a frame-exact time (10.0666… at 30 fps) past its frame's start, and the edit lands a frame late.
  */
-const tidy = (n: number): number => Number(n.toPrecision(12));
+const tidy = tidySeconds;
+
+/** A millisecond, in ticks: two clips whose edges are this close on a free track meet at a cut. */
+const CUT_SLACK = T(0.001);
+
+/** An anchored element's offset after its start moves to `at` (seconds), worked out in ticks. */
+function movedOffset(state: ResolvedState, item: ResolvedPlacement, at: number): number {
+  return S(plus(T(Number(rawProp(state, item.id, "offset") ?? 0)), minus(T(at), startT(item))));
+}
 
 define(carry(
   {
@@ -88,9 +107,9 @@ define(carry(
       }
       if (!caps.trimSource && typeof a.params.value === "number") {
         const v = a.params.value;
-        if (a.params.edge === "out" && v <= item.start)
+        if (a.params.edge === "out" && T(v) <= startT(item))
           errors.push({ code: "INVALID_TIME_RANGE", message: "the out edge must stay after the start" });
-        if (a.params.edge === "in" && (v >= item.end || v < 0))
+        if (a.params.edge === "in" && (T(v) >= endT(item) || v < 0))
           errors.push({ code: "INVALID_TIME_RANGE", message: "the in edge must stay before the end" });
         if (a.params.edge === "in" && layoutOf(state, item) === "sequence")
           errors.push({
@@ -114,7 +133,7 @@ define(carry(
           const props: Record<string, Json | undefined> = { in: a.params.value as Json };
           if (rawProp(state, item.id, "duration") !== undefined) props.out = item.source.out;
           if (rawProp(state, item.id, "duration") !== undefined) props.duration = undefined;
-          if (layout === "free") props.start = tidy(item.start + delta);
+          if (layout === "free") props.start = S(plus(startT(item), T(delta)));
           if (layout === "anchored") props.offset = tidy(Number(rawProp(state, item.id, "offset") ?? 0) + delta);
           setProps(log, item.id, props);
         }
@@ -122,15 +141,12 @@ define(carry(
       }
       const v = a.params.value as number;
       if (a.params.edge === "out") {
-        setProps(log, item.id, { duration: tidy(v - item.start) });
+        setProps(log, item.id, { duration: S(minus(T(v), startT(item))) });
       } else {
-        const delta = tidy(v - item.start);
-        const props: Record<string, Json | undefined> = {
-          duration: tidy(item.duration - delta),
-          ...shotIn(item, delta),
-        };
+        const delta = minus(T(v), startT(item));
+        const props: Record<string, Json | undefined> = { duration: S(minus(lengthT(item), delta)) };
         if (layout === "free") props.start = v;
-        if (layout === "anchored") props.offset = tidy(Number(rawProp(state, item.id, "offset") ?? 0) + delta);
+        if (layout === "anchored") props.offset = S(plus(T(Number(rawProp(state, item.id, "offset") ?? 0)), delta));
         setProps(log, item.id, props);
       }
     },
@@ -147,7 +163,7 @@ define({
     const base = validateTarget(state, a.params.id, ["in", "out", "duration"]);
     if (!base.valid) return base;
     const item = state.items.get(a.params.id)!;
-    if (a.params.at <= item.start || a.params.at >= item.end)
+    if (T(a.params.at) <= startT(item) || T(a.params.at) >= endT(item))
       return invalid({ code: "OUT_OF_BOUNDS", message: "playhead must be inside the element" });
     return ok;
   },
@@ -156,7 +172,7 @@ define({
     const state = ctx.before;
     const layout = layoutOf(state, item);
     if (item.source) {
-      const sourceAt = item.source.in + (a.params.at - item.start) * item.source.speed;
+      const sourceAt = item.source.in + sinceStart(item, a.params.at) * item.source.speed;
       if (a.params.edge === "out") setProps(log, item.id, { out: sourceAt, duration: undefined });
       else {
         const props: Record<string, Json | undefined> = { in: sourceAt };
@@ -165,20 +181,15 @@ define({
           props.duration = undefined;
         }
         if (layout === "free") props.start = a.params.at;
-        if (layout === "anchored")
-          props.offset = Number(rawProp(state, item.id, "offset") ?? 0) + (a.params.at - item.start);
+        if (layout === "anchored") props.offset = movedOffset(state, item, a.params.at);
         setProps(log, item.id, props);
       }
     } else if (a.params.edge === "out") {
-      setProps(log, item.id, { duration: a.params.at - item.start });
+      setProps(log, item.id, { duration: S(minus(T(a.params.at), startT(item))) });
     } else {
-      const props: Record<string, Json | undefined> = {
-        duration: item.end - a.params.at,
-        ...shotIn(item, a.params.at - item.start),
-      };
+      const props: Record<string, Json | undefined> = { duration: S(minus(endT(item), T(a.params.at))) };
       if (layout === "free") props.start = a.params.at;
-      if (layout === "anchored")
-        props.offset = Number(rawProp(state, item.id, "offset") ?? 0) + (a.params.at - item.start);
+      if (layout === "anchored") props.offset = movedOffset(state, item, a.params.at);
       setProps(log, item.id, props);
     }
   },
@@ -263,7 +274,7 @@ define({
     if (!prev?.source || !next?.source)
       return invalid({ code: "NOT_ADJACENT", message: "slide needs source clips on both sides" });
     const d = a.params.delta;
-    if (prev.duration + d <= 0 || next.duration - d <= 0)
+    if (plus(lengthT(prev), T(d)) <= 0 || minus(lengthT(next), T(d)) <= 0)
       return invalid({ code: "OUT_OF_BOUNDS", message: "slide would collapse a neighbour" });
     if (prev.source.out + d * prev.source.speed > sourceLimit(state, prev) + 0.05)
       return invalid({ code: "INSUFFICIENT_HANDLES", message: "previous clip has no handle" });
@@ -282,9 +293,9 @@ define({
     setProps(log, next!.id, {
       in: ns.in + d * ns.speed,
       duration: undefined,
-      ...(layoutOf(state, next!) === "free" ? { start: next!.start + d } : {}),
+      ...(layoutOf(state, next!) === "free" ? { start: S(plus(startT(next!), T(d))) } : {}),
     });
-    if (layoutOf(state, item) === "free") setProps(log, item.id, { start: item.start + d });
+    if (layoutOf(state, item) === "free") setProps(log, item.id, { start: S(plus(startT(item), T(d))) });
   },
   invert: (a, before) => {
     const item = before.items.get(a.params.id)!;
@@ -305,7 +316,7 @@ define({
       (layoutOf(state, item) === "sequence"
         ? neighbours(state, item).next?.source !== undefined
         : [...state.items.values()].some(
-            (p) => p.track === item.track && p.source !== undefined && Math.abs(item.end - p.start) <= 0.001,
+            (p) => p.track === item.track && p.source !== undefined && Math.abs(endT(item) - startT(p)) <= CUT_SLACK,
           )),
   }),
   validate: (a, state) => {
@@ -320,10 +331,10 @@ define({
     const adjacent =
       layoutOf(state, left) === "sequence"
         ? neighbours(state, left).next?.id === right.id
-        : Math.abs(left.end - right.start) <= 0.001;
+        : Math.abs(endT(left) - startT(right)) <= CUT_SLACK;
     if (!adjacent) return invalid({ code: "NOT_ADJACENT", message: "clips must meet at a cut" });
     const d = a.params.delta;
-    if (left.duration + d <= 0 || right.duration - d <= 0)
+    if (plus(lengthT(left), T(d)) <= 0 || minus(lengthT(right), T(d)) <= 0)
       return invalid({ code: "OUT_OF_BOUNDS", message: "roll would collapse a clip" });
     if (
       left.source.out + d * left.source.speed > sourceLimit(state, left) + 0.05 ||
@@ -341,7 +352,7 @@ define({
     setProps(log, right.id, {
       in: right.source!.in + d * right.source!.speed,
       duration: undefined,
-      ...(layoutOf(state, right) === "free" ? { start: right.start + d } : {}),
+      ...(layoutOf(state, right) === "free" ? { start: S(plus(startT(right), T(d))) } : {}),
     });
   },
   invert: (a, before) => [restoreTiming(before, a.params.leftId), restoreTiming(before, a.params.rightId)],
@@ -365,13 +376,13 @@ interface SplitPlan {
  * The value of a curve at `rel`, as the player draws it: the kit's `curveAt`, with numbers rounded to six places so a
  * key written at the cut reads back as written.
  */
-function curveValue(keys: readonly CurveKey[], rel: number): unknown {
-  const v = curveAt(keys, rel);
+function curveValue(keys: readonly CurveKey[], rel: number, blend: CurveBlend = "number"): unknown {
+  const v = curveAt(keys, rel, undefined, blend);
   if (typeof v === "number") return round(v);
   return Array.isArray(v) && v.every((x) => typeof x === "number") ? v.map(round) : v;
 }
 
-const round = (v: number): number => Math.round(v * 1e6) / 1e6;
+const round = tidySeconds;
 
 /** The dotted paths of every key list in an element's props: inside `transform`, `box`, an effect, or at the top. */
 function keyPathsOf(value: unknown, path = ""): string[] {
@@ -387,12 +398,16 @@ function keyPathsOf(value: unknown, path = ""): string[] {
  * the cut; the second starts with the keys at or after it, shifted, and a key at 0 with the value there when the cut
  * fell mid-curve, easing on as the cut segment did.
  */
-function splitKeys(keys: readonly KeyJson[], atRel: number): { left: KeyJson[]; right: KeyJson[] } {
+function splitKeys(
+  keys: readonly KeyJson[],
+  atRel: number,
+  blend: CurveBlend = "number",
+): { left: KeyJson[]; right: KeyJson[] } {
   const sorted = [...keys].sort((a, b) => a.at - b.at);
   const curve: CurveKey[] = sorted.map((k) => ({ at: k.at, value: k.value, easing: k.easing as never }));
   const before = sorted.filter((k) => k.at < atRel);
   const after = sorted.filter((k) => k.at >= atRel);
-  const value = curveValue(curve, atRel) as Json;
+  const value = curveValue(curve, atRel, blend) as Json;
   const left = [...before];
   if (after.length > 0) left.push({ at: round(atRel), value });
   const right = after.map((k) => ({ ...k, at: round(k.at - atRel) }));
@@ -423,7 +438,9 @@ function splitAt(node: NodeSpec, atRel: number, taken: Set<string>): SplitPlan {
   let rightAll: Record<string, unknown> = { ...props };
   const touched = new Set<string>();
   for (const path of keyPathsOf(props)) {
-    const { left, right: r } = splitKeys(readPath(props, path) as unknown as KeyJson[], atRel);
+    // A shape's colours and points cut at the colour or the shape drawn there (under a generator, at its base's path).
+    const shapeProperty = node.kind === "shape" ? SHAPE_KEY_PATHS[path.replace(/\.(base|keys)$/, "")] : undefined;
+    const { left, right: r } = splitKeys(readPath(props, path) as unknown as KeyJson[], atRel, blendFor(shapeProperty));
     const l = writePath(leftAll, path, canonicalKeys(left));
     leftAll = { ...leftAll, [l.prop]: l.value };
     const w = writePath(rightAll, path, canonicalKeys(r));
@@ -459,8 +476,9 @@ define(carry(
       if (!capabilitiesOf(item.kind).timed || item.kind === "transition" || item.kind === "gap")
         return invalid({ code: "INVALID_PARAMS", message: `<${item.kind}> cannot be split` });
       // At least a frame on each side: a sliver shorter than a frame draws nothing and only clutters the file.
-      const frame = state.composition.rate.den / state.composition.rate.num;
-      if (a.params.at < item.start + frame - 1e-9 || a.params.at > item.end - frame + 1e-9)
+      const frame = ticksPerFrame(state.composition.rate) as Ticks;
+      const at = T(a.params.at);
+      if (at < plus(startT(item), frame) || at > minus(endT(item), frame))
         return invalid({
           code: "OUT_OF_BOUNDS",
           message: "a split must leave at least one frame on each side of it",
@@ -472,7 +490,9 @@ define(carry(
       const item = state.items.get(a.params.id)!;
       const node = rawNode(state, item.id)!;
       const spec = nodeSpecOf(node);
-      const atRel = a.params.at - item.start;
+      // In ticks: 0.6 - 0.5 is 0.09999999999999998, and a key or a freeze at 0.1 would land on the wrong side.
+      const into = minus(T(a.params.at), startT(item));
+      const atRel = S(into);
       const layout = layoutOf(state, item);
       const taken = new Set<string>([...state.tree.byId.keys(), a.params.newId]);
       const split = splitAt(spec, atRel, taken);
@@ -488,11 +508,11 @@ define(carry(
         rightProps.out = item.source.out;
         delete rightProps.duration;
       } else {
-        leftProps.duration = tidy(atRel);
-        rightProps.duration = tidy(item.duration - atRel);
+        leftProps.duration = atRel;
+        rightProps.duration = S(minus(lengthT(item), into));
       }
       if (layout === "free") rightProps.start = tidy(a.params.at);
-      if (layout === "anchored") rightProps.offset = tidy(Number(rawProp(state, item.id, "offset") ?? 0) + atRel);
+      if (layout === "anchored") rightProps.offset = movedOffset(state, item, a.params.at);
       setProps(log, item.id, leftProps);
       const cleaned = Object.fromEntries(Object.entries(rightProps).filter(([, v]) => v !== undefined));
       insertNode(log, node.parent as string, item.id, { ...spec, id: a.params.newId, props: cleaned, children: right });
@@ -528,10 +548,9 @@ define({
   },
   invert: (a, before) => {
     const left = before.items.get(a.params.id)!;
-    const right = before.items.get(a.params.rightId)!;
     return {
       type: "clip/split",
-      params: { id: a.params.id, at: left.end === right.start ? left.end : left.end, newId: a.params.rightId },
+      params: { id: a.params.id, at: endS(left), newId: a.params.rightId },
     };
   },
   fold: () => [],
@@ -556,13 +575,16 @@ define(carry(
       const item = state.items.get(a.params.id)!;
       log.append({ op: "remove", id: item.id });
       if (layoutOf(state, item) !== "free") return;
-      for (const later of laterOnTrack(state, item)) setProps(log, later.id, { start: later.start - item.duration });
+      for (const later of laterOnTrack(state, item))
+        setProps(log, later.id, { start: S(minus(startT(later), lengthT(item))) });
     },
     invert: (a, before) => {
       const item = before.items.get(a.params.id)!;
       const node = rawNode(before, item.id)!;
       const affected =
-        layoutOf(before, item) === "free" ? laterOnTrack(before, item).map((l) => ({ id: l.id, start: l.start })) : [];
+        layoutOf(before, item) === "free"
+          ? laterOnTrack(before, item).map((l) => ({ id: l.id, start: startS(l) }))
+          : [];
       return {
         type: "clip/rippleRestore",
         params: {
@@ -601,7 +623,7 @@ function laterOnTrack(state: ResolvedState, item: ResolvedPlacement): ResolvedPl
       (i): i is ResolvedPlacement =>
         Boolean(i) &&
         i!.id !== item.id &&
-        i!.start >= item.end - 1e-6 &&
+        startT(i!) >= minus(endT(item), T(1e-6)) &&
         typeof rawProp(state, i!.id, "start") === "number",
     );
 }
@@ -645,13 +667,13 @@ define({
       0,
       ...track.items
         .map((id) => state.items.get(id))
-        .filter((i) => i && i.id !== item.id && i.end <= item.start + 1e-6 && i.kind !== "transition")
-        .map((i) => i!.end),
-    );
-    const shift = item.start - prevEnd;
+        .filter((i) => i && i.id !== item.id && endT(i) <= plus(startT(item), T(1e-6)) && i.kind !== "transition")
+        .map((i) => endT(i!)),
+    ) as Ticks;
+    const shift = minus(startT(item), prevEnd);
     if (shift <= 0) return;
-    setProps(log, item.id, { start: prevEnd });
-    for (const later of laterOnTrack(state, item)) setProps(log, later.id, { start: later.start - shift });
+    setProps(log, item.id, { start: S(prevEnd) });
+    for (const later of laterOnTrack(state, item)) setProps(log, later.id, { start: S(minus(startT(later), shift)) });
   },
   invert: (a, before) => {
     const item = before.items.get(a.params.id)!;
@@ -668,19 +690,10 @@ define({
         },
       };
     }
-    const positions = [item, ...laterOnTrack(before, item)].map((i) => ({ id: i.id, start: i.start }));
+    const positions = [item, ...laterOnTrack(before, item)].map((i) => ({ id: i.id, start: startS(i) }));
     return { type: "track/restorePositions", params: { trackId: item.track as string, positions } };
   },
   fold: () => [],
 });
 
 export { restoreTiming };
-
-/**
- * A 3D shot keeps its own time when its head is trimmed: `in` moves by what `start` moves, so every pose stays at the
- * same moment of the edit, as a clip's picture does. Nothing for anything else.
- */
-function shotIn(item: ResolvedPlacement, delta: number): { in?: number } {
-  if (!isShot(item.props.shot)) return {};
-  return { in: tidy((typeof item.props.in === "number" ? item.props.in : 0) + delta) };
-}

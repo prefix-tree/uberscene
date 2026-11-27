@@ -1,0 +1,208 @@
+# recipes/brand-spot.tsx
+composition composition 24000/1001 frames 288
+blobs layer 0-288
+demo clip 96-240 source 47-192 x1
+window layer 96-240
+kicker title 8-92
+name title 12-92
+swoosh layer 27-92
+tagline title 34-92
+step-1 layer 111-168
+step-2 layer 168-235
+steps layer 111-235
+live layer 173-235
+end-name title 240-288
+end-cta layer 247-288
+end-badge layer 255-288
+party layer 247-288
+backdrop track 0-288
+screen track 0-288
+open track 0-288
+notes track 0-288
+close track 0-288
+composition composition 0-288
+
+# recipes/highlights.tsx
+composition composition 24000/1001 frames 600
+mc multicam 0-600
+a angle 0-600
+b angle 0-600
+cut-1 cut 0-600
+cut-2 cut 0-600
+cut-3 cut 0-600
+dense clip 0-59 source 124-184 x1
+lower title 12-108
+mc.cut-1 clip 0-240 source 0-240 x1
+mc.cut-2 clip 240-600 source 239-600 x1
+mc.cut-3 clip 600-600 source 599-600 x1
+cams track 0-600
+pull track 0-600
+overlays track 0-600
+composition composition 0-600
+
+# recipes/product-demo.tsx
+composition composition 24000/1001 frames 480
+rec clip 0-480 source 0-480 x1
+rec.transform.crop.x.0 keyframe 63-63
+rec.transform.crop.x.1 keyframe 72-72
+rec.transform.crop.x.2 keyframe 132-132
+rec.transform.crop.x.3 keyframe 144-144
+rec.transform.crop.y.0 keyframe 63-63
+rec.transform.crop.y.1 keyframe 72-72
+rec.transform.crop.y.2 keyframe 132-132
+rec.transform.crop.y.3 keyframe 144-144
+rec.transform.crop.width.0 keyframe 63-63
+rec.transform.crop.width.1 keyframe 72-72
+rec.transform.crop.width.2 keyframe 132-132
+rec.transform.crop.width.3 keyframe 144-144
+rec.transform.crop.height.0 keyframe 63-63
+rec.transform.crop.height.1 keyframe 72-72
+rec.transform.crop.height.2 keyframe 132-132
+rec.transform.crop.height.3 keyframe 144-144
+ring-menu shape 72-108
+ring-roast shape 216-252
+ring-order shape 360-396
+step-1 title 10-68
+vo audio 12-241 source 11-241 x1
+bed audio 0-480 source 0-480 x1
+captions captions 0-480
+captions-1 caption 12-36
+captions-2 caption 75-99
+captions-3 caption 137-187
+captions-4 caption 225-241
+click-menu marker 72-72
+click-roast marker 216-216
+click-order marker 360-360
+screen track 0-480
+callouts track 0-480
+voice track 0-480
+music track 0-480
+composition composition 0-480
+
+# recipes/slideshow.tsx
+composition composition 24000/1001 frames 341
+p1 clip 0-96 source 0-96 x1
+p1.transform.scale.x.0 keyframe 0-0
+p1.transform.scale.x.1 keyframe 96-96
+p1.transform.scale.y.0 keyframe 0-0
+p1.transform.scale.y.1 keyframe 96-96
+x1 transition 82-96
+p2 clip 82-178 source 0-96 x1
+p2.transform.scale.x.0 keyframe 82-82
+p2.transform.scale.x.1 keyframe 178-178
+p2.transform.scale.y.0 keyframe 82-82
+p2.transform.scale.y.1 keyframe 178-178
+x2 transition 164-178
+p3 clip 164-259 source 0-96 x1
+p3.transform.scale.x.0 keyframe 164-164
+p3.transform.scale.x.1 keyframe 259-259
+p3.transform.scale.y.0 keyframe 164-164
+p3.transform.scale.y.1 keyframe 259-259
+x3 transition 245-259
+p4 clip 245-341 source 0-96 x1
+p4.transform.scale.x.0 keyframe 245-245
+p4.transform.scale.x.1 keyframe 341-341
+p4.transform.scale.y.0 keyframe 245-245
+p4.transform.scale.y.1 keyframe 341-341
+title title 12-84
+bed audio 0-341 source 0-341 x1
+photos track 0-341
+overlays track 0-341
+music track 0-341
+composition composition 0-341
+
+# recipes/stats.tsx
+composition composition 24000/1001 frames 288
+bg clip 0-144 source 143-288 x1
+bg2 clip 144-288 source 287-432 x1
+heading title 8-271
+stat-cups layer 20-140
+stat-on-time layer 154-274
+main track 0-288
+numbers track 0-288
+composition composition 0-288
+
+# recipes/talking-head.tsx
+composition composition 24000/1001 frames 553
+welcome clip 0-42 source 9-51 x1
+thanks clip 42-74 source 67-101 x1
+question clip 74-133 source 117-176 x1
+answer clip 133-260 source 405-533 x1
+why clip 260-284 source 549-574 x1
+because clip 284-377 source 590-684 x1
+taste-q clip 377-401 source 700-725 x1
+taste-a clip 401-512 source 740-852 x1
+close clip 512-553 source 867-910 x1
+title title 8-80
+bed audio 0-553 source 0-553 x1
+captions captions 0-553
+captions-1 caption 0-42
+captions-2 caption 42-74
+captions-3 caption 74-133
+captions-4 caption 133-191
+captions-5 caption 193-260
+captions-6 caption 260-284
+captions-7 caption 284-343
+captions-8 caption 345-377
+captions-9 caption 377-401
+captions-10 caption 401-451
+captions-11 caption 453-512
+captions-12 caption 512-553
+main track 0-553
+overlays track 0-553
+music track 0-553
+composition composition 0-553
+
+# recipes/variants.tsx
+composition composition 24000/1001 frames 360
+open clip 0-144 source 0-144 x1
+detail clip 144-288 source 287-432 x1
+card clip 288-360 source 0-72 x1
+headline title 10-106
+cta title 295-355
+captions captions 0-360
+main track 0-360
+copy track 0-360
+composition composition 0-360
+
+# recipes/vertical-podcast.tsx
+composition composition 24000/1001 frames 560
+s0 clip 0-42 source 9-51 x1
+s1 clip 42-74 source 67-101 x1
+s2 clip 74-133 source 117-176 x1
+s5 clip 133-260 source 405-533 x1
+s6 clip 260-284 source 549-574 x1
+s7 clip 284-377 source 590-684 x1
+s8 clip 377-401 source 700-725 x1
+s9 clip 401-512 source 740-852 x1
+s10 clip 512-553 source 867-910 x1
+tag-s0 title 5-48
+tag-s1 title 47-90
+tag-s2 title 79-122
+tag-s5 title 138-181
+tag-s6 title 265-308
+tag-s7 title 289-332
+tag-s8 title 382-425
+tag-s9 title 406-449
+tag-s10 title 516-560
+captions captions 0-560
+captions-1 caption 0-42
+captions-2 caption 42-74
+captions-3 caption 74-116
+captions-4 caption 118-133
+captions-5 caption 133-183
+captions-6 caption 185-226
+captions-7 caption 228-260
+captions-8 caption 260-284
+captions-9 caption 284-317
+captions-10 caption 319-352
+captions-11 caption 353-377
+captions-12 caption 377-401
+captions-13 caption 401-434
+captions-14 caption 436-451
+captions-15 caption 453-477
+captions-16 caption 479-512
+captions-17 caption 512-553
+main track 0-560
+tags track 0-560
+composition composition 0-560

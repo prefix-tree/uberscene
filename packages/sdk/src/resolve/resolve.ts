@@ -1,8 +1,10 @@
 import type { z } from "zod";
 
+import { isScene } from "@uberscene/kit";
 import {
   applyTheme,
   capabilitiesOf,
+  DERIVED_KINDS,
   type DeclaredFont,
   defaultTransitionParams,
   ENGINE_SCHEMAS,
@@ -12,6 +14,8 @@ import {
   isBuiltInTransition,
   MAIN_TRACK_KINDS,
   MAX_SECONDS,
+  maxTicks,
+  minTicks,
   parseRate,
   type Rate,
   RESPELLED_VALUES,
@@ -25,16 +29,23 @@ import {
   sampleRateProblem,
   shaderFor,
   type ThemeOrigin,
+  type Ticks,
+  Time,
+  TimeRange,
   TRANSITION_TYPES,
   type TrackLayout,
   type TrackRole,
   type TransitionType,
+  themedRuns,
+  ticksAsSeconds,
   VIDEO_EFFECT_TYPES,
+  ZERO_TICKS,
 } from "@uberscene/kit/schema";
 
 import { parseTimeRef, resolveTimeRef } from "../manifest/timeref";
 import { type AssetEntry, type AssetManifest, assetIdOf, lookupAsset } from "../manifest/types";
 import type { PatchLog } from "../patches/types";
+import { minus, plus, T } from "../time";
 import {
   type AssetPlay,
   assetPlay,
@@ -48,8 +59,11 @@ import {
 } from "./captions";
 import type { ResolveError } from "./errors";
 import { derivedOrigin, expandKeys } from "./expand";
+import { FOLLOW_KINDS, followOf } from "./follow";
 import { overlay } from "./overlay";
-import { resolveShotProps } from "./shot";
+import { type PushSpec, pushKeys } from "./push";
+import { placeScene, type SceneUse, sceneAssetId, withSceneAssets } from "./scene3d";
+import { shapeKeyProblem } from "./shape-keys";
 import { freezeHoldsOf, heldWithin, holdTotal, rampAdvance, rampInverse, reachedHolds, speedKeysOf } from "./speed";
 import type { CollectedNode, CollectedTree, Editable, LayerInterior } from "./tree";
 
@@ -59,10 +73,15 @@ export interface Placement {
   readonly track: string | null;
   readonly parent: string | null;
   readonly children: readonly string[];
+  /** Where it plays on the timeline, as exact `Time`s (decisions 0044, 0045). Its seconds below are derived from it. */
+  readonly range: TimeRange;
+  /** @deprecated Seconds, derived from `range`: read `range.start`. Removed once every reader moves to `Time`. */
   readonly start: number;
+  /** @deprecated Seconds, derived from `range`: read `range.end`. */
   readonly end: number;
+  /** @deprecated Seconds, derived from `range`: read `range.duration`. */
   readonly duration: number;
-  readonly source?: { readonly in: number; readonly out: number; readonly speed: number; readonly asset: string };
+  readonly source?: PlacementSource;
   /** Schema-parsed props with defaults applied, after patches. Raw props when the schema rejected them. */
   readonly props: Readonly<Record<string, unknown>>;
   readonly editable: Editable;
@@ -78,6 +97,49 @@ export interface Placement {
   readonly themed?: Readonly<Record<string, ThemeOrigin>>;
 }
 
+/** The part of an asset a clip or audio plays. `in` and `out` are seconds of the source, `range` the same in ticks. */
+export interface PlacementSource {
+  readonly in: number;
+  readonly out: number;
+  readonly speed: number;
+  readonly asset: string;
+  /** `[in, out)` of the source, as exact `Time`s. */
+  readonly range: TimeRange;
+}
+
+/** A count of ticks held to what a `Time` can be. Past it the resolver has reported INVALID_TIME_RANGE already. */
+const fit = (t: number): number => Math.max(-Number.MAX_SAFE_INTEGER, Math.min(Number.MAX_SAFE_INTEGER, t));
+
+/**
+ * The resolver's ticks as a `TimeRange`. A length below zero (a source played backwards past its in, a broken file)
+ * is held at zero, and a time past 2^53 ticks at the limit: the resolver reports both, and must still place the rest.
+ */
+function rangeOf(start: Ticks, duration: Ticks): TimeRange {
+  const from = fit(start);
+  return TimeRange.of(Time.ofTicks(from), Time.ofTicks(Math.max(0, fit(from + Math.max(0, duration)) - from)));
+}
+
+/** A `Time` as the resolver's working ticks. */
+const tk = (t: Time): Ticks => t.ticks as Ticks;
+
+/** A placement's source with its range, from the seconds the resolver works the source out in. */
+function withRange(source: PendingSource | undefined): PlacementSource | undefined {
+  if (!source) return undefined;
+  const start = T(source.in);
+  return { ...source, range: rangeOf(start, minus(T(source.out), start)) };
+}
+
+/** A placement's `range` and the seconds derived from it. */
+function timeFields(start: Ticks, duration: Ticks): Pick<Placement, "range" | "start" | "end" | "duration"> {
+  const range = rangeOf(start, duration);
+  return {
+    range,
+    start: range.start.toSeconds(),
+    end: range.end.toSeconds(),
+    duration: range.duration.toSeconds(),
+  };
+}
+
 const MAIN_KINDS: ReadonlySet<string> = new Set(MAIN_TRACK_KINDS);
 
 export interface ResolvedTrack {
@@ -90,6 +152,8 @@ export interface ResolvedTrack {
   readonly solo: boolean;
   readonly role?: TrackRole;
   readonly group?: string;
+  /** The `<Camera>` the track is written inside, which moves everything on it. Absent for a track outside one. */
+  readonly camera?: string;
   /** The main track of a file that writes its clips straight in the composition: no `<Track>` stands for it. */
   readonly implicit?: true;
   readonly items: readonly string[];
@@ -104,7 +168,10 @@ export interface ResolvedState {
     readonly rate: Rate;
     readonly width: number;
     readonly height: number;
+    /** @deprecated Seconds, derived from `length`. */
     readonly duration: number;
+    /** How long the video is. */
+    readonly length: Time;
   };
   readonly tracks: readonly ResolvedTrack[];
   readonly items: ReadonlyMap<string, Placement>;
@@ -118,10 +185,15 @@ export interface ResolvedState {
   readonly fonts: readonly DeclaredFont[];
   /** The effects and transitions the file declares (`effect()`, `transition()`). */
   readonly shaders: readonly ShaderDefinition[];
+  /** The 3D scenes clips play, by the asset id of their frames (a placement's `source.asset`). Absent when none. */
+  readonly scenes?: ReadonlyMap<string, SceneUse>;
 }
 
 const DEFAULT_OVERLAY_DURATION = 5;
 const IMAGE_DEFAULT_DURATION = 5;
+
+/** A source while the resolver works it out: seconds of the asset, which speed ramps and freezes are computed in. */
+type PendingSource = Omit<PlacementSource, "range">;
 
 interface Pending {
   readonly node: CollectedNode;
@@ -129,13 +201,13 @@ interface Pending {
   readonly parent: string | null;
   props: Record<string, unknown>;
   errors: ResolveError[];
-  source?: Placement["source"];
+  source?: PendingSource;
   /** Intrinsic length, when it does not depend on other elements. */
-  duration?: number;
-  durationDep?: { kind: "match"; id: string } | { kind: "until"; id: string } | { kind: "fill" };
-  start?: number;
+  duration?: Ticks;
+  durationDep?: { kind: "match"; id: string } | { kind: "until"; id: string; at?: string } | { kind: "fill" };
+  start?: Ticks;
   /** `at` is a word, shot or silence of the anchor's source: the start is where the anchor plays it, plus `offset`. */
-  anchorDep?: { id: string | "start"; offset: number; edge?: "end"; at?: string };
+  anchorDep?: { id: string | "start"; offset: Ticks; edge?: "end"; at?: string };
   between?: readonly [string, string];
 }
 
@@ -183,6 +255,13 @@ function compute(
   const root = tree.root;
   const theme = resolveTheme(root.props.theme);
   const compParsed = parseProps(root, errors, theme);
+  // A clip that plays a 3D scene reads its length from an asset made for it (`withSceneAssets`).
+  manifest = withSceneAssets(manifest, tree, {
+    fps: rateValue(rateOf(compParsed.fps, root.id, [])),
+    width: Number(compParsed.width ?? 1920),
+    height: Number(compParsed.height ?? 1080),
+  });
+  const scenes = new Map<string, SceneUse>();
   const markers = new Map<string, number>();
   const pending = new Map<string, Pending>();
   const tracks: ResolvedTrack[] = [];
@@ -195,21 +274,21 @@ function compute(
     node: CollectedNode,
     track: string | null,
     parent: string | null,
-    start: number,
-    length: number,
+    start: Ticks,
+    length: Ticks,
     props: Record<string, unknown>,
     errors: readonly ResolveError[],
-    source: Placement["source"],
+    pendingSource: PendingSource | undefined,
     between: Placement["between"],
   ): Placement => {
+    const source = withRange(pendingSource);
     const prev = previous?.get(node.id);
     if (
       prev &&
       prev.kind === node.kind &&
       prev.track === track &&
       prev.parent === parent &&
-      prev.start === start &&
-      prev.duration === length &&
+      prev.range.equals(rangeOf(start, length)) &&
       prev.props === props &&
       prev.editable === node.editable &&
       prev.lockedProps === node.lockedProps &&
@@ -227,9 +306,7 @@ function compute(
       track,
       parent,
       children: node.children.map((c) => c.id),
-      start,
-      end: start + length,
-      duration: length,
+      ...timeFields(start, length),
       props,
       editable: node.editable,
       lockedProps: node.lockedProps,
@@ -253,24 +330,49 @@ function compute(
 
   const markersKey = markersSignature(markers);
   let order = 0;
+  // A camera's tracks are numbered in place, so the file's order is the drawing order across the camera's edge.
+  const addTrack = (child: CollectedNode, camera: string | undefined): void => {
+    const p = parseProps(child, errors, theme);
+    tracks.push({
+      id: child.id,
+      layout: (p.layout as TrackLayout) ?? "sequence",
+      order: order++,
+      locked: Boolean(p.locked),
+      hidden: Boolean(p.hidden),
+      muted: Boolean(p.muted),
+      solo: Boolean(p.solo),
+      ...(typeof p.role === "string" ? { role: p.role as TrackRole } : {}),
+      ...(typeof p.group === "string" ? { group: p.group } : {}),
+      ...(camera !== undefined ? { camera } : {}),
+      ...(child.implicit ? { implicit: true as const } : {}),
+      items: child.children.map((c) => c.id),
+    });
+    for (const item of child.children) intrinsic(item, child.id, pending, manifest, markers, markersKey, theme, errors);
+  };
+  let camera: CollectedNode | undefined;
   for (const child of root.children) {
     if (child.kind === "track") {
-      const p = parseProps(child, errors, theme);
-      tracks.push({
-        id: child.id,
-        layout: (p.layout as TrackLayout) ?? "sequence",
-        order: order++,
-        locked: Boolean(p.locked),
-        hidden: Boolean(p.hidden),
-        muted: Boolean(p.muted),
-        solo: Boolean(p.solo),
-        ...(typeof p.role === "string" ? { role: p.role as TrackRole } : {}),
-        ...(typeof p.group === "string" ? { group: p.group } : {}),
-        ...(child.implicit ? { implicit: true as const } : {}),
-        items: child.children.map((c) => c.id),
-      });
-      for (const item of child.children)
-        intrinsic(item, child.id, pending, manifest, markers, markersKey, theme, errors);
+      addTrack(child, undefined);
+    } else if (child.kind === "camera") {
+      if (camera) {
+        errors.push({
+          code: "INVALID_CHILD",
+          id: child.id,
+          message: `a composition has one <Camera>: move these tracks into <Camera id="${camera.id}">, or out of a camera`,
+        });
+      } else camera = child;
+      for (const inner of child.children) {
+        if (inner.kind === "track") addTrack(inner, camera.id);
+        else if (!DERIVED_KINDS.has(inner.kind))
+          errors.push({
+            code: "INVALID_CHILD",
+            id: inner.id,
+            message:
+              inner.kind === "camera"
+                ? "a <Camera> cannot hold another <Camera>"
+                : `<Camera> holds <Track>s only: put <${inner.kind}> in a <Track>, or outside the camera`,
+          });
+      }
     } else if (child.kind === "captions") {
       intrinsic(child, null, pending, manifest, markers, markersKey, theme, errors);
     } else if (child.kind === "multicam") {
@@ -308,17 +410,17 @@ function compute(
   iterateDependencies(pending, manifest);
   placeCaptions(root, pending, tracks, manifest, markers);
 
-  let compositionEnd = 0;
+  let compositionEnd = ZERO_TICKS;
   for (const p of pending.values()) {
     // Something with no length shows and sounds nothing, so it does not make the video longer.
     if (p.start !== undefined && p.duration !== undefined && p.duration > 0 && p.node.kind !== "transition")
-      compositionEnd = Math.max(compositionEnd, p.start + p.duration);
+      compositionEnd = maxTicks(compositionEnd, plus(p.start, p.duration));
   }
   for (const p of pending.values()) {
     if (p.durationDep?.kind === "fill" && p.start !== undefined) {
-      p.duration = Math.max(0, compositionEnd - p.start);
+      p.duration = maxTicks(ZERO_TICKS, minus(compositionEnd, p.start));
       if (p.source) {
-        let out = p.source.in + sourceSpan(p.node, p.duration, p.source.speed);
+        let out = p.source.in + sourceSpan(p.node, ticksAsSeconds(p.duration), p.source.speed);
         // A file cannot fill more time than it holds: it plays to its end and stops there.
         const asset = lookupAsset(manifest, p.source.asset);
         // (A multicam's last generated clip is left as it is: its angles are cut to the multicam's own length.)
@@ -332,9 +434,9 @@ function compute(
             code: "TRIM_PAST_SOURCE",
             id: p.node.id,
             prop: "duration",
-            message: `${asset.id} is ${asset.duration}s long and cannot fill ${round3(p.duration)}s: it ends ${round3(p.duration - length)}s before the video does`,
+            message: `${asset.id} is ${round3(asset.duration)}s long and cannot fill ${round3(ticksAsSeconds(p.duration))}s: it ends ${round3(ticksAsSeconds(p.duration) - length)}s before the video does`,
           });
-          p.duration = length;
+          p.duration = T(length);
           out = asset.duration;
         }
         p.source = { ...p.source, out };
@@ -343,7 +445,7 @@ function compute(
     }
   }
   // An element that matches a filling one could not take its length until now.
-  settleMatches(pending);
+  settleMatches(pending, manifest);
   for (const p of pending.values()) {
     if (p.start === undefined || p.duration === undefined) {
       p.errors.push({
@@ -351,27 +453,45 @@ function compute(
         id: p.node.id,
         message: `could not place <${p.node.kind} id="${p.node.id}">`,
       });
-      p.start ??= 0;
-      p.duration ??= 0;
+      p.start ??= ZERO_TICKS;
+      p.duration ??= ZERO_TICKS;
     }
   }
 
   const items = new Map<string, Placement>();
   // The composition, its tracks and its markers are addressable too: the inspector edits them by id.
   const structural: Placement[] = [];
+  const structuralTrack = (child: CollectedNode, parent: string): void => {
+    const own: ResolveError[] = [];
+    const props = parseProps(child, own, theme);
+    structural.push({
+      id: child.id,
+      kind: "track",
+      track: child.id,
+      parent,
+      children: child.children.map((c) => c.id),
+      ...timeFields(ZERO_TICKS, ZERO_TICKS),
+      props,
+      editable: child.editable,
+      lockedProps: child.lockedProps,
+      boundProps: child.boundProps,
+      errors: own,
+      ...themedField(props),
+    });
+  };
   for (const child of root.children) {
     if (child.kind === "track") {
+      structuralTrack(child, root.id);
+    } else if (child.kind === "camera") {
       const own: ResolveError[] = [];
       const props = parseProps(child, own, theme);
       structural.push({
         id: child.id,
-        kind: "track",
-        track: child.id,
+        kind: "camera",
+        track: null,
         parent: root.id,
         children: child.children.map((c) => c.id),
-        start: 0,
-        end: 0,
-        duration: 0,
+        ...timeFields(ZERO_TICKS, ZERO_TICKS),
         props,
         editable: child.editable,
         lockedProps: child.lockedProps,
@@ -379,19 +499,43 @@ function compute(
         errors: own,
         ...themedField(props),
       });
+      for (const inner of child.children) {
+        if (inner.kind === "track") structuralTrack(inner, child.id);
+        else if (inner.kind === "keyframe") {
+          // The camera's keys are on the video's clock: `at` is seconds from its start.
+          const keyErrors: ResolveError[] = [];
+          const keyProps = parseProps(inner, keyErrors, theme);
+          const at = T(lengthOr(keyProps.at, 0));
+          structural.push(place(inner, null, child.id, at, ZERO_TICKS, keyProps, keyErrors, undefined, undefined));
+        } else if (inner.kind === "generator") {
+          // A generator on a camera value runs for the whole video; its end is set with the camera's.
+          const own: ResolveError[] = [];
+          structural.push(
+            place(
+              inner,
+              null,
+              child.id,
+              ZERO_TICKS,
+              ZERO_TICKS,
+              parseProps(inner, own, theme),
+              own,
+              undefined,
+              undefined,
+            ),
+          );
+        }
+      }
     } else if (child.kind === "marker") {
       const own: ResolveError[] = [];
       const props = parseProps(child, own, theme);
-      const at = markers.get(child.id) ?? 0;
+      const at = T(markers.get(child.id) ?? 0);
       structural.push({
         id: child.id,
         kind: "marker",
         track: null,
         parent: root.id,
         children: [],
-        start: at,
-        end: at,
-        duration: 0,
+        ...timeFields(at, ZERO_TICKS),
         props,
         editable: child.editable,
         lockedProps: child.lockedProps,
@@ -401,21 +545,92 @@ function compute(
       });
     }
   }
-  let duration = 0;
+  let duration = ZERO_TICKS;
   for (const p of pending.values()) {
-    const start = p.start as number;
-    const length = p.duration as number;
-    const props = p.node.kind === "layer" ? resolveShotProps(p.props, p.node.id, start, markers, p.errors) : p.props;
-    const placement = place(p.node, p.track, p.parent, start, length, props, p.errors, p.source, p.between);
+    const start = p.start as Ticks;
+    const length = p.duration as Ticks;
+    if (p.source && isScene(p.props.src)) {
+      const played = placeScene(
+        { id: p.node.id, start: ticksAsSeconds(start), props: p.props, source: p.source },
+        manifest,
+        markers,
+        p.errors,
+      );
+      if (played) {
+        p.source = { ...p.source, asset: played.asset };
+        scenes.set(played.asset, played.use);
+      }
+    }
+    const placement = place(p.node, p.track, p.parent, start, length, p.props, p.errors, p.source, p.between);
     items.set(p.node.id, placement);
     if (p.errors.length > 0) errors.push(...p.errors);
-    if (p.node.kind !== "transition" && placement.end > placement.start) duration = Math.max(duration, placement.end);
+    if (p.node.kind !== "transition" && !placement.range.isEmpty())
+      duration = maxTicks(duration, tk(placement.range.end));
     duration = placeChildren(p.node, placement, items, errors, place, duration, theme);
   }
 
   for (const s of structural) {
-    items.set(s.id, reuse(s.kind === "track" ? { ...s, end: duration, duration } : s));
+    items.set(
+      s.id,
+      reuse(s.kind === "track" || s.kind === "camera" ? { ...s, ...timeFields(tk(s.range.start), duration) } : s),
+    );
     errors.push(...s.errors);
+  }
+  // A camera's push becomes ordinary camera keys, made once everything it names has a start: the player, the export
+  // and the tools then read a pushed camera as they read one keyed by hand.
+  const pushed = camera ? items.get(camera.id) : undefined;
+  const push = pushed?.props.push as PushSpec | undefined;
+  if (camera && pushed && push) {
+    const keyed = (["x", "y", "zoom"] as const).filter((f) =>
+      pushed.children.some((c) => {
+        const item = items.get(c);
+        return item?.kind === "keyframe" && item.props.property === `camera.${f}`;
+      }),
+    );
+    if (keyed.length > 0) {
+      errors.push({
+        code: "SCHEMA",
+        id: camera.id,
+        prop: "push",
+        message: `push sets the camera's x, y and zoom, and ${keyed.join(" and ")} ${keyed.length > 1 ? "have" : "has"} keys of ${keyed.length > 1 ? "their" : "its"} own: write ${keyed.length > 1 ? "them" : "it"} as a number (where the view starts), or turn the push into keys with camera/bakePush`,
+      });
+    } else {
+      const made = pushKeys(
+        pushed,
+        push,
+        items,
+        tracks,
+        { width: Number(compParsed.width ?? 1920), height: Number(compParsed.height ?? 1080) },
+        manifest,
+      );
+      for (const problem of made.problems)
+        errors.push({ code: "UNKNOWN_REF", id: problem.id, prop: "push", message: problem.message });
+      const count = { x: 0, y: 0, zoom: 0 };
+      const ids: string[] = [];
+      for (const key of made.keys) {
+        const id = `${camera.id}.push.${key.field}.${count[key.field]++}`;
+        const props = {
+          id,
+          property: `camera.${key.field}`,
+          at: key.at,
+          value: key.value,
+          easing: key.easing ?? "linear",
+        };
+        const node: CollectedNode = {
+          id,
+          kind: "keyframe",
+          props,
+          children: [],
+          parent: camera.id,
+          editable: camera.editable,
+          lockedProps: [],
+          boundProps: {},
+        };
+        items.set(id, place(node, null, camera.id, T(key.at), ZERO_TICKS, props, [], undefined, undefined));
+        ids.push(id);
+      }
+      if (ids.length > 0) items.set(camera.id, reuse({ ...pushed, children: [...pushed.children, ...ids] }));
+    }
   }
   items.set(
     root.id,
@@ -425,9 +640,7 @@ function compute(
       track: null,
       parent: null,
       children: root.children.map((c) => c.id),
-      start: 0,
-      end: duration,
-      duration,
+      ...timeFields(ZERO_TICKS, duration),
       props: compParsed,
       editable: root.editable,
       lockedProps: root.lockedProps,
@@ -438,12 +651,14 @@ function compute(
   );
   errors.push(...textureErrors(items, manifest));
   errors.push(...keyframeErrors(items));
+  errors.push(...generatorErrors(items));
+  errors.push(...followErrors(items, tracks));
   const rate = rateOf(compParsed.fps, root.id, errors);
-  if (duration > MAX_SECONDS)
+  if (ticksAsSeconds(duration) > MAX_SECONDS)
     errors.push({
       code: "INVALID_TIME_RANGE",
       id: root.id,
-      message: `the video is ${duration.toFixed(0)} s long; times are exact up to ${MAX_SECONDS} s (about 9.85 hours)`,
+      message: `the video is ${ticksAsSeconds(duration).toFixed(0)} s long; times are exact up to ${MAX_SECONDS} s (about 9.85 hours)`,
     });
   const sampleProblem = sampleRateProblem(Number(compParsed.sampleRate ?? 48000));
   if (sampleProblem) errors.push({ code: "SCHEMA", id: root.id, prop: "sampleRate", message: sampleProblem });
@@ -454,7 +669,8 @@ function compute(
       rate,
       width: Number(compParsed.width ?? 1920),
       height: Number(compParsed.height ?? 1080),
-      duration,
+      duration: ticksAsSeconds(duration),
+      length: Time.ofTicks(fit(duration)),
     },
     tracks,
     items,
@@ -465,6 +681,7 @@ function compute(
     theme,
     fonts: withPickedFonts(original.fonts ?? [], root.props.$fonts),
     shaders: original.shaders ?? [],
+    ...(scenes.size > 0 ? { scenes } : {}),
   };
 }
 
@@ -824,6 +1041,15 @@ function intrinsicCompute(
   const caps = capabilitiesOf(node.kind);
   const own: ResolveError[] = [];
   const props = parseProps(node, own, theme);
+  // A title's <Mark> colours are theme tokens too, but live in its text, not its props.
+  if (node.runs)
+    for (const token of themedRuns(node.runs, theme).unknown)
+      own.push({
+        code: "UNKNOWN_TOKEN",
+        id: node.id,
+        prop: "children",
+        message: `unknown theme token ${token} in a <Mark>`,
+      });
   const p: Pending = { node, track, parent: node.parent, props, errors: own };
   pending.set(node.id, p);
 
@@ -832,7 +1058,7 @@ function intrinsicCompute(
     const end = props.anchor.endsWith(".end");
     p.anchorDep = {
       id: end ? props.anchor.slice(0, -4) : props.anchor,
-      offset: Number(props.offset ?? 0),
+      offset: T(Number(props.offset ?? 0)),
       ...(end ? { edge: "end" as const } : {}),
     };
   }
@@ -850,8 +1076,10 @@ function intrinsicCompute(
     }
   }
 
-  if (caps.trimSource && typeof props.src === "string") {
-    const asset = lookupAsset(manifest, props.src);
+  const scene = isScene(props.src);
+  if (caps.trimSource && (typeof props.src === "string" || scene)) {
+    const ref = scene ? sceneAssetId(node.id) : (props.src as string);
+    const asset = lookupAsset(manifest, ref);
     if (!asset) {
       own.push({
         code: "MISSING_ASSET",
@@ -859,7 +1087,7 @@ function intrinsicCompute(
         prop: "src",
         message: `asset ${props.src} is not in the manifest`,
       });
-      p.duration = typeof dur === "number" ? dur : 0;
+      p.duration = T(typeof dur === "number" ? dur : 0);
     } else if (asset.kind === "lut") {
       own.push({
         code: "SCHEMA",
@@ -867,29 +1095,31 @@ function intrinsicCompute(
         prop: "src",
         message: `asset ${props.src} is a LUT, which plays nothing; grade with it: effects={[{ type: "lut", src: "${props.src}" }]}`,
       });
-      p.duration = typeof dur === "number" ? dur : 0;
+      p.duration = T(typeof dur === "number" ? dur : 0);
     } else {
       sourceRange(p, asset, markers);
+      if (props.cutout !== undefined && props.cutout !== false)
+        own.push(...cutoutErrors(node.id, asset, manifest, scene));
     }
   } else if (node.kind === "transition") {
-    p.duration = lengthOr(props.duration, 0.5);
+    p.duration = T(lengthOr(props.duration, 0.5));
   } else if (node.kind === "gap") {
     // A gap whose duration the schema refused holds no time.
-    p.duration = lengthOr(props.duration, 0);
+    p.duration = T(lengthOr(props.duration, 0));
   } else if (node.kind === "caption") {
     // Timed in the captions pass, once the clips that play the asset are placed.
   } else if (node.kind === "captions") {
-    p.start = 0;
+    p.start = ZERO_TICKS;
     p.durationDep = { kind: "fill" };
     for (const child of node.children)
       if (child.kind === "caption") intrinsic(child, track, pending, manifest, markers, markersKey, theme, errors);
     return p;
   } else if (node.kind === "multicam") {
-    p.start = 0;
+    p.start = ZERO_TICKS;
     p.durationDep = { kind: "fill" };
   } else if (caps.timed) {
-    if (dur === undefined) p.duration = DEFAULT_OVERLAY_DURATION;
-    else if (typeof dur === "number") p.duration = dur;
+    if (dur === undefined) p.duration = T(DEFAULT_OVERLAY_DURATION);
+    else if (typeof dur === "number") p.duration = T(dur);
     else if (dur === "fill") p.durationDep = { kind: "fill" };
     else if (dur === "source") {
       own.push({
@@ -898,7 +1128,7 @@ function intrinsicCompute(
         prop: "duration",
         message: `<${node.kind}> has no source to take a duration from`,
       });
-      p.duration = DEFAULT_OVERLAY_DURATION;
+      p.duration = T(DEFAULT_OVERLAY_DURATION);
     } else if (typeof dur === "object" && dur) p.durationDep = otherDep(dur);
   }
   return p;
@@ -932,11 +1162,106 @@ function framed(
 }
 
 /** Keys on an effect's params: each value one that param's schema takes. */
+/** A wobble or a drift on `box.x` or `box.y` needs a place to be added to: with none, the element is centred. */
+function generatorErrors(items: ReadonlyMap<string, Placement>): ResolveError[] {
+  const out: ResolveError[] = [];
+  for (const g of items.values()) {
+    if (g.kind !== "generator" || g.props.type === "loop") continue;
+    const axis = g.props.property === "box.x" ? "x" : g.props.property === "box.y" ? "y" : null;
+    const parent = g.parent ? items.get(g.parent) : undefined;
+    if (!axis || !parent) continue;
+    const written = (parent.props.box as Record<string, unknown> | undefined)?.[axis];
+    const keyed = parent.children.some((c) => {
+      const k = items.get(c);
+      return k?.kind === "keyframe" && k.props.property === g.props.property;
+    });
+    if (written === undefined && !keyed)
+      out.push({
+        code: "SCHEMA",
+        id: parent.id,
+        prop: `box.${axis}`,
+        message: `a ${String(g.props.type)} on box.${axis} is added to where the element sits: give it a \`base\` (a number of pixels, or keys)`,
+      });
+  }
+  return out;
+}
+
+/**
+ * A `follow` names another overlay in the file, on the same side of the camera, whose size is known before it is
+ * drawn, and no chain comes back to where it started.
+ */
+function followErrors(items: ReadonlyMap<string, Placement>, tracks: readonly ResolvedTrack[]): ResolveError[] {
+  const out: ResolveError[] = [];
+  const cameraOf = (p: Placement): string | undefined => tracks.find((t) => t.id === p.track)?.camera;
+  const problem = (id: string, code: ResolveError["code"], message: string): void => {
+    out.push({ code, id, prop: "follow", message });
+  };
+  const inCycle = new Set<string>();
+  for (const child of items.values()) {
+    const ref = followOf(child);
+    if (ref === undefined || !FOLLOW_KINDS.has(child.kind)) continue;
+    const leader = items.get(ref);
+    if (!leader) {
+      problem(child.id, "UNKNOWN_REF", `follow names "${ref}", which does not exist`);
+      continue;
+    }
+    if (!FOLLOW_KINDS.has(leader.kind)) {
+      problem(
+        child.id,
+        "SCHEMA",
+        `follow names "${ref}", a ${leader.kind}: an element follows a title, shape, svg, sticker or layer`,
+      );
+      continue;
+    }
+    if (leader.kind === "svg" && typeof leader.props.content !== "string") {
+      problem(
+        child.id,
+        "SCHEMA",
+        `follow names "${ref}", an SVG read from a file: its size is only known once it is drawn, so it can't be followed yet; write its markup in \`content\`, or follow a shape`,
+      );
+      continue;
+    }
+    if (cameraOf(child) !== cameraOf(leader)) {
+      const inside = cameraOf(child) !== undefined ? child.id : leader.id;
+      problem(
+        child.id,
+        "SCHEMA",
+        `"${inside}" is under the camera and the other is not: put "${child.id}" and "${ref}", which it follows, on tracks on the same side of the camera`,
+      );
+      continue;
+    }
+    if (inCycle.has(child.id)) continue;
+    const chain = [child.id];
+    for (let at = items.get(ref); at && !inCycle.has(at.id); at = items.get(followOf(at) ?? "")) {
+      const i = chain.indexOf(at.id);
+      if (i >= 0) {
+        const loop = chain.slice(i);
+        for (const id of loop) inCycle.add(id);
+        problem(
+          loop[0]!,
+          "CYCLE",
+          `follows go round in a circle: ${[...loop, loop[0]].map((id) => `"${id}"`).join(" → ")}; remove one of these follows`,
+        );
+        break;
+      }
+      chain.push(at.id);
+      if (followOf(at) === undefined) break;
+    }
+  }
+  return out;
+}
+
 function keyframeErrors(items: ReadonlyMap<string, Placement>): ResolveError[] {
   const out: ResolveError[] = [];
   for (const k of items.values()) {
     if (k.kind !== "keyframe") continue;
     const parent = k.parent ? items.get(k.parent) : undefined;
+    const property = k.props.property;
+    if (typeof property === "string" && property.startsWith("shape.")) {
+      const problem = shapeKeyProblem(property, k.props.value);
+      if (problem) out.push({ code: "SCHEMA", id: k.id, prop: "value", message: problem });
+      continue;
+    }
     const param = k.props.param;
     if (typeof param !== "string" || parent?.kind !== "effect") continue;
     const problem = effectParamProblem(parent.props.type, fileShaders, param, k.props.value);
@@ -959,6 +1284,12 @@ function keyframeErrors(items: ReadonlyMap<string, Placement>): ResolveError[] {
 function onElement(error: ResolveError): ResolveError {
   const origin = error.id ? derivedOrigin(error.id) : null;
   if (!origin) return error;
+  if (origin.path.endsWith(".generator")) {
+    // A generator's fields are written inside the value it stands for: `transform.rotation.amount`.
+    const { prop, ...rest } = error;
+    const at = origin.path.slice(0, -".generator".length);
+    return { ...rest, id: origin.id, prop: prop ? `${at}.${prop}` : at };
+  }
   const field = error.prop
     ?.replace(/^params(\.|$)/, "")
     .replace(/^speed$/, "value")
@@ -1043,7 +1374,7 @@ function sourceRange(p: Pending, asset: AssetEntry, markers: ReadonlyMap<string,
       code: "TRIM_PAST_SOURCE",
       id: node.id,
       prop: "out",
-      message: `out ${outSec}s is past the end of ${asset.id} (${asset.duration}s)`,
+      message: `out ${round3(outSec)}s is past the end of ${asset.id} (${round3(asset.duration)}s)`,
     });
     outSec = asset.duration;
     played = undefined;
@@ -1067,7 +1398,7 @@ function sourceRange(p: Pending, asset: AssetEntry, markers: ReadonlyMap<string,
       message: `the freeze starts ${Number(child.props.start)}s into "${node.id}", after the clip has ended, so it never holds`,
     });
   }
-  p.duration = natural + holdTotal(holds);
+  p.duration = plus(T(natural), T(holdTotal(holds)));
 }
 
 /** Source seconds a clip plays over `length` timeline seconds: its freeze holds play none, its speed keys replace `speed`. */
@@ -1084,11 +1415,11 @@ function placeTrack(
   theme: ResolvedTheme,
   errors: ResolveError[],
 ): void {
-  let cursor = 0;
+  let cursor = ZERO_TICKS;
   let prevClip: Pending | null = null;
   let pendingTransition: Pending | null = null;
   /** The length of the transition that leads into `prevClip`, to see that two transitions do not meet inside it. */
-  let intoPrev = 0;
+  let intoPrev = ZERO_TICKS;
   for (const child of trackNode.children) {
     const p = pending.get(child.id);
     if (!p) continue;
@@ -1099,7 +1430,7 @@ function placeTrack(
     }
     if (child.kind === "transition") {
       if (typeof p.props.on === "string") {
-        p.anchorDep = { id: p.props.on, offset: 0 };
+        p.anchorDep = { id: p.props.on, offset: ZERO_TICKS };
         // Edge transitions attach to a clip edge; resolved in iterateDependencies with edge logic.
         continue;
       }
@@ -1109,7 +1440,7 @@ function placeTrack(
           id: child.id,
           message: "a transition between siblings needs a sequence track; use on/edge on free tracks",
         });
-        p.start = 0;
+        p.start = ZERO_TICKS;
         continue;
       }
       if (pendingTransition) {
@@ -1143,7 +1474,7 @@ function placeTrack(
           prop: "start",
           message: "elements on a free track need start",
         });
-      p.start = lengthOr(p.props.start, 0);
+      p.start = T(lengthOr(p.props.start, 0));
       continue;
     }
     if (typeof p.props.start === "number") {
@@ -1161,7 +1492,7 @@ function placeTrack(
         prop: "duration",
         message: '"fill" is not meaningful inside a sequence',
       });
-      p.duration = 0;
+      p.duration = ZERO_TICKS;
       delete p.durationDep;
     }
     if (pendingTransition && child.kind === "gap") {
@@ -1173,17 +1504,18 @@ function placeTrack(
       pendingTransition.start = cursor;
       pendingTransition = null;
     }
-    let into = 0;
+    let into = ZERO_TICKS;
     if (pendingTransition && prevClip) {
-      const d = pendingTransition.duration ?? 0;
-      const outgoing = prevClip.duration ?? 0;
+      const d = pendingTransition.duration ?? ZERO_TICKS;
+      const outgoing = prevClip.duration ?? ZERO_TICKS;
+      // Lengths are ticks, so they compare exactly: a clip from 1.1 to 1.3 is 0.2 s long, and a 0.2 s transition fits it.
       if (d > outgoing || (p.duration !== undefined && d > p.duration)) {
         pendingTransition.errors.push({
           code: "INSUFFICIENT_HANDLES",
           id: pendingTransition.node.id,
           message: "transition is longer than one of its clips",
         });
-      } else if (intoPrev + d > outgoing + 1e-9) {
+      } else if (intoPrev + d > outgoing) {
         pendingTransition.errors.push({
           code: "INSUFFICIENT_HANDLES",
           id: pendingTransition.node.id,
@@ -1193,10 +1525,11 @@ function placeTrack(
       // A transition that does not fit is told above and held to what its clips have: the part of the outgoing clip
       // that the transition before has not used, and the whole of the incoming one. Longer, the incoming clip would
       // start before the outgoing one does.
-      const fit = Math.max(0, Math.min(d, outgoing - intoPrev, p.duration ?? Number.POSITIVE_INFINITY));
+      const room = minus(outgoing, intoPrev);
+      const fit = maxTicks(ZERO_TICKS, minTicks(minTicks(d, room), p.duration ?? d));
       if (fit < d) pendingTransition.duration = fit;
       into = fit;
-      const start = cursor - fit;
+      const start = minus(cursor, fit);
       pendingTransition.start = start;
       pendingTransition.between = [prevClip.node.id, child.id];
       cursor = start;
@@ -1211,7 +1544,7 @@ function placeTrack(
     pendingTransition = null;
     intoPrev = into;
     p.start = cursor;
-    if (p.duration !== undefined) cursor += p.duration;
+    if (p.duration !== undefined) cursor = plus(cursor, p.duration);
     else p.durationDep ??= { kind: "fill" }; // match deps settle later; cursor cannot advance past an unknown length
     if (p.durationDep?.kind === "match" || p.durationDep?.kind === "until") {
       p.errors.push({
@@ -1220,7 +1553,7 @@ function placeTrack(
         prop: "duration",
         message: `${p.durationDep.kind} durations are not allowed inside a sequence`,
       });
-      p.duration = 0;
+      p.duration = ZERO_TICKS;
       delete p.durationDep;
     }
     prevClip = child.kind === "gap" ? null : p;
@@ -1253,7 +1586,7 @@ function placeMulticam(
   }
   cuts.sort((a, b) => a.at - b.at);
   const sync = Number(p.props.sync ?? 0);
-  p.start = cuts[0]?.at ?? 0;
+  p.start = T(cuts[0]?.at ?? 0);
   cuts.forEach((cut, i) => {
     const next = cuts[i + 1];
     const angle = angles.get(cut.angle);
@@ -1285,12 +1618,12 @@ function placeMulticam(
       parent: node.id,
       props: generated.props as Record<string, unknown>,
       errors: [],
-      start: cut.at,
+      start: T(cut.at),
     };
     gp.source = { in: inSec, out: inSec, speed: 1, asset: assetIdOf(String(angle.src)) };
     if (next) {
-      gp.duration = next.at - cut.at;
-      gp.source = { ...gp.source, out: inSec + gp.duration };
+      gp.duration = minus(T(next.at), T(cut.at));
+      gp.source = { ...gp.source, out: inSec + ticksAsSeconds(gp.duration) };
     } else {
       gp.durationDep = { kind: "fill" };
     }
@@ -1308,7 +1641,7 @@ function iterateDependencies(pending: Map<string, Pending>, manifest: AssetManif
       if (p.anchorDep && p.start === undefined) {
         const dep = p.anchorDep;
         if (dep.id === "start") {
-          p.start = Math.max(0, dep.offset);
+          p.start = maxTicks(ZERO_TICKS, dep.offset);
           progressed = true;
           continue;
         }
@@ -1320,7 +1653,7 @@ function iterateDependencies(pending: Map<string, Pending>, manifest: AssetManif
             prop: p.node.kind === "transition" ? "on" : "anchor",
             message: `anchor "${dep.id}" does not exist`,
           });
-          p.start = 0;
+          p.start = ZERO_TICKS;
           delete p.anchorDep;
           progressed = true;
           continue;
@@ -1331,16 +1664,16 @@ function iterateDependencies(pending: Map<string, Pending>, manifest: AssetManif
         ) {
           if (p.node.kind === "transition") {
             const edge = p.props.edge === "in" ? "in" : "out";
-            const d = p.duration ?? 0;
-            p.start = edge === "in" ? target.start : target.start + (target.duration ?? 0) - d;
+            const d = p.duration ?? ZERO_TICKS;
+            p.start = edge === "in" ? target.start : minus(plus(target.start, target.duration ?? ZERO_TICKS), d);
           } else {
             const base =
               dep.at !== undefined
-                ? playedAt(p, target, dep.at, manifest)
+                ? T(playedAt(p, target, dep.at, manifest))
                 : dep.edge === "end"
-                  ? (target.duration ?? 0)
-                  : 0;
-            p.start = Math.max(0, target.start + base + dep.offset);
+                  ? (target.duration ?? ZERO_TICKS)
+                  : ZERO_TICKS;
+            p.start = maxTicks(ZERO_TICKS, plus(plus(target.start, base), dep.offset));
           }
           progressed = true;
         }
@@ -1354,10 +1687,10 @@ function iterateDependencies(pending: Map<string, Pending>, manifest: AssetManif
             prop: "duration",
             message: `${p.durationDep.kind} target "${p.durationDep.id}" does not exist`,
           });
-          p.duration = 0;
+          p.duration = ZERO_TICKS;
           delete (p as Pending).durationDep;
           progressed = true;
-        } else if (takeLength(p, target)) progressed = true;
+        } else if (takeLength(p, target, manifest)) progressed = true;
       }
     }
     if (!progressed) break;
@@ -1371,22 +1704,22 @@ function iterateDependencies(pending: Map<string, Pending>, manifest: AssetManif
         id: p.node.id,
         message: `"${p.node.id}" depends on itself through anchors or match durations`,
       });
-      p.start ??= 0;
-      p.duration ??= 0;
+      p.start ??= ZERO_TICKS;
+      p.duration ??= ZERO_TICKS;
       delete p.anchorDep;
       delete p.durationDep;
     }
   }
 }
 
-/** The dependency a `duration={{ match }}` or `duration={{ until }}` names. */
-function otherDep(dur: object): { kind: "match" | "until"; id: string } {
-  return "until" in dur
-    ? { kind: "until", id: String((dur as { until: string }).until) }
-    : { kind: "match", id: String((dur as { match: string }).match) };
+/** The dependency a `duration={{ match }}` or `duration={{ until }}` names, with the moment an until ends on. */
+function otherDep(dur: object): { kind: "match" | "until"; id: string; at?: string } {
+  if (!("until" in dur)) return { kind: "match", id: String((dur as { match: string }).match) };
+  const { until, at } = dur as { until: string; at?: string };
+  return { kind: "until", id: String(until), ...(at !== undefined ? { at } : {}) };
 }
 
-type Following = Pending & { durationDep: { kind: "match" | "until"; id: string } };
+type Following = Pending & { durationDep: { kind: "match" | "until"; id: string; at?: string } };
 
 /** Whether `p`'s length comes from another element: as long as it (`match`), or until it ends (`until`). */
 function follows(p: Pending): p is Following {
@@ -1395,25 +1728,40 @@ function follows(p: Pending): p is Following {
 
 /**
  * Gives `p` its length from `target` once enough is known: the target's length for a match; for an until, the time
- * from `p`'s own start to the target's end. An element that starts after its target has ended has no length, and
- * says so. False while it has to wait.
+ * from `p`'s own start to the target's end, or to where the target plays the moment `at` names. An element that
+ * starts after that end has no length, and says so. False while it has to wait.
  */
-function takeLength(p: Following, target: Pending): boolean {
+function takeLength(p: Following, target: Pending, manifest: AssetManifest): boolean {
   if (target.duration === undefined) return false;
   if (p.durationDep.kind === "match") p.duration = target.duration;
   else {
     if (p.start === undefined || target.start === undefined) return false;
-    const left = round3(target.start + target.duration - p.start);
-    if (left <= 0)
+    const { at, id } = p.durationDep;
+    // A moment it cannot find (reported) ends it where the target ends, as an until without one does.
+    const said = p.errors.length;
+    const moment = at !== undefined ? T(playedAt(p, target, at, manifest, "duration")) : target.duration;
+    const end = plus(target.start, p.errors.length > said && moment === 0 ? target.duration : moment);
+    // Exact in ticks: a target that ends off the ms grid (121 frames at 24 fps is 5.0416667 s) is not outlived by a frame.
+    const left = minus(end, p.start);
+    // Under half a millisecond left is no length, as when lengths were rounded to the ms.
+    const none = round3(ticksAsSeconds(left)) <= 0;
+    if (none)
       p.errors.push({
         code: "INVALID_TIME_RANGE",
         id: p.node.id,
         prop: "duration",
-        message: `"${p.node.id}" starts at ${round3(p.start)} s, after "${p.durationDep.id}" has ended (${round3(target.start + target.duration)} s), so it has no length`,
+        message:
+          at !== undefined
+            ? `"${p.node.id}" starts at ${round3(ticksAsSeconds(p.start))} s, after "${id}" plays ${at} (${round3(ticksAsSeconds(end))} s), so it has no length`
+            : `"${p.node.id}" starts at ${round3(ticksAsSeconds(p.start))} s, after "${id}" has ended (${round3(ticksAsSeconds(end))} s), so it has no length`,
       });
-    p.duration = Math.max(0, left);
+    p.duration = none ? ZERO_TICKS : left;
   }
-  if (p.source) p.source = { ...p.source, out: p.source.in + sourceSpan(p.node, p.duration, p.source.speed) };
+  if (p.source)
+    p.source = {
+      ...p.source,
+      out: p.source.in + sourceSpan(p.node, ticksAsSeconds(p.duration), p.source.speed),
+    };
   delete (p as Pending).durationDep;
   return true;
 }
@@ -1431,13 +1779,13 @@ function waitsForFill(p: Pending, pending: Map<string, Pending>): boolean {
 }
 
 /** Gives each element still waiting on a match its target's length, now that fills have theirs. */
-function settleMatches(pending: Map<string, Pending>): void {
+function settleMatches(pending: Map<string, Pending>, manifest: AssetManifest): void {
   for (let pass = 0; pass <= pending.size; pass++) {
     let progressed = false;
     for (const p of pending.values()) {
       if (!follows(p) || p.duration !== undefined) continue;
       const target = pending.get(p.durationDep.id);
-      if (target && takeLength(p, target)) progressed = true;
+      if (target && takeLength(p, target, manifest)) progressed = true;
     }
     if (!progressed) break;
   }
@@ -1448,9 +1796,38 @@ function settleMatches(pending: Map<string, Pending>): void {
       id: p.node.id,
       message: `"${p.node.id}" depends on itself through anchors or match durations`,
     });
-    p.duration = 0;
+    p.duration = ZERO_TICKS;
     delete (p as Pending).durationDep;
   }
+}
+
+/** What stands between a clip's `cutout` and a matte to cut with: none, or the error that says what is missing. */
+function cutoutErrors(id: string, asset: AssetEntry, manifest: AssetManifest, scene: boolean): ResolveError[] {
+  const fail = (code: "SCHEMA" | "MISSING_ASSET", message: string): ResolveError[] => [
+    { code, id, prop: "cutout", message },
+  ];
+  if (scene || asset.kind !== "video")
+    return fail(
+      "SCHEMA",
+      `cutout needs footage with a matte; ${asset.id} is ${scene ? "a 3D scene" : `an ${asset.kind} asset`}`,
+    );
+  if (asset.matte === undefined)
+    return fail(
+      "SCHEMA",
+      `cutout needs a matte for ${asset.id}: a greyscale video of the same frames, white where the subject is. Add it (npx uberscene add ${asset.id}.matte.webm) and set "matte": "${asset.id}.matte" on ${asset.id} in the manifest`,
+    );
+  const matte = lookupAsset(manifest, asset.matte);
+  if (!matte)
+    return fail(
+      "MISSING_ASSET",
+      `the matte of ${asset.id}, asset ${asset.matte}, is not in the manifest; add it with npx uberscene add`,
+    );
+  if (matte.kind !== "video")
+    return fail(
+      "SCHEMA",
+      `the matte of ${asset.id}, asset ${asset.matte}, is an ${matte.kind}; a matte is a video of the same frames`,
+    );
+  return [];
 }
 
 /**
@@ -1458,10 +1835,17 @@ function settleMatches(pending: Map<string, Pending>): void {
  * (source time − source in) / speed. A target that is not footage, plays the moment reversed or through a speed ramp,
  * or has trimmed it out is reported on `p`; then the moment is held to the nearest part the target plays.
  */
-function playedAt(p: Pending, target: Pending, at: string, manifest: AssetManifest): number {
+function playedAt(
+  p: Pending,
+  target: Pending,
+  at: string,
+  manifest: AssetManifest,
+  /** The prop that names the moment: `at` on an anchor, `duration` on an until. */
+  prop: "at" | "duration" = "at",
+): number {
   const src = target.source;
   const fail = (code: "INVALID_ANCHOR" | "UNSUPPORTED_ANCHOR", message: string): number => {
-    p.errors.push({ code, id: p.node.id, prop: "at", message });
+    p.errors.push({ code, id: p.node.id, prop, message });
     return 0;
   };
   if (!src)
@@ -1477,7 +1861,7 @@ function playedAt(p: Pending, target: Pending, at: string, manifest: AssetManife
       `at="${at}" on "${target.node.id}", which has speed keys or freezes, is not supported yet; use offset`,
     );
   }
-  const t = resolveTimeRef(at, lookupAsset(manifest, src.asset), new Map(), { id: p.node.id, prop: "at" });
+  const t = resolveTimeRef(at, lookupAsset(manifest, src.asset), new Map(), { id: p.node.id, prop });
   if (typeof t !== "number") {
     p.errors.push(t);
     return 0;
@@ -1487,7 +1871,7 @@ function playedAt(p: Pending, target: Pending, at: string, manifest: AssetManife
     p.errors.push({
       code: "INVALID_ANCHOR",
       id: p.node.id,
-      prop: "at",
+      prop,
       message: `${at} (${t.toFixed(2)} s) is not in what "${target.node.id}" plays (${src.in.toFixed(2)}–${src.out.toFixed(2)} s of ${src.asset}): it was trimmed out`,
     });
   }
@@ -1498,7 +1882,7 @@ function playedAt(p: Pending, target: Pending, at: string, manifest: AssetManife
 export function samePlacement(a: Placement, b: Placement): boolean {
   if (a === b) return true;
   if (a.id !== b.id || a.kind !== b.kind || a.track !== b.track || a.parent !== b.parent) return false;
-  if (a.start !== b.start || a.end !== b.end || a.duration !== b.duration) return false;
+  if (!a.range.equals(b.range)) return false;
   if (
     a.props !== b.props ||
     a.editable !== b.editable ||
@@ -1511,7 +1895,7 @@ export function samePlacement(a: Placement, b: Placement): boolean {
   return sameErrors(a.errors, b.errors);
 }
 
-function sameSource(a: Placement["source"], b: Placement["source"]): boolean {
+function sameSource(a: PendingSource | undefined, b: PendingSource | undefined): boolean {
   if (!a || !b) return a === b;
   return a.asset === b.asset && a.in === b.in && a.out === b.out && a.speed === b.speed;
 }
@@ -1541,11 +1925,11 @@ type Place = (
   node: CollectedNode,
   track: string | null,
   parent: string | null,
-  start: number,
-  length: number,
+  start: Ticks,
+  length: Ticks,
   props: Record<string, unknown>,
   errors: readonly ResolveError[],
-  source: Placement["source"],
+  source: PendingSource | undefined,
   between: Placement["between"],
 ) => Placement;
 
@@ -1556,9 +1940,9 @@ function placeChildren(
   items: Map<string, Placement>,
   errors: ResolveError[],
   place: Place,
-  end: number,
+  end: Ticks,
   theme: ResolvedTheme,
-): number {
+): Ticks {
   for (const child of node.children) {
     if (items.has(child.id)) continue;
     const own: ResolveError[] = [];
@@ -1567,15 +1951,15 @@ function placeChildren(
     if (caps.placementScope !== "child") {
       own.push({ code: "INVALID_CHILD", id: child.id, message: `<${child.kind}> cannot be a child of <${node.kind}>` });
     }
-    let start = parent.start;
-    let duration = parent.duration;
+    let start = tk(parent.range.start);
+    let duration = tk(parent.range.duration);
     if (child.kind === "keyframe" || child.kind === "speedKey") {
-      start = parent.start + lengthOr(props.at, 0);
-      duration = 0;
+      start = plus(tk(parent.range.start), T(lengthOr(props.at, 0)));
+      duration = ZERO_TICKS;
     }
     if (child.kind === "freeze") {
-      start = parent.start + lengthOr(props.start, 0);
-      duration = lengthOr(props.duration, 0);
+      start = plus(tk(parent.range.start), T(lengthOr(props.start, 0)));
+      duration = T(lengthOr(props.duration, 0));
     }
     const placement = place(child, parent.track, node.id, start, duration, props, own, undefined, undefined);
     items.set(child.id, placement);
@@ -1623,8 +2007,9 @@ function placeCaptions(
         const e = captionTime(p.props.end, asset, plays, markers, { id: child.id, prop: "end", src });
         if (typeof s !== "number") p.errors.push(s);
         if (typeof e !== "number") p.errors.push(e);
-        p.start = typeof s === "number" ? s : 0;
-        p.duration = typeof s === "number" && typeof e === "number" ? Math.max(0, e - s) : 0;
+        p.start = T(typeof s === "number" ? s : 0);
+        p.duration =
+          typeof s === "number" && typeof e === "number" ? maxTicks(ZERO_TICKS, minus(T(e), T(s))) : ZERO_TICKS;
       }
       continue;
     }
@@ -1652,8 +2037,8 @@ function placeCaptions(
         parent: node.id,
         props: cue.props as Record<string, unknown>,
         errors: [],
-        start: Number(cue.props.start),
-        duration: Number(cue.props.end) - Number(cue.props.start),
+        start: T(Number(cue.props.start)),
+        duration: minus(T(Number(cue.props.end)), T(Number(cue.props.start))),
       });
     }
   }
@@ -1684,7 +2069,7 @@ function assetPlays(src: string, pending: Map<string, Pending>, tracks: readonly
     plays.push(
       assetPlay({
         id: p.node.id,
-        start: p.start,
+        start: ticksAsSeconds(p.start),
         source: p.source,
         open: p.duration === undefined,
         children: p.node.children,

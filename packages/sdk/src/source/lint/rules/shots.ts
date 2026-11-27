@@ -20,12 +20,22 @@ function sourceTime(site: ElementSite, prop: "in" | "out", asset: AssetEntry): n
 
 /**
  * Where in the source the clip stops: its `out`; without one, `in` plus a `duration` written as a number (at its
- * `speed`, when that is a number too); and otherwise the end of the source.
+ * `speed`, when that is a number too); for a duration `{ until, at }`, the moment `at` names in its own source when
+ * that source has it (a clip of the same take as the one it follows); and otherwise the end of the source.
  */
 function sourceEnd(site: ElementSite, start: number, asset: AssetEntry): number {
   const out = sourceTime(site, "out", asset);
   if (out !== undefined) return out;
   const duration = site.props.get("duration")?.literal;
+  if (
+    typeof duration === "object" &&
+    duration !== null &&
+    !Array.isArray(duration) &&
+    typeof duration.at === "string"
+  ) {
+    const t = resolveTimeRef(duration.at, asset, NO_MARKERS, { id: site.id, prop: "duration" });
+    if (typeof t === "number" && t > start) return t;
+  }
   if (typeof duration !== "number") return asset.duration;
   const speed = site.props.get("speed")?.literal;
   return Math.min(asset.duration, start + duration * (typeof speed === "number" && speed > 0 ? speed : 1));

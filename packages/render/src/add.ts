@@ -160,7 +160,7 @@ function manifestFor(media: string, cwd: string): string {
 type Probed = Pick<AssetEntry, "kind" | "duration" | "fps" | "width" | "height" | "audio">;
 
 /** What the manifest needs from a media file: its kind, length, picture size and rate, and sound. */
-async function probe(path: string): Promise<Probed> {
+export async function probe(path: string): Promise<Probed> {
   if (extname(path).toLowerCase() === ".cube") {
     try {
       parseCube(await readFile(path, "utf8"));

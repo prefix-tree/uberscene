@@ -233,7 +233,7 @@ const mainClipsFirst: Rule = {
     if (!main?.implicit) return [];
     let firstTrack = Number.POSITIVE_INFINITY;
     for (const site of index.elements.values())
-      if (site.kind === "track" && !site.implicit && site.parent === index.compositionId)
+      if (site.kind === "track" && !site.implicit && isTopTrack(index, site))
         firstTrack = Math.min(firstTrack, site.range[0]);
     const out: Diagnostic[] = [];
     for (const site of index.elements.values()) {
@@ -282,6 +282,77 @@ const cutInsideWord: Rule = {
   },
 };
 
+/**
+ * A numeric `in` or `out` that is a beat of the music it trims, to within 5 ms: the number was read off the beats,
+ * and `beat:N` says the same and follows the music when the track is added again or swapped.
+ */
+const numericOnBeat: Rule = {
+  name: "numeric-on-beat",
+  check: (index, options) => {
+    if (!options.manifest) return [];
+    const out: Diagnostic[] = [];
+    for (const site of index.elements.values()) {
+      if (site.kind !== "clip" && site.kind !== "audio") continue;
+      const src = site.props.get("src")?.literal;
+      if (typeof src !== "string") continue;
+      const beats = lookupAsset(options.manifest, src)?.beats;
+      if (!beats || beats.length === 0) continue;
+      for (const prop of ["in", "out"] as const) {
+        const p = site.props.get(prop);
+        if (typeof p?.literal !== "number") continue;
+        const t = p.literal;
+        const starts = beats.find((b) => Math.abs(b.start - t) <= 0.005);
+        const ends = prop === "out" ? beats.find((b) => Math.abs(b.end - t) <= 0.005) : undefined;
+        const ref = ends ? `beat:${ends.i}.end` : starts ? `beat:${starts.i}` : undefined;
+        if (!ref) continue;
+        out.push({
+          rule: "numeric-on-beat",
+          severity: "warning",
+          message: `"${site.id}.${prop}" = ${t} is ${ref} of the music; write ${prop}="${ref}" so it stays on the beat when the track changes`,
+          range: p.range,
+          id: site.id,
+          prop,
+        });
+      }
+    }
+    return out;
+  },
+};
+
+/** `cutout` on a clip whose asset names no matte, or names one the manifest does not have. */
+const cutoutWithoutMatte: Rule = {
+  name: "cutout-without-matte",
+  check: (index, options) => {
+    if (!options.manifest) return [];
+    const out: Diagnostic[] = [];
+    for (const site of index.elements.values()) {
+      const cutout = site.props.get("cutout");
+      if (site.kind !== "clip" || !cutout || cutout.literal === false) continue;
+      const src = site.props.get("src")?.literal;
+      if (typeof src !== "string" || !src.startsWith("asset:")) continue;
+      const id = src.slice("asset:".length);
+      const asset = options.manifest.assets[id];
+      if (!asset) continue; // missing-asset says so
+      const message =
+        asset.matte === undefined
+          ? `cutout needs a matte for ${id}: add a greyscale video of the same frames (npx uberscene add ${id}.matte.webm) and set "matte": "${id}.matte" on ${id} in the manifest`
+          : options.manifest.assets[asset.matte]
+            ? null
+            : `the matte of ${id}, asset ${asset.matte}, is not in the manifest`;
+      if (message)
+        out.push({
+          rule: "cutout-without-matte",
+          severity: "error",
+          message,
+          range: cutout.range,
+          id: site.id,
+          prop: "cutout",
+        });
+    }
+    return out;
+  },
+};
+
 export const rules: readonly Rule[] = [
   literalIds,
   uniqueIds,
@@ -294,8 +365,10 @@ export const rules: readonly Rule[] = [
   ambiguousDuration,
   fileShape,
   missingAsset,
+  cutoutWithoutMatte,
   sequenceGap,
   cutInsideWord,
+  numericOnBeat,
   cutNearShot,
   shotChangeInsideCrop,
   repeatedSource,
@@ -316,9 +389,17 @@ export const rules: readonly Rule[] = [
 function firstSequenceTrack(index: SourceIndex): ElementSite | null {
   let first: ElementSite | null = null;
   for (const site of index.elements.values()) {
-    if (site.kind !== "track" || site.parent !== index.compositionId) continue;
+    if (site.kind !== "track" || !isTopTrack(index, site)) continue;
     if (site.props.get("layout")?.literal === "free" || site.props.get("hidden")?.literal === true) continue;
-    if (!first || site.siblingIndex < first.siblingIndex) first = site;
+    // The implicit main track has no place of its own in the text and is always the bottom one.
+    if (!first || site.implicit || (!first.implicit && site.range[0] < first.range[0])) first = site;
   }
   return first;
+}
+
+/** A track of the composition: written straight in it, or inside its camera. */
+function isTopTrack(index: SourceIndex, site: ElementSite): boolean {
+  if (site.parent === index.compositionId) return true;
+  const parent = site.parent === null ? undefined : index.elements.get(site.parent);
+  return parent?.kind === "camera" && parent.parent === index.compositionId;
 }

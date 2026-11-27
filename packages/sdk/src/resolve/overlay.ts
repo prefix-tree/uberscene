@@ -40,9 +40,10 @@ export function overlay(tree: CollectedTree, log: PatchLog | undefined): Collect
     let props: Record<string, unknown> = node.props;
     let interior = node.interior;
     let text = node.text;
+    let runs = node.runs;
     if (n) {
       if (n.props.size > 0) ({ props, interior } = overlaidProps(node, n));
-      if (n.text !== undefined) text = n.text;
+      if (n.text !== undefined) ({ text, runs } = { text: n.text, runs: n.runs });
     }
     const kept: CollectedNode[] = [];
     for (const child of node.children) {
@@ -53,8 +54,10 @@ export function overlay(tree: CollectedTree, log: PatchLog | undefined): Collect
       if (built) kept.push(built);
     }
     const children = insertAdditions(kept, additions.get(node.id) ?? [], node.id, rebuild);
+    const { runs: _runs, ...base } = node;
     const out: CollectedNode = {
-      ...node,
+      ...base,
+      ...(runs?.length ? { runs } : {}),
       props,
       children,
       parent,
@@ -89,10 +92,13 @@ function overlayProps(tree: CollectedTree, net: ReadonlyMap<string, NetPatch>): 
     let props = node.props;
     let interior = node.interior;
     let text = node.text;
+    let runs = node.runs;
     if (n && n.props.size > 0) ({ props, interior } = overlaidProps(node, n));
-    if (n && n.text !== undefined) text = n.text;
+    if (n && n.text !== undefined) ({ text, runs } = { text: n.text, runs: n.runs });
+    const { runs: _runs, ...base } = node;
     const out: CollectedNode = {
-      ...node,
+      ...base,
+      ...(runs?.length ? { runs } : {}),
       props,
       children: node.children.map(rebuild),
       ...(text !== undefined ? { text } : {}),

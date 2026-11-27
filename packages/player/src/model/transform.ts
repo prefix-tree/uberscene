@@ -1,15 +1,10 @@
-import type { ElementBox, FitMode, Transform } from "@uberscene/kit/schema";
+import type { Box, DrawRect, ElementBox, FitMode, Transform } from "@uberscene/kit/schema";
 import type { Placement } from "@uberscene/sdk/resolver";
 
 import { placeBox } from "./box";
 import { keyframedValue } from "./keyframes";
 
-export interface DrawRect {
-  readonly x: number;
-  readonly y: number;
-  readonly w: number;
-  readonly h: number;
-}
+export type { Box, DrawRect };
 
 /** Row-major 2D affine matrix in the canvas/CSS `matrix(a, b, c, d, e, f)` convention. */
 export interface Matrix2D {
@@ -56,11 +51,6 @@ export function rotate(deg: number): Matrix2D {
 export function matrixToCss(m: Matrix2D): string {
   const n = (v: number): string => (Math.abs(v) < 1e-9 ? "0" : String(Math.round(v * 1e6) / 1e6));
   return `matrix(${n(m.a)}, ${n(m.b)}, ${n(m.c)}, ${n(m.d)}, ${n(m.e)}, ${n(m.f)})`;
-}
-
-export interface Box {
-  readonly width: number;
-  readonly height: number;
 }
 
 /**
@@ -128,9 +118,12 @@ export function boundsOf(rect: DrawRect, m: Matrix2D): DrawRect {
   return { x, y, w: Math.max(...px) - x, h: Math.max(...py) - y };
 }
 
-/** The transform with its keyframed properties evaluated at element-relative time `rel`. */
+/** A child that makes a value change over time: a key, or a generator. */
+const animates = (c: Placement): boolean => c.kind === "keyframe" || c.kind === "generator";
+
+/** The transform with its keyed and generated properties evaluated at element-relative time `rel`. */
 export function animatedTransform(base: Transform | undefined, children: readonly Placement[], rel: number): Transform {
-  if (!children.some((c) => c.kind === "keyframe")) return base ?? {};
+  if (!children.some(animates)) return base ?? {};
   const t: Record<string, unknown> = { ...(base ?? {}) };
   const num = (prop: string, fallback: number): number => Number(keyframedValue(children, prop, rel, fallback));
   const scl = typeof base?.scale === "number" ? { x: base.scale, y: base.scale } : (base?.scale ?? { x: 1, y: 1 });
@@ -144,7 +137,7 @@ export function animatedTransform(base: Transform | undefined, children: readonl
   if (
     base?.crop ||
     ["x", "y", "width", "height"].some((k) =>
-      children.some((c) => c.kind === "keyframe" && c.props.property === `transform.crop.${k}`),
+      children.some((c) => animates(c) && c.props.property === `transform.crop.${k}`),
     )
   ) {
     t.crop = {
@@ -163,8 +156,7 @@ export function animatedBox(
   children: readonly Placement[],
   rel: number,
 ): ElementBox | undefined {
-  const keyed = (axis: "x" | "y"): boolean =>
-    children.some((c) => c.kind === "keyframe" && c.props.property === `box.${axis}`);
+  const keyed = (axis: "x" | "y"): boolean => children.some((c) => animates(c) && c.props.property === `box.${axis}`);
   if (!keyed("x") && !keyed("y")) return base;
   const value = (axis: "x" | "y"): number | undefined => {
     const v = Number(keyframedValue(children, `box.${axis}`, rel, base?.[axis] ?? Number.NaN));

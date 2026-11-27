@@ -324,6 +324,53 @@ A `seek` that returns a promise holds the export's frame until it settles. The l
 (below, [Libraries](#libraries)), and its licence is yours to check: GSAP is free to use under its own licence, not
 an open source one.
 
+## A 3D scene as a clip
+
+`<Three>` draws free code over the video. A 3D shot that should behave like footage (trimmed, cut on a beat, put
+under titles, sent to a video model as a rough render) is a **scene file** that a `<Clip>` plays instead. The file is
+plain JavaScript with three exports:
+
+```js
+// crossing.scene.js
+export const length = 5;
+
+// Where things stand and how they move: plain data, the part a person or the editor's viewport changes.
+export const stage = {
+  camera: { position: [{ at: 0, value: [-1.5, 1.4, 5.5] }, { at: 5, value: [1.5, 1.4, 5.5] }], lookAt: [0, 1.1, 0], lens: 38 },
+  table: { position: [0, 0, 0.6] },
+  walker: { position: [{ at: 0.5, value: [-2.5, 0, -0.8] }, { at: "reveal", value: [-1, 0, -0.8] }] },
+};
+
+// Ordinary three.js, run once: make the objects and return the ones `stage` names.
+export function build({ THREE, scene }) {
+  // ...
+  return { table, walker };
+}
+```
+
+```tsx
+import * as crossing from "./crossing.scene.js";
+
+<Marker id="reveal" start={4} />
+<Clip id="crossing-shot" src={crossing} start={2} times={{ reveal: "marker:reveal" }} />
+```
+
+- **Time.** The clip's `in`, `out`, `speed`, trims and holds are in the scene's own seconds, as they are in a file's.
+  Every frame is drawn from its time alone, so scrubbing back and the export show the same picture.
+- **Stage.** Each object takes `position` (metres, y up), `rotation` (degrees about x, y and z), `scale` and
+  `visible`, each a constant or keys. `camera` takes `position`, `lookAt`, and `fov` in degrees or `lens` in
+  millimetres on a full-frame sensor. Any other value on an object (a stride, a colour) is the scene's own, read by
+  its code.
+- **Named times.** A key's `at` may be a name. The clip hands the moment in with `times`, as seconds of the video or
+  `"marker:ID"`, so the walker comes out on the beat wherever the clip or the marker moves. A name the clip does not
+  hand in is an error.
+- **Computed motion.** An optional `export function sample(seconds, { objects, stage, times, camera, THREE })` sets
+  what code computes at a moment, such as a walk cycle. It reads only its arguments, never the frame before.
+- **Writing back.** `editStage(text, edit)` from `@uberscene/sdk` changes one value in the scene file's `stage`: a
+  constant, the key at the playhead, a key's time. Everything else in the file stays as it is.
+
+See it in `examples/3d/crossing.tsx`. The host draws scenes with `installFreeCodeLibraries()`, as it does `<Three>`.
+
 ## Effects and transitions of your own
 
 A look the built-in effects don't have is a few lines of GLSL, declared in the file with `effect()` or

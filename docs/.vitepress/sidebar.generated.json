@@ -16,6 +16,10 @@
           "link": "/reference/elements/clip"
         },
         {
+          "text": "Camera",
+          "link": "/reference/elements/camera"
+        },
+        {
           "text": "Gap",
           "link": "/reference/elements/gap"
         },

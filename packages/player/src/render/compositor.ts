@@ -4,7 +4,7 @@ import type { AssetSources } from "../media/asset-sources";
 import { DecodeError } from "../media/clip-decoder";
 import { DecoderPool } from "../media/decoder-pool";
 import { type ShaderTextures, textureRefs } from "../media/shader-textures";
-import { buildFramePlan, type FramePlan, type ResolveNested } from "../model/frame-plan";
+import { bandPlan, buildFramePlan, type FramePlan, type ResolveNested } from "../model/frame-plan";
 import { frameIndex } from "../model/time";
 import type { AnyCanvas, CreateCanvas, Ctx2D, Frame, PlayerErrorEvent } from "../types";
 import { CanvasPainter } from "./painter";
@@ -46,6 +46,8 @@ export class Compositor {
   readonly pool: DecoderPool;
   private painter: CanvasPainter;
   private ctx: Ctx2D | null = null;
+  /** The canvases above the first, by band, for a file whose track order needs them (`trackBands`). */
+  private readonly upper = new Map<number, Ctx2D>();
   private state: ResolvedState;
   private inFlight: Promise<void> | null = null;
   private pending: { t: number; opts: TickOptions; waiters: Waiter[] } | null = null;
@@ -63,8 +65,16 @@ export class Compositor {
     this.painter = new CanvasPainter(state.composition.width, state.composition.height, deps.createCanvas);
   }
 
-  attach(ctx: Ctx2D | null): void {
-    this.ctx = ctx;
+  /**
+   * The canvas to paint on. `band` above 0 is a canvas for footage that the file writes above an overlay track;
+   * without one for a band the plan has, everything is painted on the first, footage over footage, as a host
+   * with a single canvas expects.
+   */
+  attach(ctx: Ctx2D | null, band = 0): void {
+    if (band > 0) {
+      if (ctx) this.upper.set(band, ctx);
+      else this.upper.delete(band);
+    } else this.ctx = ctx;
     this.lastFrame = -1;
   }
 
@@ -186,6 +196,7 @@ export class Compositor {
     this.syncNested(plan);
     if (opts.wait) await this.pool.settle();
     const frames = new Map<string, Frame | null>();
+    const mattes = new Map<string, Frame | null>();
     const nestedCanvases = new Map<string, AnyCanvas>();
     await Promise.all(
       plan.ops.map(async (op) => {
@@ -198,27 +209,42 @@ export class Compositor {
         }
         if (op.kind !== "video" && op.kind !== "image" && op.kind !== "error") return;
         const d = this.pool.decoderFor(op.id);
-        frames.set(
-          op.id,
+        // A cutout's matte is read at the same time as its footage; an export waits for both.
+        const m = op.matte ? this.pool.matteFor(op.id) : undefined;
+        const [picture, matte] = await Promise.all([
           d
-            ? await d.frameFor(t, opts.wait, opts.exact).catch((error: unknown) => {
+            ? d.frameFor(t, opts.wait, opts.exact).catch((error: unknown) => {
                 throw DecodeError.of(d, error);
               })
             : null,
-        );
+          m
+            ? m.frameFor(t, opts.wait, opts.exact).catch((error: unknown) => {
+                throw DecodeError.of(m, error);
+              })
+            : null,
+        ]);
+        frames.set(op.id, picture);
+        if (op.matte) mattes.set(op.id, matte);
       }),
     );
     const refs = plan.ops.flatMap((op) => textureRefs(op.shaders));
     const textures = this.deps.textures;
     if (refs.length > 0 && textures) await textures.load(this.state.manifest, refs);
     if (this.disposed) return;
-    if (this.ctx)
-      this.painter.paint(this.ctx, plan, {
-        frames,
-        nested: nestedCanvases,
-        ...(textures ? { textures } : {}),
-      });
-    for (const op of plan.ops) this.pool.decoderFor(op.id)?.advance(t);
+    if (this.ctx) {
+      const inputs = { frames, mattes, nested: nestedCanvases, ...(textures ? { textures } : {}) };
+      const count = plan.bands ?? 1;
+      let split = count > 1;
+      for (let band = 1; band < count; band++) if (!this.upper.has(band)) split = false;
+      if (!split) this.painter.paint(this.ctx, plan, inputs);
+      else
+        for (let band = 0; band < count; band++)
+          this.painter.paint(band === 0 ? this.ctx : this.upper.get(band)!, bandPlan(plan, band), inputs);
+    }
+    for (const op of plan.ops) {
+      this.pool.decoderFor(op.id)?.advance(t);
+      this.pool.matteFor(op.id)?.advance(t);
+    }
     this.lastFrame = frame;
     this.deps.onFrame?.(t, frame);
   }
