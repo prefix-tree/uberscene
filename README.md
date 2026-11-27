@@ -17,10 +17,9 @@
 
 <p align="center">
   <a href="https://uberscene.prefixtree.xyz/">Documentation</a> ·
-  <a href="https://uberscene.prefixtree.xyz/examples">Examples</a> ·
+  <a href="https://uberscene.prefixtree.xyz/blog/">Changes Blog</a> ·
   <a href="https://uberscene.prefixtree.xyz/guide/introduction">Guide</a> ·
   <a href="https://uberscene.prefixtree.xyz/reference/elements/">Reference</a> ·
-  <a href="CHANGELOG.md">Changelog</a>
 </p>
 
 ---
