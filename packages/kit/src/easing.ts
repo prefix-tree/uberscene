@@ -2,7 +2,6 @@
 // them, the editor splits curves with them, and speed ramps integrate them, so all three agree on every frame.
 import { mixColor } from "./color";
 import type { Easing } from "./jsx/enums";
-import { keyPathOfProperty } from "./jsx/key-paths";
 import { clamp01 } from "./math";
 
 type Fn = (x: number) => number;
@@ -228,11 +227,6 @@ export interface CurveKey {
  * read steps.
  */
 export type CurveBlend = "number" | "color" | "points";
-
-/** How a key list on `property` moves: as its entry in the key-path table says (`KeyPath.blend`), else as numbers. */
-export function blendFor(property: string | undefined): CurveBlend {
-  return property === undefined ? "number" : (keyPathOfProperty(property)?.blend ?? "number");
-}
 
 /**
  * The value of a curve at `t`, keys sorted by `at`. It holds before the first key and after the last; between two keys

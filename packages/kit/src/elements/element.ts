@@ -3,16 +3,20 @@
 // per package and a registry line in each, and a part left out does not compile.
 import type { z } from "zod";
 
-import type { DrawPlane, ElementCapabilities } from "../jsx/define";
+import type { DrawPlane, KindTraits } from "../jsx/define";
 import type { Kind, KindProps } from "./index";
 
-/** The kit's part of one element kind: its schema, its row in the kind table, and a sample of it. */
+/** The kit's part of one element kind: its schema, what it writes of itself in the kind table, and a sample of it. */
 export interface KitElement<K extends Kind, P extends DrawPlane = DrawPlane> {
   readonly kind: K;
   /** What its props are checked against. It parses to the kind's props (`KindProps[K]`). */
   readonly schema: z.ZodType<KindProps[K]>;
-  /** The kind's row in the kind table. Its `plane` is typed, since it decides what the player must have to draw it. */
-  readonly capabilities: ElementCapabilities & { readonly plane: P };
+  /**
+   * The kind's row in the kind table: what its schema does not say (what takes a `transform`, sounds, trims, or
+   * changes over time is read from `schema`). Its `plane` is typed, since it decides what the player must have to
+   * draw it.
+   */
+  readonly traits: KindTraits & { readonly plane: P };
   /**
    * One of it as a file writes it, with the id `sample`, to stand on a free track: what the conformance suite
    * resolves, keys, edits and draws, and what a new kind is started from.

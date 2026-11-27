@@ -14,8 +14,8 @@ export interface AdjustmentElement extends KitElement<"adjustment", "both"> {
 export const adjustment: AdjustmentElement = {
   kind: "adjustment",
   schema: adjustmentSchema,
-  capabilities: {
-    ...traits({ ...ITEM, visual: true, container: true, childKinds: ["effect", "keyframe"], elementActions: true }),
+  traits: {
+    ...traits({ ...ITEM, visual: true, childKinds: ["effect", "keyframe"], elementActions: true }),
     plane: "both",
   },
   sample: `<Adjustment id="sample" start={0} duration={3} effects={[{ type: "sepia" }]} />`,

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { zBlendMode, zEasing, zEntranceAnimation, zFitMode, zVideoEffectType } from "../enums";
+import { type KeyHow, markKey } from "../key-path";
 import { refPattern } from "../ref";
 
 // Every pattern here is made from the one reference grammar (`../ref`).
@@ -89,13 +90,23 @@ const keySchema = <S extends z.ZodType>(value: S) =>
 /** Keys over time, in place of a constant. */
 const keysSchema = <S extends z.ZodType>(value: S) => z.array(keySchema(value)).min(1);
 
-/**
- * A value written as a constant, or as a list of keys when it changes over time. The resolver takes the keys out
- * before it parses the props (`expandKeys` in the SDK), so a parsed prop holds the constant, or nothing. For a value
- * that bends time and cannot be generated (`speed`).
- */
-export const keyed = <S extends z.ZodType>(value: S) =>
+/** A constant, or a list of keys: what `keyed` and `ramped` both are. */
+const constantOrKeys = <S extends z.ZodType>(value: S) =>
   z.union([value, keysSchema(value)]).transform((v) => v as z.output<S>);
+
+/**
+ * A value written as a constant, or as a list of keys when it changes over time: a colour, a list of points. The
+ * resolver takes the keys out before it parses the props (`expandKeys` in the SDK), so a parsed prop holds the
+ * constant, or nothing. `how` says what its items are named and what a key's value is (`KeyHow`).
+ */
+export const keyed = <S extends z.ZodType>(value: S, how: KeyHow = {}) =>
+  markKey(constantOrKeys(value), { ...how, numeric: false, generated: false, value });
+
+/**
+ * A value that bends time, written as a constant or as keys: a clip's `speed`. Its keys become speed keys, which
+ * the resolver places the clip by, so it is not among the values a key list animates.
+ */
+export const ramped = <S extends z.ZodType>(value: S) => constantOrKeys(value);
 
 /** One key of a value, as a generator's `base` or a loop's `keys` hold it. */
 export interface KeyOf<V> {
@@ -193,17 +204,23 @@ export function isLink(value: unknown): value is Link {
  * A value written as a constant, as a list of keys when it changes over time, as a generator when it is computed
  * (`{ type: "wiggle", amount: 2 }`), or as a link to another element's value (`{ link: "logo.transform.rotation" }`).
  * The resolver takes keys, generators and links out before it parses the props (`expandKeys` in the SDK), so a parsed
- * prop holds the constant, or nothing.
+ * prop holds the constant, or nothing. `how` says what its items are named and what a key's value is (`KeyHow`).
  */
-export const animatable = <S extends z.ZodType>(value: S) =>
-  z.union([value, keysSchema(value), generatorSchema(value), linkSchema]).transform((v) => v as z.output<S>);
+export const animatable = <S extends z.ZodType>(value: S, how: KeyHow = {}) =>
+  markKey(
+    z.union([value, keysSchema(value), generatorSchema(value), linkSchema]).transform((v) => v as z.output<S>),
+    { ...how, numeric: true, generated: true, value },
+  );
 
 /**
  * A number written as a constant, as keys, or as a link to another element's value, and not as a generator: a
  * sound's level and its pan, which the mixer reads from keys alone.
  */
-export const linked = <S extends z.ZodType>(value: S) =>
-  z.union([value, keysSchema(value), linkSchema]).transform((v) => v as z.output<S>);
+const linked = <S extends z.ZodType>(value: S, how: KeyHow = {}) =>
+  markKey(
+    z.union([value, keysSchema(value), linkSchema]).transform((v) => v as z.output<S>),
+    { ...how, numeric: true, generated: false, value },
+  );
 
 /** Which point of an element's box `box.x` and `box.y` place: a corner, the middle of an edge, or the centre. */
 export const BOX_ORIGINS = [
@@ -244,7 +261,7 @@ const boxSize = {
   origin: z.enum(BOX_ORIGINS).optional(),
 };
 
-export const boxSchema = z.strictObject({
+const boxSchema = z.strictObject({
   /** Pixels from the frame's left edge to the box's `origin`, or keys to move it. Left out: centred across the frame. */
   x: animatable(z.number()).optional(),
   /** Pixels from the frame's top edge to the box's `origin`, or keys to move it. Left out: centred down the frame. */
@@ -283,15 +300,17 @@ const transformSchema = z.strictObject({
     .union([
       animatable(scaleValue),
       keysSchema(z.strictObject({ x: scaleValue, y: scaleValue })).transform((v) => v as unknown as number),
-      z.strictObject({ x: animatable(scaleValue), y: animatable(scaleValue) }),
+      z.strictObject({ x: animatable(scaleValue, { missing: 1 }), y: animatable(scaleValue, { missing: 1 }) }),
     ])
     .optional(),
   /** Degrees, clockwise. */
   rotation: animatable(z.number().min(-360).max(360)).optional(),
-  /** The point it scales and rotates around, as fractions of its own box; left out, its centre `{ x: 0.5, y: 0.5 }`. */
-  anchor: z.strictObject({ x: animatable(z.number()), y: animatable(z.number()) }).optional(),
   /** 0 is invisible, 1 opaque. */
   opacity: animatable(fraction).optional(),
+  /** The point it scales and rotates around, as fractions of its own box; left out, its centre `{ x: 0.5, y: 0.5 }`. */
+  anchor: z
+    .strictObject({ x: animatable(z.number(), { missing: 0.5 }), y: animatable(z.number(), { missing: 0.5 }) })
+    .optional(),
   /** Rounded corners, in pixels or a theme token such as `$radius`. */
   borderRadius: animatable(themedLengthSchema).optional(),
   /** The part of the source to show, as fractions of its width and height from the top left; a field left out is the whole. */
@@ -332,10 +351,11 @@ const effectsProp = {
   effects: z.array(effectSpecSchema).optional(),
 };
 
+// The transform is listed first: the paths keys sit at are read in the schema's order, and a transform's came first.
 const transformProp = {
-  ...boxProp,
   /** How it is turned and shown: scale, rotation, anchor, opacity, rounded corners and crop. */
   transform: transformSchema.optional(),
+  ...boxProp,
 };
 
 const blendProp = {
@@ -357,6 +377,9 @@ const followProp = {
    */
   follow: idSchema.optional(),
 };
+
+/** A transform and a box alone: what the paths that move anything placed are read from. */
+export const placedSchema = z.strictObject(transformProp);
 
 /** What everything drawn over the picture takes: where it sits, how it mixes with what is under it, its effects. */
 export const overlayProps = { ...transformProp, ...followProp, ...blendProp, ...effectsProp };
@@ -388,13 +411,13 @@ export const visualProps = {
 };
 
 /** A gain: 1 plays the source as it is, 0 mutes it, 2 is twice as loud; keys change it over time, or a link sets it. */
-export const volumeSchema = linked(z.number().min(0).max(4));
+export const volumeSchema = linked(z.number().min(0).max(4), { property: "audio.volume" });
 
 export const audioProps = {
   /** A gain: 1 plays the source as it is, 0 mutes it, 2 is twice as loud; keys change it over time, or a link sets it. */
   volume: volumeSchema.optional(),
   /** Where it sits between the speakers, from -1 (left) to 1 (right); keys move it, or a link sets it. */
-  pan: linked(z.number().min(-1).max(1)).optional(),
+  pan: linked(z.number().min(-1).max(1), { property: "audio.pan", constant: "key" }).optional(),
   /** Seconds the sound fades in at the start and out at the end. */
   fade: z
     .strictObject({ in: z.number().nonnegative().optional(), out: z.number().nonnegative().optional() })
@@ -412,6 +435,9 @@ export const audioProps = {
     })
     .optional(),
 };
+
+/** A sound's props alone: what the paths of a level and a pan are read from. */
+export const soundSchema = z.strictObject(audioProps);
 
 export const shadowSchema = z.strictObject({
   color: colorSchema,

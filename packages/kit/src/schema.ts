@@ -48,6 +48,7 @@ export * from "./jsx/key-paths";
 export { knobsOf } from "./jsx/knobs";
 export * from "./jsx/ref";
 export * from "./jsx/rendering";
+export { zKeyframeProperty } from "./jsx/schemas/children";
 export {
   BOX_ORIGIN_POINT,
   BOX_ORIGINS,

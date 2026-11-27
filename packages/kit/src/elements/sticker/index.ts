@@ -11,6 +11,6 @@ export interface StickerElement extends KitElement<"sticker", "dom"> {
 export const sticker: StickerElement = {
   kind: "sticker",
   schema: stickerSchema,
-  capabilities: overlayTraits({ themeStyle: "props", themeMotion: true }),
+  traits: overlayTraits({ themeStyle: "props", themeMotion: true }),
   sample: `<Sticker id="sample" start={0} duration={3} src="asset:picture" box={{ x: 960, y: 540, origin: "center" }} />`,
 };

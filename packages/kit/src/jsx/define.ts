@@ -2,22 +2,26 @@ import type { ReactElement, ReactNode } from "react";
 import type { z } from "zod";
 
 import type { Kind } from "../elements";
-import type { KeyPath } from "./key-paths";
+import type { KeyPath } from "./key-path";
 
 export type PlacementScope = "composition" | "track" | "child" | "none";
 
+/**
+ * What an element kind is, for the packages to ask (`capabilitiesOf`). A kind writes only part of it (`KindTraits`);
+ * the rest is read from its schema, so it cannot disagree with the props the kind takes.
+ */
 export interface ElementCapabilities {
   /** Occupies a time range on the timeline. */
   readonly timed: boolean;
   /** Draws pixels. */
   readonly visual: boolean;
-  /** Produces sound. */
+  /** Produces sound: its schema has a `volume`. */
   readonly audio: boolean;
-  /** Has a source range (`in`/`out`) that can be trimmed, slipped, split. */
+  /** Has a source range that can be trimmed, slipped, split: its schema has `in` and `out`. */
   readonly trimSource: boolean;
-  /** Accepts a `transform` prop. */
+  /** Accepts a `transform` prop: its schema has one. */
   readonly transformable: boolean;
-  /** May hold vocabulary children. */
+  /** May hold vocabulary children: it names kinds in `childKinds`. */
   readonly container: boolean;
   /** Kinds allowed as direct children. */
   readonly childKinds: readonly string[];
@@ -57,9 +61,18 @@ export interface ElementCapabilities {
   readonly elementActions: boolean;
   /** Plays a manifest asset by `src` (a clip, an audio): what "plays", beats, words and shots are read from. */
   readonly playsAsset: boolean;
-  /** The paths in its props a key list or a generator may sit at (`KeyPath`); an effect's params are the effect's. */
+  /**
+   * The paths in its props a key list or a generator may sit at (`KeyPath`), read from its schema; an effect's params
+   * are the effect's.
+   */
   readonly keyPaths: readonly KeyPath[];
 }
+
+/** What a kind's schema says of it, and so no row writes. */
+export type SchemaFact = "audio" | "trimSource" | "transformable" | "container" | "keyPaths";
+
+/** What a kind's row writes of itself: every trait its schema does not already say. */
+export type KindTraits = Omit<ElementCapabilities, SchemaFact>;
 
 export type DrawPlane = "canvas" | "dom" | "both" | "none";
 export type SequenceRole = "item" | "between" | "empty" | "none";

@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 import { TRANSITION_TYPES, VIDEO_EFFECT_TYPES } from "../effects/registry";
-import { isKeyframeProperty } from "./key-paths";
 
 // Every value here is drawn by the player and the export: a type the renderers do not draw is not offered.
 
@@ -188,7 +187,6 @@ export const zTextAnimationType = z.enum(TEXT_ANIMATION_TYPES);
 export const zCaptionAnimation = z.enum(CAPTION_ANIMATIONS);
 export const zEntranceAnimation = z.enum(ENTRANCE_ANIMATIONS);
 export const zShapeType = z.enum(SHAPE_TYPES);
-export const zKeyframeProperty = z.string().refine(isKeyframeProperty, "not a property a key can animate");
 
 export type TrackLayout = (typeof TRACK_LAYOUTS)[number];
 export type TrackRole = (typeof TRACK_ROLES)[number];

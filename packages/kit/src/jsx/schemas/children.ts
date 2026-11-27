@@ -1,12 +1,18 @@
 import { z } from "zod";
 
-import { zEasing, zKeyframeProperty, zVideoEffectType } from "../enums";
+import { isKeyframeProperty } from "../capabilities";
+import { zEasing, zVideoEffectType } from "../enums";
 import { GENERATOR_TYPES } from "../generators";
 import { refPattern } from "../ref";
 import { idSchema, paramValue, vec2Schema } from "./common";
 import { zMaskType } from "./enums-local";
 
 const paramsSchema = z.record(z.string(), paramValue);
+
+/** A property a key or a generator may name: one of the paths some kind's schema marks. Asked when an item is parsed. */
+export const zKeyframeProperty = z
+  .string()
+  .refine((value) => isKeyframeProperty(value), "not a property a key can animate");
 
 // The resolver's own items: what `expandKeys` makes of the `effects`, key lists, `speed` keys and `freezes` a file
 // writes as props. They are not elements a file writes, so they carry no id of their own.

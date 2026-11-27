@@ -11,16 +11,17 @@ import {
 } from "@uberscene/kit/schema";
 
 // A kind with a folder of its own (`src/elements/<kind>/`) says there what the tables said of it: its schema and its
-// row in the kind table. The tag a file writes and the table the packages ask are made from it.
+// row in the kind table. The tag a file writes and the table the packages ask are made from it, and what the schema
+// says (a transform, a sound, the paths keys sit at) is read from the schema.
 
 describe("the kinds with a folder of their own", () => {
   it.each(Object.values(KIT_ELEMENTS))("$kind: its tag, its schema and its row are the folder's", (element) => {
     expect(kitElement(element.kind)).toBe(element);
     expect(SCHEMAS_BY_KIND[element.kind]).toBe(element.schema);
-    expect(capabilitiesOf(element.kind)).toBe(element.capabilities);
+    expect(capabilitiesOf(element.kind)).toMatchObject(element.traits);
     const tag = Object.values(ELEMENTS).find((component) => component.kind === element.kind);
     expect(tag?.schema).toBe(element.schema);
-    expect(tag?.capabilities).toBe(element.capabilities);
+    expect(tag?.capabilities).toBe(capabilitiesOf(element.kind));
   });
 
   it("are told from the kinds still in the tables", () => {
@@ -60,7 +61,7 @@ describe("the kinds with a folder of their own", () => {
   });
 
   it("an adjustment stands on both planes, and says what its sample is over", () => {
-    expect(KIT_ELEMENTS.adjustment.capabilities.plane).toBe("both");
+    expect(KIT_ELEMENTS.adjustment.traits.plane).toBe("both");
     expect(KIT_ELEMENTS.adjustment.sampleBeneath).toContain("<Clip");
   });
 });

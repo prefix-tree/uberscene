@@ -18,6 +18,6 @@ export const layer: LayerElement = {
   schema: layerSchema,
   interior: true,
   variants: { by: "engine", schemas: { three: threeSchema, motion: motionSchema } },
-  capabilities: overlayTraits({ childKinds: ["effect", "keyframe"], freeCode: true }),
+  traits: overlayTraits({ childKinds: ["effect", "keyframe"], freeCode: true }),
   sample: `<Layer id="sample" start={0} duration={3}><div style={{ position: "absolute", left: 720, top: 405, width: 480, height: 270, background: "#0a84ff" }} /></Layer>`,
 };

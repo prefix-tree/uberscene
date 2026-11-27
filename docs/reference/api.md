@@ -534,7 +534,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/kit/schema`
 
-412 exports.
+416 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -548,14 +548,14 @@ Every name each entry exports, read from the code. The sections above explain th
 | `AnyEffectSpec` | type | Any effect a file may write. |
 | `applyTheme` | function | An element's raw props with its theme applied, before the schema parses them. |
 | `Audio` | const | The `<Audio>` element ([reference](/reference/elements/audio)). |
-| `AUDIO_KEY_PATHS` | const |  |
+| `AUDIO_KEY_PATHS` | const | A sound's level and its pan. |
 | `AudioProps` | interface | The props of a `<Audio>`, as its schema parses them. |
 | `BLEND_MODES` | const |  |
 | `blendFor` | function | How a key list on `property` moves. |
 | `BlendMode` | type |  |
 | `BLOCK_ASPECTS` | const | The frame shapes a block can be laid out for. |
 | `Box` | interface | A size in pixels. |
-| `BOX_KEY_PATHS` | const |  |
+| `BOX_KEY_PATHS` | const | The two of a `box` that keys may sit at. |
 | `BOX_ORIGIN_POINT` | const | Each origin as fractions of the element's width and height from its top left. |
 | `BOX_ORIGINS` | const | Which point of an element's box `box.x` and `box.y` place. |
 | `BoxOrigin` | type |  |
@@ -568,7 +568,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `BundledFont` | interface | The font families the player ships. |
 | `Camera` | const | The `<Camera>` element ([reference](/reference/elements/camera)). |
 | `CAMERA_FIELDS` | const | What a `<Camera>` animates, and its value when the file writes none. |
-| `CAMERA_KEY_PATHS` | const |  |
+| `CAMERA_KEY_PATHS` | const | What a `<Camera>` animates. |
 | `CameraProps` | interface | The props of a `<Camera>`, as its schema parses them. |
 | `capabilitiesOf` | function | What a kind is. |
 | `Caption` | const | The `<Caption>` element ([reference](/reference/elements/caption)). |
@@ -627,7 +627,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `EffectSpec` | type | One entry of an element's `effects`. |
 | `elapsedSeconds` | const | `t - start` as an exact difference. |
 | `ElementBox` | type |  |
-| `ElementCapabilities` | interface |  |
+| `ElementCapabilities` | interface | What an element kind is, for the packages to ask (`capabilitiesOf`). |
 | `ElementDefinition` | interface |  |
 | `ElementKind` | type | The kinds a file writes as tags. |
 | `Elements` | type | The tags a file writes, by name. |
@@ -705,18 +705,21 @@ Every name each entry exports, read from the code. The sections above explain th
 | `Key` | interface | One key of a value that changes over time. |
 | `KEYFRAME_PROPERTIES` | const | Every property a key list can animate, as the resolver names it. |
 | `KeyframeProps` | interface | One key of a value that changes over time, as an item the resolver makes of a key list. |
+| `KeyHow` | interface | What a schema says of a value that takes keys, besides its type. |
 | `KeyOf` | interface | One key of a value, as a generator's `base` or a loop's `keys` hold it. |
 | `KeyPath` | interface |  |
 | `keyPathOf` | function | A `kind`'s entry for `path`. |
 | `keyPathOfProperty` | function | The entry whose keys are named `property` (`shape.fill`), whatever kind holds it. |
+| `keyPathsIn` | function | The paths in a schema's props that keys may sit at, in the schema's order. |
 | `keyPathsOf` | function | The paths in a `kind`'s props that keys and generators may sit at. |
 | `Kind` | type | An element kind. |
 | `KIND_CAPABILITIES` | const | What each element kind is. |
 | `kindOf` | function |  |
 | `KindProps` | interface | Every kind, with the props a placement of it holds once its schema has parsed them. |
-| `KINDS` | const | Every kind, in the table's order. |
+| `KINDS` | const | Every kind, in the vocabulary's order. |
 | `kindsWhere` | function | The kinds whose entry passes `test`, in the table's order. |
 | `kindsWithProp` | function | The kinds whose schema has `prop`, in the vocabulary's order. |
+| `KindTraits` | type | What a kind's row writes of itself. |
 | `KindWith` | type | The kinds whose props have `P`. |
 | `KIT_ELEMENTS` | const | The kit's part of each kind that has a folder of its own. |
 | `kitElement` | function | The kit's part of `kind`, or undefined for a kind that has no folder of its own yet. |
@@ -779,7 +782,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `placeAxis` | function | Where a box starts on one axis. |
 | `placeBox` | function | The one rule every element that draws is placed by. |
 | `Placed` | interface | Where an element's content lands. |
-| `PLACED_KEY_PATHS` | const | What moves anything with a `transform` and a `box`. |
+| `PLACED_KEY_PATHS` | const | What moves anything with a `transform` and a `box`, as the shared schema says it. |
 | `PlacedProps` | interface | Where it sits and how it is turned. |
 | `PlacementScope` | type |  |
 | `PlainLayerProps` | interface | A `<Layer>` of free code. |
@@ -819,6 +822,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `scaleTicks` | const | `t` scaled by a factor that need not be a fraction (a clip speed of 1.5), to the nearest tick. |
 | `sceneSource` | function |  |
 | `SceneSourceFactory` | type | Makes the frames of a 3D scene a clip plays (`<Clip src={scene}>`), drawn at `width` by `height`. |
+| `SchemaFact` | type | What a kind's schema says of it, and so no row writes. |
 | `schemaFor` | function | The schema an element is checked against, from its kind and its props as written. |
 | `SCHEMAS_BY_KIND` | const |  |
 | `secondAndFrame` | function | The whole second a frame falls in and the frame's place within it, for a timecode. |
@@ -914,7 +918,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `TrackProps` | interface | The props of a `<Track>`, as its schema parses them. |
 | `TrackRole` | type |  |
 | `Transform` | type |  |
-| `TRANSFORM_KEY_PATHS` | const |  |
+| `TRANSFORM_KEY_PATHS` | const | The values of a `transform` that keys may sit at. |
 | `transition` | function | Declares a transition drawn by a GLSL function of the two pictures, and returns it for `<Transition type>`. |
 | `Transition` | const | The `<Transition>` element ([reference](/reference/elements/transition)). |
 | `TRANSITION_FAMILIES` | const | The transitions by family. |
@@ -943,7 +947,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `zEntranceAnimation` | const |  |
 | `ZERO_TICKS` | const | No time. |
 | `zFitMode` | const |  |
-| `zKeyframeProperty` | const |  |
+| `zKeyframeProperty` | const | A property a key or a generator may name. |
 | `zShapeType` | const |  |
 | `zTextAnimationType` | const |  |
 | `zTrackLayout` | const |  |

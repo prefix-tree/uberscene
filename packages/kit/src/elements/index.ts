@@ -164,7 +164,7 @@ export const KIT_ELEMENTS = { title, shape, svg, sticker, layer, adjustment } sa
 };
 
 /** The plane a kind is drawn on, as a type: what the player's entry for it must hold. */
-export type PlaneOf<K extends MigratedKind> = (typeof KIT_ELEMENTS)[K]["capabilities"]["plane"];
+export type PlaneOf<K extends MigratedKind> = (typeof KIT_ELEMENTS)[K]["traits"]["plane"];
 
 /** Whether `kind` has a folder of its own in each package. */
 export function isMigratedKind(kind: string): kind is MigratedKind {

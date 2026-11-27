@@ -105,8 +105,8 @@ const engineLayer = <E extends string, S extends Parameters<typeof defineElement
   engine: E,
   schema: S,
 ): EngineLayer<E, S> => {
-  const { kind, capabilities } = KIT_ELEMENTS.layer;
-  const component = defineElement({ kind, schema, capabilities });
+  const { kind } = KIT_ELEMENTS.layer;
+  const component = defineElement({ kind, schema, capabilities: capabilitiesOf(kind) });
   Object.defineProperty(component, "engine", { value: engine, enumerable: true });
   return component as typeof component & { readonly engine: E };
 };
