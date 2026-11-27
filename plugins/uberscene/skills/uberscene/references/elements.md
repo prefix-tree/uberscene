@@ -87,10 +87,10 @@ One view over the tracks written inside it: they move, zoom and turn together, b
 | prop | type | default | required | description |
 |---|---|---|---|---|
 | `id` | string |  | yes | The camera's name in the file; actions refer to it by this. |
-| `x` | number \| { at, value, easing }[] \| { type, base, amount, frequency, seed } \| { type, base, speed } \| { type, keys, mode } |  |  | How far the view has moved right, in pixels: at 180 everything under the camera sits 180 px to the left. |
-| `y` | number \| { at, value, easing }[] \| { type, base, amount, frequency, seed } \| { type, base, speed } \| { type, keys, mode } |  |  | How far the view has moved down, in pixels: at 100 everything under the camera sits 100 px higher. |
-| `zoom` | number (0.01..100) \| { at, value, easing }[] \| { type, base, amount, frequency, seed } \| { type, base, speed } \| { type, keys, mode } |  |  | How close the view is, about the frame's centre: 1 is as written, 2 shows everything twice the size. |
-| `rotation` | number \| { at, value, easing }[] \| { type, base, amount, frequency, seed } \| { type, base, speed } \| { type, keys, mode } |  |  | How far the view is turned clockwise, in degrees, about the frame's centre: what it shows turns the other way. |
+| `x` | number \| { at, value, easing }[] \| { type, base, amount, frequency, seed } \| { type, base, speed } \| { type, keys, mode } \| { link, scale, offset, delay } |  |  | How far the view has moved right, in pixels: at 180 everything under the camera sits 180 px to the left. |
+| `y` | number \| { at, value, easing }[] \| { type, base, amount, frequency, seed } \| { type, base, speed } \| { type, keys, mode } \| { link, scale, offset, delay } |  |  | How far the view has moved down, in pixels: at 100 everything under the camera sits 100 px higher. |
+| `zoom` | number (0.01..100) \| { at, value, easing }[] \| { type, base, amount, frequency, seed } \| { type, base, speed } \| { type, keys, mode } \| { link, scale, offset, delay } |  |  | How close the view is, about the frame's centre: 1 is as written, 2 shows everything twice the size. |
+| `rotation` | number \| { at, value, easing }[] \| { type, base, amount, frequency, seed } \| { type, base, speed } \| { type, keys, mode } \| { link, scale, offset, delay } |  |  | How far the view is turned clockwise, in degrees, about the frame's centre: what it shows turns the other way. |
 | `push` | { on, keep, margin, duration, easing } |  |  | Lets the camera make room: as each element in `on` starts, the view moves as little as it can so that element is in view with everything else on the camera's tracks that is on screen then. It pans the shortest way, and pulls back only when all of it cannot fit. With `push`, `x`, `y` and `zoom` are where the view starts, as numbers; `camera/bakePush` turns the moves into keys to change by hand. |
 
 Children: `track`. [All elements](https://uberscene.prefixtree.xyz/reference/elements/)
@@ -368,8 +368,8 @@ A vector shape (rectangle, circle, star, polygon, path) with fill, stroke and sh
 | `exit` | { type, duration, easing } |  |  | How it goes out, over its last seconds, as `enter`. |
 | `style` | string |  |  | A theme preset for shapes. |
 | `type` | "rectangle" \| "circle" \| "ellipse" \| "triangle" \| "arrow" \| … 4 more |  | yes | Which shape it draws. |
-| `width` | number (> 0) \| { at, value, easing }[] \| { type, base, amount, frequency, seed } \| { type, base, speed } \| { type, keys, mode } |  |  | The shape's box width, in pixels, or keys or a generator; left out, 200. |
-| `height` | number (> 0) \| { at, value, easing }[] \| { type, base, amount, frequency, seed } \| { type, base, speed } \| { type, keys, mode } |  |  | The shape's box height, in pixels, or keys or a generator; left out, 200. |
+| `width` | number (> 0) \| { at, value, easing }[] \| { type, base, amount, frequency, seed } \| { type, base, speed } \| { type, keys, mode } \| { link, scale, offset, delay } |  |  | The shape's box width, in pixels, or keys or a generator; left out, 200. |
+| `height` | number (> 0) \| { at, value, easing }[] \| { type, base, amount, frequency, seed } \| { type, base, speed } \| { type, keys, mode } \| { link, scale, offset, delay } |  |  | The shape's box height, in pixels, or keys or a generator; left out, 200. |
 | `points` | { x, y }[] \| { at, value, easing }[] |  |  | A polygon's or path's corners, as fractions of the box from its top left, or keys of such lists: two keys with as many points move point by point (a morph); otherwise the shape changes at the key. |
 | `fill` | string \| { at, value, easing }[] \| { type, color, gradient, opacity } |  |  | A colour, or keys of colours (moved in OKLab), or `{ type, color, gradient, opacity }` for a gradient or no fill. |
 | `stroke` | { color, thickness, opacity, dashArray, dashOffset, lineCap, lineJoin, gradient } |  |  | The outline: colour, thickness in pixels, opacity, dashes, caps and joins. |

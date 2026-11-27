@@ -422,7 +422,7 @@ Every name each entry exports, read from the code. The sections above explain th
 |---|---|---|
 | `Adjustment` | const | The `<Adjustment>` element ([reference](/reference/elements/adjustment)). |
 | `Angle` | const | The `<Angle>` element ([reference](/reference/elements/angle)). |
-| `Animatable` | type | A value written as a constant, as keys over time, or, for a number, as a generator. |
+| `Animatable` | type | A value written as a constant, as keys over time, or, for a number, as a generator or a link to another value. |
 | `AnyEffectSpec` | type | Any effect a file may write. |
 | `Audio` | const | The `<Audio>` element ([reference](/reference/elements/audio)). |
 | `Badge` | function | A short word on a pill that pops in. |
@@ -534,14 +534,14 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/kit/schema`
 
-349 exports.
+351 exports.
 
 | Export | Kind | |
 |---|---|---|
 | `addTicks` | const | `a + b`, exact. |
 | `Adjustment` | const | The `<Adjustment>` element ([reference](/reference/elements/adjustment)). |
 | `Angle` | const | The `<Angle>` element ([reference](/reference/elements/angle)). |
-| `Animatable` | type | A value written as a constant, as keys over time, or, for a number, as a generator. |
+| `Animatable` | type | A value written as a constant, as keys over time, or, for a number, as a generator or a link to another value. |
 | `AnyEffectSpec` | type | Any effect a file may write. |
 | `applyTheme` | function | An element's raw props with its theme applied, before the schema parses them. |
 | `Audio` | const | The `<Audio>` element ([reference](/reference/elements/audio)). |
@@ -675,6 +675,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `isDropFrame` | const | Whether a rate is shown in drop-frame timecode. |
 | `isGenerator` | function | Whether a value written in a prop is a generator. |
 | `isKeyframeProperty` | function | A property a key list can animate, as the resolver names it (`transform.opacity` for <code v-pre>transform={{ opacity: […] }}</code>). |
+| `isLink` | function | Whether a value written in a prop is a link. |
 | `isNeutral` | function | Whether a built-in effect changes nothing with these params. |
 | `isSequenceItem` | function | Something placed on a track that a cut or an anchor can name. |
 | `isShaderRef` | function | Whether a value is an effect or transition a file declared. |
@@ -696,6 +697,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `layerEngine` | function |  |
 | `LayerEngine` | type | What draws an engine Layer (`<Three>`, `<Motion>`). |
 | `layerFramesPending` | function | How many holds are open. |
+| `Link` | interface | A value read from another element's. |
 | `MAIN_TRACK_ID` | const | The id of the track made of the clips written straight in a `<Composition>`. |
 | `MAIN_TRACK_KINDS` | const | What may be written straight in a `<Composition>` to make its main track. |
 | `Marker` | const | The `<Marker>` element ([reference](/reference/elements/marker)). |
@@ -1283,7 +1285,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/player/engine`
 
-51 exports.
+53 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -1331,11 +1333,13 @@ Every name each entry exports, read from the code. The sections above explain th
 | `paramsAt` | function | An effect's params, with the ones its keys animate evaluated at element-relative `rel`. |
 | `PICK_EPS` | const | Container timestamps are often rounded to the millisecond, so the frame for the exact time n/fps can sit a fraction of a millisecond after it. |
 | `placementSourceTime` | function | Source seconds a media placement shows at composition time `t`. |
+| `refsAt` | function | Every reference read at a frame, at composition time `t`, in one pass. |
+| `RefsAt` | interface | What every reference read at a frame gives, at one moment. |
 | `rootSpace` | function | The composition as a space. |
 | `SETTLE_MS` | const | Quiet time after the last setState before a paused preview fetches its exact frame. |
 | `Space` | interface | Where an overlay is placed from. |
 | `spaceOf` | function | The space `p` is placed in at composition time `t`, for a caller that places one element. |
-| `spacesAt` | function | The space of every overlay that follows another, at composition time `t`, worked out once. |
+| `spacesAt` | function | The space of every overlay that follows another, at composition time `t`. |
 | `trackCamera` | function | The camera's matrix for something on `track` at `t`. |
 | `visiblePlacements` | function | Visual, timed placements that show at `t`. |
 

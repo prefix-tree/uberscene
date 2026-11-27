@@ -34,8 +34,8 @@ A vector shape (rectangle, circle, star, polygon, path) with fill, stroke and sh
 | `exit` | { type, duration, easing } |  |  | How it goes out, over its last seconds, as `enter`. |
 | `style` | string |  |  | A theme preset for shapes. |
 | `type` | "rectangle" \| "circle" \| "ellipse" \| "triangle" \| "arrow" \| … 4 more |  | yes | Which shape it draws. |
-| `width` | number (> 0) \| { at, value, easing }[] \| { type, base, amount, frequency, seed } \| { type, base, speed } \| { type, keys, mode } |  |  | The shape's box width, in pixels, or keys or a generator; left out, 200. |
-| `height` | number (> 0) \| { at, value, easing }[] \| { type, base, amount, frequency, seed } \| { type, base, speed } \| { type, keys, mode } |  |  | The shape's box height, in pixels, or keys or a generator; left out, 200. |
+| `width` | number (> 0) \| { at, value, easing }[] \| { type, base, amount, frequency, seed } \| { type, base, speed } \| { type, keys, mode } \| { link, scale, offset, delay } |  |  | The shape's box width, in pixels, or keys or a generator; left out, 200. |
+| `height` | number (> 0) \| { at, value, easing }[] \| { type, base, amount, frequency, seed } \| { type, base, speed } \| { type, keys, mode } \| { link, scale, offset, delay } |  |  | The shape's box height, in pixels, or keys or a generator; left out, 200. |
 | `points` | { x, y }[] \| { at, value, easing }[] |  |  | A polygon's or path's corners, as fractions of the box from its top left, or keys of such lists: two keys with as many points move point by point (a morph); otherwise the shape changes at the key. |
 | `fill` | string \| { at, value, easing }[] \| { type, color, gradient, opacity } |  |  | A colour, or keys of colours (moved in OKLab), or `{ type, color, gradient, opacity }` for a gradient or no fill. |
 | `stroke` | { color, thickness, opacity, dashArray, dashOffset, lineCap, lineJoin, gradient } |  |  | The outline: colour, thickness in pixels, opacity, dashes, caps and joins. |
