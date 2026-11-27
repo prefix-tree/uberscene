@@ -3,6 +3,7 @@
 
 import type { Json } from "../../patches/types";
 import type { ResolvedState } from "../../resolve/resolve";
+import { startS } from "../../time";
 import { define, insertNode, makePropHandler, rawNode, siblingAfter } from "../handler-kit";
 import { type ActionInput, type CameraPush, invalid, ok, type ValidationResult } from "../types";
 
@@ -138,7 +139,7 @@ function pushedKeys(state: ResolvedState, cameraId: string): Record<string, Json
     const list = lists[field] ?? [];
     lists[field] = list;
     list.push({
-      at: item.start,
+      at: startS(item),
       value: item.props.value as Json,
       ...(typeof easing === "string" && easing !== "linear" ? { easing } : {}),
     });

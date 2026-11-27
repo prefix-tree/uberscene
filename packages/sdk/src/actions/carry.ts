@@ -2,7 +2,16 @@
 // titles anchored to it, transitions beside it, lengths that follow it. Left alone, those point at nothing or at a word
 // the clip no longer plays. A carried action repairs them with ordinary actions of its own, run before or after the
 // edit, so the patches, the write-back and the undo of the repairs are those of the actions they are.
-import { BOX_ORIGIN_POINT, type BoxOrigin, type CurveKey, curveAt, round3, tidySeconds } from "@uberscene/kit/schema";
+import {
+  BOX_ORIGIN_POINT,
+  type BoxOrigin,
+  type CurveKey,
+  curveAt,
+  maxTicks,
+  minTicks,
+  round3,
+  ZERO_TICKS,
+} from "@uberscene/kit/schema";
 
 import { createPatchLog } from "../patches/log";
 import type { Json } from "../patches/types";
@@ -10,6 +19,7 @@ import { type Dependent, dependentsOf } from "../resolve/dependents";
 import { followOf } from "../resolve/follow";
 import { ownRestBox, restBox } from "../resolve/push";
 import { type Placement, type ResolvedState, resolve } from "../resolve/resolve";
+import { lengthS, lengthT, minus, S, startT } from "../time";
 import { type ActionHandler, type ApplyContext, getHandler, inverseOf } from "./registry";
 import type { Action, ActionInput, ActionType } from "./types";
 
@@ -108,7 +118,7 @@ export function carryRemoval(id: string, before: ResolvedState): Carry | null {
   for (const d of deps) {
     if (d.kind !== "match" && d.kind !== "until") continue;
     const p = before.items.get(d.id);
-    if (p && !removed.has(d.id)) pre.push(setProps(d.id, { duration: tidySeconds(p.duration) }));
+    if (p && !removed.has(d.id)) pre.push(setProps(d.id, { duration: lengthS(p) }));
   }
   for (const d of deps) if (d.kind === "follow" && !removed.has(d.id)) pre.push(unfollow(d.id, id, before));
   for (const d of anchored) {
@@ -118,8 +128,8 @@ export function carryRemoval(id: string, before: ResolvedState): Carry | null {
       pre.push({ type: "element/remove", params: { id: d.id } });
       continue;
     }
-    const room = Math.max(0, prev.duration - p.duration);
-    const offset = tidySeconds(Math.min(room, Math.max(0, p.start - prev.start)));
+    const room = maxTicks(ZERO_TICKS, minus(lengthT(prev), lengthT(p)));
+    const offset = S(minTicks(room, maxTicks(ZERO_TICKS, minus(startT(p), startT(prev)))));
     pre.push(setProps(d.id, { anchor: prev.id, at: undefined, offset }));
   }
   // With a clip on each side once this one is gone, one transition still joins them: the one before it, if any.
@@ -158,9 +168,9 @@ export function carryTransitionRemoval(id: string, before: ResolvedState): Carry
   for (const d of deps) {
     const p = before.items.get(d.id);
     if (!p) continue;
-    if (d.kind === "match" || d.kind === "until") pre.push(setProps(d.id, { duration: tidySeconds(p.duration) }));
+    if (d.kind === "match" || d.kind === "until") pre.push(setProps(d.id, { duration: lengthS(p) }));
     else if (!target) pre.push({ type: "element/remove", params: { id: d.id } });
-    else pre.push(setProps(d.id, { anchor: target.id, at: undefined, offset: tidySeconds(p.start - target.start) }));
+    else pre.push(setProps(d.id, { anchor: target.id, at: undefined, offset: S(minus(startT(p), startT(target))) }));
   }
   return pre.length > 0 ? { pre } : null;
 }
@@ -216,17 +226,17 @@ export function carryTrim(id: string, before: ResolvedState): Carry | null {
       const post: ActionInput[] = [];
       for (const d of deps) {
         if (d.kind === "until") {
-          const was = before.items.get(d.id)?.duration;
+          const was = before.items.get(d.id);
           if (lostWord(after, d.id, "duration") && was !== undefined)
-            post.push(setProps(d.id, { duration: tidySeconds(was) }));
+            post.push(setProps(d.id, { duration: lengthS(was) }));
           continue;
         }
         if (!lostWord(after, d.id)) continue;
-        const was = before.items.get(d.id)?.start ?? clip.start;
+        const was = startT(before.items.get(d.id) ?? clip);
         post.push(
           setProps(d.id, {
             at: undefined,
-            offset: tidySeconds(Math.min(clip.duration, Math.max(0, was - clip.start))),
+            offset: S(minTicks(lengthT(clip), maxTicks(ZERO_TICKS, minus(was, startT(clip))))),
           }),
         );
       }
@@ -254,7 +264,7 @@ function unfollow(child: string, leader: string, before: ResolvedState): ActionI
   if (!c || !l) return setProps(child, { follow: next });
   const own = (before.tree.byId.get(child)?.props ?? {}) as Record<string, unknown>;
   const lead = (before.tree.byId.get(leader)?.props ?? {}) as Record<string, unknown>;
-  const rel = c.start - l.start;
+  const rel = S(minus(startT(c), startT(l)));
   const comp = { width: before.composition.width, height: before.composition.height };
   const outer = next ? restBox(before.items.get(next) ?? l, comp, before.manifest, before.items) : null;
   const outerFrame = outer && next && before.items.has(next) ? { width: outer.w, height: outer.h } : comp;

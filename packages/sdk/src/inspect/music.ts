@@ -3,6 +3,7 @@ import { nearestFrame, round3 } from "@uberscene/kit/schema";
 
 import { lookupAsset } from "../manifest/types";
 import type { ResolvedState } from "../resolve/resolve";
+import { endS, startS } from "../time";
 import { type TimelineEntry, timelineBeats } from "./plays";
 
 /** A clip or audio whose asset has beats: the music the timeline plays. */
@@ -68,8 +69,8 @@ export function musicRows(state: ResolvedState, beats: readonly TimelineEntry[] 
       beats: played.length,
       first: first.i,
       last: last.i,
-      from: round3(p.start),
-      to: round3(p.end),
+      from: round3(startS(p)),
+      to: round3(endS(p)),
       grid: "detected",
     });
   }
