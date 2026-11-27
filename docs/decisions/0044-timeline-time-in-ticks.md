@@ -2,6 +2,7 @@
 
 > Status: accepted, to be built in phases. Supersedes the part of [0033](./0033-time-in-ticks.md) that keeps the
 > resolver's times in seconds; 0033's tick unit, exact frame rates, drop-frame timecode and 9.85 hour limit stand.
+> Amended by [0045](./0045-time-as-a-class.md): a time is a `Time` object rather than a branded number.
 
 ## Context
 
