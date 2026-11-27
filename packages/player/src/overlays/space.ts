@@ -3,6 +3,7 @@ import {
   followOf,
   lengthSeconds,
   type Placement,
+  type RefEdge,
   type ResolvedState,
   secondsSinceStart,
 } from "@uberscene/sdk/resolver";
@@ -45,20 +46,44 @@ interface OverlayPlacement extends Placement {
   };
 }
 
+/** What every reference read at a frame gives, at one moment: worked out once, for whatever draws that frame. */
+export interface RefsAt {
+  /** The space of each overlay that follows another. */
+  readonly spaces: ReadonlyMap<string, Space>;
+}
+
+/** What is being filled in while a frame's references are read. */
+interface Reading {
+  readonly spaces: Map<string, Space>;
+}
+
 /**
- * The space of every overlay that follows another, at composition time `t`, worked out once: what a frame of the
- * player hands each element it draws. Pure: the same state and time give the same map. The elements come in the
- * order of the reference graph (`state.refs.order.space`), each after the one it follows, so one pass places them
- * all; in a circle of follows (the resolver already says so) the first one is placed from the composition.
+ * How each kind of reference read at a frame is read: given the state, one reference and the moment, it adds what
+ * the holder gets to the reading. A new kind of frame-time reference is an entry here.
  */
+const FRAME_REFS: Readonly<Record<string, (state: ResolvedState, edge: RefEdge, t: number, into: Reading) => void>> = {
+  follow: (state, edge, t, into) => {
+    const p = state.items.get(edge.from);
+    const space = p && followOf(p) !== undefined ? spaceIn(state, p, t, into.spaces) : undefined;
+    if (space) into.spaces.set(edge.from, space);
+  },
+};
+
+/**
+ * Every reference read at a frame, at composition time `t`, in one pass. Pure: the same state and time give the same
+ * result. The holders come in the order of the reference graph (`state.refs.order`), each after what it names, so
+ * one pass reads them all; in a circle (the resolver already says so) the first one is read as if it named nothing.
+ */
+export function refsAt(state: ResolvedState, t: number): RefsAt {
+  const into: Reading = { spaces: new Map() };
+  for (const id of state.refs.order.space)
+    for (const edge of state.refs.from.get(id) ?? []) FRAME_REFS[edge.type]?.(state, edge, t, into);
+  return into;
+}
+
+/** The space of every overlay that follows another, at composition time `t`: the `spaces` of `refsAt`. */
 export function spacesAt(state: ResolvedState, t: number): ReadonlyMap<string, Space> {
-  const spaces = new Map<string, Space>();
-  for (const id of state.refs.order.space) {
-    const p = state.items.get(id);
-    const space = p && followOf(p) !== undefined ? spaceIn(state, p, t, spaces) : undefined;
-    if (space) spaces.set(id, space);
-  }
-  return spaces;
+  return refsAt(state, t).spaces;
 }
 
 /** The space `p` is placed in at composition time `t`, for a caller that places one element. Pure. */

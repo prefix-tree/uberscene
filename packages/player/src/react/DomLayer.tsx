@@ -10,7 +10,7 @@ import { frameIndex, frameTime } from "../model/time";
 import type { Matrix2D } from "../model/transform";
 import { type VisibleItem, visiblePlacements } from "../model/visible";
 import type { ElementProps } from "../overlays/layout";
-import { rootSpace, type Space, spacesAt } from "../overlays/space";
+import { refsAt, rootSpace, type Space } from "../overlays/space";
 import { devWarn } from "../warn";
 import { DOM_DRAWING } from "./elements";
 import { useCompositionTime, usePlayer } from "./hooks";
@@ -36,7 +36,7 @@ export function DomLayer({ state, interiors, layer = "front", slot }: DomLayerPr
   // Where the overlays that follow another are placed from, worked out once a frame (at the frame's own time unless
   // the player draws every moment), and handed to each element.
   const at = exact ? time : frameTime(frameIndex(time, state.composition.rate), state.composition.rate);
-  const spaces = useMemo(() => spacesAt(state, at), [state, at]);
+  const { spaces } = useMemo(() => refsAt(state, at), [state, at]);
   const root = useMemo(() => rootSpace(state), [state]);
   const items = visiblePlacements(state, time).filter((v) => DOM_DRAWING[v.placement.kind]?.where === "track");
   const byTrack = new Map<string, VisibleItem[]>();
