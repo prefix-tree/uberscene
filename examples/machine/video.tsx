@@ -75,50 +75,55 @@ const noteName = (note: string): string => `${note[0]?.toUpperCase()}${note.slic
 const firstOfBar = (time: number, list: readonly { readonly time: number }[], i: number): boolean =>
   i === 0 || Math.floor(time / 2) !== Math.floor((list[i - 1] as { time: number }).time / 2);
 
-const VOICES: readonly Voice[] = [
-  { id: "kick", label: "KICK", color: C.kick, entry: 0, height: 56, notes: NOTES.kick.map((time) => ({ time })) },
-  { id: "snare", label: "SNARE", color: C.snare, entry: 8, height: 56, notes: NOTES.snare.map((time) => ({ time })) },
-  {
-    id: "hats",
-    label: "HATS",
-    color: C.hats,
-    entry: 0,
-    height: 28,
-    notes: NOTES.hats.map((n) => ({ time: n.time, level: Math.min(1, n.gain / 0.2) })),
-  },
-  {
-    id: "bass",
-    label: "BASS",
-    color: C.bass,
-    entry: 4,
-    height: 52,
-    notes: NOTES.bass.map((n, i) => ({
-      time: n.time,
-      across: (n.midi - 36.5) / 4.5,
-      ...(firstOfBar(n.time, NOTES.bass, i) ? { name: noteName(n.note) } : {}),
-    })),
-  },
-  {
-    id: "chords",
-    label: "CHORD",
-    color: C.chords,
-    entry: 12,
-    height: 0,
-    notes: NOTES.chords.map((n, i) => ({
-      time: n.time,
-      length: n.length,
-      ...(firstOfBar(n.time, NOTES.chords, i) ? { name: CHORDS[n.chord] as string } : {}),
-    })),
-  },
-  {
-    id: "lead",
-    label: "LEAD",
-    color: C.lead,
-    entry: 20,
-    height: 52,
-    notes: NOTES.lead.map((n) => ({ time: n.time, across: (n.midi - 77.5) / 7.5 })),
-  },
-];
+/** Where each of a voice's notes sits across its lane: its lowest note at the left, its highest at the right. */
+const acrossOf = (list: readonly { readonly midi: number }[]): ((midi: number) => number) => {
+  const low = Math.min(...list.map((n) => n.midi));
+  const high = Math.max(...list.map((n) => n.midi));
+  return (midi) => ((midi - low) / (high - low)) * 2 - 1;
+};
+const bassAcross = acrossOf(NOTES.bass);
+const leadAcross = acrossOf(NOTES.lead);
+
+const VOICES: readonly Voice[] = (
+  [
+    { id: "kick", label: "KICK", color: C.kick, height: 56, notes: NOTES.kick.map((time) => ({ time })) },
+    { id: "snare", label: "SNARE", color: C.snare, height: 56, notes: NOTES.snare.map((time) => ({ time })) },
+    { id: "hats", label: "HATS", color: C.hats, height: 28, notes: NOTES.hats },
+    {
+      id: "bass",
+      label: "BASS",
+      color: C.bass,
+      height: 52,
+      notes: NOTES.bass.map((n, i) => ({
+        time: n.time,
+        across: bassAcross(n.midi),
+        ...(firstOfBar(n.time, NOTES.bass, i) ? { name: noteName(n.note) } : {}),
+      })),
+    },
+    {
+      id: "chords",
+      label: "CHORD",
+      color: C.chords,
+      height: 0,
+      notes: NOTES.chords.map((n, i) => ({
+        time: n.time,
+        length: n.length,
+        ...(firstOfBar(n.time, NOTES.chords, i) ? { name: CHORDS[n.chord] as string } : {}),
+      })),
+    },
+    {
+      id: "lead",
+      label: "LEAD",
+      color: C.lead,
+      height: 52,
+      notes: NOTES.lead.map((n) => ({ time: n.time, across: leadAcross(n.midi), level: n.level })),
+    },
+  ] as const
+).map((voice) => ({
+  ...voice,
+  // The lane comes on a bar before the bar of its first note, so that note is seen falling.
+  entry: Math.max(0, Math.floor((voice.notes[0] as Note).time / 2) * 4 - 4),
+}));
 const laneX = (lane: number): number => LEFT + lane * LANE;
 
 // ── Time ─────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -215,7 +220,7 @@ function Lane({ lane }: { lane: number }) {
         const top = bottom - height;
         const sounding = bottom > LINE;
         return (
-          <g key={note.time}>
+          <g key={`${note.time} ${note.across ?? 0}`}>
             <rect
               x={left}
               y={top}

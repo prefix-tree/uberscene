@@ -35,29 +35,37 @@ process.stdout.write(`song: ${added.entry.beats?.length} beats at ${added.entry.
 // The notes, a voice at a time. A voice made of several sounds (the snare's noise and body, a chord's notes) plays
 // them at the same moment: the film needs the moment once.
 const r3 = (v: number): number => Math.round(v * 1000) / 1000;
-const of = (voice: string): StrudelEvent[] => {
-  const seen = new Set<number>();
+const of = (voice: string, each: (e: StrudelEvent) => string = () => ""): StrudelEvent[] => {
+  const seen = new Set<string>();
   return render.events
-    .filter((e) => e.voice === voice && !seen.has(r3(e.time)) && seen.add(r3(e.time)))
+    .filter((e) => e.voice === voice && !seen.has(`${r3(e.time)} ${each(e)}`) && seen.add(`${r3(e.time)} ${each(e)}`))
     .sort((a, b) => a.time - b.time);
 };
 const STEPS: Record<string, number> = { c: 0, d: 2, e: 4, f: 5, g: 7, a: 9, b: 11 };
 /** A note name as a MIDI number: `ab1` is 32, `c5` is 72. */
 const midi = (note: StrudelEvent["note"]): number => {
   if (typeof note === "number") return note;
-  const m = /^([a-g])([b#]?)(-?\d+)$/.exec(note ?? "");
+  const m = /^([a-g])([b#]?)(-?\d+)$/.exec((note ?? "").toLowerCase());
   if (!m) throw new Error(`not a note: ${note}`);
   return (STEPS[m[1] as string] as number) + (m[2] === "b" ? -1 : m[2] === "#" ? 1 : 0) + 12 * (Number(m[3]) + 1);
 };
 
+/** How loud a note is beside the loudest of its voice, 0 to 1. */
+const level = (list: readonly StrudelEvent[]): ((e: StrudelEvent) => number) => {
+  const top = Math.max(...list.map((e) => e.gain));
+  return (e) => Math.round((e.gain / top) * 100) / 100;
+};
+const hats = of("hats");
+const lead = of("lead", (e) => String(e.note));
 const notes = {
   kick: of("kick").map((e) => r3(e.time)),
   snare: of("snare").map((e) => r3(e.time)),
-  hats: of("hats").map((e) => ({ time: r3(e.time), gain: e.gain })),
-  bass: of("bass").map((e) => ({ time: r3(e.time), note: String(e.note), midi: midi(e.note) })),
+  hats: hats.map((e) => ({ time: r3(e.time), level: level(hats)(e) })),
+  bass: of("bass").map((e) => ({ time: r3(e.time), note: String(e.note).toLowerCase(), midi: midi(e.note) })),
   // A chord a bar, so the bar says which.
   chords: of("chords").map((e) => ({ time: r3(e.time), length: r3(e.duration), chord: Math.floor(e.time / 2) % 4 })),
-  lead: of("lead").map((e) => ({ time: r3(e.time), midi: midi(e.note) })),
+  // The lead and its answer can sound together: a note is its moment and its pitch.
+  lead: lead.map((e) => ({ time: r3(e.time), midi: midi(e.note), level: level(lead)(e) })),
 };
 for (const [voice, list] of Object.entries(notes))
   if (list.length === 0) throw new Error(`the score has no notes for the voice "${voice}"`);

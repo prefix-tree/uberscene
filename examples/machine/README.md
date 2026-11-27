@@ -6,10 +6,10 @@ sounds. The block bursts, its pad lights, and the kick shakes the frame.
 
 | Bars | Section | What plays | What you see |
 |---|---|---|---|
-| 1–4 | power up | the kick, then hats, bass, snare | the lanes come on one by one |
-| 5–8 | build | chords, then the lead; a riser | long chord blocks that name themselves (`Fm`, `D♭`), the lead moving left and right by pitch |
-| 9–12 | drop | everything, the chords pumping | all six lanes full; a flash on the first beat |
-| 13–16 | power down | the voices stop one by one | the lanes go dark until the kick is alone |
+| 1–4 | power up | the kick, then euclidean hats, the acid bass, the snare | the lanes come on one by one |
+| 5–8 | build | held chords, then the lead and its echo; the kick rolls into the drop | long chord blocks that name themselves (`Fm`, `D♭`); the lead and its fainter answer, left and right by pitch |
+| 9–12 | drop | everything: chord stabs, the bass on sixteenths, jumping octaves | all six lanes full; a flash on the first beat |
+| 13–16 | power down | notes fall out of every voice at random, more each bar | the lanes thin out and go dark until the kick is alone |
 | 17–18 | the end | one last hit, the chord ringing | "Every block is a note. All code." |
 
 ## The score is the clock
@@ -19,6 +19,11 @@ The music is a [Strudel](https://strudel.cc) score, `score.ts`. Each voice in it
 ```ts
 note("f1*4").s("sine").penv(36).decay(.32).sustain(0).voice("kick")
 ```
+
+The score uses what Strudel says in a few characters: `"x(5,8)"` is a euclidean rhythm, `.off(1/8, x => x.add(n(7)))`
+answers the lead an eighth later and an octave up, `.lpf(sine.range(350, 2200).slow(4))` opens and closes the bass's
+filter over four bars, `.ply("<1 1 1 [1 1 2 4]>")` rolls the kick into the drop, and `.degradeBy("<0 .3 .6 1>")` drops
+notes at random as the machine powers down. Strudel's randomness is a function of time, so every render is the same.
 
 `scripts/music.ts` renders the score with `renderStrudel` from `@uberscene/render`, masters it to -14 LUFS, and adds
 the WAV with its grid: 120 BPM from 0 s, so beat N is at exactly N / 2 seconds. The render also returns every note it
