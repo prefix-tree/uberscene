@@ -1,7 +1,15 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { type Kind, resolveTheme, Time, TimeRange } from "@uberscene/kit/schema";
+import {
+  capabilitiesOf,
+  isMigratedKind,
+  type Kind,
+  resolveTheme,
+  SCHEMAS_BY_KIND,
+  Time,
+  TimeRange,
+} from "@uberscene/kit/schema";
 import {
   type AssetManifest,
   buildRefGraph,
@@ -153,7 +161,15 @@ export function makeState(spec: StateSpec): ResolvedState {
         }
       : undefined;
     const duration = it.duration ?? (source ? (source.out - source.in) / speed : it.kind === "transition" ? 0.5 : 5);
-    const props = { id: it.id, ...(it.props ?? {}) };
+    // The words of a kind whose content is words (a title): `text`, or the `text` some tests write among its props.
+    const { text: written, ...given } = (it.props ?? {}) as Record<string, unknown>;
+    const hasText = capabilitiesOf(it.kind).hasText;
+    const text = hasText ? (it.text ?? (typeof written === "string" ? written : "")) : it.text;
+    const raw: Record<string, unknown> = { id: it.id, ...(hasText ? given : (it.props ?? {})) };
+    // A kind with a folder of its own is drawn from its props as their types, so they are parsed as the resolver does.
+    const props = isMigratedKind(it.kind)
+      ? (SCHEMAS_BY_KIND[it.kind].parse({ start, duration, ...raw }) as Record<string, unknown>)
+      : raw;
     const childNodes: CollectedNode[] = [];
     const childPlacements: Placement[] = [];
     for (const c of it.children ?? []) {
@@ -213,7 +229,7 @@ export function makeState(spec: StateSpec): ResolvedState {
         ),
       );
     }
-    node(it.id, it.kind, parent, props, childNodes, it.text);
+    node(it.id, it.kind, parent, props, childNodes, text);
     const p: Placement = {
       id: it.id,
       kind: it.kind,
@@ -229,6 +245,7 @@ export function makeState(spec: StateSpec): ResolvedState {
       boundProps: {},
       errors: [],
       ...(it.between ? { between: it.between } : {}),
+      ...(hasText ? { text: text ?? "", runs: [] } : {}),
     };
     items.set(it.id, p);
     return p;

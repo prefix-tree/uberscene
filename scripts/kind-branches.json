@@ -15,8 +15,8 @@
     "player": {
       "compare": 11,
       "list": 0,
-      "cast": 55,
-      "read": 44
+      "cast": 40,
+      "read": 31
     },
     "render": {
       "compare": 23,

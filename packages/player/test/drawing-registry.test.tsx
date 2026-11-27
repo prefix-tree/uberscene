@@ -1,5 +1,7 @@
-import { capabilitiesOf, isKind, type Kind, kindsWhere } from "@uberscene/kit/schema";
+import { capabilitiesOf, isKind, KIT_ELEMENTS, type Kind, kindsWhere } from "@uberscene/kit/schema";
 
+import { PLAYER_ELEMENTS } from "../src/elements";
+import { PLAYER_DOM } from "../src/elements/dom";
 import { CANVAS_OPS } from "../src/model/canvas-ops";
 import { INTRINSIC_SIZE, overlaySize } from "../src/overlays/size";
 import { DOM_DRAWING } from "../src/react/elements";
@@ -37,9 +39,16 @@ describe("the drawing tables", () => {
     }
   });
 
-  it("compare the words of what has text", () => {
-    for (const [kind, drawing] of Object.entries(DOM_DRAWING))
-      expect(drawing.same !== undefined, kind).toBe(capabilitiesOf(kind as Kind).hasText);
+  it("hold the kinds with a folder of their own in their folders alone", () => {
+    const migrated = Object.keys(KIT_ELEMENTS);
+    expect(sorted(Object.keys(PLAYER_ELEMENTS))).toEqual(sorted(migrated));
+    // On the DOM plane: a DOM drawing in the folder, which the table the DOM layer asks then holds.
+    const dom = Object.values(KIT_ELEMENTS)
+      .filter((element) => element.capabilities.plane === "dom")
+      .map((element) => element.kind);
+    expect(sorted(Object.keys(PLAYER_DOM))).toEqual(sorted(dom));
+    for (const kind of dom) expect(DOM_DRAWING[kind], kind).toBeDefined();
+    for (const kind of migrated) expect(INTRINSIC_SIZE[kind], kind).toBeUndefined();
   });
 
   it("size only what is drawn as DOM, and a kind with no size of its own is the frame's", () => {

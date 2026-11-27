@@ -1,21 +1,17 @@
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { Time, TimeRange } from "@uberscene/kit/schema";
-import type { Placement, ResolvedState } from "@uberscene/sdk";
+import type { ResolvedState } from "@uberscene/sdk";
 
+import { titleContent } from "../src/elements/title/content";
 import { blendOf } from "../src/model/frame-plan";
-import { titleContent } from "../src/overlays/content";
+import { titlePlacement } from "./helpers/title";
 
 function title(text: string, type: string): string {
-  const placement = {
-    id: "t",
-    kind: "title",
-    start: 0,
-    duration: 2,
-    range: TimeRange.of(Time.ZERO, Time.seconds(2)),
-    props: { width: 400, size: 60, align: "left", animation: { type, in: 0.6, out: 0 } },
-  } as unknown as Placement;
-  return renderToStaticMarkup(titleContent({ placement, children: [], state: {} as ResolvedState, time: 1, text }));
+  const placement = titlePlacement(
+    { box: { width: 400 }, style: { size: 60, align: "left" }, animation: { type, in: 0.6, out: 0 } },
+    text,
+  );
+  return renderToStaticMarkup(titleContent({ placement, children: [], state: {} as ResolvedState, time: 1 }));
 }
 
 describe("a word-by-word title", () => {
@@ -41,16 +37,9 @@ describe("a word-by-word title", () => {
 
 describe("the camelCase values (0.6)", () => {
   const styled = (style: Record<string, unknown>, animation?: Record<string, unknown>) => {
-    const placement = {
-      id: "t",
-      kind: "title",
-      start: 0,
-      duration: 2,
-      range: TimeRange.of(Time.ZERO, Time.seconds(2)),
-      props: { style, ...(animation ? { animation } : {}) },
-    } as unknown as Placement;
+    const placement = titlePlacement({ style, ...(animation ? { animation } : {}) }, "Hi");
     const html = renderToStaticMarkup(
-      titleContent({ placement, children: [], state: {} as ResolvedState, time: 0.25, text: "Hi" }),
+      titleContent({ placement, children: [], state: {} as ResolvedState, time: 0.25 }),
     );
     return new DOMParser().parseFromString(html, "text/html").body.firstElementChild as HTMLElement;
   };

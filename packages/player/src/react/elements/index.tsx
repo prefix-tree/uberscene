@@ -1,18 +1,16 @@
 // How each kind is drawn as DOM: its component, where it stands, and whether its effects run over it. The DOM layer
-// asks this table for every overlay, so it names no kind itself. A new kind drawn as DOM is an entry here.
+// asks this table for every overlay, so it names no kind itself. A kind with a folder of its own says its drawing
+// there (`elements/<kind>/dom.tsx`); the others are entries here.
 
 import type { ReactNode } from "react";
 
-import type { ResolvedState } from "@uberscene/sdk/resolver";
-
+import { ELEMENT_DOM } from "../../elements/dom";
 import type { ElementProps } from "../../overlays/layout";
 import { Adjustment } from "./Adjustment";
 import { Captions } from "./Captions";
 import { Layer } from "./Layer";
-import { Shape } from "./Shape";
 import { Sticker } from "./Sticker";
 import { Svg } from "./Svg";
-import { Title } from "./Title";
 
 export interface DomDrawing {
   /** The element, from what every overlay is given; `interior` is a layer's content, made by the host. */
@@ -21,8 +19,6 @@ export interface DomDrawing {
   readonly where: "track" | "top";
   /** `pipeline`: its effects run over its picture. `none`: it has none of its own (an adjustment's are the canvas's). */
   readonly effects: "pipeline" | "none";
-  /** Whether what it draws from outside its placement is the same in two states: a title's words. */
-  readonly same?: (was: ResolvedState, now: ResolvedState, id: string) => boolean;
 }
 
 const overlay = (render: DomDrawing["render"], more: Partial<DomDrawing> = {}): DomDrawing => ({
@@ -33,20 +29,8 @@ const overlay = (render: DomDrawing["render"], more: Partial<DomDrawing> = {}): 
 });
 
 export const DOM_DRAWING: Readonly<Record<string, DomDrawing>> = {
-  title: overlay(
-    (props) => {
-      const written = props.state.tree.byId.get(props.placement.id);
-      return <Title {...props} text={written?.text ?? ""} runs={written?.runs} />;
-    },
-    {
-      same: (was, now, id) => {
-        const a = was.tree.byId.get(id);
-        const b = now.tree.byId.get(id);
-        return a?.text === b?.text && a?.runs === b?.runs;
-      },
-    },
-  ),
-  shape: overlay((props) => <Shape {...props} />),
+  // The kinds with a folder of their own (`elements/<kind>/dom.tsx`).
+  ...ELEMENT_DOM,
   svg: overlay((props) => <Svg {...props} />),
   sticker: overlay((props) => <Sticker {...props} />),
   layer: overlay((props, { interior }) => <Layer {...props} interior={interior} />),

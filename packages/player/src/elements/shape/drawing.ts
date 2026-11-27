@@ -1,10 +1,11 @@
-import { round3 } from "@uberscene/kit/schema";
+import { round3, type ShapeProps } from "@uberscene/kit/schema";
 import { secondsSinceStart } from "@uberscene/sdk/resolver";
 
-import { keyframedValue } from "../model/keyframes";
-import { type ElementProps, type OverlayLayout, overlayLayout } from "./layout";
-import { overlaySize } from "./size";
-import { type PreparedSvg, prepareSvg } from "./svg";
+import { keyframedValue } from "../../model/keyframes";
+import { type OverlayLayout, overlayLayout } from "../../overlays/layout";
+import { overlaySize } from "../../overlays/size";
+import { type PreparedSvg, prepareSvg } from "../../overlays/svg";
+import type { ElementPropsOf } from "../dom-drawing";
 
 /**
  * A `<Shape>` as SVG markup, drawn through `prepareSvg` like any SVG so the
@@ -12,40 +13,10 @@ import { type PreparedSvg, prepareSvg } from "./svg";
  * dashes, caps and joins, per-corner radii and drop shadows.
  */
 
-interface Gradient {
-  readonly type: "linear" | "radial" | "conic";
-  readonly angle?: number;
-  readonly center?: { readonly x: number; readonly y: number };
-  readonly stops: readonly { readonly offset: number; readonly color: string; readonly opacity?: number }[];
-}
-type Fill =
-  | string
-  | { type: "solid" | "gradient" | "none"; color?: string; gradient?: Gradient; opacity?: number }
-  | undefined;
-interface Stroke {
-  readonly color: string;
-  readonly thickness: number;
-  readonly opacity?: number;
-  readonly dashArray?: readonly number[];
-  readonly dashOffset?: number;
-  readonly lineCap?: string;
-  readonly lineJoin?: string;
-  readonly gradient?: Gradient;
-}
-interface Shadow {
-  readonly color: string;
-  readonly blur?: number;
-  readonly x?: number;
-  readonly y?: number;
-  readonly spread?: number;
-  readonly inset?: boolean;
-}
-interface Radii {
-  readonly topLeft: number;
-  readonly topRight: number;
-  readonly bottomRight: number;
-  readonly bottomLeft: number;
-}
+type Stroke = NonNullable<ShapeProps["stroke"]>;
+type Gradient = NonNullable<Stroke["gradient"]>;
+type Shadow = NonNullable<ShapeProps["shadow"]>;
+type Radii = NonNullable<ShapeProps["cornerRadii"]>;
 
 interface ShapeMarkup {
   readonly markup: string;
@@ -59,41 +30,34 @@ interface ShapeMarkup {
  * A shape's props at its time: its size, colours, outline and points as their keys and generators put them (the
  * constants written there stand when none are), everything else as written.
  */
-function shapeProps(p: ElementProps): Readonly<Record<string, unknown>> {
+function shapeProps(p: ElementPropsOf<"shape">): ShapeProps {
   const props = p.placement.props;
   const rel = secondsSinceStart(p.placement, p.time);
   const at = <T>(property: string, written: T): T => keyframedValue(p.children, property, rel, written);
-  const out: Record<string, unknown> = { ...props };
-  const width = at("shape.width", props.width);
-  const height = at("shape.height", props.height);
-  if (width !== undefined) out.width = width;
-  if (height !== undefined) out.height = height;
-  if (props.fill === undefined || typeof props.fill === "string") {
-    const fill = at("shape.fill", props.fill);
-    if (fill !== undefined) out.fill = fill;
-  }
-  const points = at("shape.points", props.points);
-  if (points !== undefined) out.points = points;
-  const stroke = props.stroke as Stroke | undefined;
-  if (stroke) {
-    const dashOffset = at("shape.stroke.dashOffset", stroke.dashOffset);
-    out.stroke = {
+  const stroke = props.stroke;
+  return {
+    ...props,
+    width: at("shape.width", props.width),
+    height: at("shape.height", props.height),
+    // A fill written as an object (a gradient, or none) takes no keys.
+    fill: props.fill === undefined || typeof props.fill === "string" ? at("shape.fill", props.fill) : props.fill,
+    points: at("shape.points", props.points),
+    stroke: stroke && {
       ...stroke,
       color: at("shape.stroke.color", stroke.color),
-      thickness: Math.max(0, Number(at("shape.stroke.thickness", stroke.thickness))),
-      ...(dashOffset !== undefined ? { dashOffset } : {}),
-    };
-  }
-  return out;
+      thickness: Math.max(0, at("shape.stroke.thickness", stroke.thickness)),
+      dashOffset: at("shape.stroke.dashOffset", stroke.dashOffset),
+    },
+  };
 }
 
-function shapeMarkup(props: Readonly<Record<string, unknown>>, size: { width: number; height: number }): ShapeMarkup {
+function shapeMarkup(props: ShapeProps, size: { width: number; height: number }): ShapeMarkup {
   const { width: w, height: h } = size;
   const warnings: string[] = [];
   const defs: string[] = [];
   const attrs: Record<string, string> = {};
 
-  const fill = props.fill as Fill;
+  const fill = props.fill;
   if (typeof fill === "string") attrs.fill = fill;
   else if (!fill) attrs.fill = "#ffffff";
   else if (fill.type === "none") attrs.fill = "none";
@@ -103,7 +67,7 @@ function shapeMarkup(props: Readonly<Record<string, unknown>>, size: { width: nu
   } else attrs.fill = fill.color ?? "#ffffff";
   if (typeof fill === "object" && fill?.opacity !== undefined) attrs["fill-opacity"] = num(fill.opacity);
 
-  const stroke = props.stroke as Stroke | undefined;
+  const stroke = props.stroke;
   if (stroke) {
     if (stroke.gradient) {
       defs.push(gradient("stroke", stroke.gradient, warnings));
@@ -117,7 +81,7 @@ function shapeMarkup(props: Readonly<Record<string, unknown>>, size: { width: nu
     if (stroke.lineJoin) attrs["stroke-linejoin"] = stroke.lineJoin;
   }
 
-  const shadows = (props.shadows as Shadow[] | undefined) ?? (props.shadow ? [props.shadow as Shadow] : []);
+  const shadows = props.shadows ?? (props.shadow ? [props.shadow] : []);
   const outer = shadows.filter((s) => !s.inset);
   if (outer.length < shadows.length) warnings.push("inset shadows are not drawn");
   const strokeReach = stroke ? stroke.thickness / 2 + 1 : 0;
@@ -132,8 +96,7 @@ function shapeMarkup(props: Readonly<Record<string, unknown>>, size: { width: nu
     attrs.filter = "url(#shadow)";
   }
 
-  const shape = String(props.type ?? "rectangle");
-  const body = geometry(shape, w, h, props, attrs);
+  const body = geometry(props.type, w, h, props, attrs);
   const out = `<svg xmlns="http://www.w3.org/2000/svg" width="${num(w)}" height="${num(h)}" viewBox="0 0 ${num(w)} ${num(h)}">${defs.length ? `<defs>${defs.join("")}</defs>` : ""}${body}</svg>`;
   return { markup: out, size, bleed, warnings };
 }
@@ -145,7 +108,7 @@ export interface ShapeDrawing {
 }
 
 /** How a `<Shape>` element draws at its time: its layout, and the markup with entrance drawing applied. */
-export function shapeDrawing(p: ElementProps, tokens?: Readonly<Record<string, string>>): ShapeDrawing {
+export function shapeDrawing(p: ElementPropsOf<"shape">, tokens?: Readonly<Record<string, string>>): ShapeDrawing {
   const props = shapeProps(p);
   const { size } = overlaySize(p.state, p.placement, p.children, secondsSinceStart(p.placement, p.time));
   const layout = overlayLayout(p, size, "none", true);
@@ -165,10 +128,10 @@ export function shapeDrawing(p: ElementProps, tokens?: Readonly<Record<string, s
 }
 
 function geometry(
-  shape: string,
+  shape: ShapeProps["type"],
   w: number,
   h: number,
-  props: Readonly<Record<string, unknown>>,
+  props: ShapeProps,
   a: Record<string, string>,
 ): string {
   const el = (name: string, own: Record<string, string | number>): string => {
@@ -217,12 +180,12 @@ function geometry(
       });
     }
     case "polygon": {
-      const list = (props.points as { x: number; y: number }[] | undefined) ?? [];
+      const list = props.points ?? [];
       return el("polygon", { points: pts(list.map((q) => [q.x * w, q.y * h] as const)) });
     }
     case "star": {
-      const n = Number(props.starPoints ?? 5),
-        inner = Number(props.innerRadius ?? 0.5);
+      const n = props.starPoints ?? 5,
+        inner = props.innerRadius ?? 0.5;
       const R = Math.min(w, h) / 2;
       const list: [number, number][] = [];
       for (let i = 0; i < n * 2; i++) {
@@ -233,13 +196,13 @@ function geometry(
       return el("polygon", { points: pts(list) });
     }
     case "path": {
-      const list = (props.points as { x: number; y: number }[] | undefined) ?? [];
+      const list = props.points ?? [];
       return el("path", { d: list.map((q, i) => `${i === 0 ? "M" : "L"}${num(q.x * w)} ${num(q.y * h)}`).join(" ") });
     }
     default: {
-      const radii = props.cornerRadii as Radii | undefined;
+      const radii = props.cornerRadii;
       if (radii) return el("path", { d: roundedRect(w, h, radii) });
-      const r = Number(props.cornerRadius ?? 0);
+      const r = props.cornerRadius ?? 0;
       return el("rect", { x: 0, y: 0, width: w, height: h, ...(r > 0 ? { rx: r, ry: r } : {}) });
     }
   }

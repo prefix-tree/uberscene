@@ -181,7 +181,10 @@ export function sameElement(a: ElementCellProps, b: ElementCellProps): boolean {
       startTicks(p) !== startTicks(q) ||
       endTicks(p) !== endTicks(q) ||
       p.props !== q.props ||
-      p.interior !== q.interior)
+      p.interior !== q.interior ||
+      // The words of a kind whose content is words (a title) are on its placement.
+      p.text !== q.text ||
+      p.runs !== q.runs)
   )
     return false;
   if (a.interior !== b.interior) return false;
@@ -198,9 +201,6 @@ export function sameElement(a: ElementCellProps, b: ElementCellProps): boolean {
     cb = b.state.composition;
   if (ca.width !== cb.width || ca.height !== cb.height || ca.rate.num !== cb.rate.num || ca.rate.den !== cb.rate.den)
     return false;
-  // What the kind draws from outside its placement: a title's words.
-  const same = DOM_DRAWING[p.kind]?.same;
-  if (same && !same(a.state, b.state, p.id)) return false;
   if (
     a.exact || b.exact
       ? secondsSinceStart(p, a.time) !== secondsSinceStart(q, b.time)

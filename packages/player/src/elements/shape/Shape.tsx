@@ -1,9 +1,10 @@
-import { dataAttrs, type ElementProps, layoutStyle } from "../../overlays/layout";
-import { shapeDrawing } from "../../overlays/shape";
+import { dataAttrs, layoutStyle } from "../../overlays/layout";
 import { devWarn } from "../../warn";
+import type { ElementPropsOf } from "../dom-drawing";
+import { shapeDrawing } from "./drawing";
 
 /** A vector shape, drawn from the same markup as the export, with room around it for its stroke and shadows. */
-export function Shape(p: ElementProps) {
+export function Shape(p: ElementPropsOf<"shape">) {
   const d = shapeDrawing(p);
   for (const w of d.prepared.warnings) devWarn(`shape:${p.placement.id}:${w}`, `shape "${p.placement.id}": ${w}`);
   return (

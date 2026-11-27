@@ -1,28 +1,8 @@
 import type { Box, FitMode } from "@uberscene/kit/schema";
 import type { Placement, ResolvedState } from "@uberscene/sdk/resolver";
 
-import { keyframedValue } from "../model/keyframes";
+import { elementSize } from "../elements";
 import { type SvgViewBox, svgIntrinsicSize } from "./svg";
-
-/**
- * A title's text box: its `box`'s width and height, each the frame's when left out. A title has no `fit`, so its
- * content is drawn at this size and `placeBox` never scales it.
- */
-function titleBox(
-  props: Readonly<Record<string, unknown>>,
-  comp: { width: number; height: number },
-): { width: number; height: number } {
-  const box = (props.box ?? {}) as { width?: unknown; height?: unknown };
-  return {
-    width: typeof box.width === "number" ? box.width : comp.width,
-    height: typeof box.height === "number" ? box.height : comp.height,
-  };
-}
-
-/** The size a shape draws at, before layout: its `width` and `height`, 200 pixels each when left out. */
-function shapeSizeOf(props: Readonly<Record<string, unknown>>): Box {
-  return { width: Math.max(0, Number(props.width ?? 200)), height: Math.max(0, Number(props.height ?? 200)) };
-}
 
 /** A sticker's size: a square a quarter of the frame's shorter side. */
 function stickerSizeOf(comp: Box): number {
@@ -45,18 +25,11 @@ type SizeOf = (
 ) => IntrinsicSize;
 
 /**
- * The size each kind draws at before layout. A kind with no entry is as large as the frame. A title's is its text
- * box; a shape's its `width` and `height`, keys counted; a sticker's a square; an SVG's what its markup says.
+ * The size each kind draws at before layout, for the kinds that have no folder of their own yet (one that has says
+ * its size there: `elements/<kind>/index.ts`). A kind with no size is as large as the frame. A sticker's is a square;
+ * an SVG's what its markup says.
  */
 export const INTRINSIC_SIZE: Readonly<Record<string, SizeOf>> = {
-  title: (state, p) => ({ size: titleBox(p.props as Record<string, unknown>, state.composition), fit: "none" }),
-  shape: (_state, p, children, rel) => ({
-    size: shapeSizeOf({
-      width: keyframedValue(children, "shape.width", rel, p.props.width),
-      height: keyframedValue(children, "shape.height", rel, p.props.height),
-    }),
-    fit: "none",
-  }),
   sticker: (state) => {
     const side = stickerSizeOf(state.composition);
     return { size: { width: side, height: side }, fit: "none" };
@@ -92,6 +65,8 @@ export function overlaySize(
   rel: number,
   markup?: string,
 ): IntrinsicSize {
+  const said = elementSize(state, p, children, rel);
+  if (said) return said;
   const own = INTRINSIC_SIZE[p.kind];
   if (own) return own(state, p, children, rel, markup);
   return { size: { width: state.composition.width, height: state.composition.height }, fit: "none" };
