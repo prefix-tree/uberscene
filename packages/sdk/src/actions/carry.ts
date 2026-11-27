@@ -12,6 +12,7 @@ import {
   maxTicks,
   minTicks,
   round3,
+  tidySeconds,
   ZERO_TICKS,
 } from "@uberscene/kit/schema";
 
@@ -168,6 +169,31 @@ function pushWithout(ids: readonly string[], before: ResolvedState): ActionInput
     out.push({ type: "camera/setPush", params: { cameraId, push: next } } as ActionInput);
   }
   return out;
+}
+
+/**
+ * Removing a marker: every time written as it (`in="marker:id"`, a caption's `start`, a scene's `times`) becomes
+ * the seconds the marker stood at, so what it placed stays where it was.
+ */
+export function carryMarkerRemoval(id: string, before: ResolvedState): Carry | null {
+  const at = before.tree.byId.get(id)?.props.start;
+  if (typeof at !== "number") return null;
+  const seconds = tidySeconds(at);
+  const byHolder = new Map<string, Record<string, Json | undefined>>();
+  for (const edge of before.refs.to.get(id) ?? []) {
+    if (edge.type !== "marker" && edge.type !== "sceneTime") continue;
+    const props = byHolder.get(edge.from) ?? {};
+    byHolder.set(edge.from, props);
+    if (edge.type === "marker") props[edge.prop] = seconds;
+    else {
+      const written = (before.tree.byId.get(edge.from)?.props.times ?? {}) as Record<string, Json>;
+      const times = (props.times ?? { ...written }) as Record<string, Json>;
+      times[edge.prop.slice("times.".length)] = seconds;
+      props.times = times;
+    }
+  }
+  const pre = [...byHolder].map(([holder, props]) => setProps(holder, props));
+  return pre.length > 0 ? { pre } : null;
 }
 
 /** Whether a sibling on a track is something placed there, not a transition or a gap. */

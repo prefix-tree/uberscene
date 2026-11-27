@@ -239,6 +239,13 @@ export const EDITS: readonly Edit[] = [
     },
   },
   {
+    name: "removes a marker a time is written as",
+    pick: (s) => {
+      const edge = s.refs.edges.find((e) => e.type === "marker" || e.type === "sceneTime");
+      return edge && { type: "marker/remove", params: { markerId: edge.to } };
+    },
+  },
+  {
     name: "adds a track and a title on it",
     pick: () => ({
       type: "batch/apply",

@@ -1,12 +1,15 @@
 // Removing something another element names in a way the scan of props never saw: an element a camera's push makes
-// room for. Each case checks the timeline is left with no errors and that undo puts it all back.
+// room for, a marker a time is written as. Each case checks the timeline is left with no
+// errors and that undo puts it all back.
 import { describe, expect, it } from "vitest";
 
 import { buildSourceIndex, collectModule, dependentsOf, Executor, foldToSource, loadModule } from "@uberscene/sdk";
 
 import { manifest, serialize } from "../helpers";
 
-const file = (body: string) => `import { Camera, Composition, Shape, Track } from "@uberscene/kit";
+const file = (
+  body: string,
+) => `import { Camera, Caption, Captions, Clip, Composition, Marker, Shape, Track } from "@uberscene/kit";
 
 export default function Video() {
   return (
@@ -81,5 +84,58 @@ describe("removing an element a camera's push names", () => {
     const folded = foldToSource(text, exec.log(), exec.state());
     expect(folded.text).not.toContain("push=");
     expect(folded.text).not.toContain(`id="card"`);
+  });
+});
+
+const MARKED = file(`      <Marker id="drop" start={1.5} />
+      <Marker id="other" start={3} />
+      <Track id="main">
+        <Clip id="a" src="asset:interview" in="marker:drop" out="marker:other" />
+        <Clip id="b" src="asset:interview" in={0} out="marker:drop" />
+      </Track>`);
+
+describe("removing a marker a time is written as", () => {
+  it("is listed as a dependent of the marker", () => {
+    const exec = executor(MARKED);
+    expect(dependentsOf(exec.state(), "drop")).toEqual([
+      { kind: "marker", id: "a", prop: "in" },
+      { kind: "marker", id: "b", prop: "out" },
+    ]);
+  });
+
+  it("writes the seconds the marker stood at, and leaves times written as another marker", () => {
+    const exec = executor(MARKED);
+    const was = serialize(exec.state(), false).filter((p) => p.id === "a" || p.id === "b");
+    carried(exec, { type: "marker/remove", params: { markerId: "drop" } }, () => {
+      expect(props(exec, "a").in).toBe(1.5);
+      expect(props(exec, "a").out).toBe("marker:other");
+      expect(props(exec, "b").out).toBe(1.5);
+      // Nothing on the timeline moved.
+      expect(serialize(exec.state(), false).filter((p) => p.id === "a" || p.id === "b")).toEqual(was);
+    });
+  });
+
+  it("writes the seconds into a caption cue that starts at the marker", () => {
+    const exec = executor(
+      file(`      <Marker id="drop" start={1.5} />
+      <Track id="main">
+        <Clip id="a" src="asset:interview" in={0} out={4} />
+      </Track>
+      <Captions id="cap" src="asset:interview">
+        <Caption id="cue" start="marker:drop" end={2.5} text="Hello" />
+      </Captions>`),
+    );
+    expect(dependentsOf(exec.state(), "drop")).toEqual([{ kind: "marker", id: "cue", prop: "start" }]);
+    carried(exec, { type: "marker/remove", params: { markerId: "drop" } }, () => {
+      expect(props(exec, "cue").start).toBe(1.5);
+    });
+  });
+
+  it("removes a marker nothing names as before", () => {
+    const exec = executor(MARKED);
+    exec.execute({ type: "marker/remove", params: { markerId: "drop" } });
+    carried(exec, { type: "marker/remove", params: { markerId: "other" } }, () => {
+      expect(props(exec, "a").out).toBe(3);
+    });
   });
 });
