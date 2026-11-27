@@ -8,6 +8,7 @@ import {
   GENERATOR_TYPES,
   isGenerator,
   isLink,
+  KINDS,
   type Kind,
   keyPathOf,
   keyPathsOf,
@@ -383,8 +384,16 @@ define(makePropHandler({
 
 // ── generators ──────────────────────────────────────────────────────────────
 
-/** Paths a generator cannot be written at: values the mixer or the clock reads from keys alone. */
-const NOT_GENERATED = new Set(["speed", "volume", "pan"]);
+/**
+ * Paths a generator cannot be written at: `speed`, which the clock reads from keys alone, and each number a kind's
+ * schema marks as taking keys or a link and no generator (a sound's level and its pan, which the mixer reads so).
+ */
+const NOT_GENERATED = new Set([
+  "speed",
+  ...KINDS.flatMap((kind) => keyPathsOf(kind))
+    .filter((k) => k.numeric && !k.generated)
+    .map((k) => k.path),
+]);
 
 define(makePropHandler({
   type: "generator/set",
