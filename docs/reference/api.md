@@ -534,12 +534,13 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/kit/schema`
 
-406 exports.
+412 exports.
 
 | Export | Kind | |
 |---|---|---|
 | `addTicks` | const | `a + b`, exact. |
 | `Adjustment` | const | The `<Adjustment>` element ([reference](/reference/elements/adjustment)). |
+| `AdjustmentElement` | interface | The kit's part of an adjustment. |
 | `AdjustmentProps` | interface | The props of a `<Adjustment>`, as its schema parses them. |
 | `Angle` | const | The `<Angle>` element ([reference](/reference/elements/angle)). |
 | `AngleProps` | interface | The props of a `<Angle>`, as its schema parses them. |
@@ -632,7 +633,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `Elements` | type | The tags a file writes, by name. |
 | `ELEMENTS` | const |  |
 | `ENGINE_LAYERS` | const | The engine Layers by tag, and the schema each is checked against once collected (with its `engine`). |
-| `ENGINE_SCHEMAS` | const |  |
+| `ENGINE_SCHEMAS` | const | The schema of each engine's layer, by engine. |
 | `EngineLayers` | type | The engine Layers by tag. |
 | `engineOf` | function | The engine a vocabulary component draws with, if it is an engine Layer. |
 | `ENTRANCE_ANIMATIONS` | const |  |
@@ -700,6 +701,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `isShaderRef` | function | Whether a value is an effect or transition a file declared. |
 | `isTextMark` | function | Whether a component is `<Mark>`. |
 | `isVocabulary` | function |  |
+| `keepsInterior` | function | Whether `kind`'s children in the file are free code, kept as its interior, and not elements. |
 | `Key` | interface | One key of a value that changes over time. |
 | `KEYFRAME_PROPERTIES` | const | Every property a key list can animate, as the resolver names it. |
 | `KeyframeProps` | interface | One key of a value that changes over time, as an item the resolver makes of a key list. |
@@ -721,6 +723,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `KitElement` | interface | The kit's part of one element kind. |
 | `knobsOf` | function | The knobs of a file's `schema`, in the order it lists them, with the value each has in `values` (the file's `defaults` merged with any props given). |
 | `Layer` | const | The `<Layer>` element ([reference](/reference/elements/layer)). |
+| `LayerElement` | interface | The kit's part of a layer. |
 | `layerEngine` | function |  |
 | `LayerEngine` | type | What draws an engine Layer (`<Three>`, `<Motion>`). |
 | `layerFramesPending` | function | How many holds are open. |
@@ -816,6 +819,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `scaleTicks` | const | `t` scaled by a factor that need not be a fraction (a clip speed of 1.5), to the nearest tick. |
 | `sceneSource` | function |  |
 | `SceneSourceFactory` | type | Makes the frames of a 3D scene a clip plays (`<Clip src={scene}>`), drawn at `width` by `height`. |
+| `schemaFor` | function | The schema an element is checked against, from its kind and its props as written. |
 | `SCHEMAS_BY_KIND` | const |  |
 | `secondAndFrame` | function | The whole second a frame falls in and the frame's place within it, for a timecode. |
 | `secondsToTicks` | const | Seconds as the nearest tick. |
@@ -844,12 +848,14 @@ Every name each entry exports, read from the code. The sections above explain th
 | `springAt` | function | Where a spring released at rest from `from` toward `to` is after `time` seconds. |
 | `SpringConfig` | interface | A spring's physics. |
 | `Sticker` | const | The `<Sticker>` element ([reference](/reference/elements/sticker)). |
+| `StickerElement` | interface | The kit's part of a sticker. |
 | `StickerProps` | interface | The props of a `<Sticker>`, as its schema parses them. |
 | `STYLED_KINDS` | const | Element kinds a theme can hold named presets for; their elements pick one with `style`. |
 | `StyledKind` | type |  |
 | `subTicks` | const | `a - b`, exact. |
 | `Svg` | const | The `<Svg>` element ([reference](/reference/elements/svg)). |
 | `SVG_COLOR_TYPES` | const |  |
+| `SvgElement` | interface | The kit's part of an SVG. |
 | `SvgProps` | interface | The props of a `<Svg>`, as its schema parses them. |
 | `TEXT_ALIGNS` | const |  |
 | `TEXT_ANIMATION_TYPES` | const |  |
