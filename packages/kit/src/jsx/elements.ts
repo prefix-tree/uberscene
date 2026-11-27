@@ -89,6 +89,9 @@ export const Cut = el("cut", cutSchema);
 export const Layer = el("layer", layerSchema) as unknown as WithEffects<
   VocabularyComponent<"layer", typeof layerSchema>
 >;
+/** A Layer a library draws: a `layer` component with the engine's own props, and the engine's name. */
+type EngineLayer<E extends string, S extends z.ZodType> = VocabularyComponent<"layer", S> & { readonly engine: E };
+
 /**
  * A Layer drawn by a library: kind `layer` to the resolver, the timeline and the editor, with props of its own and
  * an `engine` the Player looks up among the installed layer engines (`installLayerEngine`).
@@ -96,21 +99,31 @@ export const Layer = el("layer", layerSchema) as unknown as WithEffects<
 const engineLayer = <E extends string, S extends Parameters<typeof defineElement>[0]["schema"]>(
   engine: E,
   schema: S,
-) => {
+): EngineLayer<E, S> => {
   const component = defineElement({ kind: "layer", schema, capabilities: capabilitiesOf("layer") });
   Object.defineProperty(component, "engine", { value: engine, enumerable: true });
   return component as typeof component & { readonly engine: E };
 };
 
+// The props of each tag are its schema's without `engine`, which the tag itself says. The two are named, and the
+// components typed by them, so a declaration file prints each schema once.
+const threeTagSchema = threeSchema.omit({ engine: true });
+const motionTagSchema = motionSchema.omit({ engine: true });
 /** A three.js scene on the timeline: `setup` for plain three.js, or React Three Fiber children. */
-const threeLayer = engineLayer("three", threeSchema.omit({ engine: true }));
+const threeLayer: EngineLayer<"three", typeof threeTagSchema> = engineLayer("three", threeTagSchema);
 export const Three = threeLayer as unknown as WithEffects<typeof threeLayer> & { readonly engine: "three" };
 /** Children animated by a Motion `sequence` on the video's clock. */
-const motionLayer = engineLayer("motion", motionSchema.omit({ engine: true }));
+const motionLayer: EngineLayer<"motion", typeof motionTagSchema> = engineLayer("motion", motionTagSchema);
 export const Motion = motionLayer as unknown as WithEffects<typeof motionLayer> & { readonly engine: "motion" };
 
+/** The engine Layers by tag: a named type, as `Elements` is. */
+export type EngineLayers = {
+  readonly Three: typeof Three;
+  readonly Motion: typeof Motion;
+};
+
 /** The engine Layers by tag, and the schema each is checked against once collected (with its `engine`). */
-export const ENGINE_LAYERS = { Three, Motion } as const;
+export const ENGINE_LAYERS: EngineLayers = { Three, Motion };
 export const ENGINE_SCHEMAS: Readonly<Record<string, typeof threeSchema | typeof motionSchema>> = {
   three: threeSchema,
   motion: motionSchema,
@@ -183,7 +196,36 @@ type WithEffects<C> =
         ) => ReactElement | null)
     : never;
 
-export const ELEMENTS = {
+/**
+ * The tags a file writes, by name. A named type whose members are each `typeof` its component, so a declaration file
+ * names the components and does not print every one's schema a second time. (A type and not an interface, so
+ * `Object.values(ELEMENTS)` keeps each component's type.)
+ */
+export type Elements = {
+  readonly Composition: typeof Composition;
+  readonly Camera: typeof Camera;
+  readonly Track: typeof Track;
+  readonly Clip: typeof Clip;
+  readonly Audio: typeof Audio;
+  readonly Gap: typeof Gap;
+  readonly Transition: typeof Transition;
+  readonly Title: typeof Title;
+  readonly Shape: typeof Shape;
+  readonly Svg: typeof Svg;
+  readonly Sticker: typeof Sticker;
+  readonly Captions: typeof Captions;
+  readonly Caption: typeof Caption;
+  readonly Marker: typeof Marker;
+  readonly Adjustment: typeof Adjustment;
+  readonly Mask: typeof Mask;
+  readonly Nested: typeof Nested;
+  readonly Multicam: typeof Multicam;
+  readonly Angle: typeof Angle;
+  readonly Cut: typeof Cut;
+  readonly Layer: typeof Layer;
+};
+
+export const ELEMENTS: Elements = {
   Composition,
   Camera,
   Track,
@@ -205,7 +247,7 @@ export const ELEMENTS = {
   Angle,
   Cut,
   Layer,
-} as const;
+};
 
 /**
  * The resolver's own item kinds: what it makes of the `effects`, key lists, `speed` keys and `freezes` a file writes

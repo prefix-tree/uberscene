@@ -5,6 +5,8 @@ import {
   type DerivedKind,
   ELEMENTS,
   type ElementKind,
+  type EntranceProps,
+  type FitProps,
   isKind,
   KIND_CAPABILITIES,
   type Kind,
@@ -13,10 +15,24 @@ import {
   kindsWhere,
   kindsWithProp,
   type NestedProps,
+  type OverlayProps,
   type PlacedProps,
   SCHEMAS_BY_KIND,
+  type ShapeProps,
+  type SoundProps,
+  type TimedProps,
   type TitleProps,
+  type VisualProps,
 } from "@uberscene/kit/schema";
+
+import type {
+  audioProps,
+  entranceProps,
+  fitProp,
+  overlayProps,
+  timedProps,
+  visualProps,
+} from "../src/jsx/schemas/common";
 
 describe("the closed list of kinds", () => {
   it("is the tags a file writes and the items the resolver makes, and nothing else", () => {
@@ -64,5 +80,17 @@ describe("the closed list of kinds", () => {
     expectTypeOf(kindsWithProp("follow")).toEqualTypeOf<readonly KindWith<"follow">[]>();
     // A prop known only at run time may be any kind's.
     expectTypeOf(kindsWithProp("blend" as string)).toEqualTypeOf<readonly Kind[]>();
+  });
+
+  it("names the shared props as the schema's groups have them", () => {
+    expectTypeOf<keyof TimedProps>().toEqualTypeOf<keyof typeof timedProps>();
+    expectTypeOf<keyof OverlayProps>().toEqualTypeOf<keyof typeof overlayProps>();
+    expectTypeOf<keyof VisualProps>().toEqualTypeOf<keyof typeof visualProps>();
+    expectTypeOf<keyof FitProps>().toEqualTypeOf<keyof typeof fitProp>();
+    expectTypeOf<keyof EntranceProps>().toEqualTypeOf<keyof typeof entranceProps>();
+    expectTypeOf<keyof SoundProps>().toEqualTypeOf<keyof typeof audioProps>();
+    // Every kind that has a group has it as the group is: a shape's overlay props are a title's.
+    expectTypeOf<Pick<ShapeProps, keyof OverlayProps>>().toEqualTypeOf<Pick<TitleProps, keyof OverlayProps>>();
+    expectTypeOf<Pick<NestedProps, keyof VisualProps>>().toMatchTypeOf<VisualProps>();
   });
 });

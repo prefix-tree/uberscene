@@ -312,7 +312,7 @@ const effectsProp = {
   effects: z.array(effectSpecSchema).optional(),
 };
 
-export const transformProp = {
+const transformProp = {
   ...boxProp,
   /** How it is turned and shown: scale, rotation, anchor, opacity, rounded corners and crop. */
   transform: transformSchema.optional(),

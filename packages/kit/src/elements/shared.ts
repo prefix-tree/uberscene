@@ -1,30 +1,26 @@
 // The props many kinds share, each as a named type: what code that works on any placed thing, any overlay, anything
-// timed takes, in place of a cast. Named interfaces, so a declaration file refers to them by name.
+// timed takes, in place of a cast. Each is taken from a kind that has the whole group, by the group's prop names, so a
+// declaration file names these and does not print the group's schema again. `test/kinds.test.ts` holds the names
+// here to the groups in `jsx/schemas/common.ts`.
 import type { z } from "zod";
 
-import type {
-  audioProps,
-  entranceProps,
-  fitProp,
-  overlayProps,
-  timedProps,
-  transformProp,
-  visualProps,
-} from "../jsx/schemas/common";
+import type { audioSchema, clipSchema } from "../jsx/schemas/media";
+import type { layerSchema, titleSchema } from "../jsx/schemas/overlays";
 
-type Parsed<Shape extends z.ZodRawShape> = z.output<z.ZodObject<Shape>>;
+type Title = z.output<typeof titleSchema>;
+type Clip = z.output<typeof clipSchema>;
 
-/** When it starts and how long it lasts: everything written on a track. */
-export interface TimedProps extends Parsed<typeof timedProps> {}
+/** When it starts and how long it lasts: everything written on a track (`timedProps`). */
+export interface TimedProps extends Pick<Title, "id" | "start" | "anchor" | "at" | "offset" | "duration"> {}
 /** Where it sits and how it is turned: its `box` and its `transform`. */
-export interface PlacedProps extends Parsed<typeof transformProp> {}
-/** What everything drawn over the picture takes: placed, followed, blended, with effects. */
-export interface OverlayProps extends Parsed<typeof overlayProps> {}
-/** Footage and nested sequences: placed, fitted to the frame, blended, with effects. */
-export interface VisualProps extends Parsed<typeof visualProps> {}
-/** How a picture with a size of its own fills the frame. */
-export interface FitProps extends Parsed<typeof fitProp> {}
-/** How it comes in and goes out. */
-export interface EntranceProps extends Parsed<typeof entranceProps> {}
-/** Its level, its place between the speakers, its fades and what it ducks under. */
-export interface SoundProps extends Parsed<typeof audioProps> {}
+export interface PlacedProps extends Pick<Title, "box" | "transform"> {}
+/** What everything drawn over the picture takes: placed, followed, blended, with effects (`overlayProps`). */
+export interface OverlayProps extends Pick<Title, "box" | "transform" | "follow" | "blend" | "effects"> {}
+/** Footage and nested sequences: placed, fitted to the frame, blended, with effects (`visualProps`). */
+export interface VisualProps extends Pick<Clip, "box" | "transform" | "fit" | "blend" | "effects" | "blendOpacity"> {}
+/** How a picture with a size of its own fills the frame (`fitProp`). */
+export interface FitProps extends Pick<Clip, "fit"> {}
+/** How it comes in and goes out (`entranceProps`). */
+export interface EntranceProps extends Pick<z.output<typeof layerSchema>, "enter" | "exit"> {}
+/** Its level, its place between the speakers, its fades and what it ducks under (`audioProps`). */
+export interface SoundProps extends Pick<z.output<typeof audioSchema>, "volume" | "pan" | "fade" | "duck"> {}
