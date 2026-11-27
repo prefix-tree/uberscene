@@ -7,19 +7,19 @@
       "read": 3
     },
     "sdk": {
-      "compare": 124,
-      "list": 26,
+      "compare": 121,
+      "list": 23,
       "cast": 73,
-      "read": 75
+      "read": 74
     },
     "player": {
-      "compare": 11,
+      "compare": 10,
       "list": 0,
-      "cast": 40,
-      "read": 31
+      "cast": 30,
+      "read": 24
     },
     "render": {
-      "compare": 19,
+      "compare": 18,
       "list": 1,
       "cast": 11,
       "read": 1
@@ -37,7 +37,7 @@
     "packages/kit/src/jsx/shaders.ts: p.kind === \"transition\"",
     "packages/sdk/src/inspect/sync.ts: e.kind === \"marker\""
   ],
-  "sealed": ["title", "shape"],
+  "sealed": ["title", "shape", "svg", "sticker", "layer", "adjustment"],
   "allow": [
     {
       "file": "packages/kit/src/theme/schema.ts",
