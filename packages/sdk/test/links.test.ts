@@ -30,7 +30,10 @@ const executor = (text: string): Executor =>
     now: () => 0,
   });
 
-const file = (body: string, fps = "30") => `import { Camera, Composition, Shape, Title, Track } from "@uberscene/kit";
+const file = (
+  body: string,
+  fps = "30",
+) => `import { Audio, Camera, Clip, Composition, Shape, Title, Track } from "@uberscene/kit";
 
 export default function Video() {
   return (
@@ -279,6 +282,46 @@ ${track(shape("card", `transform={{ scale: [{ at: 0, value: 1 }, { at: 1, value:
     expect(under(state, "cam", "camera.zoom").keys.map((k) => [k.at, k.value])).toEqual([
       [2, 1],
       [3, 1.5],
+    ]);
+  });
+
+  it("links a sound's level and its pan", () => {
+    const sounds = {
+      assets: {
+        talk: {
+          id: "talk",
+          kind: "video" as const,
+          duration: 10,
+          fps: 30,
+          width: 640,
+          height: 360,
+          audio: { sampleRate: 48000, channels: 2, streams: 1 },
+        },
+        music: {
+          id: "music",
+          kind: "audio" as const,
+          duration: 30,
+          audio: { sampleRate: 48000, channels: 2, streams: 1 },
+        },
+      },
+    };
+    const text = file(`      <Track id="main">
+        <Clip id="talk" src="asset:talk" in={0} out={4} volume={[{ at: 0, value: 0 }, { at: 1, value: 1 }]} />
+      </Track>
+      <Track id="bed" layout="free">
+        <Audio id="music" src="asset:music" start={1} in={0} out={3}
+          volume={{ link: "talk.volume", scale: -0.5, offset: 1 }} pan={{ link: "talk.volume", scale: 0.5 }} />
+      </Track>`);
+    const state = resolve(collectModule(loadModule(text) as never, {}, { index: buildSourceIndex(text) }), sounds);
+    expect(state.errors).toEqual([]);
+    // The music starts a second after the talk: the talk's keys are at -1 s and 0 s of the music's time.
+    expect(under(state, "music", "audio.volume").keys.map((k) => [k.at, k.value])).toEqual([
+      [-1, 1],
+      [0, 0.5],
+    ]);
+    expect(under(state, "music", "audio.pan").keys.map((k) => [k.at, k.value])).toEqual([
+      [-1, 0],
+      [0, 0.5],
     ]);
   });
 
