@@ -23,11 +23,21 @@ export interface StrudelScore {
   readonly seed?: number;
 }
 
-/** One event the pattern played: when, and what (its sound name and note, when it has them). */
+/** One event the pattern played: when, for how long, and what (its sound name and note, when it has them). */
 export interface StrudelEvent {
+  /** Seconds from the start of the score. */
   readonly time: number;
+  /** Seconds the pattern gives it: its step, not how long its envelope rings. */
+  readonly duration: number;
   readonly s: string | null;
   readonly note: string | number | null;
+  /** Its `gain` control; 1 when the score sets none. */
+  readonly gain: number;
+  /**
+   * The name the score gave its voice, with `.voice("kick")` on that voice; null without one. It is how a picture
+   * finds the notes of one part.
+   */
+  readonly voice: string | null;
 }
 
 export interface StrudelRender {

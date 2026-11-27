@@ -262,6 +262,31 @@ importers:
         specifier: 'catalog:'
         version: 5.9.3
 
+  examples/machine:
+    dependencies:
+      '@uberscene/kit':
+        specifier: workspace:*
+        version: link:../../packages/kit
+      '@uberscene/render':
+        specifier: workspace:*
+        version: link:../../packages/render
+      react:
+        specifier: 'catalog:'
+        version: 19.3.1
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.20.5
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.3.0
+      tsx:
+        specifier: 'catalog:'
+        version: 4.23.15
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+
   examples/orbit:
     dependencies:
       '@uberscene/kit':

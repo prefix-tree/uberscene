@@ -67,6 +67,21 @@ const FILMS: Record<string, Film> = {
     ],
     music: { file: "liftoff/score.ts", until: 20 },
   },
+  // Drawn, no footage: every block that falls is a note of the score. The code comes up as the lead joins: the score
+  // through the end of the build and into the drop, its lit chord the block landing above, then the file that draws
+  // the lanes, and the film takes the frame back for the power-down.
+  machine: {
+    file: "machine/video.tsx",
+    needs: "pnpm --filter @uberscene/example-machine prepare-media",
+    reveal: [12, 24],
+    hook: [
+      { text: "Can you see music?", from: 0, to: 2.8, y: 820 },
+      { text: "Every block\nis one note.", from: 2.8, to: 5.6, y: 820 },
+      { text: "BUT no editor.\nJust code.", from: 5.6, to: 8.6, y: 820 },
+      { text: "Building it to 10/10.\nFollow along.", from: 8.6, to: 11.6, size: 64, y: 820 },
+    ],
+    music: { file: "machine/score.ts", until: 18 },
+  },
 };
 
 /** Elements whose line lights up while they are on screen; sound and structure do not. */

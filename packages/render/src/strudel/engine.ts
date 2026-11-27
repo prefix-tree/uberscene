@@ -3,6 +3,7 @@
 // accepted, and bundled there with esbuild (installed beside them, MIT) into the one script the render page loads.
 // The combination exists only on the machine that renders; no one conveys it.
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
@@ -118,12 +119,19 @@ window.renderScore = async ({ code, cps, seconds, rate, seed }) => {
   const events = [];
   for (const hap of pattern.queryArc(0, seconds * cps).filter((h) => h.hasOnset())) {
     const from = Number(hap.whole.begin), to = Number(hap.whole.end);
-    events.push({ time: from / cps, value: hap.value });
+    events.push({ time: from / cps, duration: (to - from) / cps, value: hap.value });
     await superdough(hap.value, from / cps, (to - from) / cps, cps, from);
   }
   const buffer = await ctx.startRendering();
   return {
-    events: events.map((e) => ({ time: e.time, s: e.value.s ?? null, note: e.value.note ?? e.value.n ?? null })),
+    events: events.map((e) => ({
+      time: e.time,
+      duration: e.duration,
+      s: e.value.s ?? null,
+      note: e.value.note ?? e.value.n ?? null,
+      gain: typeof e.value.gain === "number" ? e.value.gain : 1,
+      voice: typeof e.value.voice === "string" ? e.value.voice : null,
+    })),
     left: toBase64(buffer.getChannelData(0)),
     right: toBase64(buffer.getChannelData(1)),
   };
@@ -146,7 +154,8 @@ export async function strudelPageScript(options: StrudelEngineOptions = {}): Pro
   const env = options.env ?? process.env;
   const log = options.log ?? ((m: string) => process.stderr.write(`${m}\n`));
   const dir = strudelCacheDir(env);
-  const built = join(dir, "dist", "page.js");
+  // Named by the entry's content, so a change to the page is built again rather than hidden by an older build.
+  const built = join(dir, "dist", `page-${createHash("sha256").update(PAGE_ENTRY).digest("hex").slice(0, 12)}.js`);
   if (existsSync(built)) return readFileSync(built, "utf8");
   await ensureAccepted(options.acceptLicence ?? false, log, env);
   if (!existsSync(join(dir, "node_modules", "superdough", "package.json"))) {

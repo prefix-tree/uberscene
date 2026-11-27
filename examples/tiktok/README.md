@@ -13,7 +13,8 @@ Each film becomes two vertical posts, 1080x1920:
   before its pictures' file (`music`). Liftoff's asks "How do you edit 60 years of launches?", answers "Footage. Music.
   An editor.", then turns: "BUT no After Effects. No Premiere. Just code." and "Building it to 10/10. Follow along." At 12 s `score.ts` comes up with
   the playing section lit, its light moving from 1969 to the 80s as the sound does, and at 20 s it switches to
-  `video.tsx`.
+  `video.tsx`. The machine's asks "Can you see music?", and its score comes up as the lead joins, the lit chord in the
+  code the block landing above it.
 - **`<name>-post.mp4`**: just the film. A tall film fills the frame; a wide one sits across it over a blurred copy of
   itself, so there are no bars. (`post.tsx`.)
 
@@ -34,6 +35,8 @@ The posts land in `out/`, which is not committed.
 | `snake-heart` | `shorts/snake-heart.tsx`, a snake that ends in a heart | in the repository |
 | `game-lighting` | `shorts/game-lighting.tsx`, how game lighting fakes it | in the repository |
 | `orbit` | `orbit/video.tsx`, Earth at night from the space station, cut to its music | `pnpm --filter @uberscene/example-orbit prepare-media` |
+| `liftoff` | `liftoff/video.tsx`, sixty years of launches, Apollo to Starship | `pnpm --filter @uberscene/example-liftoff prepare-media` |
+| `machine` | `machine/video.tsx`, a music machine: every falling block is a note of its score | `pnpm --filter @uberscene/example-machine prepare-media` |
 
 A film whose media is not made yet is skipped, and the script says which command makes it.
 
