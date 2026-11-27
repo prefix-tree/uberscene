@@ -1,7 +1,15 @@
 // `uberscene inspect video.tsx`: the timeline read back as an editor reads it, in text or as flat JSON rows, and what
 // is on screen and heard at chosen moments. It runs the resolver and the player's model only: no browser, no media.
 import type { Knob } from "@uberscene/kit";
-import { capabilitiesOf, type ElementBox, rateLabel, round3 } from "@uberscene/kit/schema";
+import {
+  capabilitiesOf,
+  type ElementBox,
+  elapsedSeconds,
+  frameStartSeconds,
+  rateLabel,
+  round3,
+  secondsToTicks,
+} from "@uberscene/kit/schema";
 import {
   animatedBox,
   animatedTransform,
@@ -107,12 +115,15 @@ function placedAt(
 
 /** What is on screen and heard at one moment. */
 export function describeAt(state: ResolvedState, moment: Moment): MomentView {
-  const t = moment.time;
+  // The frame it names, as drawn: the moment's time is rounded to the ms, and 0.333 is in frame 9 at 30 fps, not 10.
+  const t = frameStartSeconds(moment.frame, state.composition.rate);
+  const at = secondsToTicks(t);
+  const within = (start: number, end: number): boolean => at >= secondsToTicks(start) && at < secondsToTicks(end);
   const seen: SeenElement[] = [];
   for (const { placement: p, track, children, transition } of visiblePlacements(state, t)) {
     // A clip at the very end of the transition it leaves through draws nothing.
     if (transition?.role === "out" && transition.progress >= 1) continue;
-    const rel = t - p.start;
+    const rel = elapsedSeconds(t, p.start);
     const transform = restless(animatedTransform(p.props.transform as never, children, rel) as Record<string, unknown>);
     const box = placed(animatedBox(p.props.box as never, children, rel));
     const text = p.kind === "title" ? state.tree.byId.get(p.id)?.text : undefined;
@@ -145,8 +156,8 @@ export function describeAt(state: ResolvedState, moment: Moment): MomentView {
     if (track.hidden || track.muted || (anySolo && !track.solo)) continue;
     for (const p of state.items.values()) {
       if (p.track !== track.id || p.parent === null || !capabilitiesOf(p.kind).audio) continue;
-      // Ends carry float fuzz from the resolver: a sound is over at its end, to the microsecond.
-      if (!(t >= p.start && t < p.end - 1e-6) || !p.source) continue;
+      // In ticks, as the mixer and the player count: a sound plays from its start up to its end.
+      if (!within(p.start, p.end) || !p.source) continue;
       const asset = lookupAsset(state.manifest, p.source.asset);
       if (!asset || asset.kind === "image" || (asset.kind === "video" && !asset.audio)) continue;
       const gain = envelopeAt(buildGainEnvelope(p, track, state, p.start, p.end), t, 1);
@@ -154,9 +165,9 @@ export function describeAt(state: ResolvedState, moment: Moment): MomentView {
     }
   }
 
-  const word = spokenWords(state).find((w) => t >= w.start && t < w.end);
+  const word = spokenWords(state).find((w) => within(w.start, w.end));
   const caption = [...state.items.values()].find(
-    (p) => p.kind === "caption" && state.items.get(p.parent ?? "")?.kind === "captions" && t >= p.start && t < p.end,
+    (p) => p.kind === "caption" && state.items.get(p.parent ?? "")?.kind === "captions" && within(p.start, p.end),
   );
   const view = cameraValuesAt(state, t);
   return {

@@ -534,7 +534,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/kit/schema`
 
-321 exports.
+323 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -610,6 +610,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `EFFECTS` | const |  |
 | `EFFECTS_NOT_RENDERED` | const |  |
 | `EffectSpec` | type | One entry of an element's `effects`. |
+| `elapsedSeconds` | const | `t - start` as an exact difference. |
 | `ElementBox` | type |  |
 | `ElementCapabilities` | interface |  |
 | `ElementDefinition` | interface |  |
@@ -811,6 +812,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `ticksToRationalRound` | function | Ticks as a timestamp in a `num / den` timebase, to the nearest unit with halves up, as craft-time's `to_rational_round`. |
 | `ticksToSeconds` | const |  |
 | `ticksToUnitsFloor` | const | Ticks as a count of units at `perSecond`, floored, as craft-time's `to_units_floor`. |
+| `tidySeconds` | function | A computed time without its float noise, keeping where it really falls. |
 | `timecode` | function | SMPTE timecode of a frame, `HH:MM:SS:FF`. |
 | `timeRange` | const | The range that starts at `start` and lasts `duration`. |
 | `TimeRange` | interface | A half-open stretch of time, `[start, start + duration)`, as craft-time's `TimeRange`. |

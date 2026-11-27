@@ -2,6 +2,7 @@ import { Lock, ZoomIn } from "lucide-react";
 import { type PointerEvent as ReactPointerEvent, useRef, useState } from "react";
 
 import { useEdit, useEditor, useSelection } from "@uberscene/editor";
+import { frameStartSeconds, nearestFrame } from "@uberscene/kit/schema";
 import { useCompositionTime, usePlayer } from "@uberscene/player";
 import { affordances, type ElementRow, trimValue } from "@uberscene/sdk";
 
@@ -64,7 +65,8 @@ export function Timeline({ className }: { className?: string }) {
 
   const commit = (row: ElementRow, grab: Grab, delta: number) => {
     if (delta === 0) return;
-    const r = (n: number) => Math.round(n * 1000) / 1000;
+    // On the frame the drag shows, exactly: rounded to the ms, frame 2 at 30 fps (0.0666…) would be 0.067, in frame 3.
+    const r = (n: number) => frameStartSeconds(nearestFrame(Math.max(0, n), composition.rate), composition.rate);
     const { start, duration } = placed(row, grab, delta, frame);
     const item = state.items.get(row.id);
     // A trim takes the edge's new place as the sdk reads it: for footage, its time in the source file.

@@ -1,4 +1,4 @@
-import { capabilitiesOf } from "@uberscene/kit/schema";
+import { capabilitiesOf, elapsedSeconds } from "@uberscene/kit/schema";
 import {
   type FreezeHold,
   freezeHoldsOf,
@@ -223,7 +223,7 @@ export function buildGainEnvelope(
 
   const kfs = children.filter((c) => c.kind === "keyframe" && c.props.property === "audio.volume");
   if (kfs.length > 0) {
-    factors.push((t) => Number(keyframedValue(children, "audio.volume", t - p.start, volume)));
+    factors.push((t) => Number(keyframedValue(children, "audio.volume", elapsedSeconds(t, p.start), volume)));
     const ats = kfs.map((k) => p.start + Number(k.props.at ?? 0)).sort((a, b) => a - b);
     ats.forEach((at) => breaks.add(at));
     for (let i = 0; i < ats.length - 1; i++) ramps.push([ats[i]!, ats[i + 1]!]);

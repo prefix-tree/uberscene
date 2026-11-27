@@ -2,7 +2,7 @@
 // titles anchored to it, transitions beside it, lengths that follow it. Left alone, those point at nothing or at a word
 // the clip no longer plays. A carried action repairs them with ordinary actions of its own, run before or after the
 // edit, so the patches, the write-back and the undo of the repairs are those of the actions they are.
-import { BOX_ORIGIN_POINT, type BoxOrigin, type CurveKey, curveAt, round3 } from "@uberscene/kit/schema";
+import { BOX_ORIGIN_POINT, type BoxOrigin, type CurveKey, curveAt, round3, tidySeconds } from "@uberscene/kit/schema";
 
 import { createPatchLog } from "../patches/log";
 import type { Json } from "../patches/types";
@@ -108,7 +108,7 @@ export function carryRemoval(id: string, before: ResolvedState): Carry | null {
   for (const d of deps) {
     if (d.kind !== "match" && d.kind !== "until") continue;
     const p = before.items.get(d.id);
-    if (p && !removed.has(d.id)) pre.push(setProps(d.id, { duration: round3(p.duration) }));
+    if (p && !removed.has(d.id)) pre.push(setProps(d.id, { duration: tidySeconds(p.duration) }));
   }
   for (const d of deps) if (d.kind === "follow" && !removed.has(d.id)) pre.push(unfollow(d.id, id, before));
   for (const d of anchored) {
@@ -119,7 +119,7 @@ export function carryRemoval(id: string, before: ResolvedState): Carry | null {
       continue;
     }
     const room = Math.max(0, prev.duration - p.duration);
-    const offset = round3(Math.min(room, Math.max(0, p.start - prev.start)));
+    const offset = tidySeconds(Math.min(room, Math.max(0, p.start - prev.start)));
     pre.push(setProps(d.id, { anchor: prev.id, at: undefined, offset }));
   }
   // With a clip on each side once this one is gone, one transition still joins them: the one before it, if any.
@@ -158,9 +158,9 @@ export function carryTransitionRemoval(id: string, before: ResolvedState): Carry
   for (const d of deps) {
     const p = before.items.get(d.id);
     if (!p) continue;
-    if (d.kind === "match" || d.kind === "until") pre.push(setProps(d.id, { duration: round3(p.duration) }));
+    if (d.kind === "match" || d.kind === "until") pre.push(setProps(d.id, { duration: tidySeconds(p.duration) }));
     else if (!target) pre.push({ type: "element/remove", params: { id: d.id } });
-    else pre.push(setProps(d.id, { anchor: target.id, at: undefined, offset: round3(p.start - target.start) }));
+    else pre.push(setProps(d.id, { anchor: target.id, at: undefined, offset: tidySeconds(p.start - target.start) }));
   }
   return pre.length > 0 ? { pre } : null;
 }
@@ -218,13 +218,16 @@ export function carryTrim(id: string, before: ResolvedState): Carry | null {
         if (d.kind === "until") {
           const was = before.items.get(d.id)?.duration;
           if (lostWord(after, d.id, "duration") && was !== undefined)
-            post.push(setProps(d.id, { duration: round3(was) }));
+            post.push(setProps(d.id, { duration: tidySeconds(was) }));
           continue;
         }
         if (!lostWord(after, d.id)) continue;
         const was = before.items.get(d.id)?.start ?? clip.start;
         post.push(
-          setProps(d.id, { at: undefined, offset: round3(Math.min(clip.duration, Math.max(0, was - clip.start))) }),
+          setProps(d.id, {
+            at: undefined,
+            offset: tidySeconds(Math.min(clip.duration, Math.max(0, was - clip.start))),
+          }),
         );
       }
       return post;

@@ -112,8 +112,16 @@ export function mixBlock(
       // From the absolute frame index, so no block size changes a sample.
       const t = (startFrame + i) / sampleRate;
       // Seconds into the chunk's buffer, then samples at the buffer's own rate.
-      const pos = played(t) * pcm.sampleRate;
-      if (pos < 0 || pos > length - 1) continue;
+      let pos = played(t) * pcm.sampleRate;
+      // Float noise at a cut (a clip at 0.30000000000000004 asked for at 0.3 is at -5e-17 s) is not a sample outside
+      // the clip: without the slack, neither clip would write the sample at the cut, a click on steady sound.
+      if (pos < 0) {
+        if (pos < -1e-6) continue;
+        pos = 0;
+      } else if (pos > length - 1) {
+        if (pos > length - 1 + 1e-6) continue;
+        pos = length - 1;
+      }
       const k = Math.floor(pos),
         f = pos - k;
       const k2 = k + 1 < length ? k + 1 : k;

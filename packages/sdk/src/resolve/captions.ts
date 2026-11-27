@@ -1,4 +1,4 @@
-import { round3 } from "@uberscene/kit/schema";
+import { round3, tidySeconds } from "@uberscene/kit/schema";
 
 import { type AssetEntry, assetIdOf, type TranscriptWord } from "../manifest/types";
 import { type FreezeHold, freezeHoldsOf, freezeUnshift, type RampKey, rampInverse, speedKeysOf } from "./speed";
@@ -327,8 +327,9 @@ export function sameAsset(a: string, b: string): boolean {
 }
 
 function wordOn(w: TranscriptWord, play: AssetPlay): TimelineWord {
-  const start = round3(playTime(play, Math.max(w.start, play.in)));
-  const end = round3(playTime(play, Math.min(w.end, play.out)));
+  // Not round3: a word held to a clip that ends off the ms grid (a probed 5.0416667 s) would end after the clip.
+  const start = tidySeconds(playTime(play, Math.max(w.start, play.in)));
+  const end = tidySeconds(playTime(play, Math.min(w.end, play.out)));
   return {
     i: w.i,
     text: w.text,

@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 
 import type { ElementBox, FitMode, Transform } from "@uberscene/kit/schema";
+import { elapsedSeconds } from "@uberscene/kit/schema";
 import type { Placement, ResolvedState } from "@uberscene/sdk/resolver";
 
 import { trackCamera } from "../model/camera";
@@ -61,7 +62,7 @@ export interface OverlayLayout {
  * others fade instead.
  */
 export function overlayLayout(p: ElementProps, size: Box, fit: FitMode = "none", drawable = false): OverlayLayout {
-  const rel = p.time - p.placement.start;
+  const rel = elapsedSeconds(p.time, p.placement.start);
   const transform = animatedTransform(p.placement.props.transform as Transform | undefined, p.children, rel);
   const box = animatedBox(p.placement.props.box as ElementBox | undefined, p.children, rel);
   // With a `follow`, the box is read in the followed element's box and its place carries it (overlays/space.ts).
