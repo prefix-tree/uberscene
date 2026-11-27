@@ -10,6 +10,7 @@ import { title } from "./title";
 
 export type { SdkElement } from "./element";
 
+/** The SDK's part of each kind that has a folder of its own. */
 export const SDK_ELEMENTS: { readonly [K in MigratedKind]: SdkElement<K> } = { title, shape };
 
 /** The SDK's part of `kind`, as one type whatever the kind, or undefined for a kind with no folder of its own yet. */
