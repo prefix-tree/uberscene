@@ -1,5 +1,5 @@
 // Removing something another element names in a way the scan of props never saw: an element a camera's push makes
-// room for, a marker a time is written as. Each case checks the timeline is left with no
+// room for, a marker a time is written as, a track a sound ducks under. Each case checks the timeline is left with no
 // errors and that undo puts it all back.
 import { describe, expect, it } from "vitest";
 
@@ -9,7 +9,7 @@ import { manifest, serialize } from "../helpers";
 
 const file = (
   body: string,
-) => `import { Camera, Caption, Captions, Clip, Composition, Marker, Shape, Track } from "@uberscene/kit";
+) => `import { Audio, Camera, Caption, Captions, Clip, Composition, Marker, Shape, Track } from "@uberscene/kit";
 
 export default function Video() {
   return (
@@ -136,6 +136,61 @@ describe("removing a marker a time is written as", () => {
     exec.execute({ type: "marker/remove", params: { markerId: "drop" } });
     carried(exec, { type: "marker/remove", params: { markerId: "other" } }, () => {
       expect(props(exec, "a").out).toBe(3);
+    });
+  });
+});
+
+const DUCKED = (under: string, extra = "") =>
+  file(`      <Track id="talk" role="dialogue">
+        <Clip id="a" src="asset:interview" in={0} out={4} />
+      </Track>${extra}
+      <Track id="music" layout="free">
+        <Audio id="bed" src="asset:interview" start={0} duration={4} duck={{ under: "${under}", to: 0.3 }} />
+      </Track>`);
+
+describe("removing a track a sound ducks under", () => {
+  it("is listed as a dependent of the track", () => {
+    const exec = executor(DUCKED("talk"));
+    expect(dependentsOf(exec.state(), "talk")).toEqual([{ kind: "duck", id: "bed" }]);
+  });
+
+  it("drops a duck that names the track by its id", () => {
+    const exec = executor(DUCKED("talk"));
+    carried(exec, { type: "track/remove", params: { trackId: "talk" } }, () => {
+      expect(props(exec, "bed").duck).toBeUndefined();
+    });
+  });
+
+  it("drops a duck that names a role no track has any more", () => {
+    const exec = executor(DUCKED("dialogue"));
+    carried(exec, { type: "track/remove", params: { trackId: "talk" } }, () => {
+      expect(props(exec, "bed").duck).toBeUndefined();
+    });
+  });
+
+  it("keeps a duck that names a role another track still has", () => {
+    const more = `
+      <Track id="guest" role="dialogue" layout="free">
+        <Clip id="g" src="asset:interview" start={0} in={4} out={6} />
+      </Track>`;
+    const exec = executor(DUCKED("dialogue", more));
+    carried(exec, { type: "track/remove", params: { trackId: "talk" } }, () => {
+      expect(props(exec, "bed").duck).toEqual({ under: "dialogue", to: 0.3 });
+    });
+  });
+
+  it("takes the track's elements out of a camera's push", () => {
+    const text = file(`      <Camera id="cam" push={{ on: ["card", "note"] }}>
+        <Track id="stage" layout="free">
+          ${SHAPE("card", 2200)}
+        </Track>
+        <Track id="notes" layout="free">
+          ${SHAPE("note", 2600)}
+        </Track>
+      </Camera>`);
+    const exec = executor(text);
+    carried(exec, { type: "track/remove", params: { trackId: "notes" } }, () => {
+      expect(props(exec, "cam").push).toEqual({ on: ["card"] });
     });
   });
 });

@@ -196,6 +196,24 @@ export function carryMarkerRemoval(id: string, before: ResolvedState): Carry | n
   return pre.length > 0 ? { pre } : null;
 }
 
+/**
+ * Removing a track: a sound that ducked under it, and under nothing else, loses its duck (one that names a role
+ * other tracks still have keeps it), and a camera's push stops naming the elements that go with the track.
+ */
+export function carryTrackRemoval(id: string, before: ResolvedState): Carry | null {
+  const track = before.tracks.find((t) => t.id === id);
+  if (!track) return null;
+  const onTrack = new Set(track.items);
+  const pre: ActionInput[] = [];
+  for (const edge of before.refs.to.get(id) ?? []) {
+    if (edge.type !== "duck" || onTrack.has(edge.from)) continue;
+    const others = (before.refs.from.get(edge.from) ?? []).some((e) => e.type === "duck" && e.to !== id);
+    if (!others) pre.push({ type: "audio/setDuck", params: { id: edge.from, duck: undefined } } as ActionInput);
+  }
+  pre.push(...pushWithout([...track.items], before));
+  return pre.length > 0 ? { pre } : null;
+}
+
 /** Whether a sibling on a track is something placed there, not a transition or a gap. */
 const onTrack = (kind: string | undefined): boolean => kind !== undefined && isSequenceItem(kind);
 

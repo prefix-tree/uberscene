@@ -3,6 +3,7 @@ import { ZERO_TICKS } from "@uberscene/kit/schema";
 import type { PatchLog } from "../../patches/types";
 import type { Placement, ResolvedState } from "../../resolve/resolve";
 import { endT, lengthT, minus, plus, S, startS, startT, T } from "../../time";
+import { carry, carryTrackRemoval } from "../carry";
 import {
   define,
   insertNode,
@@ -92,24 +93,28 @@ define({
   fold: () => [],
 });
 
-define({
-  type: "track/remove",
-  validate: (a, state) =>
-    rawNode(state, a.params.trackId)?.kind === "track"
-      ? ok
-      : invalid({ code: "ELEMENT_NOT_FOUND", message: `track "${a.params.trackId}" does not exist` }),
-  apply: (a, log) => log.append({ op: "remove", id: a.params.trackId }),
-  invert: (a, before) => ({
-    type: "track/restore",
-    params: {
-      trackId: a.params.trackId,
-      node: nodeSpecOf(rawNode(before, a.params.trackId)!),
-      position: trackIndex(before, a.params.trackId),
-      ...(inCamera(before, a.params.trackId) ? { camera: true } : {}),
-    },
-  }),
-  fold: () => [],
-});
+define(carry(
+  {
+    type: "track/remove",
+    validate: (a, state) =>
+      rawNode(state, a.params.trackId)?.kind === "track"
+        ? ok
+        : invalid({ code: "ELEMENT_NOT_FOUND", message: `track "${a.params.trackId}" does not exist` }),
+    apply: (a, log) => log.append({ op: "remove", id: a.params.trackId }),
+    invert: (a, before) => ({
+      type: "track/restore",
+      params: {
+        trackId: a.params.trackId,
+        node: nodeSpecOf(rawNode(before, a.params.trackId)!),
+        position: trackIndex(before, a.params.trackId),
+        ...(inCamera(before, a.params.trackId) ? { camera: true } : {}),
+      },
+    }),
+    fold: () => [],
+  },
+  // A duck under the track and a camera's push for what is on it go with it.
+  (a, before) => carryTrackRemoval(a.params.trackId, before),
+));
 
 define({
   type: "track/restore",
