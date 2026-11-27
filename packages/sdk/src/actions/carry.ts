@@ -21,6 +21,7 @@ import { followOf } from "../resolve/follow";
 import { ownRestBox, restBox } from "../resolve/push";
 import { type Placement, type ResolvedState, resolve } from "../resolve/resolve";
 import { lengthSeconds, S } from "../time";
+import { writePath } from "./handler-kit";
 import { type ActionHandler, type ApplyContext, getHandler, inverseOf } from "./registry";
 import type { Action, ActionInput, ActionType } from "./types";
 
@@ -142,7 +143,70 @@ export function carryRemoval(id: string, before: ResolvedState): Carry | null {
       pre.push({ type: "transition/remove", params: { transitionId: d.id } });
   }
   pre.push(...pushWithout([id], before));
+  pre.push(...linksFrozen([id], before));
   return pre.length > 0 ? { pre } : null;
+}
+
+/**
+ * The elements with a value linked to one of `ids`' values, each with what the link gave written in its place: the
+ * keys the resolver made for it (`lowerLinks`), and the wobble, drift or loop on them. A value linked to an element
+ * that goes keeps moving as it did. Keys that fell before the element's start are cut there, and a wobble or a
+ * drift is written as a generator of the element's own, on its own clock: the same motion, not always the same phase.
+ */
+function linksFrozen(ids: readonly string[], before: ResolvedState): ActionInput[] {
+  const gone = new Set(ids);
+  const byHolder = new Map<string, { working: Record<string, unknown>; out: Record<string, Json | undefined> }>();
+  for (const id of ids) {
+    for (const edge of before.refs.to.get(id) ?? []) {
+      if (edge.type !== "link" || gone.has(edge.from)) continue;
+      const held = byHolder.get(edge.from) ?? {
+        working: { ...(before.tree.byId.get(edge.from)?.props ?? {}) },
+        out: {},
+      };
+      byHolder.set(edge.from, held);
+      const w = writePath(held.working, edge.prop, linkAsWritten(edge.from, edge.prop, before));
+      if (w.value === undefined) delete held.working[w.prop];
+      else held.working[w.prop] = w.value;
+      held.out[w.prop] = w.value;
+    }
+  }
+  return [...byHolder].map(([holder, { out }]) => setProps(holder, out));
+}
+
+/** What the link at `path` of `holder` reads, as a file writes it: a number, keys, or a generator over them. */
+function linkAsWritten(holder: string, path: string, before: ResolvedState): Json | undefined {
+  const base = `${holder}.${path}.link`;
+  const keys: CurveKey[] = [];
+  for (let i = 0; before.items.has(`${base}.${i}`); i++) {
+    const k = before.items.get(`${base}.${i}`) as Placement;
+    keys.push({ at: Number(k.props.at), value: k.props.value, easing: k.props.easing as string | undefined });
+  }
+  if (keys.length === 0) return undefined;
+  keys.sort((a, b) => a.at - b.at);
+  // A file's keys start at the element's start: what came before is where the value stood then.
+  const early = keys.filter((k) => k.at <= 0);
+  const rest = keys.filter((k) => k.at > 0);
+  const kept: CurveKey[] =
+    early.length === 0 ? rest : [{ ...(early.at(-1) as CurveKey), at: 0, value: curveAt(keys, 0) }, ...rest];
+  const constant = kept.every((k) => k.value === kept[0]?.value);
+  const list = kept.map((k) => ({
+    at: tidySeconds(k.at),
+    value: k.value as Json,
+    ...(k.easing !== undefined && k.easing !== "linear" ? { easing: k.easing } : {}),
+  }));
+  const over: Json = constant ? (kept[0]?.value as Json) : list;
+  const g = before.items.get(`${base}.generator`)?.props;
+  if (g?.type === "wiggle")
+    return {
+      type: "wiggle",
+      base: over,
+      amount: g.amount as number,
+      ...(g.frequency !== undefined ? { frequency: g.frequency as number } : {}),
+      ...(g.seed !== undefined ? { seed: g.seed as number } : {}),
+    };
+  if (g?.type === "drift") return { type: "drift", base: over, speed: g.speed as number };
+  if (g?.type === "loop" && list.length >= 2) return { type: "loop", keys: list, mode: g.mode as string };
+  return over;
 }
 
 /**
@@ -209,6 +273,7 @@ export function carryTrackRemoval(id: string, before: ResolvedState): Carry | nu
     if (!others) pre.push({ type: "audio/setDuck", params: { id: edge.from, duck: undefined } } as ActionInput);
   }
   pre.push(...pushWithout([...track.items], before));
+  pre.push(...linksFrozen([...track.items], before));
   return pre.length > 0 ? { pre } : null;
 }
 

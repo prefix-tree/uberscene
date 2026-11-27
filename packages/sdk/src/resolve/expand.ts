@@ -8,6 +8,7 @@ import {
   capabilitiesOf,
   generatorSeed,
   isGenerator,
+  isLink,
   type KeyPath,
   keyPathsOf,
   TRANSFORM_KEY_PATHS,
@@ -42,6 +43,9 @@ const TRANSFORM_FIELDS = fieldsUnder("transform.");
 const CROP_FIELDS = fieldsUnder("transform.crop.");
 /** A transform value when none is written: a scale of 1, an anchor in the middle, a crop of the whole picture. */
 const missingAt = (path: string): number | undefined => TRANSFORM_KEY_PATHS.find((k) => k.path === path)?.missing;
+
+/** A value that is neither a constant nor keys: a generator, or a link to another element's value. */
+const isComputed = (value: unknown): boolean => isGenerator(value) || isLink(value);
 
 const expanded = new WeakMap<CollectedNode, CollectedNode>();
 
@@ -132,6 +136,14 @@ function expandNode(node: CollectedNode): Expansion | null {
     path: string,
     how: { property?: string; param?: string },
   ): { readonly over: unknown; readonly made?: CollectedNode } => {
+    // A link stands in the generator's place until the resolver has placed what it names (`lowerLinks`), which
+    // writes that value's keys and generator here.
+    if (isLink(value))
+      return {
+        over: undefined,
+        // Everything written in it, so a field a link does not have is reported as any other.
+        made: item(`${path}.link`, "generator", { ...how, ...value, type: "link" }),
+      };
     if (!isGenerator(value)) return { over: value };
     const { type, base, keys, ...params } = value;
     const over = type === "loop" ? keys : base;
@@ -175,7 +187,7 @@ function expandNode(node: CollectedNode): Expansion | null {
       holder[seg] = copy;
       holder = copy;
     }
-    if (entry.numeric && isGenerator(holder[field])) {
+    if (entry.numeric && isComputed(holder[field])) {
       const over = settle(holder[field], entry.path, entry.property) ?? (entry.required ? entry.missing : undefined);
       if (over === undefined) delete holder[field];
       else holder[field] = over;
@@ -192,14 +204,14 @@ function expandNode(node: CollectedNode): Expansion | null {
     let touched = false;
     // A generator first: it leaves its base where it was written, which the lines below read as they always did.
     const unwrap = (holder: Record<string, unknown>, field: string, path: string): void => {
-      if (!isGenerator(holder[field])) return;
+      if (!isComputed(holder[field])) return;
       const over = settle(holder[field], path, path);
       if (over === undefined) delete holder[field];
       else holder[field] = over;
       touched = true;
     };
     for (const f of TRANSFORM_FIELDS) unwrap(t, f, `transform.${f}`);
-    if (isGenerator(t.scale)) {
+    if (isComputed(t.scale)) {
       // One generator moves both axes alike: the same wobble, so the element grows and shrinks, not shears.
       const x = generator(t.scale, "transform.scale.x", { property: "transform.scale.x" });
       const y = generator(t.scale, "transform.scale.y", { property: "transform.scale.y" });
@@ -212,7 +224,7 @@ function expandNode(node: CollectedNode): Expansion | null {
       const v = t[pair];
       if (v && typeof v === "object" && !Array.isArray(v) && !isKeyList(v)) {
         const xy: Record<string, unknown> = { ...(v as Record<string, unknown>) };
-        if (isGenerator(xy.x) || isGenerator(xy.y)) {
+        if (isComputed(xy.x) || isComputed(xy.y)) {
           unwrap(xy, "x", `transform.${pair}.x`);
           unwrap(xy, "y", `transform.${pair}.y`);
           t[pair] = { x: xy.x ?? missingAt(`transform.${pair}.x`), y: xy.y ?? missingAt(`transform.${pair}.y`) };
@@ -221,7 +233,7 @@ function expandNode(node: CollectedNode): Expansion | null {
     }
     if (t.crop && typeof t.crop === "object" && !Array.isArray(t.crop)) {
       const c: Record<string, unknown> = { ...(t.crop as Record<string, unknown>) };
-      if (CROP_FIELDS.some((f) => isGenerator(c[f]))) {
+      if (CROP_FIELDS.some((f) => isComputed(c[f]))) {
         for (const f of CROP_FIELDS) unwrap(c, f, `transform.crop.${f}`);
         t.crop = c;
       }
@@ -290,7 +302,7 @@ function expandNode(node: CollectedNode): Expansion | null {
     const b: Record<string, unknown> = { ...(box as Record<string, unknown>) };
     let touched = false;
     for (const axis of ["x", "y"] as const) {
-      if (isGenerator(b[axis])) {
+      if (isComputed(b[axis])) {
         const over = settle(b[axis], `box.${axis}`, `box.${axis}`);
         if (over === undefined) delete b[axis];
         else b[axis] = over;
@@ -308,6 +320,15 @@ function expandNode(node: CollectedNode): Expansion | null {
     }
   }
 
+  // A sound's level or pan linked to another value: the link alone says it.
+  for (const [path, property] of [
+    ["volume", "audio.volume"],
+    ["pan", "audio.pan"],
+  ] as const) {
+    if (!isLink(props[path])) continue;
+    settle(props[path], path, property);
+    delete props[path];
+  }
   if (isKeyList(props.volume)) {
     take(props.volume, "volume", "audio.volume");
     delete props.volume;

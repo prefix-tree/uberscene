@@ -2,6 +2,7 @@ import { tidySeconds } from "@uberscene/kit/schema";
 
 import { asJson } from "../patches/log";
 import type { Json, PatchLog } from "../patches/types";
+import { isKeyList } from "../resolve/expand";
 import type { Placement as ResolvedPlacement, ResolvedState } from "../resolve/resolve";
 import { type CollectedNode, INTERIOR_PREFIX } from "../resolve/tree";
 import { type ActionHandler, type ElementTarget, registerHandler } from "./registry";
@@ -281,4 +282,51 @@ export function makePropHandler<T extends ActionType>(spec: PropHandlerSpec<T>):
 export function define<T extends ActionType>(handler: ActionHandler<T>): ActionHandler<T> {
   registerHandler(handler);
   return handler;
+}
+
+/** The value at a dotted path inside an element's raw props; a number segment indexes a list. */
+export function readPath(props: Readonly<Record<string, unknown>> | undefined, path: string): unknown {
+  let at: unknown = props;
+  for (const seg of path.split(".")) {
+    if (at === null || typeof at !== "object") return undefined;
+    // One list for both axes (`scale: [...]`) is each axis's list.
+    if (isKeyList(at) && (seg === "x" || seg === "y")) continue;
+    at = Array.isArray(at) ? at[Number(seg)] : (at as Record<string, unknown>)[seg];
+  }
+  return at;
+}
+
+/**
+ * The element's top-level prop with `value` written at `path` inside it: objects and lists along the way are copied,
+ * an `undefined` value removes the field, and an object left empty is removed. A number `scale` that gains keys on one
+ * axis becomes `{ x, y }`.
+ */
+export function writePath(
+  props: Readonly<Record<string, unknown>> | undefined,
+  path: string,
+  value: unknown,
+): { readonly prop: string; readonly value: Json | undefined } {
+  const [top, ...rest] = path.split(".") as [string, ...string[]];
+  const put = (container: unknown, segs: readonly string[]): unknown => {
+    if (segs.length === 0) return value;
+    const [seg, ...more] = segs as [string, ...string[]];
+    // A number or one list for both axes, written on one axis: both axes, the other keeping what it had.
+    if ((typeof container === "number" || isKeyList(container)) && (seg === "x" || seg === "y")) {
+      const base: Record<string, unknown> = { x: container, y: container };
+      base[seg] = put(container, more);
+      return base;
+    }
+    if (Array.isArray(container)) {
+      const copy = [...container];
+      copy[Number(seg)] = put(copy[Number(seg)], more);
+      return copy;
+    }
+    const base: Record<string, unknown> =
+      container && typeof container === "object" ? { ...(container as Record<string, unknown>) } : {};
+    const next = put(base[seg], more);
+    if (next === undefined) delete base[seg];
+    else base[seg] = next;
+    return Object.keys(base).length === 0 ? undefined : base;
+  };
+  return { prop: top, value: put(props?.[top], rest) as Json | undefined };
 }

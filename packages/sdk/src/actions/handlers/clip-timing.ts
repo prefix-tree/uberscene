@@ -25,13 +25,15 @@ import {
   placementOf,
   rawNode,
   rawProp,
+  readPath,
   requireElement,
   requireUnlocked,
   setProps,
   validateTarget,
+  writePath,
 } from "../handler-kit";
 import { type ActionError, type ActionInput, invalid, type KeyJson, type NodeSpec, nodeSpecOf, ok } from "../types";
-import { canonicalKeys, readPath, writePath } from "./effect";
+import { canonicalKeys } from "./effect";
 
 const TIMING_PROPS = ["in", "out", "duration", "start", "offset"] as const;
 

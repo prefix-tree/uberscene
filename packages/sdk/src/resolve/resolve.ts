@@ -55,6 +55,7 @@ import {
 } from "./captions";
 import type { ResolveError } from "./errors";
 import { derivedOrigin, expandKeys } from "./expand";
+import { lowerLinks } from "./link";
 import { overlay } from "./overlay";
 import { type PushSpec, pushKeys } from "./push";
 import { buildRefGraph, type RefGraph } from "./refs";
@@ -623,6 +624,37 @@ function compute(
       }
       if (ids.length > 0) items.set(camera.id, reuse({ ...pushed, children: [...pushed.children, ...ids] }));
     }
+  }
+  // A value linked to another's becomes that value's keys, once the push has made the camera's: so a link reads a
+  // pushed camera too, and everything after this reads a link as keys.
+  const linkErrors = refs.errors.get("link") ?? [];
+  if (linkErrors.length > 0 || refs.graph.edges.some((e) => e.type === "link")) {
+    errors.push(...linkErrors);
+    errors.push(
+      ...lowerLinks(refs.graph, {
+        items,
+        add: (owner, parent, id, kind, props, at) => {
+          const node: CollectedNode = {
+            id,
+            kind,
+            props,
+            children: [],
+            parent,
+            editable: owner.editable,
+            lockedProps: [],
+            boundProps: {},
+          };
+          // A key before its element starts (the linked value moved earlier) still stands at the video's start or after.
+          const start = at === null ? owner.range.start : Time.max(Time.ZERO, owner.range.start.plusClamped(T(at)));
+          const length = at === null ? owner.range.duration : Time.ZERO;
+          items.set(id, place(node, owner.track, parent, start, length, props, [], undefined, undefined));
+        },
+        setChildren: (id, children) => {
+          const held = items.get(id);
+          if (held) items.set(id, reuse({ ...held, children }));
+        },
+      }),
+    );
   }
   items.set(
     root.id,
@@ -1214,10 +1246,11 @@ function keyframeErrors(items: ReadonlyMap<string, Placement>): ResolveError[] {
 function onElement(error: ResolveError): ResolveError {
   const origin = error.id ? derivedOrigin(error.id) : null;
   if (!origin) return error;
-  if (origin.path.endsWith(".generator")) {
-    // A generator's fields are written inside the value it stands for: `transform.rotation.amount`.
+  const computed = [".generator", ".link"].find((suffix) => origin.path.endsWith(suffix));
+  if (computed) {
+    // A generator's fields, and a link's, are written inside the value it stands for: `transform.rotation.amount`.
     const { prop, ...rest } = error;
-    const at = origin.path.slice(0, -".generator".length);
+    const at = origin.path.slice(0, -computed.length);
     return { ...rest, id: origin.id, prop: prop ? `${at}.${prop}` : at };
   }
   const field = error.prop

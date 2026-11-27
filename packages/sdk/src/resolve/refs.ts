@@ -2,9 +2,17 @@
 // lasts as long as; the elements a camera makes room for; the track a sound ducks under; a marker) is an edge from
 // the one that names to the one named. What depends on an element, what order to work things out in, what a frame's
 // picture also depends on and what an edit has to repair are all read from here, in place of a scan per feature.
-import { kindsWithProp, parseRef, type RefForm, type RefTarget } from "@uberscene/kit/schema";
+import {
+  capabilitiesOf,
+  keyPathOf,
+  kindsWithProp,
+  parseRef,
+  type RefForm,
+  type RefTarget,
+} from "@uberscene/kit/schema";
 
 import type { ResolveError } from "./errors";
+import { EFFECT_PARAM_PATH } from "./link";
 import type { CollectedNode, CollectedTree } from "./tree";
 
 /** One reference: `from` names `to` in its prop `prop`. `type` is the name of its `RefKind`. */
@@ -108,6 +116,29 @@ function marker(prop: string, text: unknown): Written[] {
   if (!str(text)) return [];
   const target = parseRef(text, ["marker"]);
   return target.type === "marker" ? [{ prop, text, target }] : [];
+}
+
+const WITH_EFFECTS: ReadonlySet<string> = new Set(kindsWithProp("effects"));
+
+/**
+ * The links an element writes, each with the path of the value that holds it. The resolver has already taken each
+ * one out of the props as an item under the element (`<id>.<path>.link`), or under one of its effects.
+ */
+function links(node: CollectedNode): Written[] {
+  // An item the resolver made (a key, an effect) writes nothing itself: its links are its element's.
+  if (capabilitiesOf(node.kind).placementScope === "child") return [];
+  const out: Written[] = [];
+  const visit = (item: CollectedNode): void => {
+    const text = props(item).type === "link" ? props(item).link : undefined;
+    if (str(text) && item.id.endsWith(".link")) {
+      const target = parseRef(text, ["prop"]);
+      const prop = item.id.slice(node.id.length + 1, -".link".length);
+      if (target.type === "prop") out.push({ prop, text, target });
+    }
+    for (const child of item.children) if (capabilitiesOf(child.kind).placementScope === "child") visit(child);
+  };
+  for (const child of node.children) if (capabilitiesOf(child.kind).placementScope === "child") visit(child);
+  return out;
 }
 
 const duration = (node: CollectedNode): { match?: unknown; until?: unknown } =>
@@ -266,6 +297,33 @@ export const REF_KINDS: Readonly<Record<string, RefKind>> = {
     cardinality: "many",
     timeMap: "once",
     onRemove: "freeze",
+  },
+  link: {
+    name: "link",
+    holders: () => true,
+    accept: ["prop"],
+    read: (node) => links(node),
+    unfit: (_from, to, written, ctx) => {
+      const kind = ctx.kindOf(to) as string;
+      const path = written.target.type === "prop" ? written.target.path : "";
+      if (EFFECT_PARAM_PATH.test(path))
+        return WITH_EFFECTS.has(kind) ? null : `${written.prop} links to "${written.text}": a ${kind} has no effects`;
+      const entry = keyPathOf(kind, path);
+      if (entry?.numeric) return null;
+      return entry
+        ? `${written.prop} links to "${written.text}", which is not a number: a link reads a number`
+        : `${written.prop} links to "${written.text}": a ${kind} has no "${path}" that changes over time`;
+    },
+    // Read once everything is placed: the resolver writes the linked value's keys onto the holder (`lowerLinks`).
+    phase: "resolved",
+    facet: "value",
+    cardinality: "one",
+    timeMap: "same",
+    onRemove: "freeze",
+    report: {
+      unknown: (written) =>
+        `${written.prop} links to "${written.text}", and there is no element "${written.text.split(".")[0]}"`,
+    },
   },
 };
 

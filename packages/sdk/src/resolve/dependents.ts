@@ -12,7 +12,8 @@ import type { ResolvedState } from "./resolve";
  * - `follow`: an overlay that moves with it (`follow="id"`);
  * - `push`: a camera that makes room for it (`push.on`) or keeps it in view (`push.keep`);
  * - `duck`: a sound that dips under it, a track (`duck.under`, by the track's id or its role);
- * - `marker` / `sceneTime`: an element with a time written as it, a marker (`in="marker:id"`, a scene's `times`).
+ * - `marker` / `sceneTime`: an element with a time written as it, a marker (`in="marker:id"`, a scene's `times`);
+ * - `link`: an element with a value read from one of its values (`{ link: "id.transform.rotation" }`), at `prop`.
  */
 export type Dependent =
   | { readonly kind: "anchor"; readonly id: string; readonly edge?: "end"; readonly at?: string }
@@ -24,7 +25,8 @@ export type Dependent =
   | { readonly kind: "push"; readonly id: string; readonly part: "on" | "keep" }
   | { readonly kind: "duck"; readonly id: string }
   | { readonly kind: "marker"; readonly id: string; readonly prop: string }
-  | { readonly kind: "sceneTime"; readonly id: string; readonly prop: string };
+  | { readonly kind: "sceneTime"; readonly id: string; readonly prop: string }
+  | { readonly kind: "link"; readonly id: string; readonly prop: string };
 
 /** How one reference of the graph reads as a dependent of what it names. */
 function dependent(state: ResolvedState, edge: RefEdge): Dependent {
@@ -51,6 +53,8 @@ function dependent(state: ResolvedState, edge: RefEdge): Dependent {
       return { kind: "sceneTime", id, prop: edge.prop };
     case "marker":
       return { kind: "marker", id, prop: edge.prop };
+    case "link":
+      return { kind: "link", id, prop: edge.prop };
     default:
       return { kind: "follow", id };
   }

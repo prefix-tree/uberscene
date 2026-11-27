@@ -7,6 +7,7 @@ import {
   effectParamProblem,
   GENERATOR_TYPES,
   isGenerator,
+  isLink,
   keyPathOf,
   keyPathsOf,
   kindsWithProp,
@@ -19,7 +20,7 @@ import type { Json } from "../../patches/types";
 import { isKeyList } from "../../resolve/expand";
 import type { ResolvedState } from "../../resolve/resolve";
 import { T } from "../../time";
-import { define, makePropHandler, onElement, rawNode, rawProp } from "../handler-kit";
+import { define, makePropHandler, onElement, rawNode, rawProp, readPath, writePath } from "../handler-kit";
 import { invalid, type KeyJson, ok, type ValidationResult } from "../types";
 
 /** Kinds whose `speed` takes keys: a ramp, made of speed keys, so it is not in the key-path table. */
@@ -38,8 +39,22 @@ function keyPathsFor(kind: string): readonly string[] {
 
 const EFFECT_PARAM = /^effects\.(\d+)\.([A-Za-z_]\w*)$/;
 
+/**
+ * Why `path` of element `id` cannot be given keys or a generator when a link is written there (or, for one axis, at
+ * both): the value is another element's, so its keys are changed there, or the link is replaced first.
+ */
+function linkProblem(state: ResolvedState, id: string, path: string): string | null {
+  const props = rawNode(state, id)?.props;
+  const both = /\.[xy]$/.test(path) ? readPath(props, path.slice(0, -2)) : undefined;
+  const written = isLink(both) ? both : readPath(props, path);
+  if (!isLink(written)) return null;
+  return `"${path}" of "${id}" is a link to ${written.link}, so it has no keys of its own: change that value's keys, or write a number or keys here in place of the link`;
+}
+
 /** Why `path` cannot hold keys on element `id`, or null. */
 function pathProblem(state: ResolvedState, id: string, path: string): string | null {
+  const linked = linkProblem(state, id, path);
+  if (linked) return linked;
   const fx = EFFECT_PARAM.exec(path);
   if (fx) {
     const effects = effectsOf(state, id);
@@ -58,53 +73,6 @@ function pathProblem(state: ResolvedState, id: string, path: string): string | n
   if (paths.length + effects.length === 0) return `"${path}" cannot hold keys: a ${kind} has nothing that does`;
   const use = [paths.join(", "), ...effects].filter((part) => part !== "").join(", or ");
   return `"${path}" cannot hold keys on a ${kind}; use one of ${use}`;
-}
-
-/** The value at a dotted path inside an element's raw props; a number segment indexes a list. */
-export function readPath(props: Readonly<Record<string, unknown>> | undefined, path: string): unknown {
-  let at: unknown = props;
-  for (const seg of path.split(".")) {
-    if (at === null || typeof at !== "object") return undefined;
-    // One list for both axes (`scale: [...]`) is each axis's list.
-    if (isKeyList(at) && (seg === "x" || seg === "y")) continue;
-    at = Array.isArray(at) ? at[Number(seg)] : (at as Record<string, unknown>)[seg];
-  }
-  return at;
-}
-
-/**
- * The element's top-level prop with `value` written at `path` inside it: objects and lists along the way are copied,
- * an `undefined` value removes the field, and an object left empty is removed. A number `scale` that gains keys on one
- * axis becomes `{ x, y }`.
- */
-export function writePath(
-  props: Readonly<Record<string, unknown>> | undefined,
-  path: string,
-  value: unknown,
-): { readonly prop: string; readonly value: Json | undefined } {
-  const [top, ...rest] = path.split(".") as [string, ...string[]];
-  const put = (container: unknown, segs: readonly string[]): unknown => {
-    if (segs.length === 0) return value;
-    const [seg, ...more] = segs as [string, ...string[]];
-    // A number or one list for both axes, written on one axis: both axes, the other keeping what it had.
-    if ((typeof container === "number" || isKeyList(container)) && (seg === "x" || seg === "y")) {
-      const base: Record<string, unknown> = { x: container, y: container };
-      base[seg] = put(container, more);
-      return base;
-    }
-    if (Array.isArray(container)) {
-      const copy = [...container];
-      copy[Number(seg)] = put(copy[Number(seg)], more);
-      return copy;
-    }
-    const base: Record<string, unknown> =
-      container && typeof container === "object" ? { ...(container as Record<string, unknown>) } : {};
-    const next = put(base[seg], more);
-    if (next === undefined) delete base[seg];
-    else base[seg] = next;
-    return Object.keys(base).length === 0 ? undefined : base;
-  };
-  return { prop: top, value: put(props?.[top], rest) as Json | undefined };
 }
 
 /** The keys at `path`: the list written there, or none when it holds a constant or nothing. */
@@ -436,6 +404,8 @@ define(makePropHandler({
         message: `${a.params.path} cannot be generated: it takes a number or keys`,
         path: "path",
       });
+    const linked = linkProblem(state, a.params.id, a.params.path);
+    if (linked) return invalid({ code: "INVALID_PARAMS", message: linked, path: "path" });
     // A camera's push sets keys on these paths; a generator goes on top of them, so the push does not refuse it.
     const camera = state.items.get(a.params.id);
     if (camera?.kind === "camera" && a.params.path in CAMERA_FIELDS) return ok;
