@@ -63,7 +63,8 @@ export function ownRestBox(item: Placement, frame: Frame, manifest: AssetManifes
   const box = item.props.box as ElementBox | undefined;
   const sized = (width: number, height: number, fit: FitMode): DrawRect =>
     placeBox(frame, { width, height }, fit, box).rect;
-  if (item.kind === "shape") return sized(Number(item.props.width ?? 0), Number(item.props.height ?? 0), "none");
+  // A shape with no `width` or `height` draws 200 pixels wide or tall, so that is what the camera makes room for.
+  if (item.kind === "shape") return sized(Number(item.props.width ?? 200), Number(item.props.height ?? 200), "none");
   if (item.source) {
     const asset = lookupAsset(manifest, item.source.asset);
     const fit = (item.props.fit as FitMode | undefined) ?? "contain";
