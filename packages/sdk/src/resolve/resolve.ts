@@ -54,9 +54,9 @@ import {
   timelineWords,
 } from "./captions";
 import type { ResolveError } from "./errors";
-import { derivedOrigin, expandedRoot, expandKeys } from "./expand";
+import { derivedOrigin, expandedRoot, expandKeys, expansionOf } from "./expand";
 import { FOLLOW_KINDS, followOf } from "./follow";
-import { overlay, sameIdsAsSource } from "./overlay";
+import { layersIn, overlay, sameIdsAsSource } from "./overlay";
 import { type PushSpec, pushKeys } from "./push";
 import { placeScene, type SceneUse, sceneAssetId, withSceneAssets } from "./scene3d";
 import { shapeKeyProblem } from "./shape-keys";
@@ -407,11 +407,19 @@ const sourceIdsUnique = new WeakMap<CollectedTree, boolean>();
 const sceneInside = new Cache<CollectedNode, boolean>();
 
 /** Whether a clip in `node` or under it plays a 3D scene. Kept by node, so an edit looks again only along its path. */
-function playsScene(node: CollectedNode): boolean {
+function playsScene(node: CollectedNode, source?: ReadonlyMap<string, CollectedNode>): boolean {
   const known = sceneInside.get(node);
   if (known !== undefined) return known;
   let found = node.kind === "clip" && isScene(node.props.src);
-  for (let i = 0; !found && i < node.children.length; i++) found = playsScene(node.children[i] as CollectedNode);
+  // A node made again from one with no scene inside has none in the children it kept: only the others are asked.
+  const was = source?.get(node.id);
+  const before = was ? expansionOf(was) : undefined;
+  const kept = before && before !== node && sceneInside.get(before) === false ? before : undefined;
+  for (let i = 0; !found && i < node.children.length; i++) {
+    const child = node.children[i] as CollectedNode;
+    if (kept && kept.children[i] === child) continue;
+    found = playsScene(child, source);
+  }
   sceneInside.set(node, found);
   return found;
 }
@@ -434,14 +442,15 @@ function walkable(original: CollectedTree, written: CollectedTree): CollectedNod
     sourceIdsUnique.set(original, unique);
   }
   if (!unique) return null;
-  const root = expandedRoot(written.root);
+  const source = layersIn(written)?.base;
+  const root = expandedRoot(written.root, source);
   const dotted = (track: CollectedNode): boolean => track.id.includes(".");
   for (const child of root.children) {
     if (child.kind === "track" && dotted(child)) return null;
     if (child.kind === "camera")
       for (const inner of child.children) if (inner.kind === "track" && dotted(inner)) return null;
   }
-  return playsScene(root) ? null : root;
+  return playsScene(root, source) ? null : root;
 }
 
 /** Whether every track of the composition, those in its camera among them, has an id of its own. */

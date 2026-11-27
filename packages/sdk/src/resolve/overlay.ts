@@ -79,12 +79,24 @@ export function overlay(tree: CollectedTree, log: PatchLog | undefined): Collect
  */
 function overlayProps(tree: CollectedTree, net: ReadonlyMap<string, NetPatch>): CollectedTree {
   const dirty = new Set<string>();
+  /** For a node on the way to a patched one, which of its children are on the way too. */
+  const dirtyUnder = new Map<string, CollectedNode[]>();
   for (const [id, n] of net) {
     if (n.props.size === 0 && n.text === undefined) continue;
-    for (let node = tree.byId.get(id); node; node = node.parent === null ? undefined : tree.byId.get(node.parent))
+    for (let node = tree.byId.get(id); node && !dirty.has(node.id); ) {
       dirty.add(node.id);
+      const parent = node.parent === null ? undefined : tree.byId.get(node.parent);
+      if (parent) {
+        const list = dirtyUnder.get(parent.id);
+        if (list) list.push(node);
+        else dirtyUnder.set(parent.id, [node]);
+      }
+      node = parent;
+    }
   }
   if (dirty.size === 0) return tree;
+  // With an id used twice, a node is not found by its id: every child of a node on the way is looked at.
+  const unique = !tree.errors.some((e) => e.code === "DUPLICATE_ID");
   /** The nodes made again, by id: the patched ones and their ancestors. Every other id is the tree's own node. */
   const over = new Map<string, CollectedNode>();
   const rebuild = (node: CollectedNode): CollectedNode => {
@@ -101,7 +113,7 @@ function overlayProps(tree: CollectedTree, net: ReadonlyMap<string, NetPatch>): 
       ...base,
       ...(runs?.length ? { runs } : {}),
       props,
-      children: node.children.map(rebuild),
+      children: unique ? withRebuilt(node, dirtyUnder.get(node.id), rebuild) : node.children.map(rebuild),
       ...(text !== undefined ? { text } : {}),
       ...(interior ? { interior } : {}),
     };
@@ -109,6 +121,23 @@ function overlayProps(tree: CollectedTree, net: ReadonlyMap<string, NetPatch>): 
     return out;
   };
   return layered(tree, rebuild(tree.root), over);
+}
+
+/** A node's children with the few on the way to a patch made again; the others are the same nodes. */
+function withRebuilt(
+  node: CollectedNode,
+  changed: readonly CollectedNode[] | undefined,
+  rebuild: (node: CollectedNode) => CollectedNode,
+): readonly CollectedNode[] {
+  if (!changed) return node.children;
+  const children = node.children.slice();
+  for (const child of changed) {
+    // A node is its parent's child at one place; a tree that has it twice falls back to making every child again.
+    const at = children.indexOf(child);
+    if (at < 0 || children.indexOf(child, at + 1) >= 0) return node.children.map(rebuild);
+    children[at] = rebuild(child);
+  }
+  return children;
 }
 
 export interface Layers {

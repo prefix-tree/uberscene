@@ -34,6 +34,11 @@ const CROP_WHOLE = { x: 0, y: 0, width: 1, height: 1 } as const;
 
 const expanded = new Cache<CollectedNode, CollectedNode>();
 
+/** What `node` expands to, when it has been expanded: itself when it has no keys, effects or holds anywhere inside. */
+export function expansionOf(node: CollectedNode): CollectedNode | undefined {
+  return expanded.get(node);
+}
+
 /** The tree with each element's keys, effects, speed keys and holds as items under it. The same tree when none. */
 export function expandKeys(tree: CollectedTree): CollectedTree {
   const byId = new Map(tree.byId);
@@ -45,18 +50,35 @@ export function expandKeys(tree: CollectedTree): CollectedTree {
  * The root of the tree `expandKeys` gives, without its `byId`: for a reader that walks the tree from the root, and
  * a tree whose ids are known to be each one node's.
  */
-export function expandedRoot(root: CollectedNode): CollectedNode {
-  return expandInto(root, null);
+export function expandedRoot(root: CollectedNode, source?: ReadonlyMap<string, CollectedNode>): CollectedNode {
+  return expandInto(root, null, source);
 }
 
-function expandInto(top: CollectedNode, byId: Map<string, CollectedNode> | null): CollectedNode {
+/**
+ * `source`, when given, is the tree `top` was made from by patching props: a node made again has the children of
+ * the node it replaces but for the patched ones, so it takes their expansions from that node's and looks up none.
+ */
+function expandInto(
+  top: CollectedNode,
+  byId: Map<string, CollectedNode> | null,
+  source?: ReadonlyMap<string, CollectedNode>,
+): CollectedNode {
   const visit = (node: CollectedNode): CollectedNode => {
     const cached = expanded.get(node);
     if (cached) {
       if (cached !== node && byId) index(cached, byId);
       return cached;
     }
-    const kids = node.children.map(visit);
+    const was = source?.get(node.id);
+    const before = was && was !== node && was.children.length === node.children.length ? expanded.get(was) : undefined;
+    let kids: CollectedNode[];
+    if (was && before) {
+      kids = new Array<CollectedNode>(node.children.length);
+      for (let i = 0; i < kids.length; i++) {
+        const child = node.children[i] as CollectedNode;
+        kids[i] = child === was.children[i] ? (before.children[i] as CollectedNode) : visit(child);
+      }
+    } else kids = node.children.map(visit);
     const own = expandNode(node);
     const out =
       own === null && kids.every((k, i) => k === node.children[i])
