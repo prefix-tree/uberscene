@@ -534,7 +534,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/kit/schema`
 
-331 exports.
+341 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -545,11 +545,13 @@ Every name each entry exports, read from the code. The sections above explain th
 | `AnyEffectSpec` | type | Any effect a file may write. |
 | `applyTheme` | function | An element's raw props with its theme applied, before the schema parses them. |
 | `Audio` | const | The `<Audio>` element ([reference](/reference/elements/audio)). |
+| `AUDIO_KEY_PATHS` | const |  |
 | `BLEND_MODES` | const |  |
 | `blendFor` | function | How a key list on `property` moves. |
 | `BlendMode` | type |  |
 | `BLOCK_ASPECTS` | const | The frame shapes a block can be laid out for. |
 | `Box` | interface | A size in pixels. |
+| `BOX_KEY_PATHS` | const |  |
 | `BOX_ORIGIN_POINT` | const | Each origin as fractions of the element's width and height from its top left. |
 | `BOX_ORIGINS` | const | Which point of an element's box `box.x` and `box.y` place. |
 | `BoxOrigin` | type |  |
@@ -562,6 +564,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `BundledFont` | interface | The font families the player ships. |
 | `Camera` | const | The `<Camera>` element ([reference](/reference/elements/camera)). |
 | `CAMERA_FIELDS` | const | What a `<Camera>` animates, and its value when the file writes none. |
+| `CAMERA_KEY_PATHS` | const |  |
 | `capabilitiesOf` | function |  |
 | `Caption` | const | The `<Caption>` element ([reference](/reference/elements/caption)). |
 | `CAPTION_ANIMATIONS` | const |  |
@@ -677,8 +680,12 @@ Every name each entry exports, read from the code. The sections above explain th
 | `isTextMark` | function | Whether a component is `<Mark>`. |
 | `isVocabulary` | function |  |
 | `Key` | interface | One key of a value that changes over time. |
-| `KEYFRAME_PROPERTIES` | const |  |
+| `KEYFRAME_PROPERTIES` | const | Every property a key list can animate, as the resolver names it. |
 | `KeyOf` | interface | One key of a value, as a generator's `base` or a loop's `keys` hold it. |
+| `KeyPath` | interface |  |
+| `keyPathOf` | function | A `kind`'s entry for `path`. |
+| `keyPathOfProperty` | function | The entry whose keys are named `property` (`shape.fill`), whatever kind holds it. |
+| `keyPathsOf` | function | The paths in a `kind`'s props that keys and generators may sit at. |
 | `KIND_CAPABILITIES` | const | What each element kind is. |
 | `kindOf` | function |  |
 | `kindsWhere` | function | The kinds whose entry passes `test`, in the table's order. |
@@ -775,6 +782,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `ShaderTable` | interface | A small picture a built-in effect computes from its params. |
 | `ShaderUniform` | interface | How a param reaches the shader, worked out from its schema once. |
 | `Shape` | const | The `<Shape>` element ([reference](/reference/elements/shape)). |
+| `SHAPE_KEY_PATHS` | const | A shape's own values that change. |
 | `SHAPE_TYPES` | const |  |
 | `shutterTimes` | function | The composition seconds a frame at `t` averages. |
 | `smoothNoise` | function | Smooth noise from -1 to 1 along `x`. |
@@ -837,6 +845,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `TrackLayout` | type |  |
 | `TrackRole` | type |  |
 | `Transform` | type |  |
+| `TRANSFORM_KEY_PATHS` | const |  |
 | `transition` | function | Declares a transition drawn by a GLSL function of the two pictures, and returns it for `<Transition type>`. |
 | `Transition` | const | The `<Transition>` element ([reference](/reference/elements/transition)). |
 | `TRANSITION_FAMILIES` | const | The transitions by family. |
@@ -856,6 +865,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `VocabularyComponent` | type |  |
 | `VocabularyMeta` | interface | What a vocabulary component carries besides being one. |
 | `VocabularyProps` | type |  |
+| `VOLUME_KEY_PATHS` | const | Sound with no pan of its own (a nested composition). |
 | `zBlendMode` | const |  |
 | `zCaptionAnimation` | const |  |
 | `zEasing` | const |  |
