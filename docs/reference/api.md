@@ -534,7 +534,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/kit/schema`
 
-394 exports.
+406 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -694,6 +694,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `isKeyframeProperty` | function | A property a key list can animate, as the resolver names it (`transform.opacity` for <code v-pre>transform={{ opacity: […] }}</code>). |
 | `isKind` | function | Whether a string is an element kind. |
 | `isLink` | function | Whether a value written in a prop is a link. |
+| `isMigratedKind` | function | Whether `kind` has a folder of its own in each package. |
 | `isNeutral` | function | Whether a built-in effect changes nothing with these params. |
 | `isSequenceItem` | function | Something placed on a track that a cut or an anchor can name. |
 | `isShaderRef` | function | Whether a value is an effect or transition a file declared. |
@@ -715,6 +716,9 @@ Every name each entry exports, read from the code. The sections above explain th
 | `kindsWhere` | function | The kinds whose entry passes `test`, in the table's order. |
 | `kindsWithProp` | function | The kinds whose schema has `prop`, in the vocabulary's order. |
 | `KindWith` | type | The kinds whose props have `P`. |
+| `KIT_ELEMENTS` | const | The kit's part of each kind that has a folder of its own. |
+| `kitElement` | function | The kit's part of `kind`, or undefined for a kind that has no folder of its own yet. |
+| `KitElement` | interface | The kit's part of one element kind. |
 | `knobsOf` | function | The knobs of a file's `schema`, in the order it lists them, with the value each has in `values` (the file's `defaults` merged with any props given). |
 | `Layer` | const | The `<Layer>` element ([reference](/reference/elements/layer)). |
 | `layerEngine` | function |  |
@@ -735,6 +739,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `MaskProps` | interface | The props of a `<Mask>`, as its schema parses them. |
 | `MAX_SECONDS` | const | The longest time ticks hold exactly as a JavaScript number. |
 | `maxTicks` | const | The later of two times, or the longer of two lengths. |
+| `MigratedKind` | type | The kinds that have a folder of their own in each package (`elements/<kind>/`). |
 | `minTicks` | const | The earlier of two times, or the shorter of two lengths. |
 | `mixColor` | function | The colour `t` of the way from `from` to `to` (0 is `from`, 1 is `to`), moved in OKLab, with alpha moved in a straight line and the colour weighted by it, so a fade to `transparent` keeps its hue instead of passing through black. |
 | `monotoneCurve` | function | The curve through `points` (x strictly increasing) as a function on 0..1, clamped to 0..1. |
@@ -771,9 +776,11 @@ Every name each entry exports, read from the code. The sections above explain th
 | `placeAxis` | function | Where a box starts on one axis. |
 | `placeBox` | function | The one rule every element that draws is placed by. |
 | `Placed` | interface | Where an element's content lands. |
+| `PLACED_KEY_PATHS` | const | What moves anything with a `transform` and a `box`. |
 | `PlacedProps` | interface | Where it sits and how it is turned. |
 | `PlacementScope` | type |  |
 | `PlainLayerProps` | interface | A `<Layer>` of free code. |
+| `PlaneOf` | type | The plane a kind is drawn on, as a type. |
 | `POST_EFFECTS` | const | Effects the painter draws over the element after it. |
 | `Presets` | type |  |
 | `rangeContains` | const | Whether `t` is in `[start, end)`. |
@@ -823,8 +830,11 @@ Every name each entry exports, read from the code. The sections above explain th
 | `ShaderUniform` | interface | How a param reaches the shader, worked out from its schema once. |
 | `Shape` | const | The `<Shape>` element ([reference](/reference/elements/shape)). |
 | `SHAPE_KEY_PATHS` | const | A shape's own values that change. |
+| `SHAPE_SIZE` | const | A shape's width and height when the file writes none, in pixels. |
 | `SHAPE_TYPES` | const |  |
+| `ShapeElement` | interface | The kit's part of a shape. |
 | `ShapeProps` | interface | The props of a `<Shape>`, as its schema parses them. |
+| `shapeSize` | function | The size a shape draws at before its box places it. |
 | `shutterTimes` | function | The composition seconds a frame at `t` averages. |
 | `smoothNoise` | function | Smooth noise from -1 to 1 along `x`. |
 | `snapToFrame` | const | `t` moved down to the start of the frame it falls in. |
@@ -882,6 +892,8 @@ Every name each entry exports, read from the code. The sections above explain th
 | `timeRange` | const | The range that starts at `start` and lasts `duration`. |
 | `TimeRange` | class | A half-open stretch of the timeline, `[start, start + duration)`, as craft-time's `TimeRange`. |
 | `Title` | const | The `<Title>` element ([reference](/reference/elements/title)). |
+| `TITLE_LOOK_KEYS` | const | The fields a theme's title preset may hold. |
+| `TitleElement` | interface | The kit's part of a title. |
 | `TitleProps` | interface | The props of a `<Title>`, as its schema parses them. |
 | `titleWords` | function | The words of a title's text, as the player reveals them word by word. |
 | `TOKEN_PATTERN` | const | A whole prop value naming a theme value. |
@@ -935,7 +947,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/sdk`
 
-283 exports.
+288 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -1123,10 +1135,11 @@ Every name each entry exports, read from the code. The sections above explain th
 | `PlacedSpeedKey` | interface | A `speedKey` whose props parsed. |
 | `PlacedSticker` | interface | A `sticker` whose props parsed. |
 | `PlacedSvg` | interface | A `svg` whose props parsed. |
-| `PlacedTitle` | interface | A `title` whose props parsed. |
+| `PlacedTitle` | interface | A `title` whose props parsed, with its words. |
 | `PlacedTrack` | interface | A `track` whose props parsed. |
 | `PlacedTransition` | interface | A `transition` whose props parsed. |
 | `Placement` | interface |  |
+| `PlacementFacts` | interface | What a placement holds from the file besides its props, by kind. |
 | `PlacementMap` | interface | Each kind's parsed placement, by kind. |
 | `PlacementSource` | interface | The part of an asset a clip or audio plays. |
 | `PlacementSpec` | type | Where a new element goes. |
@@ -1167,11 +1180,15 @@ Every name each entry exports, read from the code. The sections above explain th
 | `resolveMoments` | function | Turns parsed moments into times of the finished video, in the order asked. |
 | `resolveScene` | function | Resolve a `<Nested of={Scene}>` interior. |
 | `resolveTimeRef` | function | Turn a reference into seconds. |
+| `restSizeOf` | function | A placement's size at rest, where its kind's props say one and they parsed. |
 | `rules` | const |  |
 | `sameAsset` | function |  |
 | `samePlacement` | function | Whether two placements would render and edit the same; used to hand back the previous object. |
 | `SceneFn` | type |  |
 | `SceneUse` | interface | A scene a clip plays, and the moments the clip hands in, in scene seconds. |
+| `SDK_ELEMENTS` | const | The SDK's part of each kind that has a folder of its own. |
+| `sdkElement` | function | The SDK's part of `kind`, as one type whatever the kind, or undefined for a kind with no folder of its own yet. |
+| `SdkElement` | type | The SDK's part of a kind. |
 | `secondsSinceStart` | const | Seconds from a placement's start to `t` (seconds), worked out exactly. |
 | `Shot` | interface |  |
 | `Silence` | interface |  |
@@ -1225,7 +1242,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/sdk/resolver`
 
-131 exports.
+132 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -1307,10 +1324,11 @@ Every name each entry exports, read from the code. The sections above explain th
 | `PlacedSpeedKey` | interface | A `speedKey` whose props parsed. |
 | `PlacedSticker` | interface | A `sticker` whose props parsed. |
 | `PlacedSvg` | interface | A `svg` whose props parsed. |
-| `PlacedTitle` | interface | A `title` whose props parsed. |
+| `PlacedTitle` | interface | A `title` whose props parsed, with its words. |
 | `PlacedTrack` | interface | A `track` whose props parsed. |
 | `PlacedTransition` | interface | A `transition` whose props parsed. |
 | `Placement` | interface |  |
+| `PlacementFacts` | interface | What a placement holds from the file besides its props, by kind. |
 | `PlacementMap` | interface | Each kind's parsed placement, by kind. |
 | `PlacementSource` | interface | The part of an asset a clip or audio plays. |
 | `planCues` | function | Group timeline words into cues. |
