@@ -20,7 +20,7 @@ import { matteCommand } from "./matte/cli";
 import { directoryResolver } from "./media";
 import { checkMotion, formatMotion } from "./motion-check";
 import { installCodec } from "./native/codecs";
-import { draftPath, renderVideo } from "./renderer";
+import { draftPath, type RenderOptions, renderVideo } from "./renderer";
 import { installSkills } from "./skills";
 import { renderStill } from "./still";
 import { checkSync, formatSync } from "./sync-check";
@@ -562,34 +562,80 @@ async function main(): Promise<number> {
     throw new Error("--quality and --bitrate both set the size; pass one");
   if (values.codec !== undefined && !["avc", "vp9", "av1", "prores"].includes(values.codec))
     throw new Error(`--codec wants avc, vp9, av1 or prores, got "${values.codec}"`);
-  const tabs = values.tabs === undefined ? 1 : Math.floor(Number(values.tabs));
-  if (!(tabs >= 1)) throw new Error(`--tabs wants a number of pages, got "${values.tabs}"`);
-  const tty = process.stderr.isTTY && !values.quiet;
-  // A draft goes beside the file --out names, under its own name: it never replaces the video.
-  const written = values.draft ? draftPath(out) : out;
-  const result = await renderVideo({
-    ...common,
-    out: resolve(written),
+  await exportVideo(common, out, {
+    ...exportFlags(values),
     ...(values.draft ? { draft: true } : {}),
-    tabs,
     ...(values.from !== undefined ? { from: numberFlag("from", values.from) } : {}),
     ...(values.to !== undefined ? { to: numberFlag("to", values.to) } : {}),
-    ...(values.codec ? { videoCodec: values.codec as VideoCodec } : {}),
+    ...(values.codec ? { codec: values.codec as VideoCodec } : {}),
     ...(values.bitrate !== undefined ? { bitrate: numberFlag("bitrate", values.bitrate) } : {}),
     ...(values.quality ? { quality: values.quality as QualityName } : {}),
     ...(values.silent ? { silent: true } : {}),
-    ...(values.copy ? { smartCopy: true } : {}),
-    ...(values.keyframe !== undefined ? { keyFrameInterval: numberFlag("keyframe", values.keyframe) } : {}),
-    ...(values.continue ? { onAssetError: "continue" as const } : {}),
+    ...(values.copy ? { copy: true } : {}),
+  });
+  return 0;
+}
+
+/** How one video export is made: the flags the single command and a queue job share. */
+interface VideoExport {
+  readonly draft?: boolean;
+  readonly from?: number;
+  readonly to?: number;
+  readonly codec?: VideoCodec;
+  readonly bitrate?: number;
+  readonly quality?: QualityName;
+  readonly silent?: boolean;
+  readonly copy?: boolean;
+  readonly keyframe?: number;
+  readonly continue?: boolean;
+  readonly tabs: number;
+  readonly quiet?: boolean;
+}
+
+/** The flags every video export of one command takes, single or queued. */
+function exportFlags(values: {
+  tabs?: string | undefined;
+  keyframe?: string | undefined;
+  continue?: boolean | undefined;
+  quiet?: boolean | undefined;
+}): VideoExport {
+  const tabs = values.tabs === undefined ? 1 : Math.floor(Number(values.tabs));
+  if (!(tabs >= 1)) throw new Error(`--tabs wants a number of pages, got "${values.tabs}"`);
+  return {
+    tabs,
+    ...(values.keyframe !== undefined ? { keyframe: numberFlag("keyframe", values.keyframe) } : {}),
+    ...(values.continue ? { continue: true } : {}),
+    ...(values.quiet ? { quiet: true } : {}),
+  };
+}
+
+/** One video export with its progress, warnings and result line, as the single command and a queue job print them. */
+async function exportVideo(common: Omit<RenderOptions, "out">, out: string, how: VideoExport): Promise<void> {
+  const tty = process.stderr.isTTY && !how.quiet;
+  // A draft goes beside the file --out names, under its own name: it never replaces the video.
+  const written = how.draft ? draftPath(out) : out;
+  const result = await renderVideo({
+    ...common,
+    out: resolve(written),
+    ...(how.draft ? { draft: true } : {}),
+    tabs: how.tabs,
+    ...(how.from !== undefined ? { from: how.from } : {}),
+    ...(how.to !== undefined ? { to: how.to } : {}),
+    ...(how.codec ? { videoCodec: how.codec } : {}),
+    ...(how.bitrate !== undefined ? { bitrate: how.bitrate } : {}),
+    ...(how.quality ? { quality: how.quality } : {}),
+    ...(how.silent ? { silent: true } : {}),
+    ...(how.copy ? { smartCopy: true } : {}),
+    ...(how.keyframe !== undefined ? { keyFrameInterval: how.keyframe } : {}),
+    ...(how.continue ? { onAssetError: "continue" as const } : {}),
     onProgress: tty ? (p) => process.stderr.write(`\rframe ${p.frame}/${p.frames}`) : () => undefined,
   });
   if (tty) process.stderr.write("\n");
   for (const w of result.warnings) process.stderr.write(`warning: ${w}\n`);
   const seconds = (result.wallMs / 1000).toFixed(1);
   process.stderr.write(
-    `${written}: ${values.draft ? "a draft, every second frame at half size: " : ""}${result.frames} frames, ${result.width}x${result.height} at ${Number(result.fps.toFixed(3))} fps${result.audio ? ", with sound" : ""}, in ${seconds}s${result.tabs > 1 ? ` on ${result.tabs} tabs` : ""}${result.copiedFrames > 0 ? `, ${result.copiedFrames} frames copied` : ""}${nativeNote(result.codecs)} (${(result.frames / (result.wallMs / 1000)).toFixed(1)} fps)\n`,
+    `${written}: ${how.draft ? "a draft, every second frame at half size: " : ""}${result.frames} frames, ${result.width}x${result.height} at ${Number(result.fps.toFixed(3))} fps${result.audio ? ", with sound" : ""}, in ${seconds}s${result.tabs > 1 ? ` on ${result.tabs} tabs` : ""}${result.copiedFrames > 0 ? `, ${result.copiedFrames} frames copied` : ""}${nativeNote(result.codecs)} (${(result.frames / (result.wallMs / 1000)).toFixed(1)} fps)\n`,
   );
-  return 0;
 }
 
 /** What each number flag takes, for its check and its message. */
