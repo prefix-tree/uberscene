@@ -1,20 +1,33 @@
 ---
 title: Blog
-description: Where UberScene is going and why, from the people building it.
+description: What shipped in UberScene, why, and what it changes, from the people building it.
 sidebar: false
 aside: false
 ---
 
 # Blog
 
-Where UberScene is going and why. Release notes live in the
-[changelog](https://github.com/prefix-tree/uberscene/blob/main/packages/kit/CHANGELOG.md); this is the reasoning
-behind them.
+What shipped in UberScene, why, and what it changes. The full list of changes is in the
+[changelog](https://github.com/prefix-tree/uberscene/blob/main/packages/kit/CHANGELOG.md); these posts are the story
+behind it.
 
-## [Stop wrapping FFmpeg. Make the video a file.](./stop-wrapping-ffmpeg)
+## [The video checks itself: layout, read time and sync](./the-video-checks-itself)
 
 <p class="blog-meta">November 27, 2026 · DAN</p>
 
-Every week someone ships an "AI video editor" that is an MCP server over FFmpeg. Coding agents didn't win by driving
-an editor; they won by changing the file, with a compiler and tests around it. Why we're making editing, animation and
-compositing compilable code instead, and why it's React and TypeScript and not a language of our own.
+Titles that collide, don't fit or vanish before anyone reads them. Cuts on the beat, and a check that says which ones
+miss it. Stretches where nothing moves. Each one reported like a compiler error, with the fix.
+
+## [Animation and camera on the same timeline](./animation-and-camera)
+
+<p class="blog-meta">November 27, 2026 · DAN</p>
+
+A camera that makes room by itself, shapes that grow and morph, elements that follow each other, motion without keys,
+3D scenes that cut like footage, and people cut out of their background. All of it props in the same file as the cut.
+
+## [Exact time, and why a cut never lands a frame off](./exact-time)
+
+<p class="blog-meta">November 27, 2026 · DAN</p>
+
+A one-frame flash at a cut, traced to `0.1 + 0.2`. Why timeline time is now whole ticks inside the engine, and a
+`Time` class that refuses to be a number.
