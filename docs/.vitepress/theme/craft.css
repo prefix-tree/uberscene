@@ -2999,3 +2999,10 @@ html:has(.VPContent.has-sidebar) .VPSidebar {
     font-size: 15px;
   }
 }
+
+/* The date and author under a blog post's title, and under each post on the blog index. */
+.vp-doc .blog-meta {
+  margin-top: -8px;
+  color: var(--vp-c-text-2);
+  font-size: 14px;
+}
