@@ -1,4 +1,4 @@
-import { type Kind, tidySeconds } from "@uberscene/kit/schema";
+import { type Kind, type KindWith, kindTakes, tidySeconds } from "@uberscene/kit/schema";
 
 import { asJson } from "../patches/log";
 import type { Json, PatchLog } from "../patches/types";
@@ -108,12 +108,20 @@ export function validateTarget(state: ResolvedState, id: unknown, props: readonl
   return invalid(...errors);
 }
 
-/** The element-level checks an action makes, for its `targets` face. Each default matches `validateTarget`. */
-export interface TargetSpec {
+/**
+ * The element-level checks an action makes, for its `targets` face. Each default matches `validateTarget`. `P` is the
+ * props it names in `props`: `when` is then given an element whose kind is one that has them.
+ */
+export interface TargetSpec<P extends string = string> {
   /** The param that names the element. Default `id`. */
   readonly param?: string;
-  /** The kinds it applies to; any when left out. */
+  /** The kinds it applies to; any when left out. For a trait no prop says (what is painted on the canvas). */
   readonly kinds?: readonly Kind[];
+  /**
+   * The props its kind's schema must have: `["blend"]`, `["in", "out"]`. How an action that writes a prop says what
+   * it applies to: the schema already says which kinds take the prop, so no list of them is kept beside it.
+   */
+  readonly props?: readonly P[];
   /** It does not check the track's lock. */
   readonly onLocked?: boolean;
   /** It does not refuse model-only code. */
@@ -121,17 +129,28 @@ export interface TargetSpec {
   /** It refuses generated elements (bake first). */
   readonly literalOnly?: boolean;
   /** Any further check on the element alone. */
-  readonly when?: (item: ResolvedPlacement, state: ResolvedState) => boolean;
+  readonly when?: (item: ResolvedPlacement & { readonly kind: KindWith<P> }, state: ResolvedState) => boolean;
 }
 
-export function onElement(spec: TargetSpec = {}): ElementTarget {
+/** Whether an element is of a kind the spec names: one of its `kinds`, with every one of its `props`. */
+function ofKind<P extends string>(
+  spec: Pick<TargetSpec<P>, "kinds" | "props">,
+  item: ResolvedPlacement,
+): item is ResolvedPlacement & { readonly kind: KindWith<P> } {
+  return (
+    (spec.kinds === undefined || spec.kinds.includes(item.kind)) &&
+    (spec.props === undefined || spec.props.every((prop) => kindTakes(item.kind, prop)))
+  );
+}
+
+export function onElement<P extends string = string>(spec: TargetSpec<P> = {}): ElementTarget {
   return {
     param: spec.param ?? "id",
     accepts: (item, state) =>
       (spec.onLocked === true || requireUnlocked(state, item) === null) &&
       (spec.onOpaque === true || requireNotOpaque(item) === null) &&
       (spec.literalOnly !== true || item.editable !== "generated") &&
-      (spec.kinds === undefined || spec.kinds.includes(item.kind)) &&
+      ofKind(spec, item) &&
       (spec.when?.(item, state) ?? true),
   };
 }
@@ -227,27 +246,36 @@ export function lastChildId(state: ResolvedState, parent: string): string | null
 
 type Params<T extends ActionType> = Action<T>["params"];
 
-export interface PropHandlerSpec<T extends ActionType> {
+export interface PropHandlerSpec<T extends ActionType, P extends string = string> {
   readonly type: T;
   /** Which props the action writes, from its params. */
   readonly write: (params: Params<T>, state: ResolvedState) => Readonly<Record<string, Json | undefined>>;
   /** Which param carries the target id. */
   readonly target?: (params: Params<T>) => string;
   readonly validate?: (action: Action<T>, state: ResolvedState) => ValidationResult;
+  /** The kinds it applies to, for a trait no prop says. */
   readonly kinds?: readonly Kind[];
+  /** The props its target's kind must have (`TargetSpec.props`): what an action that writes a prop applies to. */
+  readonly props?: readonly P[];
   /**
-   * The element it is about, for `affordances()`. Left out, an action that targets `id` gets one from `kinds`; one with
-   * its own `target` gets none unless it names the param here.
+   * The element it is about, for `affordances()`. Left out, an action that targets `id` gets one from `kinds` and
+   * `props`; one with its own `target` gets none unless it names the param here.
    */
-  readonly targets?: TargetSpec;
+  readonly targets?: TargetSpec<P>;
 }
 
 /** An action that sets literal props on one element; the inverse sets the prior values. */
-export function makePropHandler<T extends ActionType>(spec: PropHandlerSpec<T>): ActionHandler<T> {
+export function makePropHandler<T extends ActionType, P extends string = string>(
+  spec: PropHandlerSpec<T, P>,
+): ActionHandler<T> {
   const target = spec.target ?? ((params: Params<T>) => (params as { id: string }).id);
   const targets =
     spec.targets !== undefined || spec.target === undefined
-      ? onElement({ ...(spec.kinds ? { kinds: spec.kinds } : {}), ...spec.targets })
+      ? onElement({
+          ...(spec.kinds ? { kinds: spec.kinds } : {}),
+          ...(spec.props ? { props: spec.props } : {}),
+          ...spec.targets,
+        })
       : undefined;
   const handler: ActionHandler<T> = {
     type: spec.type,
@@ -259,7 +287,7 @@ export function makePropHandler<T extends ActionType>(spec: PropHandlerSpec<T>):
       const props = item ? writtenPaths(item, written, (prop) => rawProp(state, id, prop)) : Object.keys(written);
       const base = validateTarget(state, id, props);
       if (!base.valid) return base;
-      if (spec.kinds && item && !spec.kinds.includes(item.kind)) {
+      if (item && !ofKind(spec, item)) {
         return invalid({ code: "INVALID_PARAMS", message: `${spec.type} does not apply to <${item.kind}>` });
       }
       return spec.validate ? spec.validate(action, state) : ok;

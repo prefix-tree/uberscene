@@ -13,7 +13,7 @@ import {
   keyPathOf,
   keyPathsOf,
   kindsWhere,
-  kindsWithProp,
+  kindTakes,
   shaderFor,
   VIDEO_EFFECT_TYPES,
 } from "@uberscene/kit/schema";
@@ -25,9 +25,6 @@ import { T } from "../../time";
 import { define, makePropHandler, onElement, rawNode, rawProp, readPath, writePath } from "../handler-kit";
 import { invalid, type KeyJson, ok, type ValidationResult } from "../types";
 
-/** Kinds whose `speed` takes keys: a ramp, made of speed keys, so it is not in the key-path table. */
-const SPEED_KINDS: readonly Kind[] = kindsWithProp("speed");
-const EFFECT_KINDS: readonly Kind[] = kindsWithProp("effects");
 /**
  * The one kind whose own values `path` is among (a shape's size, colours, outline and points), or undefined for a path
  * no kind or several kinds have, and for a camera's, whose keys run on the video's clock.
@@ -43,7 +40,7 @@ function onlyOn(path: string): Kind | undefined {
  */
 function keyPathsFor(kind: Kind): readonly string[] {
   const own = keyPathsOf(kind).flatMap((k) => (k.both ? [k.both, k.path] : [k.path]));
-  return [...new Set([...own, ...(SPEED_KINDS.includes(kind) ? ["speed"] : [])])];
+  return [...new Set([...own, ...(kindTakes(kind, "speed") ? ["speed"] : [])])];
 }
 
 const EFFECT_PARAM = /^effects\.(\d+)\.([A-Za-z_]\w*)$/;
@@ -80,7 +77,7 @@ function pathProblem(state: ResolvedState, id: string, path: string): string | n
   // A kind's own values (a shape's size, colours, outline and points) take keys on that kind only.
   const only = onlyOn(path);
   if (only !== undefined) return `"${path}" holds keys only on a ${only}; "${id}" is a ${kind}`;
-  const effects = EFFECT_KINDS.includes(kind) ? ["effects.<n>.<param>"] : [];
+  const effects = kindTakes(kind, "effects") ? ["effects.<n>.<param>"] : [];
   if (paths.length + effects.length === 0) return `"${path}" cannot hold keys: a ${kind} has nothing that does`;
   const use = [paths.join(", "), ...effects].filter((part) => part !== "").join(", or ");
   return `"${path}" cannot hold keys on a ${kind}; use one of ${use}`;
@@ -365,7 +362,7 @@ define(makePropHandler({
 
 define(makePropHandler({
   type: "freeze/setAll",
-  kinds: kindsWithProp("freezes"),
+  props: ["freezes"],
   write: (p) => ({
     freezes:
       p.freezes.length > 0
