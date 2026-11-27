@@ -340,16 +340,28 @@ export class TimeRange {
   /** The first tick after the range: `start + duration`. */
   readonly end: Time;
 
-  private constructor(start: Time, duration: Time) {
+  private constructor(start: Time, duration: Time, end?: Time) {
     this.start = start;
     this.duration = duration;
-    this.end = start.plus(duration);
+    this.end = end ?? start.plus(duration);
   }
 
   /** The range that starts at `start` and lasts `duration`. Throws for a negative duration. */
   static of(start: Time, duration: Time): TimeRange {
     if (duration.isNegative()) throw new RangeError(`a range can't last ${duration}`);
     return new TimeRange(start, duration);
+  }
+
+  /**
+   * The range that starts at `start` and lasts `duration`, never throwing: a negative duration is held at zero and an
+   * end past `Time.MAX` at `MAX`. For a reader that places a broken or too-long file and reports it.
+   */
+  static clamped(start: Time, duration: Time): TimeRange {
+    const length = duration.isNegative() ? Time.ZERO : duration;
+    const end = start.plusClamped(length);
+    return end.ticks - start.ticks === length.ticks
+      ? new TimeRange(start, length, end)
+      : new TimeRange(start, end.minus(start), end);
   }
 
   /** The range from `start` up to, not including, `end`. Throws when `end` is before `start`. */

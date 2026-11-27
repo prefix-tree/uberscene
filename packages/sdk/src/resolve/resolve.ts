@@ -107,9 +107,7 @@ export interface PlacementSource {
  * is held at zero, and an end past about 9.85 hours at `Time.MAX`: the resolver reports both, and must still place
  * the rest.
  */
-function rangeOf(start: Time, duration: Time): TimeRange {
-  return TimeRange.between(start, start.plusClamped(Time.max(Time.ZERO, duration)));
-}
+const rangeOf = (start: Time, duration: Time): TimeRange => TimeRange.clamped(start, duration);
 
 /** A placement's source with its range, from the seconds the resolver works the source out in. */
 function withRange(source: PendingSource | undefined): PlacementSource | undefined {
@@ -118,9 +116,10 @@ function withRange(source: PendingSource | undefined): PlacementSource | undefin
   return { ...source, range: rangeOf(start, T(source.out).minus(start)) };
 }
 
+type TimeFields = Pick<Placement, "range" | "start" | "end" | "duration">;
+
 /** A placement's `range` and the seconds derived from it. */
-function timeFields(start: Time, duration: Time): Pick<Placement, "range" | "start" | "end" | "duration"> {
-  const range = rangeOf(start, duration);
+function timeFields(start: Time, duration: Time, range = rangeOf(start, duration)): TimeFields {
   return {
     range,
     start: range.start.toSeconds(),
@@ -270,32 +269,34 @@ function compute(
     pendingSource: PendingSource | undefined,
     between: Placement["between"],
   ): Placement => {
-    const source = withRange(pendingSource);
+    const range = rangeOf(start, length);
     const prev = previous?.get(node.id);
     if (
       prev &&
       prev.kind === node.kind &&
       prev.track === track &&
       prev.parent === parent &&
-      prev.range.equals(rangeOf(start, length)) &&
+      prev.range.equals(range) &&
       prev.props === props &&
       prev.editable === node.editable &&
       prev.lockedProps === node.lockedProps &&
       prev.boundProps === node.boundProps &&
-      sameSource(prev.source, source) &&
+      sameSource(prev.source, pendingSource) &&
       sameBetween(prev.between, between) &&
       prev.interior === node.interior &&
       sameChildIds(prev.children, node.children) &&
       sameErrors(prev.errors, errors)
     )
       return prev;
+    // Only a placement that changed works out its source's range.
+    const source = withRange(pendingSource);
     const placement: Placement = {
       id: node.id,
       kind: node.kind,
       track,
       parent,
       children: node.children.map((c) => c.id),
-      ...timeFields(start, length),
+      ...timeFields(start, length, range),
       props,
       editable: node.editable,
       lockedProps: node.lockedProps,

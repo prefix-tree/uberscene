@@ -313,6 +313,14 @@ describe("craft-time vectors", () => {
 });
 
 describe("TimeRange", () => {
+  it("clamped holds a negative length at zero and an end past MAX at MAX, and is `of` otherwise", () => {
+    expect(TimeRange.clamped(T("2"), T("-1")).equals(TimeRange.of(T("2"), Time.ZERO))).toBe(true);
+    expect(TimeRange.clamped(T("1"), T("0.5")).equals(TimeRange.of(T("1"), T("0.5")))).toBe(true);
+    const long = TimeRange.clamped(T("30000"), T("30000"));
+    expect(long.end).toBe(Time.MAX);
+    expect(long.start.plus(long.duration)).toEqual(Time.MAX);
+  });
+
   const r = TimeRange.between(T("1"), T("3"));
 
   it("is half-open: it holds its start, not its end", () => {
