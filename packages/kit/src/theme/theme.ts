@@ -1,3 +1,4 @@
+import type { Kind } from "../elements";
 import { capabilitiesOf } from "../jsx/capabilities";
 import { DEFAULT_THEME, MOTIONS, type MotionStyle, type Presets, THEMES } from "./builtins";
 import { lookOnlyPresets } from "./look-presets";
@@ -68,7 +69,7 @@ export function themeToken(theme: ResolvedTheme, name: string): string | number 
  * of its `style` object; a preset name alone is `{ preset }`. Returns the input
  * object when nothing was themed.
  */
-export function applyTheme(kind: string, raw: Readonly<Record<string, unknown>>, theme: ResolvedTheme): Themed {
+export function applyTheme(kind: Kind, raw: Readonly<Record<string, unknown>>, theme: ResolvedTheme): Themed {
   const look = capabilitiesOf(kind).themeStyle === "look";
   const own: Record<string, unknown> | null =
     typeof raw.style === "string"

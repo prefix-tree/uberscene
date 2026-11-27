@@ -103,13 +103,15 @@ export interface KindProps {
 /** An element kind: one of the keys of `KindProps`, and nothing else. */
 export type Kind = keyof KindProps;
 
-/** The kinds whose props have `P`: what takes a `transform`, a `volume`, a `follow`. */
-export type KindWith<P extends string> = {
-  [K in Kind]: KindProps[K] extends infer Props
-    ? Props extends unknown
-      ? P extends keyof Props
-        ? K
-        : never
-      : never
-    : never;
-}[Kind];
+/** The kinds whose props have `P`: what takes a `transform`, a `volume`, a `follow`. A prop not known by name: any kind. */
+export type KindWith<P extends string> = string extends P
+  ? Kind
+  : {
+      [K in Kind]: KindProps[K] extends infer Props
+        ? Props extends unknown
+          ? P extends keyof Props
+            ? K
+            : never
+          : never
+        : never;
+    }[Kind];

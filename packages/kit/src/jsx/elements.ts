@@ -2,7 +2,7 @@ import type { ReactElement } from "react";
 import type { z } from "zod";
 
 import type { EffectParams, TransitionParams } from "../effects/registry";
-import type { Kind } from "../elements";
+import type { Kind, KindWith } from "../elements";
 import { capabilitiesOf } from "./capabilities";
 import { defineElement, type VocabularyComponent, type VocabularyMeta, type VocabularyProps } from "./define";
 import type { Easing, TransitionType, VideoEffectType } from "./enums";
@@ -219,21 +219,22 @@ export const DERIVED_SCHEMAS = {
   freeze: freezeSchema,
 } as const;
 export type DerivedKind = keyof typeof DERIVED_SCHEMAS;
-export const DERIVED_KINDS: ReadonlySet<string> = new Set(Object.keys(DERIVED_SCHEMAS));
+export const DERIVED_KINDS: ReadonlySet<Kind> = new Set(Object.keys(DERIVED_SCHEMAS) as DerivedKind[]);
 
 export const SCHEMAS_BY_KIND = {
   ...Object.fromEntries(Object.values(ELEMENTS).map((component) => [component.kind, component.schema])),
   ...DERIVED_SCHEMAS,
-} as Readonly<Record<string, z.ZodType>>;
+} as unknown as Readonly<Record<Kind, z.ZodType>>;
 
 /**
  * The kinds whose schema has `prop`, in the vocabulary's order: what takes a `blend`, a `follow`, `freezes`. The
- * schema already says which elements take a prop, so no list of them is kept beside it.
+ * schema already says which elements take a prop, so no list of them is kept beside it; the result is typed as the
+ * kinds whose props have it.
  */
-export function kindsWithProp(prop: string): readonly string[] {
+export function kindsWithProp<P extends string>(prop: P): readonly KindWith<P>[] {
   return Object.values(ELEMENTS)
     .filter((component) => prop in (component.schema as unknown as z.ZodObject).shape)
-    .map((component) => component.kind);
+    .map((component) => component.kind as KindWith<P>);
 }
 
 /** The kinds a file writes as tags: every kind but the items the resolver makes from props. */

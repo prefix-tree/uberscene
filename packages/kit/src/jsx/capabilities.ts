@@ -60,7 +60,7 @@ const CLIP_CHILDREN = ["effect", "keyframe", "mask", "speedKey", "freeze"] as co
  * about a kind is a field here (`ElementCapabilities`), and a list of kinds is `kindsWhere` over it. `visual` and
  * `audio` are what the kind can have; whether one clip has a picture or sound is its asset's to say.
  */
-export const KIND_CAPABILITIES: Readonly<Record<string, ElementCapabilities>> = {
+export const KIND_CAPABILITIES: Readonly<Record<Kind, ElementCapabilities>> = {
   composition: with_({
     container: true,
     childKinds: ["track", "camera", "marker", "captions"],
@@ -184,30 +184,38 @@ export const KIND_CAPABILITIES: Readonly<Record<string, ElementCapabilities>> = 
   generator: with_({ placementScope: "child" }),
   speedKey: with_({ placementScope: "child" }),
   freeze: with_({ placementScope: "child" }),
-} satisfies Record<Kind, ElementCapabilities>;
+};
+
+/** Every kind, in the table's order. */
+export const KINDS = Object.keys(KIND_CAPABILITIES) as readonly Kind[];
 
 /** Whether a string is an element kind: the one check where a kind comes in as text (a file's tag, an action's params). */
 export function isKind(kind: string): kind is Kind {
   return Object.hasOwn(KIND_CAPABILITIES, kind);
 }
 
-export function capabilitiesOf(kind: string): ElementCapabilities {
-  return KIND_CAPABILITIES[kind] ?? none;
+/**
+ * What a kind is. It takes a `Kind`, so a misspelled one does not compile; text that came in untyped (a tag read from
+ * a file, an action's params) goes through `isKind` first.
+ */
+export function capabilitiesOf(kind: Kind): ElementCapabilities {
+  // A kind that reached here untyped and is none still answers, as an element that is nothing.
+  return isKind(kind) ? KIND_CAPABILITIES[kind] : none;
 }
 
 /** The paths in a `kind`'s props that keys and generators may sit at. */
-export function keyPathsOf(kind: string): readonly KeyPath[] {
+export function keyPathsOf(kind: Kind): readonly KeyPath[] {
   return capabilitiesOf(kind).keyPaths;
 }
 
 /** A `kind`'s entry for `path`: the path itself, or the one path both of two axes are written at (`transform.scale`). */
-export function keyPathOf(kind: string, path: string): KeyPath | undefined {
+export function keyPathOf(kind: Kind, path: string): KeyPath | undefined {
   return keyPathsOf(kind).find((k) => k.path === path || k.both === path);
 }
 
 /** The kinds whose entry passes `test`, in the table's order: how a list of kinds is written. */
-export function kindsWhere(test: (kind: ElementCapabilities) => boolean): readonly string[] {
-  return Object.keys(KIND_CAPABILITIES).filter((kind) => test(capabilitiesOf(kind)));
+export function kindsWhere(test: (kind: ElementCapabilities) => boolean): readonly Kind[] {
+  return KINDS.filter((kind) => test(KIND_CAPABILITIES[kind]));
 }
 
 /** What may be written straight in a `<Composition>` to make its main track. */
@@ -217,7 +225,7 @@ export const MAIN_TRACK_KINDS = kindsWhere((kind) => kind.mainTrack);
  * Drawn as DOM alone, over the canvas, for a stretch of time: a title, a shape, an SVG, a sticker, a layer. What a
  * `follow`, a blend and an entrance are drawn for.
  */
-export function isDomOverlay(kind: string): boolean {
+export function isDomOverlay(kind: Kind): boolean {
   const { plane, timed } = capabilitiesOf(kind);
   return timed && plane === "dom";
 }
@@ -226,13 +234,13 @@ export function isDomOverlay(kind: string): boolean {
  * Stands on the overlay plane for a stretch of time: the DOM overlays, and an adjustment, which has a cell there and
  * also filters the canvas beneath it.
  */
-export function onOverlayPlane(kind: string): boolean {
+export function onOverlayPlane(kind: Kind): boolean {
   const { plane, timed } = capabilitiesOf(kind);
   return timed && (plane === "dom" || plane === "both");
 }
 
 /** Something placed on a track that a cut or an anchor can name: not a transition between two, nor a gap. */
-export function isSequenceItem(kind: string): boolean {
+export function isSequenceItem(kind: Kind): boolean {
   const role = capabilitiesOf(kind).sequenceRole;
   return role !== "between" && role !== "empty";
 }

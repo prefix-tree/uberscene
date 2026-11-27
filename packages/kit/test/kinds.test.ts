@@ -1,5 +1,6 @@
 import {
   type AudioProps,
+  capabilitiesOf,
   DERIVED_KINDS,
   type DerivedKind,
   ELEMENTS,
@@ -9,6 +10,8 @@ import {
   type Kind,
   type KindProps,
   type KindWith,
+  kindsWhere,
+  kindsWithProp,
   type NestedProps,
   type PlacedProps,
   SCHEMAS_BY_KIND,
@@ -50,5 +53,16 @@ describe("the closed list of kinds", () => {
     // What is placed has a box and a transform; a sound does not.
     expectTypeOf<TitleProps>().toMatchTypeOf<PlacedProps>();
     expectTypeOf<"audio">().not.toMatchTypeOf<KindWith<"transform">>();
+  });
+
+  it("asks the kind table by a kind only", () => {
+    // @ts-expect-error a misspelled kind is not a kind, so it does not compile
+    expect(capabilitiesOf("titel").timed).toBe(false);
+    // A key every object has, reaching here untyped, is still an element that is nothing.
+    expect(capabilitiesOf("toString" as Kind).placementScope).toBe("none");
+    expectTypeOf(kindsWhere((kind) => kind.timed)).toEqualTypeOf<readonly Kind[]>();
+    expectTypeOf(kindsWithProp("follow")).toEqualTypeOf<readonly KindWith<"follow">[]>();
+    // A prop known only at run time may be any kind's.
+    expectTypeOf(kindsWithProp("blend" as string)).toEqualTypeOf<readonly Kind[]>();
   });
 });
