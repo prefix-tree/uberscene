@@ -63,7 +63,7 @@ describe("Executor.can", () => {
     expect(r.ok).toBe(true);
     expect(exec.state().items.get("a1")?.props.volume).toBe(0.5);
     // The trim asked about was never made.
-    expect(exec.state().items.get("c2")?.end).toBe(9);
+    expect(exec.state().items.get("c2")?.range.end.toSeconds()).toBe(9);
     expect(exec.undo()?.ok).toBe(true);
     expect(exec.state().items.get("a1")?.props.volume).toBe(0.2);
   });

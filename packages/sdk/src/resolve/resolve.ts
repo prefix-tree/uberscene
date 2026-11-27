@@ -72,14 +72,8 @@ export interface Placement {
   readonly track: string | null;
   readonly parent: string | null;
   readonly children: readonly string[];
-  /** Where it plays on the timeline, as exact `Time`s (decisions 0044, 0045). Its seconds below are derived from it. */
+  /** Where it plays on the timeline, as exact `Time`s (decisions 0044, 0045). For seconds, `range.start.toSeconds()`. */
   readonly range: TimeRange;
-  /** @deprecated Seconds, derived from `range`: read `range.start`. Removed once every reader moves to `Time`. */
-  readonly start: number;
-  /** @deprecated Seconds, derived from `range`: read `range.end`. */
-  readonly end: number;
-  /** @deprecated Seconds, derived from `range`: read `range.duration`. */
-  readonly duration: number;
   readonly source?: PlacementSource;
   /**
    * Whether `props` are what the kind's schema parsed: every prop of its type, every default filled. A prop the
@@ -129,18 +123,6 @@ function withRange(source: PendingSource | undefined): PlacementSource | undefin
   if (!source) return undefined;
   const start = T(source.in);
   return { ...source, range: rangeOf(start, T(source.out).minus(start)) };
-}
-
-type TimeFields = Pick<Placement, "range" | "start" | "end" | "duration">;
-
-/** A placement's `range` and the seconds derived from it. */
-function timeFields(start: Time, duration: Time, range = rangeOf(start, duration)): TimeFields {
-  return {
-    range,
-    start: range.start.toSeconds(),
-    end: range.end.toSeconds(),
-    duration: range.duration.toSeconds(),
-  };
 }
 
 const MAIN_KINDS: ReadonlySet<string> = new Set(MAIN_TRACK_KINDS);
@@ -317,7 +299,7 @@ function compute(
       track,
       parent,
       children: node.children.map((c) => c.id),
-      ...timeFields(start, length, range),
+      range,
       props,
       editable: node.editable,
       lockedProps: node.lockedProps,
@@ -483,7 +465,7 @@ function compute(
       track: child.id,
       parent,
       children: child.children.map((c) => c.id),
-      ...timeFields(Time.ZERO, Time.ZERO),
+      range: TimeRange.EMPTY,
       props,
       editable: child.editable,
       lockedProps: child.lockedProps,
@@ -504,7 +486,7 @@ function compute(
         track: null,
         parent: root.id,
         children: child.children.map((c) => c.id),
-        ...timeFields(Time.ZERO, Time.ZERO),
+        range: TimeRange.EMPTY,
         props,
         editable: child.editable,
         lockedProps: child.lockedProps,
@@ -548,7 +530,7 @@ function compute(
         track: null,
         parent: root.id,
         children: [],
-        ...timeFields(at, Time.ZERO),
+        range: rangeOf(at, Time.ZERO),
         props,
         editable: child.editable,
         lockedProps: child.lockedProps,
@@ -584,7 +566,7 @@ function compute(
   for (const s of structural) {
     items.set(
       s.id,
-      reuse(s.kind === "track" || s.kind === "camera" ? { ...s, ...timeFields(s.range.start, duration) } : s),
+      reuse(s.kind === "track" || s.kind === "camera" ? { ...s, range: rangeOf(s.range.start, duration) } : s),
     );
     errors.push(...s.errors);
   }
@@ -683,7 +665,7 @@ function compute(
       track: null,
       parent: null,
       children: root.children.map((c) => c.id),
-      ...timeFields(Time.ZERO, duration),
+      range: rangeOf(Time.ZERO, duration),
       props: compParsed,
       editable: root.editable,
       lockedProps: root.lockedProps,

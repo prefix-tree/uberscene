@@ -30,13 +30,14 @@ describe("the launch recap file", () => {
     expect(state.composition.duration).toBeGreaterThan(24);
     expect(state.composition.duration).toBeLessThan(32);
     const at = (id: string) => state.items.get(id)!;
-    expect(at("hook")).toMatchObject({ start: 0, source: { in: 5.6, out: 10.8 } });
-    expect(at("broll").start).toBeCloseTo(4.8);
-    expect(at("close").start).toBeCloseTo(17.4);
+    expect(at("hook").range.start.toSeconds()).toBe(0);
+    expect(at("hook")).toMatchObject({ source: { in: 5.6, out: 10.8 } });
+    expect(at("broll").range.start.toSeconds()).toBeCloseTo(4.8);
+    expect(at("close").range.start.toSeconds()).toBeCloseTo(17.4);
     expect(at("close").source).toMatchObject({ in: 24, out: 29.2 });
-    expect(at("bed").end).toBeCloseTo(state.composition.duration);
-    expect(at("lt-bg").start).toBeCloseTo(17.8);
-    expect(at("cta").start).toBeCloseTo(at("outro").start + 0.3);
+    expect(at("bed").range.end.toSeconds()).toBeCloseTo(state.composition.duration);
+    expect(at("lt-bg").range.start.toSeconds()).toBeCloseTo(17.8);
+    expect(at("cta").range.start.toSeconds()).toBeCloseTo(at("outro").range.start.toSeconds() + 0.3);
   });
 
   it("keeps the once-used helper's elements editable and the layer opaque", () => {
@@ -66,11 +67,11 @@ describe("the launch recap file", () => {
 
   it("folds a trim gesture into one changed line", () => {
     const exec = new Executor({ tree, manifest, now: () => 0 });
-    const before = exec.state().items.get("close")!.start;
+    const before = exec.state().items.get("close")!.range.start.toSeconds();
     const r = exec.execute({ type: "clip/trim", params: { id: "demo", edge: "out", value: 8 } });
     expect(r.ok).toBe(true);
     // The demo plays a second less, and the clips after it on the sequence move up by that second.
-    expect(exec.state().items.get("close")!.start).toBeCloseTo(before - 1);
+    expect(exec.state().items.get("close")!.range.start.toSeconds()).toBeCloseTo(before - 1);
     const folded = foldToSource(text, exec.log(), exec.state());
     // The clip's length was given as a duration; the trim says where it ends instead, on the same line.
     expect(folded.edits.every((e) => e.id === "demo")).toBe(true);

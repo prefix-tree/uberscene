@@ -58,7 +58,7 @@ describe("Executor", () => {
     exec.replaceTree(fixtureTree());
     expect(exec.log().entries).toHaveLength(0);
     expect(exec.history().canUndo()).toBe(false);
-    expect(exec.state().items.get("c2")?.end).toBe(9);
+    expect(exec.state().items.get("c2")?.range.end.toSeconds()).toBe(9);
   });
 
   it("memoises resolve on the log version", () => {

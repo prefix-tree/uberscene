@@ -48,7 +48,10 @@ const load = (text: string): ResolvedState =>
 const keysOf = (state: ResolvedState) =>
   [...state.items.values()]
     .filter((i) => i.kind === "keyframe" && i.parent === "cam")
-    .map((k) => `${String(k.props.property).replace("camera.", "")} ${k.start} ${k.props.value} ${k.props.easing}`);
+    .map(
+      (k) =>
+        `${String(k.props.property).replace("camera.", "")} ${k.range.start.toSeconds()} ${k.props.value} ${k.props.easing}`,
+    );
 
 const pushed = (push: string, cards: string, more = "") => load(file(`${more} push={${push}}`, cards));
 

@@ -13,8 +13,6 @@ export function titlePlacement(
   return {
     id: "t",
     kind: "title",
-    start: 0,
-    duration: 2,
     range: TimeRange.of(Time.ZERO, Time.seconds(2)),
     parsed: true,
     props: SCHEMAS_BY_KIND.title.parse({ id: "t", start: 0, duration: 2, ...written }),

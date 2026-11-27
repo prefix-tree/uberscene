@@ -30,7 +30,7 @@ describe("a clip that plays a 3D scene", () => {
     const state = load();
     expect(state.errors).toEqual([]);
     const clip = state.items.get("crossing-shot")!;
-    expect([clip.start, clip.end]).toEqual([2, 7]);
+    expect([clip.range.start.toSeconds(), clip.range.end.toSeconds()]).toEqual([2, 7]);
     expect(clip.source).toMatchObject({ in: 0, out: 5, speed: 1 });
     const use = state.scenes?.get(clip.source!.asset);
     expect(use?.times).toEqual({ reveal: 2 });

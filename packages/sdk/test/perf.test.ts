@@ -101,7 +101,9 @@ describe("placement identity", () => {
     expect(changed.has("v2")).toBe(false);
     expect(changed.has("c0")).toBe(false);
     expect(changed.size).toBeLessThan(after.items.size / 2);
-    expect(after.items.get("c6")!.start).toBeCloseTo(before.items.get("c6")!.start + 3.5);
+    expect(after.items.get("c6")!.range.start.toSeconds()).toBeCloseTo(
+      before.items.get("c6")!.range.start.toSeconds() + 3.5,
+    );
   });
 
   it("compares placements by what renders and edits", () => {

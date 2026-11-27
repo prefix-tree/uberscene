@@ -691,7 +691,13 @@ export const manifest = ${JSON.stringify(mediaManifest)};
 export default function Video() { return <Composition fps={30} width={320} height={180}>${body}</Composition>; }`,
     );
     const x = (await loadVideo(probe)).state.items.get("x")!;
-    return colourAt(name, body, "", x.start + share * (x.end - x.start), points);
+    return colourAt(
+      name,
+      body,
+      "",
+      x.range.start.toSeconds() + share * (x.range.end.toSeconds() - x.range.start.toSeconds()),
+      points,
+    );
   };
   const grid = (cols: number, rows: number): [number, number][] =>
     Array.from({ length: cols * rows }, (_, i) => [
@@ -841,10 +847,16 @@ export const manifest = ${JSON.stringify(mediaManifest)};
 export default function Video() { return <Composition fps={30} width={320} height={180}>${body}</Composition>; }`,
     );
     const x = (await loadVideo(probe)).state.items.get("x")!;
-    const [left, right] = await colourAt("order-transition", body, "", (x.start + x.end) / 2, [
-      [40, 90],
-      [280, 90],
-    ]);
+    const [left, right] = await colourAt(
+      "order-transition",
+      body,
+      "",
+      (x.range.start.toSeconds() + x.range.end.toSeconds()) / 2,
+      [
+        [40, 90],
+        [280, 90],
+      ],
+    );
     expect(left?.[0] ?? 255).toBeLessThan(20);
     expect(left?.[2] ?? 0).toBeGreaterThan(235);
     // Sepia on red: 0.393·1, 0.349·1, 0.272·1.
@@ -885,10 +897,16 @@ ${declarations}
 export default function Video() { return <Composition fps={30} width={320} height={180}>${body}</Composition>; }`,
   );
   const x = (await loadVideo(file)).state.items.get("x")!;
-  const [left, right] = await colourAt("sweep", body, declarations, (x.start + x.end) / 2, [
-    [40, 90],
-    [280, 90],
-  ]);
+  const [left, right] = await colourAt(
+    "sweep",
+    body,
+    declarations,
+    (x.range.start.toSeconds() + x.range.end.toSeconds()) / 2,
+    [
+      [40, 90],
+      [280, 90],
+    ],
+  );
   expect(near(left, [255, 0, 0])).toBe(true);
   expect(near(right, [0, 0, 255])).toBe(true);
 });

@@ -7,8 +7,12 @@ import {
   type CollectedTree,
   collectModule,
   Executor,
+  endSeconds,
+  lengthSeconds,
+  type Placement,
   type ResolvedState,
   resolve,
+  startSeconds,
 } from "@uberscene/sdk";
 
 import * as sample from "../fixtures/sample";
@@ -55,8 +59,8 @@ export function serialize(state: ResolvedState, withProps = true): SerializedIte
       track: p.track,
       parent: p.parent,
       order: orderOf(p.id, p.parent),
-      start: round(p.start),
-      end: round(p.end),
+      start: round(p.range.start.toSeconds()),
+      end: round(p.range.end.toSeconds()),
       editable: p.editable,
       props: withProps ? stable(state.tree.byId.get(p.id)?.props ?? p.props) : "",
       ...(withProps ? { interior: p.interior ? stable(p.interior.props) : "" } : {}),
@@ -82,5 +86,9 @@ export function stable(value: unknown): string {
         : v,
   );
 }
+
+/** A placement with its times as seconds beside it, to match `start`, `end` and `duration` in a test. */
+export const seconds = (p: Placement | undefined) =>
+  p && { ...p, start: startSeconds(p), end: endSeconds(p), duration: lengthSeconds(p) };
 
 export { resolve };

@@ -29,9 +29,9 @@ function rangeOf(start: number, duration: number): TimeRange {
   return TimeRange.of(Time.seconds(start), Time.seconds(Math.max(0, duration)));
 }
 
-/** A placement's times: its range in ticks and the seconds beside it. */
+/** A placement's times, as its range. */
 function timeOf(start: number, duration: number) {
-  return { range: rangeOf(start, duration), start, end: start + duration, duration };
+  return { range: rangeOf(start, duration) };
 }
 
 export const kitFixturesDir = join(import.meta.dirname, "..", "..", "..", "sdk", "fixtures");

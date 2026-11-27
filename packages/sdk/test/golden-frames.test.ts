@@ -19,7 +19,7 @@ function frames(state: ResolvedState): string {
   ];
   for (const p of state.items.values()) {
     const source = p.source ? ` source ${at(p.source.in)}-${until(p.source.out)} x${p.source.speed}` : "";
-    lines.push(`${p.id} ${p.kind} ${until(p.start)}-${until(p.end)}${source}`);
+    lines.push(`${p.id} ${p.kind} ${until(p.range.start.toSeconds())}-${until(p.range.end.toSeconds())}${source}`);
   }
   return `${lines.join("\n")}\n`;
 }

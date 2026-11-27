@@ -84,7 +84,7 @@ describe("props bound to schema keys", () => {
     const r = exec.execute({ type: "clip/trim", params: { id: "close", edge: "out", value: 7 } });
     expect(r.ok).toBe(true);
     expect(exec.state().items.get("close")!.source!.out).toBe(7);
-    expect(exec.state().items.get("t")!.start).toBeCloseTo(2.5);
+    expect(exec.state().items.get("t")!.range.start.toSeconds()).toBeCloseTo(2.5);
   });
 
   it("folds the write into defaults and keeps the reference in the element", () => {

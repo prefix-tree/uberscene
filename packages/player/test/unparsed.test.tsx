@@ -1,7 +1,7 @@
 import { createElement } from "react";
 
 import { Audio, Clip, Composition, Shape, Sticker, Title, Track } from "@uberscene/kit";
-import { collectModule, resolve } from "@uberscene/sdk/resolver";
+import { collectModule, endSeconds, resolve, startSeconds } from "@uberscene/sdk/resolver";
 
 import { mountPlayer } from "./helpers/react";
 import { DEFAULT_MANIFEST } from "./helpers/state";
@@ -54,7 +54,8 @@ describe("an element whose props did not parse", () => {
     expect(visiblePlacements(s, 1).map((v) => v.placement.id)).toEqual(["box", "small"]);
     expect(buildFramePlan(s, 1).ops).toEqual([]);
     // It keeps its place on the track (a clip with no source lasts five seconds), and the clip after it is drawn.
-    expect(s.items.get("good")).toMatchObject({ start: 5, end: 7 });
+    const good = s.items.get("good")!;
+    expect([startSeconds(good), endSeconds(good)]).toEqual([5, 7]);
     expect(visiblePlacements(s, 6).map((v) => v.placement.id)).toEqual(["good"]);
     expect(buildFramePlan(s, 6).ops.map((op) => op.id)).toEqual(["good"]);
   });

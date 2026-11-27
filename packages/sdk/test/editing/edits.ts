@@ -22,7 +22,10 @@ const r = (n: number): number => Math.round(n * 1000) / 1000;
 
 /** A footage clip placed straight on a track (not inside a multicam), long enough to trim and split. */
 const clip = (state: ResolvedState): Placement | undefined =>
-  first(state, (p) => p.kind === "clip" && p.source !== undefined && p.duration > 1 && p.parent === p.track);
+  first(
+    state,
+    (p) => p.kind === "clip" && p.source !== undefined && p.range.duration.toSeconds() > 1 && p.parent === p.track,
+  );
 
 export const EDITS: readonly Edit[] = [
   {
@@ -43,7 +46,12 @@ export const EDITS: readonly Edit[] = [
     name: "splits a clip in two",
     pick: (s) => {
       const c = clip(s);
-      return c && { type: "clip/split", params: { id: c.id, at: r((c.start + c.end) / 2), newId: `${c.id}_b` } };
+      return (
+        c && {
+          type: "clip/split",
+          params: { id: c.id, at: r((c.range.start.toSeconds() + c.range.end.toSeconds()) / 2), newId: `${c.id}_b` },
+        }
+      );
     },
   },
   {
@@ -92,7 +100,7 @@ export const EDITS: readonly Edit[] = [
       const k = keyOf(s);
       if (!k) return undefined;
       const item = s.items.get(k.element);
-      const to = Math.min(item?.duration ?? 0, k.at + 0.1);
+      const to = Math.min(item?.range.duration.toSeconds() ?? 0, k.at + 0.1);
       return to === k.at ? undefined : { type: "key/move", params: { id: k.element, path: k.path, at: k.at, to } };
     },
   },
@@ -159,7 +167,10 @@ export const EDITS: readonly Edit[] = [
     pick: (s) => {
       const t = first(s, (p) => p.kind === "transition");
       return (
-        t && { type: "transition/update", params: { transitionId: t.id, duration: r(Math.max(0.2, t.duration * 0.8)) } }
+        t && {
+          type: "transition/update",
+          params: { transitionId: t.id, duration: r(Math.max(0.2, t.range.duration.toSeconds() * 0.8)) },
+        }
       );
     },
   },
@@ -179,7 +190,14 @@ export const EDITS: readonly Edit[] = [
         for (let i = 0; i + 1 < kinds.length; i++) {
           const a = kinds[i];
           const b = kinds[i + 1];
-          if (a?.kind === "clip" && b?.kind === "clip" && literal(a) && literal(b) && a.duration > 1 && b.duration > 1)
+          if (
+            a?.kind === "clip" &&
+            b?.kind === "clip" &&
+            literal(a) &&
+            literal(b) &&
+            a.range.duration.toSeconds() > 1 &&
+            b.range.duration.toSeconds() > 1
+          )
             return {
               type: "transition/add",
               params: { transitionId: "e2e-x", between: [a.id, b.id], type: "crossfade", duration: 0.3 },
@@ -199,7 +217,7 @@ export const EDITS: readonly Edit[] = [
   {
     name: "fades a sound out",
     pick: (s) => {
-      const a = first(s, (p) => p.kind === "audio" && p.duration > 1);
+      const a = first(s, (p) => p.kind === "audio" && p.range.duration.toSeconds() > 1);
       return a && { type: "audio/setFade", params: { id: a.id, out: 0.5 } };
     },
   },
@@ -219,7 +237,7 @@ export const EDITS: readonly Edit[] = [
     name: "retimes a layer",
     pick: (s) => {
       const l = first(s, (p) => p.kind === "layer" && typeof p.props.duration === "number");
-      return l && { type: "layer/setTiming", params: { id: l.id, duration: r(l.duration + 0.5) } };
+      return l && { type: "layer/setTiming", params: { id: l.id, duration: r(l.range.duration.toSeconds() + 0.5) } };
     },
   },
   {

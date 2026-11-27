@@ -53,7 +53,8 @@ exact by construction, and there is no operator that silently does something els
    helpers (0044 phase 4) become methods or thin wrappers, so the change lands in one place. The `Ticks` brand and the
    free functions on it (`addTicks`, `rangeEnd`, ...) are deprecated, then removed.
 3. **Remove the seconds fields** (`start`, `end`, `duration` on a placement) and `elapsedSeconds`, as 0044 phase 5
-   planned, and add the lint rule.
+   planned, and add the lint rule. Done: the fields are gone and `pnpm lint` runs the rule. `elapsedSeconds` stays, for
+   code that holds plain seconds and no placement (a diagram's clock, an inspect row).
 4. **Native** keeps its i64 ticks (craft-time); the protocol sends `time.ticks`.
 
 ## Consequences

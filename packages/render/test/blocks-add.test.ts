@@ -100,9 +100,10 @@ describe("placeBlock", () => {
     );
     const video = await loadVideo(videoPath);
     expect(video.state.errors).toEqual([]);
-    expect([video.state.items.get("hundred-cells")?.start, video.state.items.get("hundred-cells")?.end]).toEqual([
-      0, 4,
-    ]);
+    expect([
+      video.state.items.get("hundred-cells")?.range.start.toSeconds(),
+      video.state.items.get("hundred-cells")?.range.end.toSeconds(),
+    ]).toEqual([0, 4]);
 
     const files = gatherLocalFiles(text, (p) => {
       const full = join(project, p);
@@ -166,7 +167,7 @@ describe("placeBlock on a recipe", () => {
     expect(text).toContain('import { QuoteBuild } from "./blocks/quote-build";');
     const video = await loadVideo(spot);
     expect(video.state.errors).toEqual([]);
-    expect(video.state.items.get("quote-build")?.start).toBe(2);
+    expect(video.state.items.get("quote-build")?.range.start.toSeconds()).toBe(2);
 
     const files = gatherLocalFiles(text, (p) => {
       const full = join(project, p);
