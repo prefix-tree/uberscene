@@ -33,3 +33,20 @@ export function uncached<T>(work: () => T): T {
     off = was;
   }
 }
+
+/**
+ * How often each short cut of the resolver was taken, since the process started. The tests read it to see that the
+ * rows they compare went through every one; nothing else does.
+ */
+export const shortCuts = {
+  /** A settled track taken whole, by its node. */
+  tracksTaken: 0,
+  /** A settled track taken after a child changed, the rest as they stood. */
+  tracksChanged: 0,
+  /** A settled track taken after a child changed, the rest moved in time. */
+  tracksShifted: 0,
+  /** A resolve done again the plain way, because two elements shared an id. */
+  plain: 0,
+  /** A tree placed by walking it from its root, with no id map. */
+  walked: 0,
+};

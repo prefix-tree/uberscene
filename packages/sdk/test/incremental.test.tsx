@@ -22,6 +22,7 @@ import {
 } from "@uberscene/sdk";
 
 import { buildLarge } from "../fixtures/large";
+import { shortCuts } from "../src/resolve/cache";
 import { type Dependent, dependentsOf } from "../src/resolve/dependents";
 import { resolveFresh } from "../src/resolve/resolve";
 import { CORPUS, treeOf } from "./editing/corpus";
@@ -453,5 +454,57 @@ describe("cached and from nothing: edits through the executor on the large proje
       for (const id of [clip.id, title.id, pick(next, clips).id])
         expect(dependentsOf(now, id), `dependents of ${id} after ${what}`).toEqual(dependentsByReadingAll(now, id));
     }
+  });
+});
+
+describe("cached and from nothing: a file that uses one id twice", () => {
+  // Two elements with one id share a place in the resolver's books, and what the file comes to depends on the order
+  // they are read in. A settled track is not taken then: the resolve is done the plain way.
+  const twice = (where: "tracks" | "inside") => {
+    const element = (
+      <Composition fps={30} width={1920} height={1080}>
+        <Track id="v1">
+          <Clip id="a" src="asset:interview" in={0} out={2} />
+          <Clip id="b" src="asset:city" in={0} out={3} />
+        </Track>
+        <Track id="v2">
+          <Clip id={where === "tracks" ? "a" : "c"} src="asset:city" in={1} out={2} />
+          <Clip id="d" src="asset:interview" in={4} out={6} effects={[{ type: "blur", radius: 2 }]} />
+        </Track>
+        <Track id="v3">
+          <Clip id={where === "inside" ? "d.effects.0" : "e"} src="asset:city" in={0} out={1} />
+          <Clip id="f" src="asset:city" in={2} out={4} />
+        </Track>
+      </Composition>
+    );
+    return collectModule({ default: () => element, defaults: {} });
+  };
+
+  it.each(["tracks", "inside"] as const)("agrees after every patch (the id is used twice: %s)", (where) => {
+    const tree = twice(where);
+    const log = logFor(tree);
+    expectSame(tree, sampleManifest, undefined, "as written");
+    const patches: Patch[] = [
+      { op: "set", id: "f", prop: "out", value: 5 },
+      { op: "set", id: "b", prop: "out", value: 2 },
+      { op: "set", id: "a", prop: "out", value: 1.5 },
+      { op: "set", id: "d", prop: "fit", value: "contain" },
+      { op: "set", id: "f", prop: "in", value: 1 },
+      { op: "set", id: "b", prop: "fit", value: "contain" },
+    ];
+    for (const patch of patches) {
+      log.append(patch);
+      expectSame(tree, sampleManifest, log, JSON.stringify(patch));
+    }
+  });
+});
+
+describe("cached and from nothing: the rows above", () => {
+  it("went through every short cut of the resolver, so each was held to the answer from nothing", () => {
+    expect(shortCuts.tracksTaken).toBeGreaterThan(100);
+    expect(shortCuts.tracksChanged).toBeGreaterThan(20);
+    expect(shortCuts.tracksShifted).toBeGreaterThan(20);
+    expect(shortCuts.walked).toBeGreaterThan(100);
+    expect(shortCuts.plain).toBeGreaterThan(0);
   });
 });
