@@ -1,4 +1,5 @@
 import { easingCurve, type OldEasing, type SpringConfig, springAt } from "../easing";
+import { secondsToTicks } from "../time";
 import type { Easing } from "./enums";
 import { random as generator, hash } from "./random";
 
@@ -80,7 +81,8 @@ export function stepAt(times: readonly number[], t: number): number {
     step = -1;
   while (lo <= hi) {
     const mid = (lo + hi) >> 1;
-    if ((times[mid] as number) <= t) {
+    // In ticks: a step at 0.2 + 0.1 (0.30000000000000004) is reached on the frame at 0.3.
+    if (secondsToTicks(times[mid] as number) <= secondsToTicks(t)) {
       step = mid;
       lo = mid + 1;
     } else hi = mid - 1;

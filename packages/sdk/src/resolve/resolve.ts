@@ -32,6 +32,7 @@ import {
   type TrackRole,
   type TransitionType,
   themedRuns,
+  tidySeconds,
   VIDEO_EFFECT_TYPES,
 } from "@uberscene/kit/schema";
 
@@ -374,7 +375,7 @@ function compute(
             code: "TRIM_PAST_SOURCE",
             id: p.node.id,
             prop: "duration",
-            message: `${asset.id} is ${asset.duration}s long and cannot fill ${round3(p.duration)}s: it ends ${round3(p.duration - length)}s before the video does`,
+            message: `${asset.id} is ${round3(asset.duration)}s long and cannot fill ${round3(p.duration)}s: it ends ${round3(p.duration - length)}s before the video does`,
           });
           p.duration = length;
           out = asset.duration;
@@ -1305,7 +1306,7 @@ function sourceRange(p: Pending, asset: AssetEntry, markers: ReadonlyMap<string,
       code: "TRIM_PAST_SOURCE",
       id: node.id,
       prop: "out",
-      message: `out ${outSec}s is past the end of ${asset.id} (${asset.duration}s)`,
+      message: `out ${round3(outSec)}s is past the end of ${asset.id} (${round3(asset.duration)}s)`,
     });
     outSec = asset.duration;
     played = undefined;
@@ -1439,7 +1440,8 @@ function placeTrack(
     if (pendingTransition && prevClip) {
       const d = pendingTransition.duration ?? 0;
       const outgoing = prevClip.duration ?? 0;
-      if (d > outgoing || (p.duration !== undefined && d > p.duration)) {
+      // With the same slack as below: out 1.3 minus in 1.1 is 0.19999999999999996, and a 0.2 s transition fits it.
+      if (d > outgoing + 1e-9 || (p.duration !== undefined && d > p.duration + 1e-9)) {
         pendingTransition.errors.push({
           code: "INSUFFICIENT_HANDLES",
           id: pendingTransition.node.id,
@@ -1670,8 +1672,9 @@ function takeLength(p: Following, target: Pending, manifest: AssetManifest): boo
     const said = p.errors.length;
     const moment = at !== undefined ? playedAt(p, target, at, manifest, "duration") : target.duration;
     const end = target.start + (p.errors.length > said && moment === 0 ? target.duration : moment);
-    const left = round3(end - p.start);
-    if (left <= 0)
+    // Not round3: a target that ends off the ms grid (121 frames at 24 fps is 5.0416667 s) would be outlived by a frame.
+    const left = tidySeconds(end - p.start);
+    if (round3(left) <= 0)
       p.errors.push({
         code: "INVALID_TIME_RANGE",
         id: p.node.id,
@@ -1681,7 +1684,7 @@ function takeLength(p: Following, target: Pending, manifest: AssetManifest): boo
             ? `"${p.node.id}" starts at ${round3(p.start)} s, after "${id}" plays ${at} (${round3(end)} s), so it has no length`
             : `"${p.node.id}" starts at ${round3(p.start)} s, after "${id}" has ended (${round3(end)} s), so it has no length`,
       });
-    p.duration = Math.max(0, left);
+    p.duration = round3(left) <= 0 ? 0 : left;
   }
   if (p.source) p.source = { ...p.source, out: p.source.in + sourceSpan(p.node, p.duration, p.source.speed) };
   delete (p as Pending).durationDep;

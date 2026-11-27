@@ -2,6 +2,7 @@
 // list of keys. Each generator is a pure function of time and its params, so a frame is the same in the preview,
 // in the export, at every moment of a motion blur and from the frame cache.
 
+import { secondsToTicks, ticksToSeconds } from "../time";
 import { hash } from "./random";
 
 /** The generators a value can be written as. */
@@ -73,8 +74,10 @@ export function generatedValue(g: Generator, t: number, base: (t: number) => num
   const [from, to] = g.span ?? [0, 0];
   const length = to - from;
   if (!(length > 0) || t <= from) return base(t);
-  const along = t - from;
-  const lap = Math.floor(along / length);
-  const within = along - lap * length;
+  // In ticks: 0.3 / 0.1 is 2.9999999999999996 as doubles, and a repeat would show its end on the frame it restarts.
+  const along = secondsToTicks(t) - secondsToTicks(from);
+  const span = secondsToTicks(length);
+  const lap = Math.floor(along / span);
+  const within = ticksToSeconds(along - lap * span);
   return base(from + (g.mode === "pingpong" && lap % 2 === 1 ? length - within : within));
 }

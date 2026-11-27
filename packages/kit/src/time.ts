@@ -197,3 +197,21 @@ export function timecode(frame: number, rate: Rate, options: { readonly dropFram
   const [s, ff] = drop ? [Math.floor(n / nominal), n % nominal] : secondAndFrame(n, rate);
   return `${pad(Math.floor(s / 3600))}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}${drop ? ";" : ":"}${pad(ff)}`;
 }
+
+/**
+ * A computed time without its float noise, keeping where it really falls. A time within a microsecond of the ms grid is
+ * that ms (0.40000000000000036 is 0.4, a speed ramp's 2.9999999997 is 3); any other is put on the nearest tick, so a
+ * clip end at 121 frames of 24 fps stays 5.041666… s. `round3` would make that 5.042, a frame after the clip.
+ */
+export function tidySeconds(seconds: number): number {
+  const ms = Math.round(seconds * 1000) / 1000 + 0;
+  return Math.abs(ms - seconds) < 1e-6 ? ms : ticksToSeconds(secondsToTicks(seconds));
+}
+
+/**
+ * `t - start` as an exact difference: the seconds from `start` to `t`, worked out in ticks. As doubles, 0.4 - 0.30000000000000004 is
+ * 0.09999999999999998, so a key, freeze or word at 0.1 s into an element that starts at a sequence sum would come a
+ * frame late.
+ */
+export const elapsedSeconds = (t: number, start: number): number =>
+  ticksToSeconds(secondsToTicks(t) - secondsToTicks(start));

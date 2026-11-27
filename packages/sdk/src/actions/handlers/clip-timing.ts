@@ -1,4 +1,12 @@
-import { blendFor, type CurveBlend, type CurveKey, capabilitiesOf, curveAt } from "@uberscene/kit/schema";
+import {
+  blendFor,
+  type CurveBlend,
+  type CurveKey,
+  capabilitiesOf,
+  curveAt,
+  elapsedSeconds,
+  tidySeconds,
+} from "@uberscene/kit/schema";
 
 import { parseTimeRef } from "../../manifest/timeref";
 import { lookupAsset } from "../../manifest/types";
@@ -52,9 +60,10 @@ function sourceLimit(state: ResolvedState, item: ResolvedPlacement): number {
  */
 /**
  * A time the trim works out (an edge minus a start) without the noise floating point leaves: 6.267 - 3 is
- * 3.2670000000000003, which is written into the file as it is. Twelve significant digits keep every frame exact.
+ * 3.2670000000000003, which would be written into the file as it is. Not twelve significant digits: from 10 s up they
+ * move a frame-exact time (10.0666… at 30 fps) past its frame's start, and the edit lands a frame late.
  */
-const tidy = (n: number): number => Number(n.toPrecision(12));
+const tidy = tidySeconds;
 
 define(carry(
   {
@@ -365,7 +374,7 @@ function curveValue(keys: readonly CurveKey[], rel: number, blend: CurveBlend = 
   return Array.isArray(v) && v.every((x) => typeof x === "number") ? v.map(round) : v;
 }
 
-const round = (v: number): number => Math.round(v * 1e6) / 1e6;
+const round = tidySeconds;
 
 /** The dotted paths of every key list in an element's props: inside `transform`, `box`, an effect, or at the top. */
 function keyPathsOf(value: unknown, path = ""): string[] {
@@ -472,7 +481,8 @@ define(carry(
       const item = state.items.get(a.params.id)!;
       const node = rawNode(state, item.id)!;
       const spec = nodeSpecOf(node);
-      const atRel = a.params.at - item.start;
+      // In ticks: 0.6 - 0.5 is 0.09999999999999998, and a key or a freeze at 0.1 would land on the wrong side.
+      const atRel = tidySeconds(elapsedSeconds(a.params.at, item.start));
       const layout = layoutOf(state, item);
       const taken = new Set<string>([...state.tree.byId.keys(), a.params.newId]);
       const split = splitAt(spec, atRel, taken);

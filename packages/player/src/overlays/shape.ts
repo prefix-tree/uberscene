@@ -1,4 +1,4 @@
-import { round3 } from "@uberscene/kit/schema";
+import { elapsedSeconds, round3 } from "@uberscene/kit/schema";
 
 import { keyframedValue } from "../model/keyframes";
 import { type ElementProps, type OverlayLayout, overlayLayout } from "./layout";
@@ -60,7 +60,7 @@ interface ShapeMarkup {
  */
 function shapeProps(p: ElementProps): Readonly<Record<string, unknown>> {
   const props = p.placement.props;
-  const rel = p.time - p.placement.start;
+  const rel = elapsedSeconds(p.time, p.placement.start);
   const at = <T>(property: string, written: T): T => keyframedValue(p.children, property, rel, written);
   const out: Record<string, unknown> = { ...props };
   const width = at("shape.width", props.width);
@@ -146,7 +146,7 @@ export interface ShapeDrawing {
 /** How a `<Shape>` element draws at its time: its layout, and the markup with entrance drawing applied. */
 export function shapeDrawing(p: ElementProps, tokens?: Readonly<Record<string, string>>): ShapeDrawing {
   const props = shapeProps(p);
-  const { size } = overlaySize(p.state, p.placement, p.children, p.time - p.placement.start);
+  const { size } = overlaySize(p.state, p.placement, p.children, elapsedSeconds(p.time, p.placement.start));
   const layout = overlayLayout(p, size, "none", true);
   const shape = shapeMarkup(props, size);
   const prepared = prepareSvg(shape.markup, {

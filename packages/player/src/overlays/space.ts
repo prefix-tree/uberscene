@@ -1,4 +1,5 @@
 import type { ElementBox, Transform } from "@uberscene/kit/schema";
+import { elapsedSeconds } from "@uberscene/kit/schema";
 import { followOf, type Placement, type ResolvedState } from "@uberscene/sdk/resolver";
 
 import { DEFAULT_DURATION, type GraphicAnimation, motionAt } from "../model/motion";
@@ -60,7 +61,7 @@ export function spaceOf(state: ResolvedState, p: Placement, t: number): Space {
  * a follower is not left carried off screen by an entrance not yet played or an exit already over.
  */
 function heldRel(leader: OverlayPlacement, t: number): number {
-  const rel = t - leader.start;
+  const rel = elapsedSeconds(t, leader.start);
   const length = (a: GraphicAnimation | undefined): number =>
     a && a.type !== "none" ? Math.max(0, a.duration ?? DEFAULT_DURATION) : 0;
   if (rel < 0) return Math.min(length(leader.props.enter), leader.duration);

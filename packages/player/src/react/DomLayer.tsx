@@ -1,6 +1,6 @@
 import { memo, type ReactNode, useMemo } from "react";
 
-import { effectEntry } from "@uberscene/kit/schema";
+import { effectEntry, elapsedSeconds } from "@uberscene/kit/schema";
 import type { Placement, ResolvedState } from "@uberscene/sdk/resolver";
 
 import { trackBands } from "../model/backdrop";
@@ -124,7 +124,7 @@ const Element = memo(
     const passes =
       item.placement.kind === "adjustment"
         ? undefined
-        : effectPipeline(state, item.children, item.placement.id, time - item.placement.start, {
+        : effectPipeline(state, item.children, item.placement.id, elapsedSeconds(time, item.placement.start), {
             shaders: htmlInCanvas(),
           }).shaders;
     // The box stays for as long as the element has an effect a shader draws, also at a moment when that effect

@@ -1,6 +1,6 @@
 import { type CSSProperties, type ReactNode, useEffect, useLayoutEffect, useRef } from "react";
 
-import { layerEngine } from "@uberscene/kit/schema";
+import { elapsedSeconds, layerEngine } from "@uberscene/kit/schema";
 
 import { layerClock } from "../../model/time";
 import { layerContent } from "../../overlays/content";
@@ -14,7 +14,7 @@ import { holdCssAnimations } from "../hold-animations";
 /** Arbitrary React inside the composition, driven by `useLayer()` and `useT()` through LayerContext. */
 export function Layer(p: ElementProps & { readonly interior: ReactNode }) {
   const comp = p.state.composition;
-  const { size } = overlaySize(p.state, p.placement, p.children, p.time - p.placement.start);
+  const { size } = overlaySize(p.state, p.placement, p.children, elapsedSeconds(p.time, p.placement.start));
   const style = overlayStyle(p, size);
   const clock = layerClock(p.placement, p.time, comp.fps);
   const ref = useRef<HTMLDivElement>(null);
