@@ -28,6 +28,7 @@ import {
   type ShaderDefinition,
   sampleRateProblem,
   shaderFor,
+  type TextRun,
   type ThemeOrigin,
   Time,
   TimeRange,
@@ -39,6 +40,7 @@ import {
   VIDEO_EFFECT_TYPES,
 } from "@uberscene/kit/schema";
 
+import { sdkElement } from "../elements";
 import { parseTimeRef, resolveTimeRef } from "../manifest/timeref";
 import { type AssetEntry, type AssetManifest, assetIdOf, lookupAsset } from "../manifest/types";
 import type { PatchLog } from "../patches/types";
@@ -99,6 +101,10 @@ export interface Placement {
   readonly interior?: LayerInterior;
   /** Props the theme supplied, by dot path: `$primary`, `style:h1`, `motion` or `theme`. Absent when none did. */
   readonly themed?: Readonly<Record<string, ThemeOrigin>>;
+  /** The words written inside it, for a kind whose content is words (a title); absent on every other. */
+  readonly text?: string;
+  /** The stretches of `text` its `<Mark>`s draw their own way, where there is `text`. */
+  readonly runs?: readonly TextRun[];
 }
 
 /** The part of an asset a clip or audio plays. `in` and `out` are seconds of the source, `range` the same in ticks. */
@@ -282,9 +288,13 @@ function compute(
   ): Placement => {
     const range = rangeOf(start, length);
     const prev = previous?.get(node.id);
+    // What the kind's placement holds from the file besides its props: a title's words.
+    const facts = sdkElement(node.kind)?.facts?.(node);
     if (
       prev &&
       prev.kind === node.kind &&
+      prev.text === facts?.text &&
+      prev.runs === facts?.runs &&
       prev.track === track &&
       prev.parent === parent &&
       prev.range.equals(range) &&
@@ -317,6 +327,7 @@ function compute(
       ...(between ? { between } : {}),
       ...(node.interior ? { interior: node.interior } : {}),
       ...propsFields(props),
+      ...facts,
     };
     return placement;
   };
@@ -943,27 +954,11 @@ function parseProps(node: CollectedNode, errors: ResolveError[], theme: Resolved
   return data;
 }
 
-/** A title's look, flat props before 0.6 and fields of its `style` since. */
-const TITLE_LOOK_KEYS = [
-  "font",
-  "size",
-  "weight",
-  "italic",
-  "color",
-  "background",
-  "stroke",
-  "shadow",
-  "align",
-  "valign",
-  "lineHeight",
-  "letterSpacing",
-  "decoration",
-];
-
-/** Keys renamed in 0.6, by element kind and the object they are in (`""` for the element's own props): old to new. */
+/**
+ * Keys renamed in 0.6, by element kind and the object they are in (`""` for the element's own props): old to new. A
+ * kind with a folder of its own says its renames there (`SdkElement.renamed`).
+ */
 const RENAMED_KEYS: Readonly<Record<string, Readonly<Record<string, Readonly<Record<string, string>>>>>> = {
-  shape: { "": { shape: "type" }, stroke: { width: "thickness" } },
-  title: { animation: { preset: "type" }, "style.stroke": { width: "thickness" } },
   captions: { "style.stroke": { width: "thickness" } },
   svg: { color: { mode: "type" } },
   composition: { background: { mode: "type" } },
@@ -1005,7 +1000,8 @@ function movedKey(kind: Kind, issue: z.core.$ZodIssue, props: Readonly<Record<st
   const at = issue.path.map(String).join(".");
   if (at === "" && issue.keys.includes("automation"))
     return `automation moved into volume and pan, as keys: volume={[{ at, value }]} pan={[{ at, value }]}; ${fix}`;
-  const renamed = RENAMED_KEYS[kind]?.[at];
+  const element = sdkElement(kind);
+  const renamed = (element?.renamed ?? RENAMED_KEYS[kind])?.[at];
   const respelled = renamed ? issue.keys.filter((k) => Object.hasOwn(renamed, k)) : [];
   if (renamed && respelled.length > 0) {
     const path = (k: string) => (at ? `${at}.${k}` : k);
@@ -1013,18 +1009,13 @@ function movedKey(kind: Kind, issue: z.core.$ZodIssue, props: Readonly<Record<st
   }
   if (at === "transform" && issue.keys.includes("position"))
     return `transform.position moved to box, in pixels from the frame's top left: box={{ x, y, origin: "center" }} draws what it did with x and y each plus half the frame; ${fix}`;
-  const keys = (names: readonly string[]) => issue.keys.filter((k) => names.includes(k));
-  const listed = (moved: readonly string[], into: string) =>
-    moved.map((k) => `\`${k}\` is now \`${into}.${k}\``).join(", ");
-  if (kind === "title") {
-    const look = keys(TITLE_LOOK_KEYS);
-    const size = keys(["width", "height"]);
-    const said = [
-      ...(at === "" && look.length > 0 ? [listed(look, "style")] : []),
-      ...((at === "" || at === "style") && size.length > 0 ? [listed(size, "box")] : []),
-    ];
+  // What the kind itself says of keys it moved (a title's look into `style`).
+  if (element?.moved) {
+    const said = element.moved(at, issue.keys);
     return said.length > 0 ? `${said.join(", ")}; ${fix}` : undefined;
   }
+  const listed = (moved: readonly string[], into: string) =>
+    moved.map((k) => `\`${k}\` is now \`${into}.${k}\``).join(", ");
   if (kind !== "captions") return undefined;
   if (at === "" && issue.keys.includes("align")) return `${listed(["align"], "style")}; ${fix}`;
   if (at === "style" && issue.keys.includes("position"))

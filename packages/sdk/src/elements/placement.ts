@@ -13,7 +13,14 @@
 
 import type { z } from "zod";
 
-import { ENGINE_SCHEMAS, type Kind, type KindProps, type KindWith, SCHEMAS_BY_KIND } from "@uberscene/kit/schema";
+import {
+  ENGINE_SCHEMAS,
+  type Kind,
+  type KindProps,
+  type KindWith,
+  SCHEMAS_BY_KIND,
+  type TextRun,
+} from "@uberscene/kit/schema";
 
 import type { Placement } from "../resolve/resolve";
 
@@ -48,8 +55,13 @@ export interface PlacedAudio extends Parsed<"audio"> {}
 export interface PlacedGap extends Parsed<"gap"> {}
 /** A `transition` whose props parsed. */
 export interface PlacedTransition extends Parsed<"transition"> {}
-/** A `title` whose props parsed. */
-export interface PlacedTitle extends Parsed<"title"> {}
+/** A `title` whose props parsed, with its words. */
+export interface PlacedTitle extends Parsed<"title"> {
+  /** The words written inside it. */
+  readonly text: string;
+  /** The stretches of `text` its `<Mark>`s draw their own way. */
+  readonly runs: readonly TextRun[];
+}
 /** A `shape` whose props parsed. */
 export interface PlacedShape extends Parsed<"shape"> {}
 /** A `svg` whose props parsed. */
@@ -86,6 +98,15 @@ export interface PlacedGenerator extends Parsed<"generator"> {}
 export interface PlacedSpeedKey extends Parsed<"speedKey"> {}
 /** A `freeze` whose props parsed. */
 export interface PlacedFreeze extends Parsed<"freeze"> {}
+
+/**
+ * What a placement holds from the file besides its props, by kind: a title's words. A kind listed here says how it
+ * is read from its node (`facts`, in its folder), and the resolver puts it on every placement of the kind, parsed
+ * or not.
+ */
+export interface PlacementFacts {
+  title: Pick<PlacedTitle, "text" | "runs">;
+}
 
 /** Each kind's parsed placement, by kind. */
 export interface PlacementMap {

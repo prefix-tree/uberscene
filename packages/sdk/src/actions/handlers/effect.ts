@@ -11,8 +11,8 @@ import {
   type Kind,
   keyPathOf,
   keyPathsOf,
+  kindsWhere,
   kindsWithProp,
-  SHAPE_KEY_PATHS,
   shaderFor,
   VIDEO_EFFECT_TYPES,
 } from "@uberscene/kit/schema";
@@ -27,7 +27,14 @@ import { invalid, type KeyJson, ok, type ValidationResult } from "../types";
 /** Kinds whose `speed` takes keys: a ramp, made of speed keys, so it is not in the key-path table. */
 const SPEED_KINDS: readonly Kind[] = kindsWithProp("speed");
 const EFFECT_KINDS: readonly Kind[] = kindsWithProp("effects");
-const SHAPE_PATHS: readonly string[] = SHAPE_KEY_PATHS.map((k) => k.path);
+/**
+ * The one kind whose own values `path` is among (a shape's size, colours, outline and points), or undefined for a path
+ * no kind or several kinds have, and for a camera's, whose keys run on the video's clock.
+ */
+function onlyOn(path: string): Kind | undefined {
+  const kinds = kindsWhere((kind) => kind.keyPaths.some((k) => k.path === path && k.clock === "element"));
+  return kinds.length === 1 ? kinds[0] : undefined;
+}
 
 /**
  * The paths a key list may sit at on a `kind`, besides an effect's params (`effects.<n>.<param>`): the kind's entries
@@ -69,8 +76,9 @@ function pathProblem(state: ResolvedState, id: string, path: string): string | n
     return `the camera's push sets its ${path}: turn the push into keys with camera/bakePush, then change them`;
   const paths = keyPathsFor(kind);
   if (paths.includes(path)) return null;
-  // A shape's own values (its size, colours, outline and points) take keys on a shape only.
-  if (SHAPE_PATHS.includes(path)) return `"${path}" holds keys only on a shape; "${id}" is a ${kind}`;
+  // A kind's own values (a shape's size, colours, outline and points) take keys on that kind only.
+  const only = onlyOn(path);
+  if (only !== undefined) return `"${path}" holds keys only on a ${only}; "${id}" is a ${kind}`;
   const effects = EFFECT_KINDS.includes(kind) ? ["effects.<n>.<param>"] : [];
   if (paths.length + effects.length === 0) return `"${path}" cannot hold keys: a ${kind} has nothing that does`;
   const use = [paths.join(", "), ...effects].filter((part) => part !== "").join(", or ");

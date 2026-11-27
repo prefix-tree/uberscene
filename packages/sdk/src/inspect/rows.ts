@@ -197,7 +197,7 @@ export function timelineRows(state: ResolvedState): TimelineRows {
         ...(typeof p.props.easing === "string" ? { easing: p.props.easing } : {}),
       });
     } else if (!NOT_ELEMENTS.has(p.kind)) {
-      elements.push(elementRow(state, p, frame));
+      elements.push(elementRow(p, frame));
     }
   }
   elements.sort((a, b) => a.start - b.start);
@@ -265,11 +265,11 @@ export function timelineRows(state: ResolvedState): TimelineRows {
   };
 }
 
-function elementRow(state: ResolvedState, p: Placement, frame: (t: number) => number): ElementRow {
+function elementRow(p: Placement, frame: (t: number) => number): ElementRow {
   const props = p.props;
   const follow = followOf(p);
-  // A title's words are the element's children, kept on its node; a caption's are a prop.
-  const text = p.kind === "title" ? state.tree.byId.get(p.id)?.text : p.kind === "caption" ? props.text : undefined;
+  // The words of a kind whose content is words (a title) are on its placement; a caption's are a prop.
+  const text = p.text ?? (p.kind === "caption" ? props.text : undefined);
   return {
     id: p.id,
     kind: p.kind,

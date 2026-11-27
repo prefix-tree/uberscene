@@ -7,10 +7,10 @@
       "read": 3
     },
     "sdk": {
-      "compare": 131,
+      "compare": 124,
       "list": 27,
       "cast": 73,
-      "read": 77
+      "read": 75
     },
     "player": {
       "compare": 11,

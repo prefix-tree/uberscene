@@ -1,5 +1,6 @@
 import { capabilitiesOf, type DrawRect, type ElementBox, type FitMode, placeBox } from "@uberscene/kit/schema";
 
+import { restSizeOf } from "../elements";
 import { type AssetManifest, lookupAsset } from "../manifest/types";
 import { S, T } from "../time";
 import { followOf } from "./follow";
@@ -63,8 +64,9 @@ export function ownRestBox(item: Placement, frame: Frame, manifest: AssetManifes
   const box = item.props.box as ElementBox | undefined;
   const sized = (width: number, height: number, fit: FitMode): DrawRect =>
     placeBox(frame, { width, height }, fit, box).rect;
-  // A shape with no `width` or `height` draws 200 pixels wide or tall, so that is what the camera makes room for.
-  if (item.kind === "shape") return sized(Number(item.props.width ?? 200), Number(item.props.height ?? 200), "none");
+  // A kind whose props say its size (a shape) stands at that size, the one it is drawn at.
+  const rest = restSizeOf(item);
+  if (rest) return sized(rest.width, rest.height, "none");
   if (item.source) {
     const asset = lookupAsset(manifest, item.source.asset);
     const fit = (item.props.fit as FitMode | undefined) ?? "contain";

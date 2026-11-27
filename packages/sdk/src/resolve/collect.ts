@@ -3,6 +3,7 @@ import { Children, Fragment, isValidElement } from "react";
 
 import { withFrame } from "@uberscene/kit";
 import {
+  capabilitiesOf,
   type DeclaredFont,
   engineOf,
   fontFaces,
@@ -373,8 +374,9 @@ function makeNode(
     walker.errors.push({ code: "DUPLICATE_ID", id, message: `id "${id}" is used more than once` });
   }
   const { text, runs, problems } = textOf(rawChildren as ReactNode);
-  // A title's children are its words: what is not text or a <Mark> would otherwise leave it silently empty.
-  if (kind === "title")
+  // The children of a kind whose content is words (a title) are its words: what is not text or a <Mark> would
+  // otherwise leave it silently empty.
+  if (capabilitiesOf(kind).hasText)
     for (const message of problems) walker.errors.push({ code: "SCHEMA", id, prop: "children", message });
   const indexed = walker.index?.elements.get(id);
   let editable: Editable = "literal";

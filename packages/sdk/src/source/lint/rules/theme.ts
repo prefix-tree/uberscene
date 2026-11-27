@@ -134,7 +134,7 @@ export const themeLiterals: Rule = {
         });
       }
       // A title's <Mark>s colour words in its text, where the props above do not reach.
-      if (site.kind === "title" && site.childrenRange) {
+      if (capabilitiesOf(site.kind).hasText && site.childrenRange) {
         const [from, to] = site.childrenRange;
         const children = index.text.slice(from, to);
         for (const m of children.matchAll(MARK_COLOR)) {

@@ -9,6 +9,7 @@ export { ActionHistory, type HistoryEntry, type HistorySnapshot } from "./action
 export { type ActionHandler, listHandlers } from "./actions/registry";
 export { trimValue } from "./actions/trim-value";
 export * from "./actions/types";
+export { restSizeOf, SDK_ELEMENTS, type SdkElement, sdkElement } from "./elements";
 export * from "./elements/placement";
 export * from "./inspect/index";
 export * from "./manifest/cube";
