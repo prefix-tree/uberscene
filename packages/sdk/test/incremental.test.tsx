@@ -280,7 +280,8 @@ function randomPatch(state: ResolvedState, next: () => number, n: number): Patch
   const track = pick(next, tracks);
   const after = next() < 0.3 || track.children.length === 0 ? null : pick(next, track.children).id;
   if (roll < 0.94) {
-    const id = `n${n}`;
+    // Now and then under an id the file already has, which no edit makes and the resolver must still answer alike.
+    const id = next() < 0.12 ? pick(next, ids) : `n${n}`;
     const node: CollectedNode =
       next() < 0.7
         ? {

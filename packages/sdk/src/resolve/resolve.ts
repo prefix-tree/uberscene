@@ -41,7 +41,7 @@ import { parseTimeRef, resolveTimeRef } from "../manifest/timeref";
 import { type AssetEntry, type AssetManifest, assetIdOf, lookupAsset } from "../manifest/types";
 import type { PatchLog } from "../patches/types";
 import { T } from "../time";
-import { Cache, uncached } from "./cache";
+import { Cache, cachesOff, uncached } from "./cache";
 import {
   type AssetPlay,
   assetPlay,
@@ -180,6 +180,67 @@ interface Pending {
   /** `at` is a word, shot or silence of the anchor's source: the start is where the anchor plays it, plus `offset`. */
   anchorDep?: { id: string | "start"; offset: Time; edge?: "end"; at?: string };
   between?: readonly [string, string];
+  /** Set on an element of a settled track (`settledByTrack`): it is frozen, and holds what it was last placed as. */
+  readonly settled?: { placed?: Placed };
+}
+
+/** What placing a settled element gave: its placement, those of everything inside it, and the errors, in order. */
+interface Placed {
+  readonly placement: Placement;
+  readonly inside: readonly Placement[];
+  readonly errors: readonly ResolveError[];
+}
+
+/**
+ * A track whose elements nothing outside the track decides: each has its start and length from the track's own order
+ * and its own props, and none waits on an anchor, a match, an until or the video's length. Their `Pending`s are kept
+ * by the track's node, so a resolve after an edit elsewhere takes them as they are, placed.
+ *
+ * It holds for the node (the overlay and the key expansion keep the node of a track no patch reached) and for what
+ * the elements were read against: the theme, the manifest, the markers, the composition's parsed props (a `frame`
+ * is cut to its size) and the file's shaders. Any of those changing makes it again.
+ */
+interface SettledTrack {
+  readonly theme: ResolvedTheme;
+  readonly manifest: AssetManifest;
+  readonly markersKey: string;
+  readonly composition: Record<string, unknown>;
+  readonly shaders: readonly ShaderDefinition[] | undefined;
+  readonly pendings: readonly Pending[];
+}
+const settledByTrack = new Cache<CollectedNode, SettledTrack>();
+/** Counts the `Pending`s one `compute` makes or takes, before it places anything. */
+let entered = 0;
+
+/** Whether every track of the composition, those in its camera among them, has an id of its own. */
+function uniqueTracks(root: CollectedNode): boolean {
+  const ids = new Set<string>();
+  let count = 0;
+  const add = (track: CollectedNode): void => {
+    count++;
+    ids.add(track.id);
+  };
+  for (const child of root.children) {
+    if (child.kind === "track") add(child);
+    else if (child.kind === "camera") for (const inner of child.children) if (inner.kind === "track") add(inner);
+  }
+  return ids.size === count;
+}
+
+/** Whether nothing outside its track decides `p`, now that the track is placed: see `SettledTrack`. */
+function isSettled(p: Pending): boolean {
+  return (
+    p.start !== undefined &&
+    p.duration !== undefined &&
+    !p.anchorDep &&
+    !p.durationDep &&
+    // A duck names a track by id or role, which another track's props decide; a scene is placed with the markers.
+    p.props.duck === undefined &&
+    !isScene(p.props.src) &&
+    p.node.kind !== "multicam" &&
+    p.node.kind !== "captions" &&
+    p.node.kind !== "caption"
+  );
 }
 
 interface Memo {
@@ -224,6 +285,8 @@ function compute(
   manifest: AssetManifest,
   log: PatchLog | undefined,
   previous?: ReadonlyMap<string, Placement>,
+  /** Without settled tracks: the way back when two elements turn out to share an id (see `clash` below). */
+  plain = false,
 ): ResolvedState {
   // The tree as written, with the log over it: what the editor reads and writes. Its key lists, effects, speed keys
   // and holds are expanded into items for placing.
@@ -310,6 +373,13 @@ function compute(
   }
 
   const markersKey = markersSignature(markers);
+  const shaders = original.shaders;
+  // Two tracks with one id are placed as one, twice: nothing of theirs is kept.
+  const settling = !plain && !cachesOff() && uniqueTracks(root);
+  /** The tracks taken as they were settled, which are not placed again. */
+  const taken = new Set<CollectedNode>();
+  // How many elements are given a `Pending`: more than `pending` holds when two share an id.
+  entered = 0;
   let order = 0;
   // A camera's tracks are numbered in place, so the file's order is the drawing order across the camera's edge.
   const addTrack = (child: CollectedNode, camera: string | undefined): void => {
@@ -328,6 +398,20 @@ function compute(
       ...(child.implicit ? { implicit: true as const } : {}),
       items: child.children.map((c) => c.id),
     });
+    const kept = settling ? settledByTrack.get(child) : undefined;
+    if (
+      kept &&
+      kept.theme === theme &&
+      kept.manifest === manifest &&
+      kept.markersKey === markersKey &&
+      kept.composition === compParsed &&
+      kept.shaders === shaders
+    ) {
+      for (const settled of kept.pendings) pending.set(settled.node.id, settled);
+      entered += kept.pendings.length;
+      taken.add(child);
+      return;
+    }
     for (const item of child.children) intrinsic(item, child.id, pending, manifest, markers, markersKey, theme, errors);
   };
   let camera: CollectedNode | undefined;
@@ -369,7 +453,12 @@ function compute(
     }
   }
 
+  // Two elements with one id share a `Pending`, and a settled track's would be taken over by another track's: place
+  // everything the plain way, which is what says what such a file comes to.
+  if (taken.size > 0 && pending.size !== entered) return compute(original, manifest, log, previous, true);
+
   for (const p of pending.values()) {
+    if (p.settled) continue;
     const duck = p.props.duck as { under: string } | undefined;
     if (duck && !tracks.some((t) => t.id === duck.under || t.role === duck.under)) {
       p.errors.push({
@@ -385,8 +474,23 @@ function compute(
   // Place track children: sequence cursors, free starts; anchors and dependent durations by iteration.
   for (const track of tracks) {
     const trackNode = tree.byId.get(track.id);
-    if (!trackNode) continue;
+    if (!trackNode || taken.has(trackNode)) continue;
     placeTrack(trackNode, track, pending, theme, errors);
+    if (!settling) continue;
+    // Settled when every child is, and is its own: one that shares an id with an element elsewhere is not.
+    const pendings: Pending[] = [];
+    for (const child of trackNode.children) {
+      const p = pending.get(child.id);
+      if (!p || p.node !== child || !isSettled(p)) break;
+      pendings.push(p);
+    }
+    if (pendings.length !== trackNode.children.length || pendings.length === 0) continue;
+    for (const p of pendings) {
+      (p as { settled?: Pending["settled"] }).settled = {};
+      Object.freeze(p.errors);
+      Object.freeze(p);
+    }
+    settledByTrack.set(trackNode, { theme, manifest, markersKey, composition: compParsed, shaders, pendings });
   }
   iterateDependencies(pending, manifest);
   placeCaptions(root, pending, tracks, manifest, markers);
@@ -528,6 +632,18 @@ function compute(
   }
   let duration = Time.ZERO;
   for (const p of pending.values()) {
+    const placed = p.settled?.placed;
+    if (placed) {
+      const size = items.size;
+      items.set(placed.placement.id, placed.placement);
+      for (const inner of placed.inside) items.set(inner.id, inner);
+      // An id that was already there: the plain way says which of the two the file means.
+      if (items.size !== size + 1 + placed.inside.length) return compute(original, manifest, log, previous, true);
+      if (placed.errors.length > 0) errors.push(...placed.errors);
+      if (p.node.kind !== "transition" && !placed.placement.range.isEmpty())
+        duration = Time.max(duration, placed.placement.range.end);
+      continue;
+    }
     const start = p.start ?? Time.ZERO;
     const length = p.duration ?? Time.ZERO;
     if (p.source && isScene(p.props.src)) {
@@ -543,10 +659,16 @@ function compute(
       }
     }
     const placement = place(p.node, p.track, p.parent, start, length, p.props, p.errors, p.source, p.between);
+    const said = errors.length;
+    const size = items.size;
     items.set(p.node.id, placement);
     if (p.errors.length > 0) errors.push(...p.errors);
     if (p.node.kind !== "transition" && !placement.range.isEmpty()) duration = Time.max(duration, placement.range.end);
-    duration = placeChildren(p.node, placement, items, errors, place, duration, theme);
+    const inside: Placement[] | undefined = p.settled ? [] : undefined;
+    duration = placeChildren(p.node, placement, items, errors, place, duration, theme, inside);
+    // Kept only when every placement was a new id: one that was not is placed the plain way each time.
+    if (p.settled && inside && items.size === size + 1 + inside.length)
+      p.settled.placed = { placement, inside, errors: errors.slice(said) };
   }
 
   for (const s of structural) {
@@ -979,6 +1101,7 @@ function intrinsic(
     hit.parentProps === parentProps
   ) {
     const t = hit.template;
+    entered++;
     const p: Pending = { node, track, parent: node.parent, props: t.props, errors: [...t.errors] };
     if (t.source) p.source = t.source;
     if (t.start !== undefined) p.start = t.start;
@@ -991,6 +1114,7 @@ function intrinsic(
         if (child.kind === "caption") intrinsic(child, track, pending, manifest, markers, markersKey, theme, errors);
     return;
   }
+  entered++;
   const p = intrinsicCompute(node, track, pending, manifest, markers, markersKey, theme, errors);
   intrinsicByNode.set(node, {
     manifest,
@@ -1923,6 +2047,8 @@ function placeChildren(
   place: Place,
   end: Time,
   theme: ResolvedTheme,
+  /** When given, every placement made is added to it, in order. */
+  inside?: Placement[],
 ): Time {
   for (const child of node.children) {
     if (items.has(child.id)) continue;
@@ -1944,10 +2070,11 @@ function placeChildren(
     }
     const placement = place(child, parent.track, node.id, start, duration, props, own, undefined, undefined);
     items.set(child.id, placement);
+    inside?.push(placement);
     if (own.length > 0) errors.push(...own);
     // What is inside an element does not make the video longer: a key or a hold written past its element's end is
     // still that element's.
-    end = placeChildren(child, placement, items, errors, place, end, theme);
+    end = placeChildren(child, placement, items, errors, place, end, theme, inside);
   }
   return end;
 }
