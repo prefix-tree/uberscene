@@ -86,8 +86,8 @@
       "entry": ["video.tsx", "scripts/*.ts"]
     },
     "examples/liftoff": {
-      // Scripts that make the media and ignitions.ts; the cut file comes once the footage is chosen.
-      "entry": ["scripts/*.ts"]
+      // A cut file, loaded by path; the scripts make its media and ignitions.ts.
+      "entry": ["video.tsx", "scripts/*.ts"]
     },
     "examples/founding": {
       // A cut file, loaded by path; media/bed.ts writes its music.

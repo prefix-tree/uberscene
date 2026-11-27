@@ -15,7 +15,8 @@
   "dependencies": {
     "@uberscene/kit": "workspace:*",
     "@uberscene/render": "workspace:*",
-    "react": "catalog:"
+    "react": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@types/node": "catalog:",
