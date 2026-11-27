@@ -29,8 +29,9 @@ import {
   sampleRateProblem,
   shaderFor,
   type ThemeOrigin,
-  type TickRange,
   type Ticks,
+  Time,
+  TimeRange,
   TRANSITION_TYPES,
   type TrackLayout,
   type TrackRole,
@@ -72,11 +73,11 @@ export interface Placement {
   readonly track: string | null;
   readonly parent: string | null;
   readonly children: readonly string[];
-  /** Where it plays on the timeline, in ticks (decision 0044). Its times in seconds below are derived from it. */
-  readonly range: TickRange;
-  /** @deprecated Seconds, derived from `range`: read `range.start`. Removed once every reader moves to ticks. */
+  /** Where it plays on the timeline, as exact `Time`s (decisions 0044, 0045). Its seconds below are derived from it. */
+  readonly range: TimeRange;
+  /** @deprecated Seconds, derived from `range`: read `range.start`. Removed once every reader moves to `Time`. */
   readonly start: number;
-  /** @deprecated Seconds, derived from `range`: read `rangeEnd(range)`. */
+  /** @deprecated Seconds, derived from `range`: read `range.end`. */
   readonly end: number;
   /** @deprecated Seconds, derived from `range`: read `range.duration`. */
   readonly duration: number;
@@ -102,25 +103,40 @@ export interface PlacementSource {
   readonly out: number;
   readonly speed: number;
   readonly asset: string;
-  /** `[in, out)` of the source in ticks. */
-  readonly range: TickRange;
+  /** `[in, out)` of the source, as exact `Time`s. */
+  readonly range: TimeRange;
 }
 
-/** A placement's source with its range in ticks, from the seconds the resolver works the source out in. */
+/** A count of ticks held to what a `Time` can be. Past it the resolver has reported INVALID_TIME_RANGE already. */
+const fit = (t: number): number => Math.max(-Number.MAX_SAFE_INTEGER, Math.min(Number.MAX_SAFE_INTEGER, t));
+
+/**
+ * The resolver's ticks as a `TimeRange`. A length below zero (a source played backwards past its in, a broken file)
+ * is held at zero, and a time past 2^53 ticks at the limit: the resolver reports both, and must still place the rest.
+ */
+function rangeOf(start: Ticks, duration: Ticks): TimeRange {
+  const from = fit(start);
+  return TimeRange.of(Time.ofTicks(from), Time.ofTicks(Math.max(0, fit(from + Math.max(0, duration)) - from)));
+}
+
+/** A `Time` as the resolver's working ticks. */
+const tk = (t: Time): Ticks => t.ticks as Ticks;
+
+/** A placement's source with its range, from the seconds the resolver works the source out in. */
 function withRange(source: PendingSource | undefined): PlacementSource | undefined {
   if (!source) return undefined;
   const start = T(source.in);
-  return { ...source, range: { start, duration: minus(T(source.out), start) } };
+  return { ...source, range: rangeOf(start, minus(T(source.out), start)) };
 }
 
 /** A placement's `range` and the seconds derived from it. */
 function timeFields(start: Ticks, duration: Ticks): Pick<Placement, "range" | "start" | "end" | "duration"> {
-  const end = plus(start, duration);
+  const range = rangeOf(start, duration);
   return {
-    range: { start, duration },
-    start: ticksAsSeconds(start),
-    end: ticksAsSeconds(end),
-    duration: ticksAsSeconds(duration),
+    range,
+    start: range.start.toSeconds(),
+    end: range.end.toSeconds(),
+    duration: range.duration.toSeconds(),
   };
 }
 
@@ -154,8 +170,8 @@ export interface ResolvedState {
     readonly height: number;
     /** @deprecated Seconds, derived from `length`. */
     readonly duration: number;
-    /** How long the video is, in ticks. */
-    readonly length: Ticks;
+    /** How long the video is. */
+    readonly length: Time;
   };
   readonly tracks: readonly ResolvedTrack[];
   readonly items: ReadonlyMap<string, Placement>;
@@ -272,8 +288,7 @@ function compute(
       prev.kind === node.kind &&
       prev.track === track &&
       prev.parent === parent &&
-      prev.range.start === start &&
-      prev.range.duration === length &&
+      prev.range.equals(rangeOf(start, length)) &&
       prev.props === props &&
       prev.editable === node.editable &&
       prev.lockedProps === node.lockedProps &&
@@ -549,15 +564,15 @@ function compute(
     const placement = place(p.node, p.track, p.parent, start, length, p.props, p.errors, p.source, p.between);
     items.set(p.node.id, placement);
     if (p.errors.length > 0) errors.push(...p.errors);
-    if (p.node.kind !== "transition" && placement.range.duration > 0)
-      duration = maxTicks(duration, plus(placement.range.start, placement.range.duration));
+    if (p.node.kind !== "transition" && !placement.range.isEmpty())
+      duration = maxTicks(duration, tk(placement.range.end));
     duration = placeChildren(p.node, placement, items, errors, place, duration, theme);
   }
 
   for (const s of structural) {
     items.set(
       s.id,
-      reuse(s.kind === "track" || s.kind === "camera" ? { ...s, ...timeFields(s.range.start, duration) } : s),
+      reuse(s.kind === "track" || s.kind === "camera" ? { ...s, ...timeFields(tk(s.range.start), duration) } : s),
     );
     errors.push(...s.errors);
   }
@@ -655,7 +670,7 @@ function compute(
       width: Number(compParsed.width ?? 1920),
       height: Number(compParsed.height ?? 1080),
       duration: ticksAsSeconds(duration),
-      length: duration,
+      length: Time.ofTicks(fit(duration)),
     },
     tracks,
     items,
@@ -1867,7 +1882,7 @@ function playedAt(
 export function samePlacement(a: Placement, b: Placement): boolean {
   if (a === b) return true;
   if (a.id !== b.id || a.kind !== b.kind || a.track !== b.track || a.parent !== b.parent) return false;
-  if (a.range.start !== b.range.start || a.range.duration !== b.range.duration) return false;
+  if (!a.range.equals(b.range)) return false;
   if (
     a.props !== b.props ||
     a.editable !== b.editable ||
@@ -1936,14 +1951,14 @@ function placeChildren(
     if (caps.placementScope !== "child") {
       own.push({ code: "INVALID_CHILD", id: child.id, message: `<${child.kind}> cannot be a child of <${node.kind}>` });
     }
-    let start = parent.range.start;
-    let duration = parent.range.duration;
+    let start = tk(parent.range.start);
+    let duration = tk(parent.range.duration);
     if (child.kind === "keyframe" || child.kind === "speedKey") {
-      start = plus(parent.range.start, T(lengthOr(props.at, 0)));
+      start = plus(tk(parent.range.start), T(lengthOr(props.at, 0)));
       duration = ZERO_TICKS;
     }
     if (child.kind === "freeze") {
-      start = plus(parent.range.start, T(lengthOr(props.start, 0)));
+      start = plus(tk(parent.range.start), T(lengthOr(props.start, 0)));
       duration = T(lengthOr(props.duration, 0));
     }
     const placement = place(child, parent.track, node.id, start, duration, props, own, undefined, undefined);
