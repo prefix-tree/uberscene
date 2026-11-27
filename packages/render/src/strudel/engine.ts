@@ -12,6 +12,7 @@ import { createInterface } from "node:readline/promises";
 export const STRUDEL_PACKAGES = {
   "@strudel/core": "1.2.6",
   "@strudel/mini": "1.2.6",
+  "@strudel/tonal": "1.2.6",
   "@strudel/transpiler": "1.2.6",
   superdough: "1.3.0",
 } as const;
@@ -86,6 +87,7 @@ async function ensureAccepted(accept: boolean, log: (m: string) => void, env: No
 const PAGE_ENTRY = `
 import * as core from "@strudel/core";
 import * as mini from "@strudel/mini";
+import * as tonal from "@strudel/tonal";
 import { evaluate } from "@strudel/transpiler";
 import { initAudio, registerSynthSounds, setAudioContext, superdough } from "superdough";
 
@@ -106,7 +108,7 @@ window.renderScore = async ({ code, cps, seconds, rate, seed }) => {
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
-  ready ??= core.evalScope(core, mini);
+  ready ??= core.evalScope(core, mini, tonal);
   await ready;
   const { pattern } = await evaluate(code);
   const ctx = new OfflineAudioContext(2, Math.ceil(seconds * rate), rate);
@@ -149,6 +151,8 @@ export async function strudelPageScript(options: StrudelEngineOptions = {}): Pro
   await ensureAccepted(options.acceptLicence ?? false, log, env);
   if (!existsSync(join(dir, "node_modules", "superdough", "package.json"))) {
     log(`Installing Strudel into ${dir}`);
+    // The folder may not exist yet: the licence can be accepted by UBERSCENE_ACCEPT_LICENCE without a record in it.
+    mkdirSync(dir, { recursive: true });
     writeFileSync(
       join(dir, "package.json"),
       `${JSON.stringify({ private: true, dependencies: { ...STRUDEL_PACKAGES, ...BUNDLER } }, null, 2)}\n`,

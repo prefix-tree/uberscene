@@ -8,7 +8,7 @@
 // Each film is rendered first, as it is, from its own folder, then played inside the frame as an asset. A film whose
 // media is not made yet is skipped, with the command that makes it.
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 
 import { addAsset, checkLayout, directoryResolver, formatLayout, loadVideo, renderVideo } from "@uberscene/render";
@@ -93,9 +93,24 @@ for (const [name, film] of Object.entries(FILMS)) {
     continue;
   }
 
-  // 1. The film, as it is, rendered again only when its file or its manifest changed.
+  // 1. The film, as it is, rendered again only when its file, its manifest or its media changed.
   const code = readFileSync(file, "utf8");
-  const hash = createHash("sha256").update(code).update(JSON.stringify(video.manifest)).digest("hex").slice(0, 12);
+  // The media files too, by name, size and time: a remade song or clip keeps its manifest entry but not its sound.
+  const mediaDir = join(folder, "media");
+  const files = existsSync(mediaDir)
+    ? readdirSync(mediaDir)
+        .sort()
+        .map((f) => {
+          const st = statSync(join(mediaDir, f));
+          return `${f}:${st.size}:${Math.round(st.mtimeMs)}`;
+        })
+    : [];
+  const hash = createHash("sha256")
+    .update(code)
+    .update(JSON.stringify(video.manifest))
+    .update(files.join("\n"))
+    .digest("hex")
+    .slice(0, 12);
   const rendered = join(out, `${name}.${hash}.webm`);
   if (!existsSync(rendered)) {
     process.stdout.write(`${name}: rendering the film\n`);
@@ -177,10 +192,10 @@ for (const [name, film] of Object.entries(FILMS)) {
  * section plays. The sections' times come from the score's own `arrange([cycles, \${name}], …)` and its `cps`.
  * Lines go in bottom-up, so the line the window keeps in view is the block's first.
  */
-function scoreLit(code: string): { line: number; from: number; to: number }[] {
+function scoreLit(code: string): { line: number; from: number; to: number; cols?: readonly [number, number] }[] {
   const lines = code.split("\n");
   const cps = Number(/cps:\s*([\d.]+)/.exec(code)?.[1] ?? 0.5);
-  const lit: { line: number; from: number; to: number }[] = [];
+  const lit: { line: number; from: number; to: number; cols?: readonly [number, number] }[] = [];
   let at = 0;
   for (const [, cycles, name] of code.matchAll(/\[(\d+),\s*\$\{(\w+)\}\]/g)) {
     const from = at / cps;
@@ -190,6 +205,23 @@ function scoreLit(code: string): { line: number; from: number; to: number }[] {
     let last = first;
     while (last < lines.length - 1 && !lines[last]?.trimEnd().endsWith("`;")) last++;
     for (let line = last; line >= first; line--) lit.push({ line, from: round(from), to: round(at / cps) });
+    // The chord sounding and the bass root under it: a `chord("<…>")` or `note("<…>")` of plain steps, one a bar,
+    // lit word by word. Steps with brackets or `*` are rhythms within the bar, not one step a bar, and are left.
+    const bars = Number(cycles);
+    for (let line = first; line <= last; line++) {
+      for (const m of (lines[line] ?? "").matchAll(/(?:chord|note)\("<([^"<>[\]*]+)>"\)/g)) {
+        const inner = m[1] as string;
+        const start = (m.index ?? 0) + m[0].indexOf("<") + 1;
+        const steps = [...inner.matchAll(/\S+/g)].map(
+          (w) => [start + (w.index ?? 0), start + (w.index ?? 0) + w[0].length] as const,
+        );
+        if (steps.length < 2) continue;
+        for (let bar = 0; bar < bars; bar++) {
+          const cols = steps[bar % steps.length] as readonly [number, number];
+          lit.push({ line, cols, from: round(from + bar / cps), to: round(from + (bar + 1) / cps) });
+        }
+      }
+    }
   }
   return lit;
 }

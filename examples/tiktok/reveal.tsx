@@ -15,7 +15,9 @@ import { Clip, Composition, Layer, Title, Track, useLayer } from "@uberscene/kit
 import { CodeView } from "./code-view";
 import { display } from "./frame";
 
-const litSchema = z.array(z.object({ line: z.number(), from: z.number(), to: z.number() }));
+const litSchema = z.array(
+  z.object({ line: z.number(), from: z.number(), to: z.number(), cols: z.tuple([z.number(), z.number()]).optional() }),
+);
 const pageSchema = z.object({
   file: z.string(),
   /** What the file plays, shown beside its name: "the music", "the pictures". */

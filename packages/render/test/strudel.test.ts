@@ -21,6 +21,8 @@ describe("Strudel's licence", () => {
     expect(strudelAccepted(env)).toBe(false);
     expect(strudelNotice(env)).toContain(STRUDEL_LICENCE);
     expect(strudelNotice(env)).toContain(strudelCacheDir(env));
+    // chord() and voicing() come from tonal, so it is pinned and named with the rest.
+    expect(strudelNotice(env)).toContain("@strudel/tonal@");
   });
 
   it("is accepted by UBERSCENE_ACCEPT_LICENCE=strudel, among other names", () => {

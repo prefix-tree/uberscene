@@ -15,9 +15,8 @@
 // on. `scripts/music.ts` renders it with @uberscene/render's `renderStrudel` (Strudel is fetched on first use: it is
 // AGPL-3.0-or-later and not part of UberScene) and adds the WAV with that grid. Synth voices only: no sample banks.
 
-/** D minor, a chord a bar: Dm, B♭, F, C. */
-const CHORDS = `"<[d3,f3,a3] [bb2,d3,f3] [f3,a3,c4] [c3,e3,g3]>"`;
-const ROOTS = `"<d2 bb1 f2 c2>"`;
+// D minor, a chord a bar: Dm, B♭, F, C. Each section names them where it plays them, `chord("<Dm Bb F C>")`, and its
+// bass the roots under them, `note("<d2 bb1 f2 c2>")`, so the chord sounding can be read (and lit) in the code.
 /** The countdown's beep, grown into a melody for the drop. */
 const MOTIF = `"<[d5 ~ a4 ~ f5 ~ e5 d5] [d5 ~ f5 ~ bb4 ~ a4 ~] [c5 ~ f5 ~ a5 ~ g5 f5] [e5 ~ g5 ~ c5 ~ e5 ~]>"`;
 
@@ -46,9 +45,9 @@ const apollo = `stack(
   ${hit(1, 0.22)},
   s("brown").mask("<1 0 0 0>").decay(2).sustain(0).lpf(1200).gain(4).room(.3),
   s("brown").attack(.2).release(.3).lpf(200).gain("<3 2.2 1.6 1.2>"),
-  note(${CHORDS}).s("triangle").vib(5).vibmod(.12).lpf(1100).attack(.25).release(.6).room(.7).gain(.14),
-  note(${CHORDS}).add(note(-12)).s("sawtooth").lpf(600).attack(.3).release(.6).gain(.12),
-  note(${ROOTS}).s("triangle").lpf(400).gain(.55),
+  chord("<Dm Bb F C>").voicing().s("triangle").vib(5).vibmod(.12).lpf(1100).attack(.25).release(.6).room(.7).gain(.14),
+  chord("<Dm Bb F C>").voicing().add(note(-12)).s("sawtooth").lpf(600).attack(.3).release(.6).gain(.12),
+  note("<d2 bb1 f2 c2>").s("triangle").lpf(400).gain(.55),
   ${kick("d1 ~ [~ d1] ~")},
   ${snare("~ ~ x ~", 0.6, 0.8)},
   ${hats("[~ x]*4", 0.1)}
@@ -61,8 +60,8 @@ const shuttle = `stack(
   ${hats("[~ x]*4", 0.14)},
   note("<[d4 f4 a4 f4]*4 [bb3 d4 f4 d4]*4 [f4 a4 c5 a4]*4 [c4 e4 g4 e4]*4>").s("square")
     .lpf("<1200 1700 2300 3200>").decay(.12).sustain(0).delay(.3).delaytime(.375).delayfeedback(.3).gain(.2),
-  note(${ROOTS}).struct("x*8").s("sawtooth").lpf(520).decay(.18).sustain(0).gain(.38),
-  note(${CHORDS}).s("square").lpf(900).attack(.05).release(.3).room(.5).gain(.1),
+  note("<d2 bb1 f2 c2>").struct("x*8").s("sawtooth").lpf(520).decay(.18).sustain(0).gain(.38),
+  chord("<Dm Bb F C>").voicing().s("square").lpf(900).attack(.05).release(.3).room(.5).gain(.1),
   s("white").struct("<~ ~ ~ [x@15 ~]>").attack(1.8).release(.005).hpf(600).gain(.45),
   s("white").struct("<~ ~ ~ [~ ~ x*4 [x*6 ~]]>").hpf(1500).decay(.08).sustain(0).gain(.3)
 )`;
@@ -73,10 +72,10 @@ const now = `stack(
   ${snare("~ x ~ x", 0.35)},
   ${hats("x*16", 0.1)}.gain("[.08 .05 .14 .05]*4"),
   s("white").struct("[~ x]*4").hpf(7000).decay(.12).sustain(0).gain(.1),
-  note(${CHORDS}).struct("x*8").s("supersaw").unison(7).spread(.8).detune(.25)
+  chord("<Dm Bb F C>").voicing().struct("x*8").s("supersaw").unison(7).spread(.8).detune(.25)
     .lpf(3600).decay(.22).sustain(.35).release(.1).gain("[.2 .5]*4"),
   note("<d1 bb0 f1 c1>").struct("[~ x]*4").s("sine").decay(.3).sustain(0).gain(1),
-  note(${ROOTS}).struct("x*8").s("sawtooth").lpf(700).decay(.15).sustain(0).gain(.3),
+  note("<d2 bb1 f2 c2>").struct("x*8").s("sawtooth").lpf(700).decay(.15).sustain(0).gain(.3),
   note(${MOTIF}).s("sawtooth").lpf(2800).decay(.2).sustain(.2).release(.1)
     .delay(.3).delaytime(.375).delayfeedback(.35).room(.3).gain(.34)
 )`;

@@ -12,6 +12,11 @@ export interface LitLine {
   readonly line: number;
   readonly from: number;
   readonly to: number;
+  /**
+   * A range of characters on the line, from the first to the one after the last: lit as a word (a chord name, a
+   * note) in a filled box, without lighting the line or moving the window.
+   */
+  readonly cols?: readonly [number, number] | undefined;
 }
 
 const C = {
@@ -142,9 +147,14 @@ export function CodeView({
   const lead = Math.round(size * 1.45);
   const bar = 46;
   const body = h - bar;
-  const focus = focusAt(t, lit, lines.length, length);
+  const lines_ = lit.filter((l) => !l.cols);
+  const focus = focusAt(t, lines_, lines.length, length);
   const scroll = Math.max(0, Math.min(lines.length * lead - body + lead, focus * lead - body * hold));
-  const on = new Set(lit.filter((l) => l.from <= t && t < l.to).map((l) => l.line));
+  const on = new Set(lines_.filter((l) => l.from <= t && t < l.to).map((l) => l.line));
+  const words = lit.filter((l) => l.cols && l.from <= t && t < l.to);
+  /** Where the code starts on a line, after the mark and the line number, and how wide a character is. */
+  const gutter = (strong ? 8 : 4) + 52 + 16;
+  const advance = size * 0.6;
   const first = Math.max(0, Math.floor(scroll / lead) - 1);
   const last = Math.min(lines.length, first + Math.ceil(body / lead) + 3);
   const box: CSSProperties = {
@@ -240,6 +250,31 @@ export function CodeView({
                   </span>
                 ))}
               </span>
+              {words
+                .filter((w) => w.line === n)
+                .map((w) => {
+                  const [a, b] = w.cols as readonly [number, number];
+                  return (
+                    <span
+                      key={`${a}-${b}`}
+                      style={{
+                        position: "absolute",
+                        left: gutter + a * advance - 5,
+                        top: 3,
+                        bottom: 3,
+                        padding: "0 5px",
+                        display: "flex",
+                        alignItems: "center",
+                        borderRadius: 6,
+                        background: C.litMark,
+                        color: C.panel,
+                        font: `700 ${size}px ${MONO}`,
+                      }}
+                    >
+                      {text.slice(a, b)}
+                    </span>
+                  );
+                })}
             </div>
           );
         })}
