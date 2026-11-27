@@ -37,7 +37,7 @@ const SHEET_GAP = 8;
 const SHEET_GROUND = [0x16, 0x16, 0x1d] as const;
 
 /** Overlays drawn as DOM, which a sheet can leave out by hiding them. */
-const DOM_OVERLAYS = new Set(["title", "shape", "svg", "sticker", "layer", "motion", "three", "captions"]);
+const DOM_OVERLAYS = new Set(["title", "shape", "svg", "sticker", "layer", "captions"]);
 
 export interface LookOptions {
   readonly state: ResolvedState;

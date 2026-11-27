@@ -26,7 +26,7 @@ const VERSION = (() => {
 })();
 
 /** Elements whose picture is free code or another composition: anything in the file may decide it. */
-const FREE = new Set(["layer", "motion", "three", "nested", "multicam"]);
+const FREE = new Set(["layer", "nested", "multicam"]);
 /** Elements that last as long as the video does: their own range says nothing about a frame. */
 const WHOLE = new Set(["composition", "track", "captions"]);
 /** Elements that draw nothing. */
