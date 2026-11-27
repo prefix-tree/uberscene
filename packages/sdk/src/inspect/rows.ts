@@ -1,6 +1,6 @@
 // The resolved timeline as flat rows: one array per kind of thing, each row with its id, its seconds and its frames.
 // Flat rows are what jq, a short script or a SQL table take as they are.
-import { capabilitiesOf, framesUntil, type Rate, round3 } from "@uberscene/kit/schema";
+import { capabilitiesOf, framesUntil, type Kind, type Rate, round3 } from "@uberscene/kit/schema";
 
 import type { ResolveError } from "../resolve/errors";
 import { derivedOrigin } from "../resolve/expand";
@@ -12,7 +12,7 @@ import { spokenWords, timelineBeats } from "./plays";
 
 export interface ElementRow {
   readonly id: string;
-  readonly kind: string;
+  readonly kind: Kind;
   readonly track: string | null;
   readonly parent: string | null;
   readonly start: number;

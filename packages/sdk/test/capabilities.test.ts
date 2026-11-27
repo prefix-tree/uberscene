@@ -4,7 +4,7 @@ import {
   capabilitiesOf,
   isDomOverlay,
   isSequenceItem,
-  KIND_CAPABILITIES,
+  KINDS,
   kindsWhere,
   kindsWithProp,
   MAIN_TRACK_KINDS,
@@ -15,7 +15,7 @@ import {
 
 /** A list as a set: the lists these replace were only ever asked "is this kind in it". */
 const set = (kinds: readonly string[]) => [...kinds].sort();
-const kinds = Object.keys(KIND_CAPABILITIES);
+const kinds = KINDS;
 
 // Each list the packages kept of their own, written out once as it stood, against what the kind table now answers.
 describe("the kind table answers what the packages' own lists did", () => {

@@ -9,6 +9,7 @@ import {
   capabilitiesOf,
   curveAt,
   isSequenceItem,
+  type Kind,
   round3,
   Time,
   tidySeconds,
@@ -278,7 +279,7 @@ export function carryTrackRemoval(id: string, before: ResolvedState): Carry | nu
 }
 
 /** Whether a sibling on a track is something placed there, not a transition or a gap. */
-const onTrack = (kind: string | undefined): boolean => kind !== undefined && isSequenceItem(kind);
+const onTrack = (kind: Kind | undefined): boolean => kind !== undefined && isSequenceItem(kind);
 
 /** The clip a transition leads into on its track, else the one it leaves; transitions and gaps are skipped. */
 function clipBeside(state: ResolvedState, id: string): Placement | undefined {

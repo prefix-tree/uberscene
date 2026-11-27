@@ -1,4 +1,4 @@
-import { tidySeconds } from "@uberscene/kit/schema";
+import { type Kind, tidySeconds } from "@uberscene/kit/schema";
 
 import { asJson } from "../patches/log";
 import type { Json, PatchLog } from "../patches/types";
@@ -113,7 +113,7 @@ export interface TargetSpec {
   /** The param that names the element. Default `id`. */
   readonly param?: string;
   /** The kinds it applies to; any when left out. */
-  readonly kinds?: readonly string[];
+  readonly kinds?: readonly Kind[];
   /** It does not check the track's lock. */
   readonly onLocked?: boolean;
   /** It does not refuse model-only code. */
@@ -234,7 +234,7 @@ export interface PropHandlerSpec<T extends ActionType> {
   /** Which param carries the target id. */
   readonly target?: (params: Params<T>) => string;
   readonly validate?: (action: Action<T>, state: ResolvedState) => ValidationResult;
-  readonly kinds?: readonly string[];
+  readonly kinds?: readonly Kind[];
   /**
    * The element it is about, for `affordances()`. Left out, an action that targets `id` gets one from `kinds`; one with
    * its own `target` gets none unless it names the param here.

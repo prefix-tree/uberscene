@@ -2,6 +2,7 @@ import {
   capabilitiesOf,
   findFont,
   isBundledFont,
+  type Kind,
   nearestFont,
   type ResolvedTheme,
   resolveTheme,
@@ -85,7 +86,7 @@ function literalParts(prop: PropSite): Json | undefined {
 }
 
 /** The preset a `style` names: the name itself, or a title's or captions' `style.preset`. */
-function presetOf(kind: string, style: PropSite): string | undefined {
+function presetOf(kind: Kind, style: PropSite): string | undefined {
   if (typeof style.literal === "string") return style.literal;
   if (capabilitiesOf(kind).themeStyle !== "look") return undefined;
   const object = literalParts(style);

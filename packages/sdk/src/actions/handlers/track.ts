@@ -1,4 +1,4 @@
-import { Time } from "@uberscene/kit/schema";
+import { type Kind, Time } from "@uberscene/kit/schema";
 
 import type { PatchLog } from "../../patches/types";
 import type { Placement, ResolvedState } from "../../resolve/resolve";
@@ -23,7 +23,7 @@ import { restoreTiming } from "./clip-timing";
 const EPS = T(1e-6);
 
 type Tree = Parameters<typeof rawNode>[0];
-type Row = { readonly id: string; readonly kind: string; readonly parent: string };
+type Row = { readonly id: string; readonly kind: Kind; readonly parent: string };
 
 /**
  * What the composition holds, in file order, with a camera's tracks in the camera's place: positions count these

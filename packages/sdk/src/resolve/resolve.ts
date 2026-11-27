@@ -12,6 +12,7 @@ import {
   effectParamProblem,
   type FrameRate,
   isBuiltInTransition,
+  type Kind,
   keyPathOfProperty,
   MAIN_TRACK_KINDS,
   MAX_SECONDS,
@@ -65,7 +66,7 @@ import type { CollectedNode, CollectedTree, Editable, LayerInterior } from "./tr
 
 export interface Placement {
   readonly id: string;
-  readonly kind: string;
+  readonly kind: Kind;
   readonly track: string | null;
   readonly parent: string | null;
   readonly children: readonly string[];
@@ -923,7 +924,7 @@ function valueAt(props: Readonly<Record<string, unknown>>, path: readonly Proper
  * Where a key a file may still write has moved to, said in place of the schema's "Unrecognized key", and the new
  * spelling of a value spelled the old way (`"ease-in-out"`), in place of "Invalid option".
  */
-function movedKey(kind: string, issue: z.core.$ZodIssue, props: Readonly<Record<string, unknown>>): string | undefined {
+function movedKey(kind: Kind, issue: z.core.$ZodIssue, props: Readonly<Record<string, unknown>>): string | undefined {
   const fix = "uberscene lint --fix moves the file";
   if (issue.code === "invalid_union") {
     // A prop that is one of several shapes (a title's `style`, a preset name or an object): what a branch says.

@@ -8,6 +8,7 @@ import {
   GENERATOR_TYPES,
   isGenerator,
   isLink,
+  type Kind,
   keyPathOf,
   keyPathsOf,
   kindsWithProp,
@@ -24,15 +25,15 @@ import { define, makePropHandler, onElement, rawNode, rawProp, readPath, writePa
 import { invalid, type KeyJson, ok, type ValidationResult } from "../types";
 
 /** Kinds whose `speed` takes keys: a ramp, made of speed keys, so it is not in the key-path table. */
-const SPEED_KINDS = kindsWithProp("speed");
-const EFFECT_KINDS = kindsWithProp("effects");
+const SPEED_KINDS: readonly Kind[] = kindsWithProp("speed");
+const EFFECT_KINDS: readonly Kind[] = kindsWithProp("effects");
 const SHAPE_PATHS: readonly string[] = SHAPE_KEY_PATHS.map((k) => k.path);
 
 /**
  * The paths a key list may sit at on a `kind`, besides an effect's params (`effects.<n>.<param>`): the kind's entries
  * in the key-path table, with the one path a list for both axes is written at, and `speed` where there is one.
  */
-function keyPathsFor(kind: string): readonly string[] {
+function keyPathsFor(kind: Kind): readonly string[] {
   const own = keyPathsOf(kind).flatMap((k) => (k.both ? [k.both, k.path] : [k.path]));
   return [...new Set([...own, ...(SPEED_KINDS.includes(kind) ? ["speed"] : [])])];
 }
@@ -61,9 +62,10 @@ function pathProblem(state: ResolvedState, id: string, path: string): string | n
     return Number(fx[1]) < effects.length ? null : `element "${id}" has no effect ${fx[1]}`;
   }
   const target = state.items.get(id);
-  const kind = target?.kind ?? "";
+  if (!target) return `element "${id}" does not exist`;
+  const kind = target.kind;
   // A pushed camera's place and zoom are the push's to set.
-  if (kind === "camera" && target?.props.push && path !== "rotation" && path in CAMERA_FIELDS)
+  if (kind === "camera" && target.props.push && path !== "rotation" && path in CAMERA_FIELDS)
     return `the camera's push sets its ${path}: turn the push into keys with camera/bakePush, then change them`;
   const paths = keyPathsFor(kind);
   if (paths.includes(path)) return null;
@@ -124,7 +126,8 @@ function checkPath(state: ResolvedState, id: string, path: string): ValidationRe
 
 /** A value an effect's param or a shape's keyed value takes, when `path` is one. */
 function checkValue(state: ResolvedState, id: string, path: string, value: Json | undefined): ValidationResult {
-  const check = keyPathOf(state.items.get(id)?.kind ?? "", path)?.check;
+  const kind = state.items.get(id)?.kind;
+  const check = kind === undefined ? undefined : keyPathOf(kind, path)?.check;
   if (check && value !== undefined) {
     const problem = check(value);
     return problem ? invalid({ code: "INVALID_PARAMS", message: problem, path: "value" }) : ok;

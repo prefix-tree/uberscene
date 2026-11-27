@@ -3,7 +3,7 @@ import type { ActionInput, ActionType } from "@uberscene/sdk";
 /** Stubs: specified, validated, not yet applied. */
 export const STUBS: readonly ActionType[] = [];
 
-const clipSpec = { id: "new1", kind: "clip", props: { id: "new1", src: "asset:city", in: 0, out: 2 } };
+const clipSpec = { id: "new1", kind: "clip", props: { id: "new1", src: "asset:city", in: 0, out: 2 } } as const;
 
 /** Actions whose effect lives outside the resolved state (a bake mark); the round trip only checks they run and undo. */
 export const NO_STATE_CHANGE: readonly ActionType[] = ["source/bake"];

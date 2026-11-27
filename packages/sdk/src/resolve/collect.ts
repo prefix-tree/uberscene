@@ -9,6 +9,7 @@ import {
   isShaderRef,
   isTextMark,
   isVocabulary,
+  type Kind,
   MAIN_TRACK_ID,
   MAIN_TRACK_KINDS,
   markSchema,
@@ -349,7 +350,7 @@ function withMainTrack(children: CollectedNode[], composition: string, walker: W
 
 function makeNode(
   element: ReactElement<Record<string, unknown>>,
-  kind: string,
+  kind: Kind,
   parent: string | null,
   walker: Walker,
   origin: CollectedNode["origin"] | null,

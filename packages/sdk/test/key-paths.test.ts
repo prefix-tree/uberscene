@@ -7,6 +7,7 @@ import {
   BOX_KEY_PATHS,
   KEYFRAME_PROPERTIES,
   KIND_CAPABILITIES,
+  KINDS,
   keyPathOf,
   keyPathsOf,
   kindsWithProp,
@@ -87,9 +88,8 @@ describe("the key-path table", () => {
   });
 
   it("gives a kind the paths its schema has the props for", () => {
-    const kindsWith = (path: string) => Object.keys(KIND_CAPABILITIES).filter((kind) => keyPathOf(kind, path));
-    const scoped = (prop: string) =>
-      kindsWithProp(prop).filter((k) => KIND_CAPABILITIES[k]?.placementScope === "track");
+    const kindsWith = (path: string) => KINDS.filter((kind) => keyPathOf(kind, path));
+    const scoped = (prop: string) => kindsWithProp(prop).filter((k) => KIND_CAPABILITIES[k].placementScope === "track");
     for (const k of TRANSFORM_KEY_PATHS) expect(kindsWith(k.path).sort()).toEqual([...scoped("transform")].sort());
     // Captions have a box too, but stand outside the tracks: nothing there takes keys.
     for (const k of BOX_KEY_PATHS) expect(kindsWith(k.path).sort()).toEqual([...scoped("box")].sort());

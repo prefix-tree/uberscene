@@ -4,6 +4,7 @@
 // picture also depends on and what an edit has to repair are all read from here, in place of a scan per feature.
 import {
   capabilitiesOf,
+  type Kind,
   keyPathOf,
   kindsWithProp,
   parseRef,
@@ -29,7 +30,7 @@ export interface RefEdge {
 /** What the checks of a reference may ask about the file. */
 export interface RefContext {
   /** The kind of an element, track, marker or anything else with an id; undefined when nothing has the id. */
-  readonly kindOf: (id: string) => string | undefined;
+  readonly kindOf: (id: string) => Kind | undefined;
   /** The track an element is on, or null. */
   readonly trackOf: (id: string) => string | null;
   /** The camera a track is inside. */
@@ -55,9 +56,9 @@ interface Written {
 export interface RefKind {
   readonly name: string;
   /** The kinds that may write it. */
-  readonly holders: (kind: string) => boolean;
+  readonly holders: (kind: Kind) => boolean;
   /** The kinds it may name. Left out: any. */
-  readonly targets?: (kind: string) => boolean;
+  readonly targets?: (kind: Kind) => boolean;
   /** The forms of the reference grammar it is written in. */
   readonly accept: readonly RefForm[];
   /**
@@ -94,7 +95,7 @@ export interface RefKind {
     /** The prop the errors are on, when it is not the prop of the reference itself. */
     readonly prop?: string;
     readonly unknown: (written: Written) => string;
-    readonly wrongKind?: (written: Written, kind: string) => string;
+    readonly wrongKind?: (written: Written, kind: Kind) => string;
     /** A circle of these references, as the ids it goes through, the first one repeated last. */
     readonly cycle?: (loop: readonly string[]) => string;
   };
@@ -102,12 +103,12 @@ export interface RefKind {
 
 const str = (v: unknown): v is string => typeof v === "string";
 const props = (node: CollectedNode): Record<string, unknown> => node.props as Record<string, unknown>;
-const FOLLOWERS: ReadonlySet<string> = new Set(kindsWithProp("follow"));
-const DUCKERS: ReadonlySet<string> = new Set(kindsWithProp("duck"));
+const FOLLOWERS: ReadonlySet<Kind> = new Set(kindsWithProp("follow"));
+const DUCKERS: ReadonlySet<Kind> = new Set(kindsWithProp("duck"));
 /** The kinds whose schema has the prop a reference is written in: a transition's `on`, a camera's `push`. */
-const ON_AN_EDGE: ReadonlySet<string> = new Set(kindsWithProp("on"));
-const PUSHERS: ReadonlySet<string> = new Set(kindsWithProp("push"));
-const WITH_TIMES: ReadonlySet<string> = new Set(kindsWithProp("times"));
+const ON_AN_EDGE: ReadonlySet<Kind> = new Set(kindsWithProp("on"));
+const PUSHERS: ReadonlySet<Kind> = new Set(kindsWithProp("push"));
+const WITH_TIMES: ReadonlySet<Kind> = new Set(kindsWithProp("times"));
 
 const NOTHING: readonly Written[] = [];
 /** The props a time reference may sit at: a footage range's ends, and a caption cue's. */
@@ -127,7 +128,7 @@ function marker(prop: string, text: unknown): Written[] {
   return target.type === "marker" ? [{ prop, text, target }] : [];
 }
 
-const WITH_EFFECTS: ReadonlySet<string> = new Set(kindsWithProp("effects"));
+const WITH_EFFECTS: ReadonlySet<Kind> = new Set(kindsWithProp("effects"));
 
 /**
  * The links an element writes, each with the path of the value that holds it. The resolver has already taken each
@@ -321,7 +322,7 @@ export const REF_KINDS: Readonly<Record<string, RefKind>> = {
     accept: ["prop"],
     read: (node) => links(node),
     unfit: (_from, to, written, ctx) => {
-      const kind = ctx.kindOf(to) as string;
+      const kind = ctx.kindOf(to) as Kind;
       const path = written.target.type === "prop" ? written.target.path : "";
       if (EFFECT_PARAM_PATH.test(path))
         return WITH_EFFECTS.has(kind) ? null : `${written.prop} links to "${written.text}": a ${kind} has no effects`;
@@ -440,7 +441,7 @@ export function buildRefGraph(
         }
         for (const to of ids) {
           const edge = { type: kind.name, from: node.id, prop: written.prop, to, target: written.target };
-          const targetKind = ctx.kindOf(to) as string;
+          const targetKind = ctx.kindOf(to) as Kind;
           let broken = false;
           if (kind.report) {
             const unfit = kind.unfit?.(node.id, to, written, ctx);

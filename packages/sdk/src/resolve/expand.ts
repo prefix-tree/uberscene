@@ -6,6 +6,7 @@
 
 import {
   capabilitiesOf,
+  type DerivedKind,
   generatorSeed,
   isGenerator,
   isLink,
@@ -100,7 +101,12 @@ function expandNode(node: CollectedNode): Expansion | null {
   if (!onTrack && keyPathsOf(node.kind).length === 0) return null;
   const props: Record<string, unknown> = { ...node.props };
   const derived: CollectedNode[] = [];
-  const item = (path: string, kind: string, itemProps: Record<string, unknown>, children: CollectedNode[] = []) => {
+  const item = (
+    path: string,
+    kind: DerivedKind,
+    itemProps: Record<string, unknown>,
+    children: CollectedNode[] = [],
+  ) => {
     const id = `${node.id}.${path}`;
     const made: CollectedNode = {
       id,

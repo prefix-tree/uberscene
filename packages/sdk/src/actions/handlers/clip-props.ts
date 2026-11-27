@@ -1,4 +1,4 @@
-import { kindsWhere, kindsWithProp } from "@uberscene/kit/schema";
+import { type Kind, kindsWhere, kindsWithProp } from "@uberscene/kit/schema";
 
 import type { Json } from "../../patches/types";
 import { INTERIOR_PREFIX } from "../../resolve/tree";
@@ -12,7 +12,7 @@ const TRANSFORM_KINDS = kindsWhere((kind) => kind.transformable);
 /** Kinds that take a `blend` mode: everything that draws, and an adjustment for what it filters. */
 const BLEND_KINDS = kindsWithProp("blend");
 /** Kinds whose blend has a strength (`blendOpacity`): the ones drawn on the canvas. */
-const BLEND_OPACITY_KINDS = kindsWithProp("blendOpacity");
+const BLEND_OPACITY_KINDS: readonly Kind[] = kindsWithProp("blendOpacity");
 const AUDIO_KINDS = kindsWhere((kind) => kind.audio);
 /** Kinds painted on the canvas. */
 const CANVAS_KINDS = kindsWhere((kind) => kind.plane === "canvas");
@@ -36,8 +36,8 @@ define(makePropHandler({
     ...(p.opacity !== undefined ? { blendOpacity: p.opacity } : {}),
   }),
   validate: (a, state) => {
-    const kind = state.items.get(a.params.id)?.kind ?? "";
-    return a.params.opacity === undefined || BLEND_OPACITY_KINDS.includes(kind)
+    const kind = state.items.get(a.params.id)?.kind;
+    return a.params.opacity === undefined || (kind !== undefined && BLEND_OPACITY_KINDS.includes(kind))
       ? ok
       : invalid({
           code: "INVALID_PARAMS",

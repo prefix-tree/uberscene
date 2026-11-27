@@ -1,4 +1,4 @@
-import { capabilitiesOf, kindsWhere, moveRuns } from "@uberscene/kit/schema";
+import { capabilitiesOf, isKind, kindsWhere, moveRuns } from "@uberscene/kit/schema";
 
 import type { Json } from "../../patches/types";
 import type { Placement, ResolvedState } from "../../resolve/resolve";
@@ -31,7 +31,8 @@ const ELEMENT_KINDS = kindsWhere((kind) => kind.elementActions);
 define({
   type: "element/create",
   validate: (a, state) => {
-    if (!ELEMENT_KINDS.includes(a.params.kind))
+    // Params come in as JSON: a kind that is none, or not one this action makes, is refused here.
+    if (!isKind(a.params.kind) || !ELEMENT_KINDS.includes(a.params.kind))
       return invalid({
         code: "INVALID_PARAMS",
         message: `element/create makes ${ELEMENT_KINDS.join(", ")}; a clip or an audio is added with clip/add or audio/add`,
