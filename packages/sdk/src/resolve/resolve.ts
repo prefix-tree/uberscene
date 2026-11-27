@@ -12,6 +12,7 @@ import {
   effectParamProblem,
   type FrameRate,
   isBuiltInTransition,
+  keyPathOfProperty,
   MAIN_TRACK_KINDS,
   MAX_SECONDS,
   maxTicks,
@@ -62,7 +63,6 @@ import { FOLLOW_KINDS, followOf } from "./follow";
 import { overlay } from "./overlay";
 import { type PushSpec, pushKeys } from "./push";
 import { placeScene, type SceneUse, sceneAssetId, withSceneAssets } from "./scene3d";
-import { shapeKeyProblem } from "./shape-keys";
 import { freezeHoldsOf, heldWithin, holdTotal, rampAdvance, rampInverse, reachedHolds, speedKeysOf } from "./speed";
 import type { CollectedNode, CollectedTree, Editable, LayerInterior } from "./tree";
 
@@ -1242,8 +1242,9 @@ function keyframeErrors(items: ReadonlyMap<string, Placement>): ResolveError[] {
     if (k.kind !== "keyframe") continue;
     const parent = k.parent ? items.get(k.parent) : undefined;
     const property = k.props.property;
-    if (typeof property === "string" && property.startsWith("shape.")) {
-      const problem = shapeKeyProblem(property, k.props.value);
+    const check = typeof property === "string" ? keyPathOfProperty(property)?.check : undefined;
+    if (check) {
+      const problem = check(k.props.value);
       if (problem) out.push({ code: "SCHEMA", id: k.id, prop: "value", message: problem });
       continue;
     }

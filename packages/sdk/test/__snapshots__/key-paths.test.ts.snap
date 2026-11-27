@@ -1,0 +1,35 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`what keys expand to > is the same items in the same order for every example and recipe 1`] = `
+{
+  "examples/launch-recap/video.tsx": "012fc936fc62d221 3464",
+  "examples/shorts/cards/hundred-videos-compare.tsx": "ce0c0059e72f1c27 706",
+  "examples/shorts/game-lighting.tsx": "9d874e7e41cdf027 2520",
+  "examples/shorts/hundred-videos.tsx": "88aae7a164c7fb9e 5268",
+  "examples/shorts/lighting-explained.tsx": "c3216512fcf08926 2209",
+  "examples/shorts/lunar-eclipse.tsx": "3ecfe626b1129373 5106",
+  "examples/shorts/notes-to-cut.tsx": "929c6ce6b5833580 6526",
+  "examples/shorts/one-pixel.tsx": "a6c243fd1eb1691b 25304",
+  "examples/shorts/snake-heart.tsx": "cfa5d3b981b0bb34 3424",
+  "examples/showcase/beats.tsx": "c2f489637eaf9fc7 14068",
+  "examples/showcase/camera.tsx": "7fddb2d9a970962f 5924",
+  "examples/showcase/captions.tsx": "bd9746aaa468b549 714",
+  "examples/showcase/coffee.tsx": "7c0e5f608acac21c 9090",
+  "examples/showcase/data.tsx": "e4ecb3d8e1ff5f6a 1346",
+  "examples/showcase/edit.tsx": "7500ed063d431f03 1824",
+  "examples/showcase/hero.tsx": "43abd2c4fceae1ce 1616",
+  "examples/showcase/kinetic.tsx": "bd9124e1f7209ff2 2160",
+  "examples/showcase/launch.tsx": "213031bd5d7115b8 1859",
+  "examples/showcase/logo.tsx": "770a634cf6d6597c 661",
+  "examples/showcase/pipeline.tsx": "179133a700c53abf 15309",
+  "examples/showcase/recolor.tsx": "de8745076cddabc8 1866",
+  "recipes/brand-spot.tsx": "c868db8b7948e901 3001",
+  "recipes/highlights.tsx": "107c248c73182f0b 941",
+  "recipes/product-demo.tsx": "0c9dd67d27291c61 3689",
+  "recipes/slideshow.tsx": "c3f47176e3b7e3c6 2763",
+  "recipes/stats.tsx": "b2e74eb019f7a879 908",
+  "recipes/talking-head.tsx": "9d39b7c4a75c4d9f 1665",
+  "recipes/variants.tsx": "2a5289180e6ee83d 1056",
+  "recipes/vertical-podcast.tsx": "fba7a72b7daacf31 4177",
+}
+`;

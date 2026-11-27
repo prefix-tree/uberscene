@@ -5,6 +5,7 @@ import {
   capabilitiesOf,
   curveAt,
   isSequenceItem,
+  keyPathOf,
   type Ticks,
   ticksPerFrame,
   tidySeconds,
@@ -15,7 +16,6 @@ import { lookupAsset } from "../../manifest/types";
 import type { Json } from "../../patches/types";
 import { isKeyList } from "../../resolve/expand";
 import type { Placement as ResolvedPlacement, ResolvedState } from "../../resolve/resolve";
-import { SHAPE_KEY_PATHS } from "../../resolve/shape-keys";
 import { endS, endT, lengthT, minus, plus, S, sinceStart, startS, startT, T } from "../../time";
 import { carry, carryRemoval, carrySplit, carryTrim } from "../carry";
 import {
@@ -444,8 +444,8 @@ function splitAt(node: NodeSpec, atRel: number, taken: Set<string>): SplitPlan {
   const touched = new Set<string>();
   for (const path of keyPathsOf(props)) {
     // A shape's colours and points cut at the colour or the shape drawn there (under a generator, at its base's path).
-    const shapeProperty = node.kind === "shape" ? SHAPE_KEY_PATHS[path.replace(/\.(base|keys)$/, "")] : undefined;
-    const { left, right: r } = splitKeys(readPath(props, path) as unknown as KeyJson[], atRel, blendFor(shapeProperty));
+    const property = keyPathOf(node.kind, path.replace(/\.(base|keys)$/, ""))?.property;
+    const { left, right: r } = splitKeys(readPath(props, path) as unknown as KeyJson[], atRel, blendFor(property));
     const l = writePath(leftAll, path, canonicalKeys(left));
     leftAll = { ...leftAll, [l.prop]: l.value };
     const w = writePath(rightAll, path, canonicalKeys(r));

@@ -3,43 +3,38 @@
 // fold rewrites one prop.
 
 import {
+  AUDIO_KEY_PATHS,
+  BOX_KEY_PATHS,
   CAMERA_FIELDS,
   effectParamProblem,
   GENERATOR_TYPES,
   isGenerator,
+  keyPathOf,
   kindsWithProp,
+  SHAPE_KEY_PATHS,
   shaderFor,
+  TRANSFORM_KEY_PATHS,
   VIDEO_EFFECT_TYPES,
 } from "@uberscene/kit/schema";
 
 import type { Json } from "../../patches/types";
 import { isKeyList } from "../../resolve/expand";
 import type { ResolvedState } from "../../resolve/resolve";
-import { SHAPE_KEY_PATHS, shapeKeyProblem } from "../../resolve/shape-keys";
 import { lengthT, T } from "../../time";
 import { define, makePropHandler, onElement, rawNode, rawProp } from "../handler-kit";
 import { invalid, type KeyJson, ok, type ValidationResult } from "../types";
 
-/** The paths a key list may sit at, besides an effect's params (`effects.<n>.<param>`). */
+/**
+ * The paths a key list may sit at, besides an effect's params (`effects.<n>.<param>`) and a kind's own (a shape's, a
+ * camera's): the key-path table's, with the one list for both axes of a scale, and `speed`, whose keys are a ramp.
+ */
 const KEY_PATHS: ReadonlySet<string> = new Set([
-  "transform.scale",
-  "transform.scale.x",
-  "transform.scale.y",
-  "transform.rotation",
-  "transform.opacity",
-  "transform.anchor.x",
-  "transform.anchor.y",
-  "transform.borderRadius",
-  "transform.crop.x",
-  "transform.crop.y",
-  "transform.crop.width",
-  "transform.crop.height",
-  "box.x",
-  "box.y",
-  "volume",
-  "pan",
+  ...[...TRANSFORM_KEY_PATHS, ...BOX_KEY_PATHS, ...AUDIO_KEY_PATHS].flatMap((k) =>
+    k.both ? [k.both, k.path] : [k.path],
+  ),
   "speed",
 ]);
+const SHAPE_PATHS: readonly string[] = SHAPE_KEY_PATHS.map((k) => k.path);
 
 const EFFECT_PARAM = /^effects\.(\d+)\.([A-Za-z_]\w*)$/;
 
@@ -59,9 +54,9 @@ function pathProblem(state: ResolvedState, id: string, path: string): string | n
       ? null
       : `"${path}" cannot hold keys on a camera; use one of ${Object.keys(CAMERA_FIELDS).join(", ")}`;
   // A shape's own values (its size, colours, outline and points) take keys on a shape only.
-  if (path in SHAPE_KEY_PATHS)
+  if (SHAPE_PATHS.includes(path))
     return target?.kind === "shape" ? null : `"${path}" holds keys only on a shape; "${id}" is a ${target?.kind}`;
-  const shapePaths = target?.kind === "shape" ? Object.keys(SHAPE_KEY_PATHS) : [];
+  const shapePaths = target?.kind === "shape" ? SHAPE_PATHS : [];
   return KEY_PATHS.has(path)
     ? null
     : `"${path}" cannot hold keys; use one of ${[...KEY_PATHS, ...shapePaths].join(", ")}, or effects.<n>.<param>`;
@@ -163,9 +158,9 @@ function checkPath(state: ResolvedState, id: string, path: string): ValidationRe
 
 /** A value an effect's param or a shape's keyed value takes, when `path` is one. */
 function checkValue(state: ResolvedState, id: string, path: string, value: Json | undefined): ValidationResult {
-  const property = SHAPE_KEY_PATHS[path];
-  if (property && value !== undefined && state.items.get(id)?.kind === "shape") {
-    const problem = shapeKeyProblem(property, value);
+  const check = keyPathOf(state.items.get(id)?.kind ?? "", path)?.check;
+  if (check && value !== undefined) {
+    const problem = check(value);
     return problem ? invalid({ code: "INVALID_PARAMS", message: problem, path: "value" }) : ok;
   }
   const fx = EFFECT_PARAM.exec(path);
