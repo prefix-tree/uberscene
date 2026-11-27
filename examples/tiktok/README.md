@@ -11,7 +11,7 @@ Each film becomes two vertical posts, 1080x1920:
   comes up for the build and goes on the drop), so both moves land on beats. (`reveal.tsx`.)
   A film can open on hook lines (`hook`: a question, its answer, then the turn), and show its music's Strudel score
   before its pictures' file (`music`). Liftoff's asks "How do you edit 60 years of launches?", answers "Footage. Music.
-  An editor.", then turns: "BUT this one has no editor. It's code. Even the music." At 12 s `score.ts` comes up with
+  An editor.", then turns: "BUT no After Effects. No Premiere. Just code." and "Building it to 10/10. Follow along." At 12 s `score.ts` comes up with
   the playing section lit, its light moving from 1969 to the 80s as the sound does, and at 20 s it switches to
   `video.tsx`.
 - **`<name>-post.mp4`**: just the film. A tall film fills the frame; a wide one sits across it over a blurred copy of

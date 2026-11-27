@@ -58,11 +58,12 @@ const FILMS: Record<string, Film> = {
     needs: "pnpm --filter @uberscene/example-liftoff prepare-media",
     reveal: [12, 24],
     // The question, its answer and the turn, each held long enough to read, in the top third: the countdown's numbers
-    // run below them from 3 s, and the turn holds until just after ignition.
+    // run below them from 3 s; the turn holds until just after ignition, and the mission until the code comes up.
     hook: [
       { text: "How do you edit\n60 years of launches?", from: 0, to: 2.9, y: 470 },
       { text: "Footage. Music.\nAn editor.", from: 2.9, to: 4.6, y: 470 },
-      { text: "BUT this one has no editor.\nIt's code. Even the music.", from: 4.6, to: 8.4, size: 64, y: 470 },
+      { text: "BUT no After Effects.\nNo Premiere. Just code.", from: 4.6, to: 8.4, size: 64, y: 470 },
+      { text: "Building it to 10/10.\nFollow along.", from: 8.4, to: 11.6, size: 64, y: 470 },
     ],
     music: { file: "liftoff/score.ts", until: 20 },
   },

@@ -41,6 +41,6 @@ renders the music and finds the ignitions. The two vertical Starship clips (`med
 are not from Commons and not in the repository: supply your own.
 
 `examples/tiktok` renders it as a TikTok post too, with the code in a split: a hook ("How do you edit 60 years of
-launches?" … "BUT this one has no editor. It's code. Even the music."), then `score.ts` and `video.tsx` lighting up as
+launches?" … "BUT no After Effects. No Premiere. Just code."), then `score.ts` and `video.tsx` lighting up as
 they play (`pnpm --filter @uberscene/example-tiktok render
 liftoff`).
