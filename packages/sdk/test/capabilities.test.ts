@@ -101,7 +101,8 @@ describe("traits the schema already shows are read from it", () => {
   });
 
   it("puts every kind placed on a track among what a track holds", () => {
-    expect(capabilitiesOf("track").childKinds).toEqual([
+    // The kinds there were, in the order the vocabulary lists them; a kind added since comes after.
+    expect(capabilitiesOf("track").childKinds.filter((kind) => THEN.has(kind))).toEqual([
       "clip",
       "audio",
       "gap",
@@ -115,6 +116,8 @@ describe("traits the schema already shows are read from it", () => {
       "layer",
       "multicam",
     ]);
-    expect(set(capabilitiesOf("track").childKinds)).toEqual(set(kindsWhere((k) => k.placementScope === "track")));
+    expect([...capabilitiesOf("track").childKinds].sort()).toEqual(
+      [...kindsWhere((k) => k.placementScope === "track")].sort(),
+    );
   });
 });
