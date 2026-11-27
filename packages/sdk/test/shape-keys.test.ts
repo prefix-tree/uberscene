@@ -168,6 +168,25 @@ describe("the key actions on a shape", () => {
     expect(bad.ok ? "" : bad.errors?.[0]?.message).toContain("number of pixels");
   });
 
+  it("refuse a path the element's kind does not have, naming the ones it does", () => {
+    const exec = editor(file(`fill="#ff0000"`));
+    const message = (id: string, path: string, value: number) => {
+      const r = exec.execute({ type: "key/add", params: { id, path, at: 1, value } });
+      return r.ok ? "" : (r.errors?.[0]?.message ?? "");
+    };
+    // A shape makes no sound and plays at one speed; a clip does both.
+    expect(message("dot", "volume", 0.5)).toBe(
+      '"volume" cannot hold keys on a shape; use one of transform.scale, transform.scale.x, transform.scale.y, ' +
+        "transform.rotation, transform.opacity, transform.anchor.x, transform.anchor.y, transform.borderRadius, " +
+        "transform.crop.x, transform.crop.y, transform.crop.width, transform.crop.height, box.x, box.y, width, height, " +
+        "fill, points, stroke.color, stroke.thickness, stroke.dashOffset, or effects.<n>.<param>",
+    );
+    expect(message("dot", "speed", 2)).toContain('"speed" cannot hold keys on a shape');
+    expect(message("talk", "volume", 0.5)).toBe("");
+    expect(message("talk", "speed", 2)).toBe("");
+    expect(message("talk", "nope", 1)).toContain('"nope" cannot hold keys on a clip; use one of transform.scale,');
+  });
+
   it("split a shape mid-way through a colour and a morph at what is drawn there", () => {
     const sq = "[{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }]";
     const wide = "[{ x: 0, y: 0 }, { x: 2, y: 0 }, { x: 1, y: 3 }]";

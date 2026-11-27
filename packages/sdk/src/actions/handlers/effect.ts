@@ -3,17 +3,15 @@
 // fold rewrites one prop.
 
 import {
-  AUDIO_KEY_PATHS,
-  BOX_KEY_PATHS,
   CAMERA_FIELDS,
   effectParamProblem,
   GENERATOR_TYPES,
   isGenerator,
   keyPathOf,
+  keyPathsOf,
   kindsWithProp,
   SHAPE_KEY_PATHS,
   shaderFor,
-  TRANSFORM_KEY_PATHS,
   VIDEO_EFFECT_TYPES,
 } from "@uberscene/kit/schema";
 
@@ -24,17 +22,19 @@ import { lengthT, T } from "../../time";
 import { define, makePropHandler, onElement, rawNode, rawProp } from "../handler-kit";
 import { invalid, type KeyJson, ok, type ValidationResult } from "../types";
 
-/**
- * The paths a key list may sit at, besides an effect's params (`effects.<n>.<param>`) and a kind's own (a shape's, a
- * camera's): the key-path table's, with the one list for both axes of a scale, and `speed`, whose keys are a ramp.
- */
-const KEY_PATHS: ReadonlySet<string> = new Set([
-  ...[...TRANSFORM_KEY_PATHS, ...BOX_KEY_PATHS, ...AUDIO_KEY_PATHS].flatMap((k) =>
-    k.both ? [k.both, k.path] : [k.path],
-  ),
-  "speed",
-]);
+/** Kinds whose `speed` takes keys: a ramp, made of speed keys, so it is not in the key-path table. */
+const SPEED_KINDS = kindsWithProp("speed");
+const EFFECT_KINDS = kindsWithProp("effects");
 const SHAPE_PATHS: readonly string[] = SHAPE_KEY_PATHS.map((k) => k.path);
+
+/**
+ * The paths a key list may sit at on a `kind`, besides an effect's params (`effects.<n>.<param>`): the kind's entries
+ * in the key-path table, with the one path a list for both axes is written at, and `speed` where there is one.
+ */
+function keyPathsFor(kind: string): readonly string[] {
+  const own = keyPathsOf(kind).flatMap((k) => (k.both ? [k.both, k.path] : [k.path]));
+  return [...new Set([...own, ...(SPEED_KINDS.includes(kind) ? ["speed"] : [])])];
+}
 
 const EFFECT_PARAM = /^effects\.(\d+)\.([A-Za-z_]\w*)$/;
 
@@ -45,21 +45,19 @@ function pathProblem(state: ResolvedState, id: string, path: string): string | n
     const effects = effectsOf(state, id);
     return Number(fx[1]) < effects.length ? null : `element "${id}" has no effect ${fx[1]}`;
   }
-  // A camera's keys are its four values, on the video's clock.
   const target = state.items.get(id);
-  if (target?.kind === "camera" && target.props.push && path !== "rotation" && path in CAMERA_FIELDS)
+  const kind = target?.kind ?? "";
+  // A pushed camera's place and zoom are the push's to set.
+  if (kind === "camera" && target?.props.push && path !== "rotation" && path in CAMERA_FIELDS)
     return `the camera's push sets its ${path}: turn the push into keys with camera/bakePush, then change them`;
-  if (target?.kind === "camera")
-    return path in CAMERA_FIELDS
-      ? null
-      : `"${path}" cannot hold keys on a camera; use one of ${Object.keys(CAMERA_FIELDS).join(", ")}`;
+  const paths = keyPathsFor(kind);
+  if (paths.includes(path)) return null;
   // A shape's own values (its size, colours, outline and points) take keys on a shape only.
-  if (SHAPE_PATHS.includes(path))
-    return target?.kind === "shape" ? null : `"${path}" holds keys only on a shape; "${id}" is a ${target?.kind}`;
-  const shapePaths = target?.kind === "shape" ? SHAPE_PATHS : [];
-  return KEY_PATHS.has(path)
-    ? null
-    : `"${path}" cannot hold keys; use one of ${[...KEY_PATHS, ...shapePaths].join(", ")}, or effects.<n>.<param>`;
+  if (SHAPE_PATHS.includes(path)) return `"${path}" holds keys only on a shape; "${id}" is a ${kind}`;
+  const effects = EFFECT_KINDS.includes(kind) ? ["effects.<n>.<param>"] : [];
+  if (paths.length + effects.length === 0) return `"${path}" cannot hold keys: a ${kind} has nothing that does`;
+  const use = [paths.join(", "), ...effects].filter((part) => part !== "").join(", or ");
+  return `"${path}" cannot hold keys on a ${kind}; use one of ${use}`;
 }
 
 /** The value at a dotted path inside an element's raw props; a number segment indexes a list. */
