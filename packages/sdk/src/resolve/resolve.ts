@@ -172,16 +172,54 @@ interface Pending {
   readonly parent: string | null;
   props: Record<string, unknown>;
   errors: ResolveError[];
-  source?: PendingSource;
+  source: PendingSource | undefined;
   /** Intrinsic length, when it does not depend on other elements. */
-  duration?: Time;
-  durationDep?: { kind: "match"; id: string } | { kind: "until"; id: string; at?: string } | { kind: "fill" };
-  start?: Time;
+  duration: Time | undefined;
+  durationDep:
+    | { kind: "match"; id: string }
+    | { kind: "until"; id: string; at?: string }
+    | { kind: "fill" }
+    | undefined;
+  start: Time | undefined;
   /** `at` is a word, shot or silence of the anchor's source: the start is where the anchor plays it, plus `offset`. */
-  anchorDep?: { id: string | "start"; offset: Time; edge?: "end"; at?: string };
-  between?: readonly [string, string];
+  anchorDep: { id: string | "start"; offset: Time; edge?: "end"; at?: string } | undefined;
+  between: readonly [string, string] | undefined;
   /** Set on an element of a settled track (`settledByTrack`): it is frozen, and holds what it was last placed as. */
-  readonly settled?: { placed?: Placed; end?: Time | null };
+  readonly settled: { placed?: Placed; end?: Time | null; readonly reads?: readonly Read[] } | undefined;
+}
+
+/**
+ * A `Pending` with nothing worked out yet. Every one is made here, with every field in the same order, and a field
+ * that is given up is set to undefined, not deleted: the resolver reads these fields of every element in loops, and
+ * objects of one shape are read several times faster than objects of many.
+ */
+function pendingOf(
+  node: CollectedNode,
+  track: string | null,
+  parent: string | null,
+  props: Record<string, unknown>,
+  errors: ResolveError[],
+): Pending {
+  return {
+    node,
+    track,
+    parent,
+    props,
+    errors,
+    source: undefined,
+    duration: undefined,
+    durationDep: undefined,
+    start: undefined,
+    anchorDep: undefined,
+    between: undefined,
+    settled: undefined,
+  };
+}
+
+/** An element another one waited on, by the id it was named with: the `Pending` it had then, or none. */
+interface Read {
+  readonly id: string;
+  readonly was: Pending | undefined;
 }
 
 /** What placing a settled element gave: its placement, those of everything inside it, and the errors, in order. */
@@ -280,6 +318,13 @@ interface SettledTrack {
   readonly stood: readonly TrackCursor[];
   /** The latest tick the placing reached: a cursor, or an element's end. */
   readonly far: number;
+  /**
+   * Which of `pendings` waited on another element (an anchor, a match, an until): each has its `reads`, the elements
+   * it waited on as they were. Such an element holds while each of those is still that same settled element:
+   * `Pending`s of settled tracks are frozen, so the same object is the same start, length and source. Empty for a
+   * track nothing outside decides.
+   */
+  readonly readers: readonly number[];
 }
 const settledByTrack = new Cache<CollectedNode, SettledTrack>();
 /**
@@ -296,8 +341,8 @@ function settledEnd(p: Pending): Time | null {
 }
 
 /** Marks an element settled: frozen, so nothing that reads it later can change it. */
-function freezeSettled(p: Pending): void {
-  (p as { settled?: Pending["settled"] }).settled = {};
+function freezeSettled(p: Pending, reads?: readonly Read[]): void {
+  (p as { settled: Pending["settled"] }).settled = reads && reads.length > 0 ? { reads } : {};
   Object.freeze(p.errors);
   Object.freeze(p);
 }
@@ -315,19 +360,13 @@ function moved(placement: Placement, by: Time): Placement {
  * Its placements move with it when none of them is near the limit, and are made again otherwise.
  */
 function shifted(old: Pending, ticks: number, by: Time): Pending {
-  const p: { -readonly [K in keyof Pending]: Pending[K] } = {
-    node: old.node,
-    track: old.track,
-    parent: old.parent,
-    props: old.props,
-    errors: old.errors,
-    start: (old.start as Time).plus(by),
-  };
-  if (old.source) p.source = old.source;
-  if (old.duration !== undefined) p.duration = old.duration;
-  if (old.between) p.between = old.between;
+  const p = pendingOf(old.node, old.track, old.parent, old.props, old.errors);
+  p.source = old.source;
+  p.duration = old.duration;
+  p.start = (old.start as Time).plus(by);
+  p.between = old.between;
   const was = old.settled?.placed;
-  p.settled =
+  (p as { settled: Pending["settled"] }).settled =
     was && was.far < LIMIT && was.far + ticks < LIMIT
       ? {
           placed: {
@@ -418,6 +457,24 @@ function uniqueTracks(root: CollectedNode): boolean {
     else if (child.kind === "camera") for (const inner of child.children) if (inner.kind === "track") add(inner);
   }
   return ids.size === count;
+}
+
+/**
+ * Whether `p` has come to what it will be, once the anchors, matches and fills are worked out: it has a start and a
+ * length and waits on nothing, and is not one of the kinds a settled track cannot hold. An element that waited on
+ * the video's length is not asked: its length is the whole file's to say.
+ */
+function isFinal(p: Pending): boolean {
+  return (
+    p.start !== undefined &&
+    p.duration !== undefined &&
+    !p.durationDep &&
+    p.props.duck === undefined &&
+    !isScene(p.props.src) &&
+    p.node.kind !== "multicam" &&
+    p.node.kind !== "captions" &&
+    p.node.kind !== "caption"
+  );
 }
 
 /** Whether nothing outside its track decides `p`, now that the track is placed: see `SettledTrack`. */
@@ -598,11 +655,13 @@ function compute(
   ) => {
     let end = Time.ZERO;
     let far = 0;
+    let readers: number[] | undefined;
     for (let i = 0; i < pendings.length; i++) {
       const p = pendings[i] as Pending;
       const at = settledEnd(p);
       if (at) end = later(end, at);
       far = Math.max(far, (p.start as Time).ticks + (p.duration as Time).ticks, (stood[i] as TrackCursor).cursor.ticks);
+      if (p.settled?.reads) (readers ??= []).push(i);
     }
     const settled: SettledTrack = {
       theme,
@@ -616,11 +675,23 @@ function compute(
       children: node.children,
       stood,
       far,
+      readers: readers ?? NOTHING,
     };
     settledByTrack.set(node, settled);
     lasts?.set(node.id, settled);
     settledTracks.push(settled);
+    done.add(node);
   };
+  /** The tracks kept as settled in this resolve, by `keep`. */
+  const done = new Set<CollectedNode>();
+  /**
+   * The tracks taken with elements that waited on others (`reads`), or with a changed element that waits: their
+   * elements are in `pending`, and they are kept once the others are seen to be who they were and the changed one
+   * has come to its place.
+   */
+  const open = new Map<CollectedNode, { layout: TrackLayout; pendings: Pending[]; stood: readonly TrackCursor[] }>();
+  /** The track each track node is, for placing one of its children again. */
+  const trackOf = new Map<CollectedNode, ResolvedTrack>();
   /**
    * Takes a track that was settled before one of its children changed: the children before the change keep what
    * they came to, the changed ones are placed from where the placing stood, and it stops where the placing stands as
@@ -646,7 +717,9 @@ function compute(
     while (from < n && kids[from] === last.children[from]) from++;
     let pendings: Pending[];
     let stood: TrackCursor[];
-    let made = 0;
+    let derived = 0;
+    /** Whether a changed element waits on another: the track is kept after the anchors are worked out. */
+    let waitsHere = false;
     if (from === n) {
       pendings = last.pendings as Pending[];
       stood = last.stood as TrackCursor[];
@@ -657,7 +730,7 @@ function compute(
       while (from > 0 && (last.stood[from - 1] as TrackCursor).open) from--;
       const scratch = new Map<string, Pending>();
       const mark = entered;
-      const placer = trackPlacer(track, scratch, theme, errors);
+      const placer = new TrackPlacer(track, scratch, theme, errors);
       if (from > 0) placer.resume(last.stood[from - 1] as TrackCursor);
       const fresh: Pending[] = [];
       const freshStood: TrackCursor[] = [];
@@ -680,8 +753,10 @@ function compute(
         if (now.open || was.open || !now.intoPrev.equals(was.intoPrev) || !sameClipBehind(now.prevClip, was.prevClip))
           continue;
         const later = now.cursor.ticks - was.cursor.ticks;
-        // Later or earlier on a sequence, every start after this is the cursor's: unless one would reach the limit.
-        if (later === 0 || (track.layout === "sequence" && last.far < LIMIT && last.far + later < LIMIT)) {
+        // Later or earlier on a sequence, every start after this is the cursor's (none is anchored: the track read
+        // no other element): unless one would reach the limit.
+        const movable = track.layout === "sequence" && last.readers.length === 0 && last.far < LIMIT;
+        if (later === 0 || (movable && last.far + later < LIMIT)) {
           met = i;
           ticks = later;
           break;
@@ -693,13 +768,18 @@ function compute(
         return false;
       }
       if (met < 0) placer.finish();
-      for (const p of fresh)
-        if (!isSettled(p)) {
+      for (const p of fresh) {
+        if (isSettled(p)) continue;
+        // One that waits on another element is worked out with the rest and kept after; any other is not settled.
+        const waits = p.anchorDep !== undefined || p.durationDep?.kind === "match" || p.durationDep?.kind === "until";
+        if (!waits || p.durationDep?.kind === "fill" || isScene(p.props.src) || ticks !== 0) {
           entered = mark;
           return false;
         }
-      for (const p of fresh) freezeSettled(p);
-      made = fresh.length;
+        waitsHere = true;
+      }
+      for (const p of fresh) if (isSettled(p)) freezeSettled(p);
+      derived = fresh.length;
       pendings = last.pendings.slice(0, from);
       stood = last.stood.slice(0, from);
       for (const p of fresh) pendings.push(p);
@@ -721,9 +801,103 @@ function compute(
       }
     }
     for (const p of pendings) pending.set(p.node.id, p);
-    entered += n - made;
+    entered += n - derived;
     taken.add(node);
-    keep(node, track.layout, pendings, stood);
+    if (last.readers.length > 0 || waitsHere)
+      open.set(node, {
+        layout: track.layout,
+        pendings: pendings === last.pendings ? pendings.slice() : pendings,
+        stood,
+      });
+    else keep(node, track.layout, pendings, stood);
+    return true;
+  };
+  /** Gives back a track taken as settled: its elements are derived again, and it is placed with the rest. */
+  const giveBack = (node: CollectedNode): void => {
+    taken.delete(node);
+    open.delete(node);
+    const kept = settledByTrack.get(node);
+    const at = kept ? settledTracks.indexOf(kept) : -1;
+    if (at >= 0) settledTracks.splice(at, 1);
+    done.delete(node);
+    entered -= node.children.length;
+    for (const item of node.children) intrinsic(item, node.id, pending, manifest, markers, markersKey, theme, errors);
+  };
+  /** Whether every element `reads` names is still the settled element it was. */
+  const holds = (reads: readonly Read[]): boolean => {
+    for (const read of reads) if (pending.get(read.id) !== read.was) return false;
+    return true;
+  };
+  /**
+   * Derives one element of a taken track again, in its place, because an element it waited on changed. It can when
+   * placing it leaves the track's placing where it stood (an anchored element, or one on a free track): then nothing
+   * else on the track is touched. False when it cannot, and the whole track is given back.
+   */
+  const refresh = (node: CollectedNode, taking: { pendings: Pending[]; stood: readonly TrackCursor[] }, i: number) => {
+    const track = trackOf.get(node);
+    const before = i > 0 ? (taking.stood[i - 1] as TrackCursor) : STARTING;
+    if (!track || before.open || !standsAs(taking.stood[i] as TrackCursor, before)) return false;
+    const kid = node.children[i] as CollectedNode;
+    one.clear();
+    const mark = entered;
+    intrinsic(kid, node.id, one, manifest, markers, markersKey, theme, errors);
+    entered = mark;
+    const p = one.get(kid.id);
+    if (!p || p.node !== kid || p.props.duck !== undefined) return false;
+    if (p.props.frame && p.source) p.props = framed(p.props, manifest.assets[p.source.asset], compParsed);
+    const placer = new TrackPlacer(track, one, theme, errors);
+    placer.resume(before);
+    placer.step(kid);
+    if (!standsAs(placer.at(), before)) return false;
+    taking.pendings[i] = p;
+    pending.set(kid.id, p);
+    return true;
+  };
+  /** Where `refresh` derives its one element. */
+  const one = new Map<string, Pending>();
+  /**
+   * Looks at every taken track's elements that waited on others: one whose others are no longer who they were is
+   * derived again, or its track given back. Each makes new elements, which others may have waited on, so it looks
+   * until nothing changes.
+   */
+  const settleReaders = (): void => {
+    for (let again = true; again; ) {
+      again = false;
+      for (const node of [...taken]) {
+        let taking = open.get(node);
+        const kept = taking ? undefined : settledByTrack.get(node);
+        if (!taking && (!kept || kept.readers.length === 0)) continue;
+        const count = taking ? taking.pendings.length : (kept as SettledTrack).readers.length;
+        for (let k = 0; k < count; k++) {
+          const i = kept ? (kept.readers[k] as number) : k;
+          const p = (taking ? taking.pendings[i] : (kept as SettledTrack).pendings[i]) as Pending;
+          const reads = p.settled?.reads;
+          if (!reads || holds(reads)) continue;
+          again = true;
+          if (!taking) {
+            const whole = kept as SettledTrack;
+            taking = { layout: whole.layout, pendings: whole.pendings.slice(), stood: whole.stood };
+            open.set(node, taking);
+            const at = settledTracks.indexOf(whole);
+            if (at >= 0) settledTracks.splice(at, 1);
+            done.delete(node);
+          }
+          if (refresh(node, taking, i)) shortCuts.refreshed++;
+          else {
+            giveBack(node);
+            shortCuts.givenBack++;
+            break;
+          }
+        }
+      }
+    }
+  };
+  /** Whether every taken track's elements still read who they read: asked again once a multicam has made its clips. */
+  const readersHold = (): boolean => {
+    for (const node of taken) {
+      const pendings = open.get(node)?.pendings ?? settledByTrack.get(node)?.pendings ?? [];
+      for (const p of pendings) if (p.settled?.reads && !holds(p.settled.reads)) return false;
+    }
     return true;
   };
   // How many elements are given a `Pending`: more than `pending` holds when two share an id.
@@ -747,6 +921,7 @@ function compute(
       ...(child.implicit ? { implicit: true as const } : {}),
       items: childIds(child),
     });
+    trackOf.set(child, tracks[tracks.length - 1] as ResolvedTrack);
     const kept = settling ? settledByTrack.get(child) : undefined;
     if (
       kept &&
@@ -760,6 +935,7 @@ function compute(
       entered += kept.pendings.length;
       taken.add(child);
       settledTracks.push(kept);
+      done.add(child);
       lasts?.set(child.id, kept);
       shortCuts.tracksTaken++;
       return;
@@ -808,6 +984,8 @@ function compute(
 
   // Two elements with one id share a `Pending`, and a settled track's would be taken over by another track's: place
   // everything the plain way, which is what says what such a file comes to.
+  // A taken track's element that waited on another holds only while that other is still who it was.
+  if (taken.size > 0) settleReaders();
   if (taken.size > 0 && pending.size !== entered) {
     shortCuts.plain++;
     return compute(original, manifest, log, previous, true);
@@ -835,6 +1013,9 @@ function compute(
     if (p.props.frame && p.source) p.props = framed(p.props, manifest.assets[p.source.asset], compParsed);
   }
 
+  /** Where the placing of each track placed here stood after each child. */
+  const stoodBy = new Map<CollectedNode, TrackCursor[]>();
+  const madeBefore = made;
   // Place track children: sequence cursors, free starts; anchors and dependent durations by iteration.
   for (let i = 0; i < tracks.length; i++) {
     const track = tracks[i] as ResolvedTrack;
@@ -844,6 +1025,7 @@ function compute(
     const stood: TrackCursor[] | undefined = settling ? [] : undefined;
     placeTrack(trackNode, track, pending, theme, errors, stood);
     if (!stood) continue;
+    stoodBy.set(trackNode, stood);
     // Settled when every child is, and is its own: one that shares an id with an element elsewhere is not.
     const pendings: Pending[] = [];
     for (const child of trackNode.children) {
@@ -855,10 +1037,28 @@ function compute(
     for (const p of pendings) freezeSettled(p);
     keep(trackNode, track.layout, pendings, stood);
   }
+  // A multicam's clips are elements now: an anchor that named one, and was kept as naming nothing, no longer holds.
+  if (made !== madeBefore && !readersHold()) {
+    shortCuts.plain++;
+    return compute(original, manifest, log, previous, true);
+  }
   // The tracks settled just now are out of it, and a multicam's clips are in.
   listMoving();
   // The elements that wait on another, or on the video's length: the only ones the passes below can change.
   const waiting = moving.filter((p) => p.anchorDep !== undefined || p.durationDep !== undefined);
+  // Who each waits on, before the passes take the waiting away: what a track kept after them holds for.
+  const readBy = new Map<Pending, Read[]>();
+  const filling = new Set<Pending>();
+  if (settling)
+    for (const p of waiting) {
+      const reads: Read[] = [];
+      if (p.anchorDep && p.anchorDep.id !== "start")
+        reads.push({ id: p.anchorDep.id, was: pending.get(p.anchorDep.id) });
+      const length = p.durationDep;
+      if (length?.kind === "fill") filling.add(p);
+      else if (length) reads.push({ id: length.id, was: pending.get(length.id) });
+      readBy.set(p, reads);
+    }
   iterateDependencies(waiting, pending, manifest);
   const before = made;
   placeCaptions(root, pending, tracks, manifest, markers);
@@ -866,6 +1066,11 @@ function compute(
 
   let compositionEnd = Time.ZERO;
   for (const settled of settledTracks) compositionEnd = later(compositionEnd, settled.end);
+  for (const waitingTrack of open.values())
+    for (const p of waitingTrack.pendings) {
+      const at = p.settled ? settledEnd(p) : null;
+      if (at) compositionEnd = later(compositionEnd, at);
+    }
   for (const p of moving) {
     const at = endOf(p);
     if (at) compositionEnd = later(compositionEnd, at);
@@ -895,7 +1100,7 @@ function compute(
         }
         p.source = { ...p.source, out };
       }
-      delete p.durationDep;
+      p.durationDep = undefined;
     }
   }
   // An element that matches a filling one could not take its length until now.
@@ -911,6 +1116,28 @@ function compute(
       p.duration ??= Time.ZERO;
     }
   }
+
+  // A track whose elements have all come to their places, some by waiting on others, is kept with who they waited
+  // on: it holds for a later resolve where those are the same settled elements. One with an element that waited on
+  // the video's length, or that is not placed, is not kept.
+  if (settling)
+    for (let i = 0; i < tracks.length; i++) {
+      const trackNode = tree ? tree.byId.get((tracks[i] as ResolvedTrack).id) : trackNodes[i];
+      if (!trackNode || done.has(trackNode)) continue;
+      const waitingTrack = open.get(trackNode);
+      const stood = waitingTrack?.stood ?? stoodBy.get(trackNode);
+      if (!stood || trackNode.children.length === 0) continue;
+      if (taken.has(trackNode) && !waitingTrack) continue;
+      const pendings: Pending[] = [];
+      for (const child of trackNode.children) {
+        const p = pending.get(child.id);
+        if (!p || p.node !== child || !(p.settled || (isFinal(p) && !filling.has(p)))) break;
+        pendings.push(p);
+      }
+      if (pendings.length !== trackNode.children.length) continue;
+      for (const p of pendings) if (!p.settled) freezeSettled(p, readBy.get(p));
+      keep(trackNode, (tracks[i] as ResolvedTrack).layout, pendings, stood);
+    }
 
   const items = new Map<string, Placement>();
   // The composition, its tracks and its markers are addressable too: the inspector edits them by id.
@@ -1487,7 +1714,8 @@ interface IntrinsicEntry {
   /** The parent's parsed props a caption's transcript references were resolved against. */
   readonly parentProps: Record<string, unknown> | undefined;
   readonly template: Readonly<
-    Pick<Pending, "props" | "errors" | "source" | "start" | "duration" | "durationDep" | "anchorDep">
+    Pick<Pending, "props" | "errors"> &
+      Partial<Pick<Pending, "source" | "start" | "duration" | "durationDep" | "anchorDep">>
   >;
 }
 const intrinsicByNode = new Cache<CollectedNode, IntrinsicEntry>();
@@ -1525,7 +1753,7 @@ function intrinsic(
   ) {
     const t = hit.template;
     entered++;
-    const p: Pending = { node, track, parent: node.parent, props: t.props, errors: [...t.errors] };
+    const p = pendingOf(node, track, node.parent, t.props, t.errors.length > 0 ? [...t.errors] : []);
     if (t.source) p.source = t.source;
     if (t.start !== undefined) p.start = t.start;
     if (t.duration !== undefined) p.duration = t.duration;
@@ -1578,7 +1806,7 @@ function intrinsicCompute(
         prop: "children",
         message: `unknown theme token ${token} in a <Mark>`,
       });
-  const p: Pending = { node, track, parent: node.parent, props, errors: own };
+  const p = pendingOf(node, track, node.parent, props, own);
   pending.set(node.id, p);
 
   const dur = props.duration;
@@ -1952,32 +2180,40 @@ interface TrackCursor {
   readonly open: boolean;
 }
 
-/** Places a track's children one at a time, in order: `step` for each, then `finish`. */
-interface TrackPlacer {
-  step(child: CollectedNode): void;
-  finish(): void;
-  at(): TrackCursor;
-  /** Carries on from where an earlier placing of the same children stood (with no transition waiting). */
-  resume(from: TrackCursor): void;
+/** Where a track's placing starts. */
+const STARTING: TrackCursor = { cursor: Time.ZERO, prevClip: null, intoPrev: Time.ZERO, open: false };
+
+/** Whether a placing stands where `before` did: the same cursor, the same clip behind it, no transition waiting. */
+function standsAs(at: TrackCursor, before: TrackCursor): boolean {
+  return (
+    !at.open &&
+    at.cursor.equals(before.cursor) &&
+    at.prevClip === before.prevClip &&
+    at.intoPrev.equals(before.intoPrev)
+  );
 }
 
-function trackPlacer(
-  track: ResolvedTrack,
-  pending: Map<string, Pending>,
-  theme: ResolvedTheme,
-  errors: ResolveError[],
-): TrackPlacer {
-  let cursor = Time.ZERO;
-  let prevClip: Pending | null = null;
-  let pendingTransition: Pending | null = null;
+/** Places a track's children one at a time, in order: `step` for each, then `finish`. */
+class TrackPlacer {
+  private cursor = Time.ZERO;
+  private prevClip: Pending | null = null;
+  private pendingTransition: Pending | null = null;
   /** The length of the transition that leads into `prevClip`, to see that two transitions do not meet inside it. */
-  let intoPrev = Time.ZERO;
-  const step = (child: CollectedNode): void => {
-    const p = pending.get(child.id);
+  private intoPrev = Time.ZERO;
+
+  constructor(
+    private readonly track: ResolvedTrack,
+    private readonly pending: Map<string, Pending>,
+    private readonly theme: ResolvedTheme,
+    private readonly errors: ResolveError[],
+  ) {}
+
+  step(child: CollectedNode): void {
+    const p = this.pending.get(child.id);
     if (!p) return;
     const caps = capabilitiesOf(child.kind);
     if (child.kind === "multicam") {
-      placeMulticam(child, p, track, pending, theme, errors);
+      placeMulticam(child, p, this.track, this.pending, this.theme, this.errors);
       return;
     }
     if (child.kind === "transition") {
@@ -1986,7 +2222,7 @@ function trackPlacer(
         // Edge transitions attach to a clip edge; resolved in iterateDependencies with edge logic.
         return;
       }
-      if (track.layout !== "sequence") {
+      if (this.track.layout !== "sequence") {
         p.errors.push({
           code: "NOT_ADJACENT",
           id: child.id,
@@ -1995,15 +2231,15 @@ function trackPlacer(
         p.start = Time.ZERO;
         return;
       }
-      if (pendingTransition) {
-        pendingTransition.errors.push({
+      if (this.pendingTransition) {
+        this.pendingTransition.errors.push({
           code: "NOT_ADJACENT",
-          id: pendingTransition.node.id,
+          id: this.pendingTransition.node.id,
           message: "a transition needs a clip on each side, not another transition",
         });
-        pendingTransition.start = cursor;
+        this.pendingTransition.start = this.cursor;
       }
-      pendingTransition = p;
+      this.pendingTransition = p;
       return;
     }
     if (p.anchorDep) {
@@ -2017,7 +2253,7 @@ function trackPlacer(
       return;
     }
     if (!caps.timed) return;
-    if (track.layout === "free") {
+    if (this.track.layout === "free") {
       // A start the schema refused is already reported; it is not also missing.
       if (typeof p.props.start !== "number" && child.props.start === undefined)
         p.errors.push({
@@ -2045,58 +2281,58 @@ function trackPlacer(
         message: '"fill" is not meaningful inside a sequence',
       });
       p.duration = Time.ZERO;
-      delete p.durationDep;
+      p.durationDep = undefined;
     }
-    if (pendingTransition && child.kind === "gap") {
-      pendingTransition.errors.push({
+    if (this.pendingTransition && child.kind === "gap") {
+      this.pendingTransition.errors.push({
         code: "NOT_ADJACENT",
-        id: pendingTransition.node.id,
+        id: this.pendingTransition.node.id,
         message: "a transition needs a clip on each side, not a gap",
       });
-      pendingTransition.start = cursor;
-      pendingTransition = null;
+      this.pendingTransition.start = this.cursor;
+      this.pendingTransition = null;
     }
     let into = Time.ZERO;
-    if (pendingTransition && prevClip) {
-      const d = pendingTransition.duration ?? Time.ZERO;
-      const outgoing = prevClip.duration ?? Time.ZERO;
+    if (this.pendingTransition && this.prevClip) {
+      const d = this.pendingTransition.duration ?? Time.ZERO;
+      const outgoing = this.prevClip.duration ?? Time.ZERO;
       // Lengths are ticks, so they compare exactly: a clip from 1.1 to 1.3 is 0.2 s long, and a 0.2 s transition fits it.
       if (d.isAfter(outgoing) || (p.duration !== undefined && d.isAfter(p.duration))) {
-        pendingTransition.errors.push({
+        this.pendingTransition.errors.push({
           code: "INSUFFICIENT_HANDLES",
-          id: pendingTransition.node.id,
+          id: this.pendingTransition.node.id,
           message: "transition is longer than one of its clips",
         });
-      } else if (intoPrev.plusClamped(d).isAfter(outgoing)) {
-        pendingTransition.errors.push({
+      } else if (this.intoPrev.plusClamped(d).isAfter(outgoing)) {
+        this.pendingTransition.errors.push({
           code: "INSUFFICIENT_HANDLES",
-          id: pendingTransition.node.id,
-          message: `"${prevClip.node.id}" is shorter than the transitions on its two sides together, so they would overlap`,
+          id: this.pendingTransition.node.id,
+          message: `"${this.prevClip.node.id}" is shorter than the transitions on its two sides together, so they would overlap`,
         });
       }
       // A transition that does not fit is told above and held to what its clips have: the part of the outgoing clip
       // that the transition before has not used, and the whole of the incoming one. Longer, the incoming clip would
       // start before the outgoing one does.
-      const room = outgoing.minus(intoPrev);
+      const room = outgoing.minus(this.intoPrev);
       const fit = Time.max(Time.ZERO, Time.min(Time.min(d, room), p.duration ?? d));
-      if (fit.isBefore(d)) pendingTransition.duration = fit;
+      if (fit.isBefore(d)) this.pendingTransition.duration = fit;
       into = fit;
-      const start = cursor.minus(fit);
-      pendingTransition.start = start;
-      pendingTransition.between = [prevClip.node.id, child.id];
-      cursor = start;
-    } else if (pendingTransition) {
-      pendingTransition.errors.push({
+      const start = this.cursor.minus(fit);
+      this.pendingTransition.start = start;
+      this.pendingTransition.between = [this.prevClip.node.id, child.id];
+      this.cursor = start;
+    } else if (this.pendingTransition) {
+      this.pendingTransition.errors.push({
         code: "NOT_ADJACENT",
-        id: pendingTransition.node.id,
+        id: this.pendingTransition.node.id,
         message: "a transition needs a clip on each side",
       });
-      pendingTransition.start = cursor;
+      this.pendingTransition.start = this.cursor;
     }
-    pendingTransition = null;
-    intoPrev = into;
-    p.start = cursor;
-    if (p.duration !== undefined) cursor = cursor.plusClamped(p.duration);
+    this.pendingTransition = null;
+    this.intoPrev = into;
+    p.start = this.cursor;
+    if (p.duration !== undefined) this.cursor = this.cursor.plusClamped(p.duration);
     else p.durationDep ??= { kind: "fill" }; // match deps settle later; cursor cannot advance past an unknown length
     if (p.durationDep?.kind === "match" || p.durationDep?.kind === "until") {
       p.errors.push({
@@ -2106,31 +2342,39 @@ function trackPlacer(
         message: `${p.durationDep.kind} durations are not allowed inside a sequence`,
       });
       p.duration = Time.ZERO;
-      delete p.durationDep;
+      p.durationDep = undefined;
     }
-    prevClip = child.kind === "gap" ? null : p;
-  };
-  const finish = (): void => {
-    if (pendingTransition) {
-      pendingTransition.errors.push({
+    this.prevClip = child.kind === "gap" ? null : p;
+  }
+
+  finish(): void {
+    if (this.pendingTransition) {
+      this.pendingTransition.errors.push({
         code: "NOT_ADJACENT",
-        id: pendingTransition.node.id,
+        id: this.pendingTransition.node.id,
         message: "a transition needs a clip on each side",
       });
-      pendingTransition.start = cursor;
+      this.pendingTransition.start = this.cursor;
     }
-  };
-  return {
-    step,
-    finish,
-    at: () => ({ cursor, prevClip, intoPrev, open: pendingTransition !== null }),
-    resume: (from) => {
-      cursor = from.cursor;
-      prevClip = from.prevClip;
-      intoPrev = from.intoPrev;
-      pendingTransition = null;
-    },
-  };
+  }
+
+  /** Where the placing stands. */
+  at(): TrackCursor {
+    return {
+      cursor: this.cursor,
+      prevClip: this.prevClip,
+      intoPrev: this.intoPrev,
+      open: this.pendingTransition !== null,
+    };
+  }
+
+  /** Carries on from where an earlier placing of the same children stood (with no transition waiting). */
+  resume(from: TrackCursor): void {
+    this.cursor = from.cursor;
+    this.prevClip = from.prevClip;
+    this.intoPrev = from.intoPrev;
+    this.pendingTransition = null;
+  }
 }
 
 function placeTrack(
@@ -2142,7 +2386,7 @@ function placeTrack(
   /** When given, where the placing stood after each child is added to it. */
   stood?: TrackCursor[],
 ): void {
-  const placer = trackPlacer(track, pending, theme, errors);
+  const placer = new TrackPlacer(track, pending, theme, errors);
   for (const child of trackNode.children) {
     placer.step(child);
     stood?.push(placer.at());
@@ -2194,14 +2438,8 @@ function placeMulticam(
       props: { id, src: angle.src, in: inSec },
       origin: { helper: "multicam", callerId: node.id, callIndex: 0 },
     };
-    const gp: Pending = {
-      node: generated,
-      track: track.id,
-      parent: node.id,
-      props: generated.props as Record<string, unknown>,
-      errors: [],
-      start: T(cut.at),
-    };
+    const gp = pendingOf(generated, track.id, node.id, generated.props as Record<string, unknown>, []);
+    gp.start = T(cut.at);
     gp.source = { in: inSec, out: inSec, speed: 1, asset: assetIdOf(String(angle.src)) };
     if (next) {
       gp.duration = T(next.at).minus(T(cut.at));
@@ -2245,7 +2483,7 @@ function iterateDependencies(
             message: `anchor "${dep.id}" does not exist`,
           });
           p.start = Time.ZERO;
-          delete p.anchorDep;
+          p.anchorDep = undefined;
           progressed = true;
           continue;
         }
@@ -2279,7 +2517,7 @@ function iterateDependencies(
             message: `${p.durationDep.kind} target "${p.durationDep.id}" does not exist`,
           });
           p.duration = Time.ZERO;
-          delete (p as Pending).durationDep;
+          (p as Pending).durationDep = undefined;
           progressed = true;
         } else if (takeLength(p, target, manifest)) progressed = true;
       }
@@ -2297,8 +2535,8 @@ function iterateDependencies(
       });
       p.start ??= Time.ZERO;
       p.duration ??= Time.ZERO;
-      delete p.anchorDep;
-      delete p.durationDep;
+      p.anchorDep = undefined;
+      p.durationDep = undefined;
     }
   }
 }
@@ -2353,7 +2591,7 @@ function takeLength(p: Following, target: Pending, manifest: AssetManifest): boo
       ...p.source,
       out: p.source.in + sourceSpan(p.node, p.duration.toSeconds(), p.source.speed),
     };
-  delete (p as Pending).durationDep;
+  (p as Pending).durationDep = undefined;
   return true;
 }
 
@@ -2388,7 +2626,7 @@ function settleMatches(waiting: readonly Pending[], pending: Map<string, Pending
       message: `"${p.node.id}" depends on itself through anchors or match durations`,
     });
     p.duration = Time.ZERO;
-    delete (p as Pending).durationDep;
+    (p as Pending).durationDep = undefined;
   }
 }
 
@@ -2629,15 +2867,10 @@ function placeCaptions(
     }
     for (const cue of nodes) {
       made++;
-      pending.set(cue.id, {
-        node: cue,
-        track: null,
-        parent: node.id,
-        props: cue.props as Record<string, unknown>,
-        errors: [],
-        start: T(Number(cue.props.start)),
-        duration: T(Number(cue.props.end)).minus(T(Number(cue.props.start))),
-      });
+      const timed = pendingOf(cue, null, node.id, cue.props as Record<string, unknown>, []);
+      timed.start = T(Number(cue.props.start));
+      timed.duration = T(Number(cue.props.end)).minus(T(Number(cue.props.start)));
+      pending.set(cue.id, timed);
     }
   }
 }

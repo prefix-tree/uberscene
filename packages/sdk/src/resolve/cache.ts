@@ -45,6 +45,10 @@ export const shortCuts = {
   tracksChanged: 0,
   /** A settled track taken after a child changed, the rest moved in time. */
   tracksShifted: 0,
+  /** A settled element derived again in its place, because an element it waited on was no longer the one it was. */
+  refreshed: 0,
+  /** A settled track given back, because an element one of its own waited on was no longer the one it was. */
+  givenBack: 0,
   /** A resolve done again the plain way, because two elements shared an id. */
   plain: 0,
   /** A tree placed by walking it from its root, with no id map. */

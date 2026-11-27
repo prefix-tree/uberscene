@@ -153,6 +153,10 @@ function rich(fps: number | string, captions: boolean): CollectedTree {
       </Track>
       <Track id="v3">
         {clip("e0", 10)}
+        <Transition id="x2" type="crossfade" duration={0.2} />
+        <Title id="mid" anchor="c1" duration={1}>
+          Between a transition and its clip
+        </Title>
         {clip("e1", 11)}
         {clip("e2", 12)}
       </Track>
@@ -504,6 +508,8 @@ describe("cached and from nothing: the rows above", () => {
     expect(shortCuts.tracksTaken).toBeGreaterThan(100);
     expect(shortCuts.tracksChanged).toBeGreaterThan(20);
     expect(shortCuts.tracksShifted).toBeGreaterThan(20);
+    expect(shortCuts.refreshed).toBeGreaterThan(20);
+    expect(shortCuts.givenBack).toBeGreaterThan(5);
     expect(shortCuts.walked).toBeGreaterThan(100);
     expect(shortCuts.plain).toBeGreaterThan(0);
   });
