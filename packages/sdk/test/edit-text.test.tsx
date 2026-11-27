@@ -107,9 +107,10 @@ export default function Video() {
     const frame = 1 / 30;
     expect(exec.execute({ type: "clip/split", params: { id: "c", at: frame / 3, newId: "a" } }).ok).toBe(false);
     const item = exec.state().items.get("c")!;
-    expect(exec.execute({ type: "clip/split", params: { id: "c", at: item.end - frame / 3, newId: "b" } }).ok).toBe(
-      false,
-    );
+    expect(
+      exec.execute({ type: "clip/split", params: { id: "c", at: item.range.end.toSeconds() - frame / 3, newId: "b" } })
+        .ok,
+    ).toBe(false);
     expect(exec.execute({ type: "clip/split", params: { id: "c", at: frame, newId: "d" } }).ok).toBe(true);
   });
 });

@@ -146,7 +146,7 @@ describe("declared shaders in the frame plan", () => {
     );
     expect(shaded.errors).toEqual([]);
     const x = shaded.items.get("x")!;
-    const t = x.start + 0.3 * x.duration;
+    const t = x.range.start.toSeconds() + 0.3 * x.range.duration.toSeconds();
     const ops = buildFramePlan(shaded, t).ops;
     expect(ops.map((o) => [o.id, o.transition?.name, o.transition?.builtIn, o.transition?.role, o.opacity])).toEqual([
       ["a", "iris", true, "out", 1],
@@ -163,7 +163,7 @@ describe("declared shaders in the frame plan", () => {
       SWEEP,
     );
     const x = state.items.get("x")!;
-    const ops = buildFramePlan(state, (x.start + x.end) / 2).ops;
+    const ops = buildFramePlan(state, (x.range.start.toSeconds() + x.range.end.toSeconds()) / 2).ops;
     expect(ops.map((o) => [o.id, o.transition?.role, o.transition?.paired, o.opacity])).toEqual([
       ["a", "out", true, 1],
       ["b", "in", true, 1],

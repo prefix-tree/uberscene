@@ -11,6 +11,8 @@ import {
   withoutEffects,
 } from "@uberscene/sdk";
 
+import { seconds } from "./helpers";
+
 const manifest = { assets: { city: { id: "city", kind: "video" as const, duration: 10 } } };
 const file = (effects: string) => `import { z } from "zod";
 import { Clip, Composition, effect, Track } from "@uberscene/kit";
@@ -33,9 +35,9 @@ describe("keys on an effect's params", () => {
     const state = stateOf(`{ type: "regionBlur", box: [{ at: 0.5, value: [0, 0, 0.2, 0.2] }] }`);
     expect(state.errors).toEqual([]);
     const clip = state.items.get("c")!;
-    expect(state.items.get("c.effects.0.box.0")).toMatchObject({
+    expect(seconds(state.items.get("c.effects.0.box.0"))).toMatchObject({
       parent: "c.effects.0",
-      start: clip.start + 0.5,
+      start: clip.range.start.toSeconds() + 0.5,
       props: { param: "box", at: 0.5, value: [0, 0, 0.2, 0.2] },
     });
     expect(state.items.get("c.effects.0")?.children).toEqual(["c.effects.0.box.0"]);

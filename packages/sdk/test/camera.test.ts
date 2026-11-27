@@ -11,7 +11,7 @@ import {
   resolve,
 } from "@uberscene/sdk";
 
-import { manifest } from "./helpers";
+import { manifest, seconds } from "./helpers";
 
 const file = (body: string) => `import { Camera, Clip, Composition, Marker, Shape, Title, Track } from "@uberscene/kit";
 
@@ -63,14 +63,14 @@ describe("a camera around tracks", () => {
   });
 
   it("places what is on the camera's tracks as on any track", () => {
-    expect(state.items.get("talk")).toMatchObject({ track: "speaker", start: 0, duration: 4 });
-    expect(state.items.get("card")).toMatchObject({ track: "cards", start: 0, duration: 4 });
+    expect(seconds(state.items.get("talk"))).toMatchObject({ track: "speaker", start: 0, duration: 4 });
+    expect(seconds(state.items.get("card"))).toMatchObject({ track: "cards", start: 0, duration: 4 });
     expect(state.composition.duration).toBe(4);
   });
 
   it("is an item over the whole video, with its tracks as children and the composition as parent", () => {
     const cam = state.items.get("cam");
-    expect(cam).toMatchObject({ kind: "camera", parent: "composition", start: 0, end: 4, track: null });
+    expect(seconds(cam)).toMatchObject({ kind: "camera", parent: "composition", start: 0, end: 4, track: null });
     expect(cam?.children.slice(0, 2)).toEqual(["speaker", "cards"]);
     expect(state.items.get("speaker")?.parent).toBe("cam");
     expect(state.items.get("logo")?.parent).toBe("composition");
@@ -78,15 +78,17 @@ describe("a camera around tracks", () => {
 
   it("turns its key lists into keys on the video's clock, and keeps constants as props", () => {
     const keys = [...state.items.values()].filter((i) => i.kind === "keyframe" && i.parent === "cam");
-    expect(keys.map((k) => [k.id, k.props.property, k.start, k.props.value, k.props.easing])).toEqual([
-      ["cam.x.0", "camera.x", 1, 0, "snappy"],
-      ["cam.x.1", "camera.x", 1.3, 180, "linear"],
-    ]);
+    expect(keys.map((k) => [k.id, k.props.property, k.range.start.toSeconds(), k.props.value, k.props.easing])).toEqual(
+      [
+        ["cam.x.0", "camera.x", 1, 0, "snappy"],
+        ["cam.x.1", "camera.x", 1.3, 180, "linear"],
+      ],
+    );
     expect(state.items.get("cam")?.props).toMatchObject({ x: 0, y: 0, zoom: 1.1, rotation: 0 });
   });
 
   it("leaves markers where they are", () => {
-    expect(state.items.get("beat")).toMatchObject({ kind: "marker", start: 2 });
+    expect(seconds(state.items.get("beat"))).toMatchObject({ kind: "marker", start: 2 });
   });
 });
 
@@ -242,7 +244,7 @@ describe("the camera's values and keys", () => {
     run(exec, { type: "key/add", params: { id: "cam", path: "zoom", at: 2, value: 1.5 } });
     run(exec, { type: "key/update", params: { id: "cam", path: "x", at: 1.3, value: 240 } });
     const keys = [...exec.state().items.values()].filter((i) => i.parent === "cam" && i.kind === "keyframe");
-    expect(keys.map((k) => [k.props.property, k.start, k.props.value])).toEqual([
+    expect(keys.map((k) => [k.props.property, k.range.start.toSeconds(), k.props.value])).toEqual([
       ["camera.x", 1, 0],
       ["camera.x", 1.3, 240],
       ["camera.zoom", 0, 1],

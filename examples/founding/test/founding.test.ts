@@ -24,10 +24,12 @@ describe("video.tsx", () => {
 
   it("is 55 seconds of 1080p, its scenes back to back", () => {
     expect([state.composition.width, state.composition.height, state.composition.duration]).toEqual([1920, 1080, 55]);
-    const scenes = [...state.items.values()].filter((p) => p.kind === "layer").sort((a, b) => a.start - b.start);
+    const scenes = [...state.items.values()]
+      .filter((p) => p.kind === "layer")
+      .sort((a, b) => a.range.start.toSeconds() - b.range.start.toSeconds());
     for (const [i, scene] of scenes.entries()) {
       const next = scenes[i + 1];
-      expect(next ? next.start : 55).toBeCloseTo(scene.end, 6);
+      expect(next ? next.range.start.toSeconds() : 55).toBeCloseTo(scene.range.end.toSeconds(), 6);
     }
   });
 });

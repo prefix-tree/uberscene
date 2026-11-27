@@ -4,7 +4,18 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { THEMES } from "@uberscene/kit";
-import { type AssetManifest, buildSourceIndex, collectModule, lint, type ResolvedState, resolve } from "@uberscene/sdk";
+import {
+  type AssetManifest,
+  buildSourceIndex,
+  collectModule,
+  endSeconds,
+  lengthSeconds,
+  lint,
+  type Placement,
+  type ResolvedState,
+  resolve,
+  startSeconds,
+} from "@uberscene/sdk";
 
 import * as brandSpot from "../brand-spot";
 import * as highlights from "../highlights";
@@ -14,6 +25,10 @@ import * as stats from "../stats";
 import * as talkingHead from "../talking-head";
 import * as variants from "../variants";
 import * as verticalPodcast from "../vertical-podcast";
+
+/** A placement with its times as seconds beside it, to match `start`, `end` and `duration`. */
+const seconds = (p: Placement | undefined) =>
+  p && { ...p, start: startSeconds(p), end: endSeconds(p), duration: lengthSeconds(p) };
 
 const root = join(import.meta.dirname, "..");
 const manifest = JSON.parse(readFileSync(join(root, "uberscene.json"), "utf8")) as AssetManifest;
@@ -26,10 +41,10 @@ const recipes: { name: string; file: string; mod: Module; check: (state: Resolve
     mod: talkingHead as Module,
     check: (s) => {
       const at = (id: string) => s.items.get(id)!;
-      expect(at("welcome")).toMatchObject({ start: 0, source: { in: 0.4, asset: "podcast" } });
+      expect(seconds(at("welcome"))).toMatchObject({ start: 0, source: { in: 0.4, asset: "podcast" } });
       expect(at("answer").source).toMatchObject({ in: manifest.assets.podcast!.transcript!.words[35]!.start });
-      expect(at("thanks").start).toBeCloseTo(at("welcome").end);
-      expect(at("bed").end).toBeCloseTo(s.composition.duration);
+      expect(at("thanks").range.start.toSeconds()).toBeCloseTo(at("welcome").range.end.toSeconds());
+      expect(at("bed").range.end.toSeconds()).toBeCloseTo(s.composition.duration);
       expect(cues(s).map((c) => c.props.text)).toEqual([
         "Welcome back to the show.",
         "Thanks for having me.",
@@ -44,7 +59,7 @@ const recipes: { name: string; file: string; mod: Module; check: (state: Resolve
         "with almost none of the usual bitterness.",
         "That is the whole idea.",
       ]);
-      expect(cues(s)[0]).toMatchObject({ start: 0, editable: "generated" });
+      expect(seconds(cues(s)[0])).toMatchObject({ start: 0, editable: "generated" });
     },
   },
   {
@@ -52,17 +67,17 @@ const recipes: { name: string; file: string; mod: Module; check: (state: Resolve
     file: "product-demo.tsx",
     mod: productDemo as Module,
     check: (s) => {
-      expect(s.items.get("rec")).toMatchObject({ start: 0, end: 20 });
-      expect(s.items.get("ring-roast")).toMatchObject({ start: 9, end: 10.5 });
-      expect(s.items.get("click-order")).toMatchObject({ start: 15 });
-      expect(s.items.get("rec.transform.crop.x.1")).toMatchObject({ start: 3 });
+      expect(seconds(s.items.get("rec"))).toMatchObject({ start: 0, end: 20 });
+      expect(seconds(s.items.get("ring-roast"))).toMatchObject({ start: 9, end: 10.5 });
+      expect(seconds(s.items.get("click-order"))).toMatchObject({ start: 15 });
+      expect(seconds(s.items.get("rec.transform.crop.x.1"))).toMatchObject({ start: 3 });
       expect(cues(s).map((c) => c.props.text)).toEqual([
         "Open the menu.",
         "Choose a roast.",
         "Pick a grind and a size.",
         "Then order.",
       ]);
-      expect(cues(s)[0]!.start).toBeCloseTo(0.5);
+      expect(cues(s)[0]!.range.start.toSeconds()).toBeCloseTo(0.5);
     },
   },
   {
@@ -73,7 +88,9 @@ const recipes: { name: string; file: string; mod: Module; check: (state: Resolve
       expect(s.composition).toMatchObject({ width: 1080, height: 1920 });
       expect(s.items.get("s0")?.props).toMatchObject({ transform: { crop: { x: 0.08 } } });
       expect(s.items.get("s1")?.props).toMatchObject({ transform: { crop: { x: 0.6 } } });
-      expect(s.items.get("tag-s1")?.start).toBeCloseTo(s.items.get("s1")!.start + 0.2);
+      expect(s.items.get("tag-s1")?.range.start.toSeconds()).toBeCloseTo(
+        s.items.get("s1")!.range.start.toSeconds() + 0.2,
+      );
       expect(s.items.has("tag-s2")).toBe(true);
       expect(s.items.has("tag-s7")).toBe(true);
       expect(cues(s).every((c) => String(c.props.text).length <= 28)).toBe(true);
@@ -85,11 +102,13 @@ const recipes: { name: string; file: string; mod: Module; check: (state: Resolve
     file: "slideshow.tsx",
     mod: slideshow as Module,
     check: (s) => {
-      expect(s.items.get("p1")).toMatchObject({ start: 0, end: 4, editable: "generated" });
-      expect(s.items.get("p2")?.start).toBeCloseTo(3.4);
-      expect(s.items.get("p4")?.end).toBeCloseTo(14.2);
-      expect(s.items.get("bed")?.end).toBeCloseTo(s.composition.duration);
-      expect(s.items.get("p3.transform.scale.x.1")).toMatchObject({ start: s.items.get("p3")!.start + 4 });
+      expect(seconds(s.items.get("p1"))).toMatchObject({ start: 0, end: 4, editable: "generated" });
+      expect(s.items.get("p2")?.range.start.toSeconds()).toBeCloseTo(3.4);
+      expect(s.items.get("p4")?.range.end.toSeconds()).toBeCloseTo(14.2);
+      expect(s.items.get("bed")?.range.end.toSeconds()).toBeCloseTo(s.composition.duration);
+      expect(seconds(s.items.get("p3.transform.scale.x.1"))).toMatchObject({
+        start: s.items.get("p3")!.range.start.toSeconds() + 4,
+      });
     },
   },
   {
@@ -97,12 +116,12 @@ const recipes: { name: string; file: string; mod: Module; check: (state: Resolve
     file: "stats.tsx",
     mod: stats as Module,
     check: (s) => {
-      expect(s.items.get("bg")).toMatchObject({ start: 0, end: 6 });
+      expect(seconds(s.items.get("bg"))).toMatchObject({ start: 0, end: 6 });
       expect(s.items.get("stat-cups")?.interior).toEqual({
         component: "Counter",
         props: { value: 12800, label: "cups poured", accent: "#7cff8a" },
       });
-      expect(s.items.get("stat-on-time")?.start).toBeCloseTo(6.4);
+      expect(s.items.get("stat-on-time")?.range.start.toSeconds()).toBeCloseTo(6.4);
     },
   },
   {
@@ -135,7 +154,7 @@ const recipes: { name: string; file: string; mod: Module; check: (state: Resolve
         highlight: "#ffcc00",
         font: THEMES.paper.fonts.body,
       });
-      expect(es.items.get("card")?.end).toBe(s.items.get("card")?.end);
+      expect(es.items.get("card")?.range.end.toSeconds()).toBe(s.items.get("card")?.range.end.toSeconds());
     },
   },
   {
@@ -143,13 +162,13 @@ const recipes: { name: string; file: string; mod: Module; check: (state: Resolve
     file: "highlights.tsx",
     mod: highlights as Module,
     check: (s) => {
-      expect(s.items.get("mc.cut-2")).toMatchObject({
+      expect(seconds(s.items.get("mc.cut-2"))).toMatchObject({
         start: 10,
         end: 25,
         editable: "generated",
         source: { asset: "cam-b" },
       });
-      expect(s.items.get("mc.cut-3")).toMatchObject({ start: 25 });
+      expect(seconds(s.items.get("mc.cut-3"))).toMatchObject({ start: 25 });
       expect(s.items.get("dense")).toMatchObject({ source: { in: 5.2, out: 7.64 } });
       expect(s.tracks.find((t) => t.id === "pull")?.hidden).toBe(true);
     },
@@ -159,9 +178,9 @@ const recipes: { name: string; file: string; mod: Module; check: (state: Resolve
     file: "brand-spot.tsx",
     mod: brandSpot as Module,
     check: (s) => {
-      expect(s.items.get("demo")).toMatchObject({ start: 4, end: 10 });
-      expect(s.items.get("window")).toMatchObject({ start: 4, end: 10 });
-      expect(s.items.get("step-2")?.start).toBeCloseTo(7);
+      expect(seconds(s.items.get("demo"))).toMatchObject({ start: 4, end: 10 });
+      expect(seconds(s.items.get("window"))).toMatchObject({ start: 4, end: 10 });
+      expect(s.items.get("step-2")?.range.start.toSeconds()).toBeCloseTo(7);
       expect(s.items.get("name")?.props.style).toMatchObject({
         font: THEMES.midnight.fonts.heading,
         color: THEMES.midnight.palette.text,
@@ -182,14 +201,16 @@ const recipes: { name: string; file: string; mod: Module; check: (state: Resolve
         });
         // The drawn parts take the theme's palette: the steps fill in with each theme's own colours.
         expect(t.items.get("steps")?.props.sequence).not.toEqual(s.items.get("steps")?.props.sequence);
-        expect(t.items.get("demo")).toMatchObject({ start: 4, end: 10 });
+        expect(seconds(t.items.get("demo"))).toMatchObject({ start: 4, end: 10 });
       }
     },
   },
 ];
 
 function cues(s: ResolvedState) {
-  return [...s.items.values()].filter((p) => p.kind === "caption").sort((a, b) => a.start - b.start);
+  return [...s.items.values()]
+    .filter((p) => p.kind === "caption")
+    .sort((a, b) => a.range.start.toSeconds() - b.range.start.toSeconds());
 }
 
 describe("recipes", () => {

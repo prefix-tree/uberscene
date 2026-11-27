@@ -22,7 +22,7 @@ describe("an edit at a frame", () => {
     const at = frameStartSeconds(302, parseRate(30));
     expect(exec.execute({ type: "clip/split", params: { id: "c", at, newId: "c_b" } }).ok).toBe(true);
     const right = exec.state().items.get("c_b")!;
-    expect(framesUntil(right.start, parseRate(30))).toBe(302);
+    expect(framesUntil(right.range.start.toSeconds(), parseRate(30))).toBe(302);
   });
 
   it("keeps a key at 0.1 s into the second half when a clip at 0.5 s is split at 0.6 s", () => {
@@ -83,7 +83,7 @@ describe("a length that is a sum of seconds", () => {
       </Composition>
     );
     const state = resolve(collectModule({ default: Video }), manifest(121 / 24));
-    expect(framesUntil(state.items.get("t")!.end, parseRate(24))).toBe(121);
+    expect(framesUntil(state.items.get("t")!.range.end.toSeconds(), parseRate(24))).toBe(121);
     expect(framesUntil(state.composition.duration, parseRate(24))).toBe(121);
   });
 });

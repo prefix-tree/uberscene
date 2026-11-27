@@ -26,8 +26,8 @@ table below is for code that still holds seconds.
 | Frame count of a stretch that ends at `t`, first frame at or after `t` | `framesUntil(t, rate)` | `Math.ceil(t * fps)` |
 | The frame nearest a time a person typed (`--at 2.5`) | `nearestFrame(t, rate)` | `Math.round(t * fps)` |
 | Audio samples | `sampleAtSeconds`, `samplesUntil` | `Math.floor(t * sampleRate)` |
-| Time since an element started (keys, freezes, steps, `rel`) | `elapsedSeconds(t, p.start)` | `t - p.start` |
-| Is `t` inside `[start, end)`, or did a step at `at` happen | compare `secondsToTicks(...)` of both sides | `t >= p.start && t < p.end` on doubles |
+| Time since an element started (keys, freezes, steps, `rel`) | `secondsSinceStart(p, t)` (sdk), `elapsedSeconds(t, start)` for plain seconds | `t - start` |
+| Is `t` inside an element, or did a step at `at` happen | `p.range.contains(T(t))`; for plain seconds, compare `secondsToTicks(...)` of both sides | `t >= start && t < end` on doubles |
 | A computed time written to a file or kept as a length | `tidySeconds(x)`: drops float noise, stays on its frame | `round3(x)`, `toPrecision(12)`, `Math.round(x * 1e6) / 1e6` |
 
 Notes:

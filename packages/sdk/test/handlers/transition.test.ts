@@ -48,8 +48,8 @@ describe("transitions", () => {
     const x9 = exec.state().items.get("x9")!;
     expect(x9.props.params).toEqual({ direction: "left" });
     expect(x9.between).toEqual(["c3", "n1"]);
-    expect(x9.start).toBeCloseTo(10 + 5 / 1.2 - 0.5);
-    expect(exec.state().items.get("n1")?.start).toBeCloseTo(x9.start);
+    expect(x9.range.start.toSeconds()).toBeCloseTo(10 + 5 / 1.2 - 0.5);
+    expect(exec.state().items.get("n1")?.range.start.toSeconds()).toBeCloseTo(x9.range.start.toSeconds());
   });
 
   it("edge transitions anchor to one clip", () => {
@@ -60,6 +60,6 @@ describe("transitions", () => {
         params: { transitionId: "xin", between: { on: "c3", edge: "in" }, type: "dipToBlack", duration: 0.5 },
       }).ok,
     ).toBe(true);
-    expect(exec.state().items.get("xin")?.start).toBe(10);
+    expect(exec.state().items.get("xin")?.range.start.toSeconds()).toBe(10);
   });
 });

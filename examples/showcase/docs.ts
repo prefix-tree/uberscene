@@ -75,5 +75,5 @@ function posterTime(dir: string, name: string, state: Awaited<ReturnType<typeof 
 
 function posterAt(state: Awaited<ReturnType<typeof loadVideo>>["state"], id: string, fraction: number): number {
   const at = state.items.get(id);
-  return at ? at.start + at.duration * fraction : state.composition.duration * 0.6;
+  return at ? at.range.start.plus(at.range.duration.scaledBy(fraction)).toSeconds() : state.composition.duration * 0.6;
 }

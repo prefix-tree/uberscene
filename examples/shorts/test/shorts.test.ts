@@ -69,10 +69,15 @@ describe("lunar-eclipse.tsx", () => {
 
   it("ends every graphic with the clip it is over", () => {
     const cuts = new Set(
-      [...state.items.values()].filter((p) => p.kind === "clip").map((c) => Math.round((c.start + c.duration) * 1000)),
+      [...state.items.values()]
+        .filter((p) => p.kind === "clip")
+        .map((c) => Math.round((c.range.start.toSeconds() + c.range.duration.toSeconds()) * 1000)),
     );
     for (const g of [...state.items.values()].filter((p) => ["layer", "shape", "title"].includes(p.kind)))
-      expect([g.id, cuts.has(Math.round((g.start + g.duration) * 1000))]).toEqual([g.id, true]);
+      expect([g.id, cuts.has(Math.round((g.range.start.toSeconds() + g.range.duration.toSeconds()) * 1000))]).toEqual([
+        g.id,
+        true,
+      ]);
   });
 });
 
@@ -126,10 +131,15 @@ describe("one-pixel.tsx", () => {
   it("shows the script as subtitles, a phrase at a time", () => {
     const mod = load(source);
     const state = resolve(collectModule(mod as never, mod.defaults ?? {}), manifest);
-    const cues = [...state.items.values()].filter((p) => p.kind === "caption").sort((a, b) => a.start - b.start);
+    const cues = [...state.items.values()]
+      .filter((p) => p.kind === "caption")
+      .sort((a, b) => a.range.start.toSeconds() - b.range.start.toSeconds());
     expect(cues).toHaveLength(61);
-    expect([cues[0]?.props.text, cues[0]?.start]).toEqual(["In a video game, light goes straight", 0.3]);
-    expect([cues[60]?.props.text, cues[60]?.start]).toEqual(["game you've ever played.", 115.91]);
+    expect([cues[0]?.props.text, cues[0]?.range.start.toSeconds()]).toEqual([
+      "In a video game, light goes straight",
+      0.3,
+    ]);
+    expect([cues[60]?.props.text, cues[60]?.range.start.toSeconds()]).toEqual(["game you've ever played.", 115.91]);
     expect(state.composition.duration).toBe(118.3);
   });
 });

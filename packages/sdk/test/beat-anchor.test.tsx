@@ -4,6 +4,8 @@ import { describe, expect, it } from "vitest";
 import { Audio, Clip, Composition, Track } from "@uberscene/kit";
 import { type AssetManifest, collect, parseTimeRef, resolve, resolveTimeRef } from "@uberscene/sdk";
 
+import { seconds } from "./helpers";
+
 // A song at 120 BPM whose first beat is at 0.3 s, and a shot to cut on it.
 const beats = Array.from({ length: 40 }, (_, i) => ({ i, start: 0.3 + i * 0.5, end: 0.8 + i * 0.5 }));
 const manifest: AssetManifest = {
@@ -41,11 +43,11 @@ describe("beat references", () => {
       );
     const first = resolve(collect(edit("beat:0")), manifest);
     expect(first.errors).toEqual([]);
-    expect(first.items.get("s")?.duration).toBeCloseTo(16, 6);
-    expect(first.items.get("a")?.start).toBeCloseTo(4, 6);
+    expect(first.items.get("s")?.range.duration.toSeconds()).toBeCloseTo(16, 6);
+    expect(first.items.get("a")?.range.start.toSeconds()).toBeCloseTo(4, 6);
     // Start the song four beats later: the shot still lands on beat 8, now 2 s in.
     const trimmed = resolve(collect(edit("beat:4")), manifest);
-    expect(trimmed.items.get("a")?.start).toBeCloseTo(2, 6);
+    expect(trimmed.items.get("a")?.range.start.toSeconds()).toBeCloseTo(2, 6);
   });
 
   it("end a shot on a beat, which follows the music when it is trimmed", () => {
@@ -74,8 +76,8 @@ describe("beat references", () => {
     const first = resolve(collect(edit("beat:0")), manifest);
     expect(first.errors).toEqual([]);
     // Beats 8 to 16 at 120 BPM: 4 s, from 4 s to 8 s.
-    expect(first.items.get("a")).toMatchObject({ start: 4, duration: 4 });
+    expect(seconds(first.items.get("a"))).toMatchObject({ start: 4, duration: 4 });
     const trimmed = resolve(collect(edit("beat:4")), manifest);
-    expect(trimmed.items.get("a")).toMatchObject({ start: 2, duration: 4 });
+    expect(seconds(trimmed.items.get("a"))).toMatchObject({ start: 2, duration: 4 });
   });
 });
