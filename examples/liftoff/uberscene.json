@@ -442,6 +442,118 @@
         }
       ],
       "tempo": 120
+    },
+    "pad": {
+      "kind": "video",
+      "duration": 108,
+      "fps": 30,
+      "width": 1280,
+      "height": 720,
+      "id": "pad"
+    },
+    "engines": {
+      "kind": "video",
+      "duration": 30,
+      "fps": 30,
+      "width": 1280,
+      "height": 720,
+      "id": "engines"
+    },
+    "saturn": {
+      "kind": "video",
+      "duration": 20,
+      "fps": 30,
+      "width": 1920,
+      "height": 1080,
+      "id": "saturn"
+    },
+    "interstage": {
+      "kind": "video",
+      "duration": 37.1,
+      "fps": 30,
+      "width": 1450,
+      "height": 1080,
+      "id": "interstage"
+    },
+    "apollo4": {
+      "kind": "video",
+      "duration": 22,
+      "fps": 30,
+      "width": 1920,
+      "height": 1080,
+      "id": "apollo4"
+    },
+    "shuttle": {
+      "kind": "video",
+      "duration": 70,
+      "fps": 30,
+      "width": 1920,
+      "height": 1080,
+      "id": "shuttle"
+    },
+    "night": {
+      "kind": "video",
+      "duration": 56,
+      "fps": 30,
+      "width": 1920,
+      "height": 1080,
+      "id": "night"
+    },
+    "artemis": {
+      "kind": "video",
+      "duration": 60,
+      "fps": 30,
+      "width": 3840,
+      "height": 2160,
+      "id": "artemis"
+    },
+    "roman": {
+      "kind": "video",
+      "duration": 24,
+      "fps": 30,
+      "width": 3840,
+      "height": 2160,
+      "id": "roman"
+    },
+    "heavy-lift": {
+      "kind": "video",
+      "duration": 16,
+      "fps": 30,
+      "width": 3840,
+      "height": 2160,
+      "id": "heavy-lift"
+    },
+    "heavy-climb": {
+      "kind": "video",
+      "duration": 36,
+      "fps": 30,
+      "width": 3840,
+      "height": 2160,
+      "id": "heavy-climb"
+    },
+    "heavy-land": {
+      "kind": "video",
+      "duration": 24,
+      "fps": 30,
+      "width": 3840,
+      "height": 2160,
+      "id": "heavy-land"
+    },
+    "catch": {
+      "kind": "video",
+      "duration": 15.733,
+      "fps": 30,
+      "width": 1080,
+      "height": 1920,
+      "id": "catch"
+    },
+    "return": {
+      "kind": "video",
+      "duration": 60,
+      "fps": 30,
+      "width": 1080,
+      "height": 1920,
+      "id": "return"
     }
   }
 }

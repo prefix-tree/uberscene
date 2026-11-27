@@ -1,0 +1,18 @@
+# Credits
+
+The footage, from Wikimedia Commons, written by `scripts/fetch.ts`. The two vertical Starship clips (`catch`, `return`) are not from Commons and are not part of the repository: they are supplied by whoever builds the film. The music (`scripts/music.ts`) is synthesized here and shares the repository's licence.
+
+| Asset | File | What it shows | Author | Licence |
+|---|---|---|---|---|
+| `pad` | [Film to Tape - Apollo, Saturn V, Crawler, VAB, Pad 39A (KSC-1960s-MH-NAS01-0001-Apollo Saturn V Crawler, VAB Pad Film To Tape).webm](https://commons.wikimedia.org/wiki/File:Film_to_Tape_-_Apollo,_Saturn_V,_Crawler,_VAB,_Pad_39A_(KSC-1960s-MH-NAS01-0001-Apollo_Saturn_V_Crawler,_VAB_Pad_Film_To_Tape).webm) | a Saturn V on pad 39A beside its gantry, 1960s film | NASA Kennedy Space Center | Public domain |
+| `engines` | [Apollo 11 launch, video of engines at 500 fps (camera E-8).ogv](https://commons.wikimedia.org/wiki/File:Apollo_11_launch,_video_of_engines_at_500_fps_(camera_E-8).ogv) | Apollo 11's five F-1 engines lighting, filmed at 500 frames a second | NASA/Kennedy Space Center | Public domain |
+| `saturn` | [Power for Apollo - Saturn V.webm](https://commons.wikimedia.org/wiki/File:Power_for_Apollo_-_Saturn_V.webm) | a Saturn V climbing, from the 1960s film Power for Apollo | NASA | Public domain |
+| `interstage` | [Apollo 4 separation of interstage ring.webm](https://commons.wikimedia.org/wiki/File:Apollo_4_separation_of_interstage_ring.webm) | Apollo 4's interstage ring falling away, filmed from the rocket | NASA | Public domain |
+| `apollo4` | [Separation of Rocket Stages During Apollo 4.webm](https://commons.wikimedia.org/wiki/File:Separation_of_Rocket_Stages_During_Apollo_4.webm) | Apollo 4's stages separating, filmed from the rocket | NASA | Public domain |
+| `shuttle` | [STS-132 Liftoff Space Shuttle Atlantis.ogv](https://commons.wikimedia.org/wiki/File:STS-132_Liftoff_Space_Shuttle_Atlantis.ogv) | Atlantis on STS-132: the main engines lighting, liftoff, the climb, the booster camera | NASA | Public domain |
+| `night` | [Launch of Space Shuttle Endeavour STS-126.webm](https://commons.wikimedia.org/wiki/File:Launch_of_Space_Shuttle_Endeavour_STS-126.webm) | Endeavour's night launch on STS-126 | NASA/KSC | Public domain |
+| `artemis` | [Artemis I Launch (Artemis I Launch 2022 CU tracking from Press Site compressed).webm](https://commons.wikimedia.org/wiki/File:Artemis_I_Launch_(Artemis_I_Launch_2022_CU_tracking_from_Press_Site_compressed).webm) | Artemis I lifting off at night, in 4K | NASA Marshall Space Flight Center | Public domain |
+| `roman` | [Nancy Grace Roman Space Telescope High Speed Footage (KSC-20260830-MH-CSH01-0001-Roman Space Telescope Launch High Speed Footage).webm](https://commons.wikimedia.org/wiki/File:Nancy_Grace_Roman_Space_Telescope_High_Speed_Footage_(KSC-20260830-MH-CSH01-0001-Roman_Space_Telescope_Launch_High_Speed_Footage).webm) | a Falcon Heavy lighting at sunrise, carrying the Roman Space Telescope, high speed, in 4K | NASA Kennedy Space Center | Public domain |
+| `heavy-lift` | [Falcon Heavy test flight.webm](https://commons.wikimedia.org/wiki/File:Falcon_Heavy_test_flight.webm) | the first Falcon Heavy clearing the tower, in 4K | NASA/Charles A. Babir | Public domain |
+| `heavy-climb` | [Falcon Heavy test flight.webm](https://commons.wikimedia.org/wiki/File:Falcon_Heavy_test_flight.webm) | the first Falcon Heavy climbing and its side boosters separating, in 4K | NASA/Charles A. Babir | Public domain |
+| `heavy-land` | [Falcon Heavy test flight.webm](https://commons.wikimedia.org/wiki/File:Falcon_Heavy_test_flight.webm) | the two side boosters landing side by side, in 4K | NASA/Charles A. Babir | Public domain |
