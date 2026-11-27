@@ -43,6 +43,12 @@ const FILMS: Record<string, Film> = {
   "game-lighting": { file: "shorts/game-lighting.tsx" },
   // The code comes up for the build, as the lightning strikes, and the film takes the frame back on the drop.
   orbit: { file: "orbit/video.tsx", needs: "pnpm --filter @uberscene/example-orbit prepare-media", reveal: [8, 16] },
+  // The code comes up for the Shuttle, and the film takes the frame back on the drop, as the Falcon Heavy lights.
+  liftoff: {
+    file: "liftoff/video.tsx",
+    needs: "pnpm --filter @uberscene/example-liftoff prepare-media",
+    reveal: [16, 24],
+  },
 };
 
 /** Elements whose line lights up while they are on screen; sound and structure do not. */
@@ -76,7 +82,13 @@ for (const [name, film] of Object.entries(FILMS)) {
   const rendered = join(out, `${name}.${hash}.webm`);
   if (!existsSync(rendered)) {
     process.stdout.write(`${name}: rendering the film\n`);
-    const r = await renderVideo({ state: video.state, media, out: rendered, bitrate: 8_000_000, source: video.source });
+    const r = await renderVideo({
+      state: video.state,
+      media,
+      out: rendered,
+      bitrate: 24_000_000,
+      source: video.source,
+    });
     for (const w of r.warnings) process.stderr.write(`${name}: warning: ${w}\n`);
   }
 
@@ -114,7 +126,7 @@ for (const [name, film] of Object.entries(FILMS)) {
       state: post.state,
       media: resolver,
       out: target,
-      bitrate: 10_000_000,
+      bitrate: 16_000_000,
       source: post.source,
     });
     process.stdout.write(

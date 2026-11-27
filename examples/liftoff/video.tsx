@@ -48,11 +48,11 @@ interface Shot {
 const FILM = { x: 0.125, y: 0.125, width: 0.75, height: 0.75 };
 
 const SHOTS: readonly Shot[] = [
-  // Countdown: the pad, a shot a bar, the engines from beat 12 so they light on 16.
+  // Countdown: the pad, a shot a bar, the engines from beat 14 so the fireball bursts on 16.
   { id: "pad-wide", beat: 0, src: "pad", from: 0.5, x: 0.38, wide: FILM },
   { id: "pad-tower", beat: 4, src: "pad", from: 6, x: 0.32, wide: FILM },
   { id: "pad-top", beat: 8, src: "pad", from: 94, x: 0.74, wide: FILM },
-  { id: "engines", beat: 12, src: "engines", from: { lights: 16 }, x: 0.55 },
+  { id: "engines", beat: 14, src: "engines", from: { lights: 16 }, x: 0.55 },
   // Apollo: the climb and the stages.
   { id: "saturn-climb", beat: 20, src: "saturn", from: 2.5, x: 0.5, wide: FILM },
   { id: "saturn-close", beat: 22, src: "saturn", from: 9, x: 0.5, wide: FILM },
