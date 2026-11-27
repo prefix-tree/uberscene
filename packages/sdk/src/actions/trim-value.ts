@@ -1,6 +1,6 @@
 import { elapsedSeconds, type TimeRange, tidySeconds } from "@uberscene/kit/schema";
 
-import { sinceStart } from "../time";
+import { secondsSinceStart } from "../time";
 
 /** What `trimValue` reads of an element: a placement's `range`, or an inspect row's `start` in seconds. */
 type Trimmed = { readonly source?: { readonly in: number; readonly speed: number } | undefined } & (
@@ -15,7 +15,7 @@ type Trimmed = { readonly source?: { readonly in: number; readonly speed: number
  */
 export function trimValue(item: Trimmed, at: number): number {
   if (!item.source) return tidySeconds(at);
-  const since = "range" in item ? sinceStart(item, at) : elapsedSeconds(at, item.start);
+  const since = "range" in item ? secondsSinceStart(item, at) : elapsedSeconds(at, item.start);
   // No float noise in the file, and a frame-exact time stays exact, as the trim itself keeps it.
   return tidySeconds(item.source.in + since * item.source.speed);
 }

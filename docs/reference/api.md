@@ -934,7 +934,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `ElementSite` | interface |  |
 | `EMPTY_MANIFEST` | const |  |
 | `endSeconds` | const | Where a placement ends, in seconds. |
-| `endTicks` | const | Where a placement ends, in ticks. |
+| `endTicks` | const | Where a placement ends, as a count of ticks. |
 | `entriesOf` | function | An asset's list of words, shots, silences or beats. |
 | `EVENT_KINDS` | const |  |
 | `EventKind` | type |  |
@@ -982,7 +982,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `LayerInterior` | interface |  |
 | `LayerPlacement` | interface |  |
 | `lengthSeconds` | const | How long a placement is, in seconds. |
-| `lengthTicks` | const | How long a placement is, in ticks. |
+| `lengthTicks` | const | How long a placement is, as a count of ticks. |
 | `lineRange` | function | Widen an element range to swallow its own line(s). |
 | `lint` | function | Static checks on a video file. |
 | `LintOptions` | interface |  |
@@ -1066,7 +1066,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `samePlacement` | function | Whether two placements would render and edit the same; used to hand back the previous object. |
 | `SceneFn` | type |  |
 | `SceneUse` | interface | A scene a clip plays, and the moments the clip hands in, in scene seconds. |
-| `secondsSinceStart` | const | Seconds from a placement's start to `t` (seconds), worked out in ticks. |
+| `secondsSinceStart` | const | Seconds from a placement's start to `t` (seconds), worked out exactly. |
 | `Shot` | interface |  |
 | `Silence` | interface |  |
 | `skimMoments` | function | The moments an editor skims a cut by. |
@@ -1080,7 +1080,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `StageEdit` | type |  |
 | `stageOf` | function | The scene file's stage, as data. |
 | `startSeconds` | const | Where a placement starts, in seconds. |
-| `startTicks` | const | Where a placement starts, in ticks. |
+| `startTicks` | const | Where a placement starts, as a count of ticks. |
 | `SubjectBox` | interface | A subject's box at source second `t`, as fractions of the source picture (0..1 from its top left). |
 | `SubtitleOptions` | interface |  |
 | `subtitles` | function | The captions the cut plays, as an SRT or WebVTT file. |
@@ -1141,7 +1141,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `Editable` | type |  |
 | `EMPTY_MANIFEST` | const |  |
 | `endSeconds` | const | Where a placement ends, in seconds. |
-| `endTicks` | const | Where a placement ends, in ticks. |
+| `endTicks` | const | Where a placement ends, as a count of ticks. |
 | `entriesOf` | function | An asset's list of words, shots, silences or beats. |
 | `findParentOf` | function |  |
 | `FOLLOW_KINDS` | const | The kinds that take a `follow`, and the kinds one may follow. |
@@ -1160,7 +1160,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `Json` | type |  |
 | `LayerInterior` | interface |  |
 | `lengthSeconds` | const | How long a placement is, in seconds. |
-| `lengthTicks` | const | How long a placement is, in ticks. |
+| `lengthTicks` | const | How long a placement is, as a count of ticks. |
 | `lookupAsset` | function |  |
 | `NetPatch` | interface | The reduced effect of every patch on one element. |
 | `onTimeline` | function | Composition time of an asset second, through the first play that covers it; null when it is not on the timeline. |
@@ -1193,13 +1193,13 @@ Every name each entry exports, read from the code. The sections above explain th
 | `samePlacement` | function | Whether two placements would render and edit the same; used to hand back the previous object. |
 | `SceneFn` | type |  |
 | `SceneUse` | interface | A scene a clip plays, and the moments the clip hands in, in scene seconds. |
-| `secondsSinceStart` | const | Seconds from a placement's start to `t` (seconds), worked out in ticks. |
+| `secondsSinceStart` | const | Seconds from a placement's start to `t` (seconds), worked out exactly. |
 | `Shot` | interface |  |
 | `Silence` | interface |  |
 | `SourceIndexLike` | interface |  |
 | `speedKeysOf` | function | A clip's speed keys (from `speed={[…]}`), sorted by `at`. |
 | `startSeconds` | const | Where a placement starts, in seconds. |
-| `startTicks` | const | Where a placement starts, in ticks. |
+| `startTicks` | const | Where a placement starts, as a count of ticks. |
 | `SubjectBox` | interface | A subject's box at source second `t`, as fractions of the source picture (0..1 from its top left). |
 | `SubtitleOptions` | interface |  |
 | `subtitles` | function | The captions the cut plays, as an SRT or WebVTT file. |

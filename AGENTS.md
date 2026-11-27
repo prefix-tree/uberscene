@@ -13,6 +13,12 @@ fires a frame late. Every turn of a time into a frame, a sample, or a difference
 `packages/kit/src/time.ts` (exported from `@uberscene/kit/schema`). Ticks are whole numbers of 1/254,016,000,000 s, a
 grid every frame rate and sample rate divides exactly.
 
+A placement's time is a `Time` (decision 0045): `p.range` is a `TimeRange` of exact `Time`s, and the sdk's
+`T(seconds)` makes one. Do the math with its methods (`plus`, `minus`, `isBefore`, `equals`, `Time.max`,
+`range.contains`), and turn a result into seconds (`toSeconds`, `toFileSeconds`) only to write it out. TypeScript lets
+`<`, `>` and `===` through on two objects, so `pnpm lint` runs `lint:time`, which refuses any operator on a `Time`. The
+table below is for code that still holds seconds.
+
 | To | Use | Never |
 |---|---|---|
 | The frame a time falls in | `frameAtSeconds(t, rate)` | `Math.floor(t * fps)` |

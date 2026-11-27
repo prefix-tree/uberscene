@@ -4,8 +4,7 @@ import {
   type CurveKey,
   capabilitiesOf,
   curveAt,
-  type Ticks,
-  ticksPerFrame,
+  Time,
   tidySeconds,
 } from "@uberscene/kit/schema";
 
@@ -15,7 +14,7 @@ import type { Json } from "../../patches/types";
 import { isKeyList } from "../../resolve/expand";
 import type { Placement as ResolvedPlacement, ResolvedState } from "../../resolve/resolve";
 import { SHAPE_KEY_PATHS } from "../../resolve/shape-keys";
-import { endS, endT, lengthT, minus, plus, S, sinceStart, startS, startT, T } from "../../time";
+import { endSeconds, S, secondsSinceStart, startSeconds, T } from "../../time";
 import { carry, carryRemoval, carrySplit, carryTrim } from "../carry";
 import {
   define,
@@ -72,7 +71,7 @@ const CUT_SLACK = T(0.001);
 
 /** An anchored element's offset after its start moves to `at` (seconds), worked out in ticks. */
 function movedOffset(state: ResolvedState, item: ResolvedPlacement, at: number): number {
-  return S(plus(T(Number(rawProp(state, item.id, "offset") ?? 0)), minus(T(at), startT(item))));
+  return S(T(Number(rawProp(state, item.id, "offset") ?? 0)).plus(T(at).minus(item.range.start)));
 }
 
 define(carry(
@@ -107,9 +106,9 @@ define(carry(
       }
       if (!caps.trimSource && typeof a.params.value === "number") {
         const v = a.params.value;
-        if (a.params.edge === "out" && T(v) <= startT(item))
+        if (a.params.edge === "out" && T(v).isAtOrBefore(item.range.start))
           errors.push({ code: "INVALID_TIME_RANGE", message: "the out edge must stay after the start" });
-        if (a.params.edge === "in" && (T(v) >= endT(item) || v < 0))
+        if (a.params.edge === "in" && (T(v).isAtOrAfter(item.range.end) || v < 0))
           errors.push({ code: "INVALID_TIME_RANGE", message: "the in edge must stay before the end" });
         if (a.params.edge === "in" && layoutOf(state, item) === "sequence")
           errors.push({
@@ -133,7 +132,7 @@ define(carry(
           const props: Record<string, Json | undefined> = { in: a.params.value as Json };
           if (rawProp(state, item.id, "duration") !== undefined) props.out = item.source.out;
           if (rawProp(state, item.id, "duration") !== undefined) props.duration = undefined;
-          if (layout === "free") props.start = S(plus(startT(item), T(delta)));
+          if (layout === "free") props.start = S(item.range.start.plus(T(delta)));
           if (layout === "anchored") props.offset = tidy(Number(rawProp(state, item.id, "offset") ?? 0) + delta);
           setProps(log, item.id, props);
         }
@@ -141,12 +140,12 @@ define(carry(
       }
       const v = a.params.value as number;
       if (a.params.edge === "out") {
-        setProps(log, item.id, { duration: S(minus(T(v), startT(item))) });
+        setProps(log, item.id, { duration: S(T(v).minus(item.range.start)) });
       } else {
-        const delta = minus(T(v), startT(item));
-        const props: Record<string, Json | undefined> = { duration: S(minus(lengthT(item), delta)) };
+        const delta = T(v).minus(item.range.start);
+        const props: Record<string, Json | undefined> = { duration: S(item.range.duration.minus(delta)) };
         if (layout === "free") props.start = v;
-        if (layout === "anchored") props.offset = S(plus(T(Number(rawProp(state, item.id, "offset") ?? 0)), delta));
+        if (layout === "anchored") props.offset = S(T(Number(rawProp(state, item.id, "offset") ?? 0)).plus(delta));
         setProps(log, item.id, props);
       }
     },
@@ -163,7 +162,7 @@ define({
     const base = validateTarget(state, a.params.id, ["in", "out", "duration"]);
     if (!base.valid) return base;
     const item = state.items.get(a.params.id)!;
-    if (T(a.params.at) <= startT(item) || T(a.params.at) >= endT(item))
+    if (!T(a.params.at).isAfter(item.range.start) || !T(a.params.at).isBefore(item.range.end))
       return invalid({ code: "OUT_OF_BOUNDS", message: "playhead must be inside the element" });
     return ok;
   },
@@ -172,7 +171,7 @@ define({
     const state = ctx.before;
     const layout = layoutOf(state, item);
     if (item.source) {
-      const sourceAt = item.source.in + sinceStart(item, a.params.at) * item.source.speed;
+      const sourceAt = item.source.in + secondsSinceStart(item, a.params.at) * item.source.speed;
       if (a.params.edge === "out") setProps(log, item.id, { out: sourceAt, duration: undefined });
       else {
         const props: Record<string, Json | undefined> = { in: sourceAt };
@@ -185,9 +184,9 @@ define({
         setProps(log, item.id, props);
       }
     } else if (a.params.edge === "out") {
-      setProps(log, item.id, { duration: S(minus(T(a.params.at), startT(item))) });
+      setProps(log, item.id, { duration: S(T(a.params.at).minus(item.range.start)) });
     } else {
-      const props: Record<string, Json | undefined> = { duration: S(minus(endT(item), T(a.params.at))) };
+      const props: Record<string, Json | undefined> = { duration: S(item.range.end.minus(T(a.params.at))) };
       if (layout === "free") props.start = a.params.at;
       if (layout === "anchored") props.offset = movedOffset(state, item, a.params.at);
       setProps(log, item.id, props);
@@ -274,7 +273,7 @@ define({
     if (!prev?.source || !next?.source)
       return invalid({ code: "NOT_ADJACENT", message: "slide needs source clips on both sides" });
     const d = a.params.delta;
-    if (plus(lengthT(prev), T(d)) <= 0 || minus(lengthT(next), T(d)) <= 0)
+    if (!prev.range.duration.plus(T(d)).isAfter(Time.ZERO) || !next.range.duration.minus(T(d)).isAfter(Time.ZERO))
       return invalid({ code: "OUT_OF_BOUNDS", message: "slide would collapse a neighbour" });
     if (prev.source.out + d * prev.source.speed > sourceLimit(state, prev) + 0.05)
       return invalid({ code: "INSUFFICIENT_HANDLES", message: "previous clip has no handle" });
@@ -293,9 +292,9 @@ define({
     setProps(log, next!.id, {
       in: ns.in + d * ns.speed,
       duration: undefined,
-      ...(layoutOf(state, next!) === "free" ? { start: S(plus(startT(next!), T(d))) } : {}),
+      ...(layoutOf(state, next!) === "free" ? { start: S(next!.range.start.plus(T(d))) } : {}),
     });
-    if (layoutOf(state, item) === "free") setProps(log, item.id, { start: S(plus(startT(item), T(d))) });
+    if (layoutOf(state, item) === "free") setProps(log, item.id, { start: S(item.range.start.plus(T(d))) });
   },
   invert: (a, before) => {
     const item = before.items.get(a.params.id)!;
@@ -316,7 +315,10 @@ define({
       (layoutOf(state, item) === "sequence"
         ? neighbours(state, item).next?.source !== undefined
         : [...state.items.values()].some(
-            (p) => p.track === item.track && p.source !== undefined && Math.abs(endT(item) - startT(p)) <= CUT_SLACK,
+            (p) =>
+              p.track === item.track &&
+              p.source !== undefined &&
+              item.range.end.minus(p.range.start).abs().isAtOrBefore(CUT_SLACK),
           )),
   }),
   validate: (a, state) => {
@@ -331,10 +333,10 @@ define({
     const adjacent =
       layoutOf(state, left) === "sequence"
         ? neighbours(state, left).next?.id === right.id
-        : Math.abs(endT(left) - startT(right)) <= CUT_SLACK;
+        : left.range.end.minus(right.range.start).abs().isAtOrBefore(CUT_SLACK);
     if (!adjacent) return invalid({ code: "NOT_ADJACENT", message: "clips must meet at a cut" });
     const d = a.params.delta;
-    if (plus(lengthT(left), T(d)) <= 0 || minus(lengthT(right), T(d)) <= 0)
+    if (!left.range.duration.plus(T(d)).isAfter(Time.ZERO) || !right.range.duration.minus(T(d)).isAfter(Time.ZERO))
       return invalid({ code: "OUT_OF_BOUNDS", message: "roll would collapse a clip" });
     if (
       left.source.out + d * left.source.speed > sourceLimit(state, left) + 0.05 ||
@@ -352,7 +354,7 @@ define({
     setProps(log, right.id, {
       in: right.source!.in + d * right.source!.speed,
       duration: undefined,
-      ...(layoutOf(state, right) === "free" ? { start: S(plus(startT(right), T(d))) } : {}),
+      ...(layoutOf(state, right) === "free" ? { start: S(right.range.start.plus(T(d))) } : {}),
     });
   },
   invert: (a, before) => [restoreTiming(before, a.params.leftId), restoreTiming(before, a.params.rightId)],
@@ -476,9 +478,9 @@ define(carry(
       if (!capabilitiesOf(item.kind).timed || item.kind === "transition" || item.kind === "gap")
         return invalid({ code: "INVALID_PARAMS", message: `<${item.kind}> cannot be split` });
       // At least a frame on each side: a sliver shorter than a frame draws nothing and only clutters the file.
-      const frame = ticksPerFrame(state.composition.rate) as Ticks;
+      const frame = Time.frames(1, state.composition.rate);
       const at = T(a.params.at);
-      if (at < plus(startT(item), frame) || at > minus(endT(item), frame))
+      if (at.isBefore(item.range.start.plus(frame)) || at.isAfter(item.range.end.minus(frame)))
         return invalid({
           code: "OUT_OF_BOUNDS",
           message: "a split must leave at least one frame on each side of it",
@@ -491,7 +493,7 @@ define(carry(
       const node = rawNode(state, item.id)!;
       const spec = nodeSpecOf(node);
       // In ticks: 0.6 - 0.5 is 0.09999999999999998, and a key or a freeze at 0.1 would land on the wrong side.
-      const into = minus(T(a.params.at), startT(item));
+      const into = T(a.params.at).minus(item.range.start);
       const atRel = S(into);
       const layout = layoutOf(state, item);
       const taken = new Set<string>([...state.tree.byId.keys(), a.params.newId]);
@@ -509,7 +511,7 @@ define(carry(
         delete rightProps.duration;
       } else {
         leftProps.duration = atRel;
-        rightProps.duration = S(minus(lengthT(item), into));
+        rightProps.duration = S(item.range.duration.minus(into));
       }
       if (layout === "free") rightProps.start = tidy(a.params.at);
       if (layout === "anchored") rightProps.offset = movedOffset(state, item, a.params.at);
@@ -550,7 +552,7 @@ define({
     const left = before.items.get(a.params.id)!;
     return {
       type: "clip/split",
-      params: { id: a.params.id, at: endS(left), newId: a.params.rightId },
+      params: { id: a.params.id, at: endSeconds(left), newId: a.params.rightId },
     };
   },
   fold: () => [],
@@ -576,14 +578,14 @@ define(carry(
       log.append({ op: "remove", id: item.id });
       if (layoutOf(state, item) !== "free") return;
       for (const later of laterOnTrack(state, item))
-        setProps(log, later.id, { start: S(minus(startT(later), lengthT(item))) });
+        setProps(log, later.id, { start: S(later.range.start.minus(item.range.duration)) });
     },
     invert: (a, before) => {
       const item = before.items.get(a.params.id)!;
       const node = rawNode(before, item.id)!;
       const affected =
         layoutOf(before, item) === "free"
-          ? laterOnTrack(before, item).map((l) => ({ id: l.id, start: startS(l) }))
+          ? laterOnTrack(before, item).map((l) => ({ id: l.id, start: startSeconds(l) }))
           : [];
       return {
         type: "clip/rippleRestore",
@@ -623,7 +625,7 @@ function laterOnTrack(state: ResolvedState, item: ResolvedPlacement): ResolvedPl
       (i): i is ResolvedPlacement =>
         Boolean(i) &&
         i!.id !== item.id &&
-        startT(i!) >= minus(endT(item), T(1e-6)) &&
+        i!.range.start.isAtOrAfter(item.range.end.minus(T(1e-6))) &&
         typeof rawProp(state, i!.id, "start") === "number",
     );
 }
@@ -663,17 +665,24 @@ define({
       return;
     }
     const track = state.tracks.find((t) => t.id === item.track)!;
-    const prevEnd = Math.max(
-      0,
+    const prevEnd = Time.max(
+      Time.ZERO,
       ...track.items
         .map((id) => state.items.get(id))
-        .filter((i) => i && i.id !== item.id && endT(i) <= plus(startT(item), T(1e-6)) && i.kind !== "transition")
-        .map((i) => endT(i!)),
-    ) as Ticks;
-    const shift = minus(startT(item), prevEnd);
-    if (shift <= 0) return;
+        .filter(
+          (i) =>
+            i &&
+            i.id !== item.id &&
+            i.range.end.isAtOrBefore(item.range.start.plus(T(1e-6))) &&
+            i.kind !== "transition",
+        )
+        .map((i) => i!.range.end),
+    );
+    const shift = item.range.start.minus(prevEnd);
+    if (!shift.isAfter(Time.ZERO)) return;
     setProps(log, item.id, { start: S(prevEnd) });
-    for (const later of laterOnTrack(state, item)) setProps(log, later.id, { start: S(minus(startT(later), shift)) });
+    for (const later of laterOnTrack(state, item))
+      setProps(log, later.id, { start: S(later.range.start.minus(shift)) });
   },
   invert: (a, before) => {
     const item = before.items.get(a.params.id)!;
@@ -690,7 +699,7 @@ define({
         },
       };
     }
-    const positions = [item, ...laterOnTrack(before, item)].map((i) => ({ id: i.id, start: startS(i) }));
+    const positions = [item, ...laterOnTrack(before, item)].map((i) => ({ id: i.id, start: startSeconds(i) }));
     return { type: "track/restorePositions", params: { trackId: item.track as string, positions } };
   },
   fold: () => [],
