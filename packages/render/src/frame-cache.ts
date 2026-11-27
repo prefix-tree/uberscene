@@ -10,10 +10,10 @@ import { capabilitiesOf, frameStartSeconds, motionBlurOf, shutterTimes } from "@
 import type { MediaResolver } from "@uberscene/player/engine";
 import {
   endSeconds,
-  followOf,
   lengthTicks,
   lookupAsset,
   type Placement,
+  REF_KINDS,
   type ResolvedState,
   startSeconds,
 } from "@uberscene/sdk";
@@ -72,8 +72,9 @@ function stable(value: unknown, flags: { free: boolean }, seen = new Set<object>
 }
 
 /**
- * The placements that can draw at `t`: the ones on the timeline there, with everything inside them, and the elements
- * they follow, which place them even while not on screen themselves.
+ * The placements that can draw at `t`: the ones on the timeline there, with everything inside them, and what they
+ * read at every frame by the reference graph (the element one follows), which places them even while not on screen
+ * itself.
  */
 function drawnAt(state: ResolvedState, t: number): Placement[] {
   const out = new Map<string, Placement>();
@@ -81,8 +82,11 @@ function drawnAt(state: ResolvedState, t: number): Placement[] {
   const add = (p: Placement): void => {
     if (out.has(p.id)) return;
     out.set(p.id, p);
-    const leader = state.items.get(followOf(p) ?? "");
-    if (leader) add(leader);
+    for (const edge of state.refs.from.get(p.id) ?? []) {
+      const read = REF_KINDS[edge.type]?.phase === "frame" && REF_KINDS[edge.type]?.facet === "space";
+      const target = read ? state.items.get(edge.to) : undefined;
+      if (target) add(target);
+    }
     for (const id of p.children) {
       const child = state.items.get(id);
       // Captions hold a cue for every line said; only the one on screen draws.
