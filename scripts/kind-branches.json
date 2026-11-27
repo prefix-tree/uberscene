@@ -5,7 +5,7 @@
       "list": 1
     },
     "sdk": {
-      "compare": 133,
+      "compare": 131,
       "list": 27
     },
     "player": {
@@ -35,6 +35,7 @@
     "packages/kit/src/jsx/ref.ts: case \"marker\":",
     "packages/kit/src/jsx/ref.ts: case \"track\":",
     "packages/sdk/src/resolve/refs.ts: case \"marker\":",
-    "packages/sdk/src/resolve/refs.ts: case \"track\":"
+    "packages/sdk/src/resolve/refs.ts: case \"track\":",
+    "packages/sdk/src/resolve/dependents.ts: case \"marker\":"
   ]
 }

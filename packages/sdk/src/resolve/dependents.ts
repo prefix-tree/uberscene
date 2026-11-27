@@ -1,3 +1,4 @@
+import type { RefEdge } from "./refs";
 import type { ResolvedState } from "./resolve";
 
 /**
@@ -8,7 +9,10 @@ import type { ResolvedState } from "./resolve";
  * - `on`: a transition placed on one of its edges;
  * - `match` / `until`: lasts as long as it, or until it ends (or, with `at`, until it plays that moment);
  * - `beside`: a transition between it and its neighbour on a sequence track;
- * - `follow`: an overlay that moves with it (`follow="id"`).
+ * - `follow`: an overlay that moves with it (`follow="id"`);
+ * - `push`: a camera that makes room for it (`push.on`) or keeps it in view (`push.keep`);
+ * - `duck`: a sound that dips under it, a track (`duck.under`, by the track's id or its role);
+ * - `marker` / `sceneTime`: an element with a time written as it, a marker (`in="marker:id"`, a scene's `times`).
  */
 export type Dependent =
   | { readonly kind: "anchor"; readonly id: string; readonly edge?: "end"; readonly at?: string }
@@ -16,28 +20,49 @@ export type Dependent =
   | { readonly kind: "match"; readonly id: string }
   | { readonly kind: "until"; readonly id: string; readonly at?: string }
   | { readonly kind: "beside"; readonly id: string; readonly side: "before" | "after" }
-  | { readonly kind: "follow"; readonly id: string };
+  | { readonly kind: "follow"; readonly id: string }
+  | { readonly kind: "push"; readonly id: string; readonly part: "on" | "keep" }
+  | { readonly kind: "duck"; readonly id: string }
+  | { readonly kind: "marker"; readonly id: string; readonly prop: string }
+  | { readonly kind: "sceneTime"; readonly id: string; readonly prop: string };
 
-/** The elements that depend on `id`, in timeline order of the file, each once per way it depends. */
+/** How one reference of the graph reads as a dependent of what it names. */
+function dependent(state: ResolvedState, edge: RefEdge): Dependent {
+  const id = edge.from;
+  const props = (state.tree.byId.get(id)?.props ?? {}) as Record<string, unknown>;
+  switch (edge.type) {
+    case "anchor": {
+      const end = edge.target.type === "element" && edge.target.edge === "end" ? ({ edge: "end" } as const) : {};
+      return { kind: "anchor", id, ...end, ...(typeof props.at === "string" ? { at: props.at } : {}) };
+    }
+    case "on":
+      return { kind: "on", id, edge: props.edge === "in" ? "in" : "out" };
+    case "match":
+      return { kind: "match", id };
+    case "until": {
+      const at = (props.duration as { at?: unknown } | undefined)?.at;
+      return { kind: "until", id, ...(typeof at === "string" ? { at } : {}) };
+    }
+    case "push":
+      return { kind: "push", id, part: edge.prop === "push.keep" ? "keep" : "on" };
+    case "duck":
+      return { kind: "duck", id };
+    case "sceneTime":
+      return { kind: "sceneTime", id, prop: edge.prop };
+    case "marker":
+      return { kind: "marker", id, prop: edge.prop };
+    default:
+      return { kind: "follow", id };
+  }
+}
+
+/**
+ * The elements that depend on `id`, in timeline order of the file, each once per way it depends: the references to
+ * it in the graph (`state.refs`), then the transitions beside it on a sequence track, which name nothing.
+ */
 export function dependentsOf(state: ResolvedState, id: string): Dependent[] {
   const out: Dependent[] = [];
-  for (const node of state.tree.byId.values()) {
-    if (node.id === id) continue;
-    const props = node.props as Record<string, unknown>;
-    if (props.anchor === id || props.anchor === `${id}.end`) {
-      const edge = props.anchor === `${id}.end` ? ({ edge: "end" } as const) : {};
-      out.push({ kind: "anchor", id: node.id, ...edge, ...(typeof props.at === "string" ? { at: props.at } : {}) });
-    }
-    if (props.follow === id) out.push({ kind: "follow", id: node.id });
-    if (node.kind === "transition" && props.on === id)
-      out.push({ kind: "on", id: node.id, edge: props.edge === "in" ? "in" : "out" });
-    const duration = props.duration;
-    if (typeof duration === "object" && duration !== null) {
-      const d = duration as { match?: unknown; until?: unknown; at?: unknown };
-      if (d.match === id) out.push({ kind: "match", id: node.id });
-      if (d.until === id) out.push({ kind: "until", id: node.id, ...(typeof d.at === "string" ? { at: d.at } : {}) });
-    }
-  }
+  for (const edge of state.refs.to.get(id) ?? []) if (edge.from !== id) out.push(dependent(state, edge));
   const track = state.tracks.find((t) => t.items.includes(id));
   if (track?.layout === "sequence") {
     const siblings = state.tree.byId.get(track.id)?.children ?? [];
