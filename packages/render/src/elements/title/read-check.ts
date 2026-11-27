@@ -1,6 +1,6 @@
-import { capabilitiesOf, readTimeNeeded, round3, titleWords } from "@uberscene/kit/schema";
+import { readTimeNeeded, round3, titleWords } from "@uberscene/kit/schema";
 import type { ResolvedState } from "@uberscene/sdk";
-import { endSeconds, lengthSeconds, startSeconds } from "@uberscene/sdk";
+import { endSeconds, lengthSeconds, placed, startSeconds } from "@uberscene/sdk";
 
 /** A title on screen for less time than its words take to read. Times are composition seconds, rounded. */
 export interface ReadTimeIssue {
@@ -31,11 +31,13 @@ export function checkReadTime(
   const from = window.from ?? 0;
   const to = window.to ?? state.composition.duration;
   const out: ReadTimeIssue[] = [];
-  for (const p of state.items.values()) {
-    if (!capabilitiesOf(p.kind).hasText || endSeconds(p) <= from || startSeconds(p) >= to) continue;
-    const words = titleWords(state.tree.byId.get(p.id)?.text ?? "").length;
+  for (const item of state.items.values()) {
+    // A title whose props did not parse is not drawn, so it has no time on screen to check.
+    const p = placed(item, "title");
+    if (!p || endSeconds(p) <= from || startSeconds(p) >= to) continue;
+    const words = titleWords(p.text).length;
     if (words === 0) continue;
-    const animation = p.props.animation as { type: string; in?: number; stagger?: number } | undefined;
+    const animation = p.props.animation;
     const needs = round3(readTimeNeeded(words, animation));
     const seconds = round3(lengthSeconds(p));
     if (needs - seconds <= frame) continue;

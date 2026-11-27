@@ -38,6 +38,7 @@ import {
 } from "@uberscene/player/engine";
 import { type AssetManifest, collectModule, loadModule, resolve, withoutEffects } from "@uberscene/sdk";
 
+import { wordsOf } from "../../elements";
 import { measureSound, renderSoundtrack } from "./audio";
 import { createFreeCodeClock } from "./clock";
 import { inkOf, offFrame, pastEdges } from "./ink";
@@ -403,10 +404,10 @@ async function start(): Promise<void> {
           // A ground: beneath the footage, or an element the file marks with `ground` (a card or a scrim, which
           // things are meant to sit on).
           const under = (track !== undefined && backdrop.has(track)) || state.items.get(id)?.props.ground === true;
-          const text =
-            el.dataset.kind === "title"
-              ? textFit(el, state.tree.byId.get(id)?.text ?? "", state.items.get(id)?.props)
-              : null;
+          // A kind of words (a title): its whole text, laid out in its box.
+          const text = wordsOf(el.dataset.kind ?? "")
+            ? textFit(el, state.items.get(id)?.text ?? "", state.items.get(id)?.props)
+            : null;
           found.push({ id, kind: el.dataset.kind as string, ...ink, backdrop: under, ...(text ? { text } : {}) });
           // What the element's own code named: each part alone, measured the same way.
           for (const part of partsOf.get(el) ?? []) {
