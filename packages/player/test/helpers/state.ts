@@ -179,6 +179,7 @@ export function makeState(spec: StateSpec): ResolvedState {
           ...timeOf(at, 0),
           props: { id: g.id, ...(g.props ?? {}) },
           editable: "literal",
+          parsed: true,
           lockedProps: [],
           boundProps: {},
           errors: [],
@@ -195,6 +196,7 @@ export function makeState(spec: StateSpec): ResolvedState {
         ...timeOf(cs, cd),
         props: { id: c.id, ...(c.props ?? {}) },
         editable: "literal",
+        parsed: true,
         lockedProps: [],
         boundProps: {},
         errors: [],
@@ -222,6 +224,7 @@ export function makeState(spec: StateSpec): ResolvedState {
       ...(source ? { source } : {}),
       props,
       editable: "literal",
+      parsed: true,
       lockedProps: [],
       boundProps: {},
       errors: [],
@@ -290,13 +293,14 @@ export function makeState(spec: StateSpec): ResolvedState {
       ...timeOf(0, duration),
       props: { id: t.id, layout: t.layout },
       editable: "literal",
+      parsed: true,
       lockedProps: [],
       boundProps: {},
       errors: [],
     });
   }
   if (spec.camera) {
-    const base = { editable: "literal" as const, lockedProps: [], boundProps: {}, errors: [] };
+    const base = { editable: "literal" as const, parsed: true, lockedProps: [], boundProps: {}, errors: [] };
     const keys = (spec.camera.keys ?? []).map(([field, at, value, easing], i) => {
       const id = `cam.${field}.${i}`;
       items.set(id, {
@@ -340,6 +344,7 @@ export function makeState(spec: StateSpec): ResolvedState {
     ...timeOf(0, duration),
     props: compProps,
     editable: "literal",
+    parsed: true,
     lockedProps: [],
     boundProps: {},
     errors: [],

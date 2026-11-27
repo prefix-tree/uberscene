@@ -52,7 +52,7 @@ export function DomLayer({ state, interiors, layer = "front", slot }: DomLayerPr
   );
   const top = slot !== undefined ? slot === bands.count - 1 : layer === "front";
   // What stands over every track for the whole video (the captions) goes with the top canvas.
-  const over = top ? [...state.items.values()].filter((p) => DOM_DRAWING[p.kind]?.where === "top") : [];
+  const over = top ? [...state.items.values()].filter((p) => p.parsed && DOM_DRAWING[p.kind]?.where === "top") : [];
   return (
     <>
       {tracks.map((track) => {
