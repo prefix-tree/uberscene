@@ -232,11 +232,7 @@ export const BOX_ORIGIN_POINT: Readonly<Record<BoxOrigin, { readonly x: number; 
   bottomRight: { x: 1, y: 1 },
 };
 
-export const boxSchema = z.strictObject({
-  /** Pixels from the frame's left edge to the box's `origin`, or keys to move it. Left out: centred across the frame. */
-  x: animatable(z.number()).optional(),
-  /** Pixels from the frame's top edge to the box's `origin`, or keys to move it. Left out: centred down the frame. */
-  y: animatable(z.number()).optional(),
+const boxSize = {
   /**
    * The box's width in pixels; its content fills it as `fit` says. Left out: the width its content takes in the frame
    * (from `height` and the content's shape when only that is given).
@@ -246,8 +242,25 @@ export const boxSchema = z.strictObject({
   height: z.number().positive().optional(),
   /** Which point of the box sits at `x`, `y`. Left out: its top left. */
   origin: z.enum(BOX_ORIGINS).optional(),
+};
+
+export const boxSchema = z.strictObject({
+  /** Pixels from the frame's left edge to the box's `origin`, or keys to move it. Left out: centred across the frame. */
+  x: animatable(z.number()).optional(),
+  /** Pixels from the frame's top edge to the box's `origin`, or keys to move it. Left out: centred down the frame. */
+  y: animatable(z.number()).optional(),
+  ...boxSize,
 });
 export type ElementBox = z.output<typeof boxSchema>;
+
+/** A box that stays where it is written: the same rectangle, with `x` and `y` as numbers. The captions' block. */
+export const fixedBoxSchema = z.strictObject({
+  /** Pixels from the frame's left edge to the box's `origin`. Left out: centred across the frame. */
+  x: z.number().optional(),
+  /** Pixels from the frame's top edge to the box's `origin`. Left out: centred down the frame. */
+  y: z.number().optional(),
+  ...boxSize,
+});
 
 const boxProp = {
   /**

@@ -109,6 +109,13 @@ describe("element schemas", () => {
     );
   });
 
+  it("a captions box stays where it is written: numbers, and no keys, which nothing drew", () => {
+    const captions = (box: object) => ELEMENTS.Captions.schema.safeParse({ id: "caps", box }).success;
+    expect(captions({ x: 540, y: 1150, width: 900, origin: "center" })).toBe(true);
+    expect(captions({ x: [{ at: 0, value: 0 }] })).toBe(false);
+    expect(captions({ y: { type: "drift", speed: 4 } })).toBe(false);
+  });
+
   it("Svg takes src or content, not both", () => {
     expect(ELEMENTS.Svg.schema.safeParse({ id: "v", src: "asset:logo", content: "<svg/>" }).success).toBe(false);
     expect(ELEMENTS.Svg.schema.safeParse({ id: "v" }).success).toBe(false);
