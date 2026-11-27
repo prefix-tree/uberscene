@@ -19,5 +19,5 @@ export const layer: LayerElement = {
   interior: true,
   variants: { by: "engine", schemas: { three: threeSchema, motion: motionSchema } },
   capabilities: overlayTraits({ childKinds: ["effect", "keyframe"], freeCode: true }),
-  sample: `<Layer id="sample" start={0} duration={3} box={{ x: 960, y: 540, width: 480, height: 270, origin: "center" }}><div style={{ width: "100%", height: "100%", background: "#0a84ff" }} /></Layer>`,
+  sample: `<Layer id="sample" start={0} duration={3}><div style={{ position: "absolute", left: 720, top: 405, width: 480, height: 270, background: "#0a84ff" }} /></Layer>`,
 };
