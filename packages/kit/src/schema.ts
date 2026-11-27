@@ -43,6 +43,7 @@ export * from "./jsx/key-paths";
 export { knobsOf } from "./jsx/knobs";
 export { isTextMark, type MarkProps, markSchema, moveRuns, type TextRun, themedRuns } from "./jsx/mark";
 export * from "./jsx/read-time";
+export * from "./jsx/ref";
 export * from "./jsx/rendering";
 export {
   BOX_ORIGIN_POINT,

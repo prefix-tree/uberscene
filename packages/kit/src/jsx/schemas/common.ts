@@ -1,10 +1,12 @@
 import { z } from "zod";
 
 import { zBlendMode, zEasing, zEntranceAnimation, zFitMode, zVideoEffectType } from "../enums";
+import { refPattern } from "../ref";
 
-const ID_PATTERN = /^[A-Za-z_][A-Za-z0-9_-]*$/;
-const TIME_REF_PATTERN = /^(word|shot|silence|beat):\d+(\.end)?$|^marker:[A-Za-z_][A-Za-z0-9_-]*$/;
-const ASSET_REF_PATTERN = /^asset:[A-Za-z0-9_.-]+$/;
+// Every pattern here is made from the one reference grammar (`../ref`).
+const ID_PATTERN = refPattern(["element"], []);
+const TIME_REF_PATTERN = refPattern(["moment", "marker"]);
+const ASSET_REF_PATTERN = refPattern(["asset"]);
 
 export const idSchema = z.string().regex(ID_PATTERN, "ids are identifiers: letters, digits, _ and -");
 export const assetRefSchema = z.string().regex(ASSET_REF_PATTERN, 'asset references look like "asset:ID"');
@@ -36,10 +38,7 @@ export const timeRefSchema = z.union([
 /** A word, shot, silence or beat of an element's source, as `at` names it on an anchor or a duration's `until`. */
 const momentSchema = z
   .string()
-  .regex(
-    /^(word|shot|silence|beat):\d+(\.end)?$/,
-    'at looks like "word:12", "word:12.end", "shot:3", "silence:1" or "beat:16"',
-  );
+  .regex(refPattern(["moment"]), 'at looks like "word:12", "word:12.end", "shot:3", "silence:1" or "beat:16"');
 
 const durationSchema = z.union([
   z.number().positive(),
@@ -63,7 +62,7 @@ export const timedProps = {
   anchor: z
     .union([
       z.literal("start"),
-      z.string().regex(/^[A-Za-z_][A-Za-z0-9_-]*(\.end)?$/, 'anchors look like "hook", "hook.end" or "start"'),
+      z.string().regex(refPattern(["element"], ["end"]), 'anchors look like "hook", "hook.end" or "start"'),
     ])
     .optional(),
   /** With `anchor`: a word, shot, silence or beat of the anchor's source (`word:14655`, `beat:16`); the start is where the anchor plays it, plus `offset`. */
