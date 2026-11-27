@@ -1945,6 +1945,8 @@ function placeChildren(
 
 interface CueMemo {
   readonly key: string;
+  /** Characters to a line: from the cue's own props, or from the composition's size. */
+  readonly maxChars: number;
   readonly manifest: AssetManifest;
   readonly props: Record<string, unknown>;
   readonly nodes: readonly CollectedNode[];
@@ -1987,11 +1989,13 @@ function placeCaptions(
     if (!asset?.transcript) continue;
     const key = playsKey(plays);
     const hit = cuesByCaptions.get(node);
+    const maxChars = Number(cp.props.maxChars ?? lineChars(root, cp.props.style));
     let nodes: readonly CollectedNode[];
-    if (hit && hit.key === key && hit.manifest === manifest && hit.props === cp.props) nodes = hit.nodes;
+    if (hit && hit.key === key && hit.manifest === manifest && hit.props === cp.props && hit.maxChars === maxChars)
+      nodes = hit.nodes;
     else {
       const options: CueOptions = {
-        maxChars: Number(cp.props.maxChars ?? lineChars(root, cp.props.style)),
+        maxChars,
         maxDuration: Number(cp.props.maxDuration ?? 5),
         maxGap: Number(cp.props.maxGap ?? 0.8),
         ...(Array.isArray(cp.props.breakAfter)
@@ -1999,7 +2003,7 @@ function placeCaptions(
           : {}),
       };
       nodes = cueNodes(node, planCues(timelineWords(asset, plays), options), (id) => pending.has(id));
-      cuesByCaptions.set(node, { key, manifest, props: cp.props, nodes });
+      cuesByCaptions.set(node, { key, maxChars, manifest, props: cp.props, nodes });
     }
     for (const cue of nodes) {
       pending.set(cue.id, {
