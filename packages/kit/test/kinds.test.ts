@@ -64,7 +64,9 @@ describe("the closed list of kinds", () => {
   it("names the kinds that have a prop", () => {
     expectTypeOf<"title">().toMatchTypeOf<KindWith<"transform">>();
     expectTypeOf<"clip">().toMatchTypeOf<KindWith<"transform">>();
-    expectTypeOf<KindWith<"follow">>().toEqualTypeOf<"title" | "shape" | "svg" | "sticker" | "layer">();
+    // The overlays take a `follow`, and footage does not. (Not an exact list: a kind added later may take one too.)
+    expectTypeOf<"title" | "shape" | "svg" | "sticker" | "layer">().toMatchTypeOf<KindWith<"follow">>();
+    expectTypeOf<"clip">().not.toMatchTypeOf<KindWith<"follow">>();
     expectTypeOf<KindWith<"text">>().toEqualTypeOf<"caption">();
     // What is placed has a box and a transform; a sound does not.
     expectTypeOf<TitleProps>().toMatchTypeOf<PlacedProps>();

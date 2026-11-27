@@ -10,6 +10,8 @@ export interface StickerElement extends KitElement<"sticker", "dom"> {
 
 export const sticker: StickerElement = {
   kind: "sticker",
+  summary: "A ready-made icon or sticker by name.",
+  group: "Text and graphics",
   schema: stickerSchema,
   traits: overlayTraits({ themeStyle: "props", themeMotion: true }),
   sample: `<Sticker id="sample" start={0} duration={3} src="asset:picture" box={{ x: 960, y: 540, origin: "center" }} />`,

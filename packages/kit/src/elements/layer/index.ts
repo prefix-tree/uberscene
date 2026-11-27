@@ -15,6 +15,9 @@ export interface LayerElement extends KitElement<"layer", "dom"> {
 
 export const layer: LayerElement = {
   kind: "layer",
+  summary:
+    "Free code in the frame: any React, CSS, canvas or WebGL, placed on the timeline like any overlay; `useT()` is its time.",
+  group: "Free code",
   schema: layerSchema,
   interior: true,
   variants: { by: "engine", schemas: { three: threeSchema, motion: motionSchema } },

@@ -33,7 +33,7 @@ import { title } from "./title";
 import type { titleSchema } from "./title/schema";
 
 export type { AdjustmentElement } from "./adjustment";
-export type { KitElement } from "./element";
+export type { ElementGroup, KitElement } from "./element";
 export type { LayerElement } from "./layer";
 export type { ShapeElement } from "./shape";
 export type * from "./shared";
@@ -151,17 +151,18 @@ export type KindWith<P extends string> = string extends P
         : never;
     }[Kind];
 
-/**
- * The kinds that have a folder of their own in each package (`elements/<kind>/`). Each package's `elements/index.ts`
- * holds one entry per kind here, so a kind added to this list does not compile until every package has its part. The
- * other kinds are still described by the tables (`jsx/capabilities.ts` and each package's own).
- */
-export type MigratedKind = "title" | "shape" | "svg" | "sticker" | "layer" | "adjustment";
-
-/** The kit's part of each kind that has a folder of its own. */
+/** The kit's part of each kind that has a folder of its own: the one list of them, which the type below is read from. */
 export const KIT_ELEMENTS = { title, shape, svg, sticker, layer, adjustment } satisfies {
-  readonly [K in MigratedKind]: KitElement<K>;
+  readonly [K in Kind]?: KitElement<K>;
 };
+
+/**
+ * The kinds that have a folder of their own in each package (`elements/<kind>/`): the keys of `KIT_ELEMENTS`. Each
+ * package's `elements/index.ts` holds one entry per kind here, so a kind added to the kit's registry does not compile
+ * until every package has its part. The other kinds are still described by the tables (`jsx/capabilities.ts` and each
+ * package's own).
+ */
+export type MigratedKind = keyof typeof KIT_ELEMENTS;
 
 /** The plane a kind is drawn on, as a type: what the player's entry for it must hold. */
 export type PlaneOf<K extends MigratedKind> = (typeof KIT_ELEMENTS)[K]["traits"]["plane"];

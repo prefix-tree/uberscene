@@ -13,6 +13,8 @@ export interface AdjustmentElement extends KitElement<"adjustment", "both"> {
 
 export const adjustment: AdjustmentElement = {
   kind: "adjustment",
+  summary: "Filters everything beneath it, through its `effects`, for its own stretch of time.",
+  group: "Effects and colour",
   schema: adjustmentSchema,
   traits: {
     ...traits({ ...ITEM, visual: true, childKinds: ["effect", "keyframe"], elementActions: true }),

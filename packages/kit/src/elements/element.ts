@@ -6,9 +6,22 @@ import type { z } from "zod";
 import type { DrawPlane, KindTraits } from "../jsx/define";
 import type { Kind, KindProps } from "./index";
 
+/** The headings of the elements page of the reference: what a kind is filed under. */
+export type ElementGroup =
+  | "Timeline"
+  | "Free code"
+  | "Text and graphics"
+  | "Effects and colour"
+  | "Structure"
+  | "Sound";
+
 /** The kit's part of one element kind: its schema, what it writes of itself in the kind table, and a sample of it. */
 export interface KitElement<K extends Kind, P extends DrawPlane = DrawPlane> {
   readonly kind: K;
+  /** What it is, in a sentence: the first line of its reference page, and its card on the elements page. */
+  readonly summary: string;
+  /** The heading it is filed under on the elements page of the reference. */
+  readonly group: ElementGroup;
   /** What its props are checked against. It parses to the kind's props (`KindProps[K]`). */
   readonly schema: z.ZodType<KindProps[K]>;
   /**

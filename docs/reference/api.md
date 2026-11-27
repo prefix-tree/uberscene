@@ -534,7 +534,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/kit/schema`
 
-417 exports.
+418 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -629,6 +629,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `ElementBox` | type |  |
 | `ElementCapabilities` | interface | What an element kind is, for the packages to ask (`capabilitiesOf`). |
 | `ElementDefinition` | interface |  |
+| `ElementGroup` | type | The headings of the elements page of the reference. |
 | `ElementKind` | type | The kinds a file writes as tags. |
 | `Elements` | type | The tags a file writes, by name. |
 | `ELEMENTS` | const |  |
@@ -1151,7 +1152,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `PlacedTransition` | interface | A `transition` whose props parsed. |
 | `Placement` | interface |  |
 | `PlacementFacts` | interface | What a placement holds from the file besides its props, by kind. |
-| `PlacementMap` | interface | Each kind's parsed placement, by kind. |
+| `PlacementMap` | type | Each kind's parsed placement, by kind. |
 | `PlacementSource` | interface | The part of an asset a clip or audio plays. |
 | `PlacementSpec` | type | Where a new element goes. |
 | `planCues` | function | Group timeline words into cues. |
@@ -1340,7 +1341,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `PlacedTransition` | interface | A `transition` whose props parsed. |
 | `Placement` | interface |  |
 | `PlacementFacts` | interface | What a placement holds from the file besides its props, by kind. |
-| `PlacementMap` | interface | Each kind's parsed placement, by kind. |
+| `PlacementMap` | type | Each kind's parsed placement, by kind. |
 | `PlacementSource` | interface | The part of an asset a clip or audio plays. |
 | `planCues` | function | Group timeline words into cues. |
 | `playsKey` | function | A stable key for the plays of one asset, so an unchanged timeline reuses the generated nodes. |

@@ -10,6 +10,8 @@ export interface TitleElement extends KitElement<"title", "dom"> {
 
 export const title: TitleElement = {
   kind: "title",
+  summary: "Text over the picture in the theme's type, with entrances by letter or by word.",
+  group: "Text and graphics",
   schema: titleSchema,
   traits: overlayTraits({ hasText: true, themeStyle: "look", themeMotion: true }),
   sample: `<Title id="sample" start={0} duration={3} box={{ x: 960, y: 540, width: 1200, height: 300, origin: "center" }} style={{ size: 96 }}>A sample title</Title>`,
