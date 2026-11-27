@@ -191,6 +191,68 @@ interface Placed {
   readonly errors: readonly ResolveError[];
   /** The latest tick any of those placements reaches. */
   readonly far: number;
+  /** Where the element ends, when it makes the video at least that long: not for a transition or one of no length. */
+  readonly ends: Time | null;
+  /** What the checks after placing find in those placements: null for nothing, not set until they are run. */
+  found?: Found | null;
+}
+
+/**
+ * What the checks that read placed items find in a run of them: the errors of the texture, key and generator checks,
+ * and the elements that follow another, each in the items' order.
+ */
+interface Found {
+  readonly texture: readonly ResolveError[];
+  readonly keys: readonly ResolveError[];
+  readonly generators: readonly ResolveError[];
+  readonly followers: readonly Placement[];
+}
+
+const NOTHING: readonly never[] = [];
+
+/**
+ * Runs the texture, key and generator checks on a run of placements that are in `items` with everything they are
+ * inside of, and lists the followers among them. Null when none of them is an effect, a key, a generator or a follower.
+ */
+function findIn(
+  first: Placement,
+  rest: readonly Placement[],
+  items: ReadonlyMap<string, Placement>,
+  manifest: AssetManifest,
+): Found | null {
+  let effects: Placement[] | undefined;
+  let keyframes: Placement[] | undefined;
+  let generators: Placement[] | undefined;
+  let followers: Placement[] | undefined;
+  for (let i = -1; i < rest.length; i++) {
+    const item = i < 0 ? first : (rest[i] as Placement);
+    if (item.kind === "effect") (effects ??= []).push(item);
+    else if (item.kind === "keyframe") (keyframes ??= []).push(item);
+    else if (item.kind === "generator") (generators ??= []).push(item);
+    if (FOLLOW_KINDS.has(item.kind) && followOf(item) !== undefined) (followers ??= []).push(item);
+  }
+  if (!effects && !keyframes && !generators && !followers) return null;
+  return {
+    texture: effects ? textureErrors(effects, manifest) : NOTHING,
+    keys: keyframes ? keyframeErrors(keyframes, items) : NOTHING,
+    generators: generators ? generatorErrors(generators, items) : NOTHING,
+    followers: followers ?? NOTHING,
+  };
+}
+
+/** The later of two times: `Time.max` of two, without the list it takes its arguments as. */
+const later = (a: Time, b: Time): Time => (b.isAfter(a) ? b : a);
+
+const childIdsOf = new Cache<CollectedNode, readonly string[]>();
+
+/** The ids of a node's children, in order. Kept by node: every resolve lists them for each track and placement. */
+function childIds(node: CollectedNode): readonly string[] {
+  let ids = childIdsOf.get(node);
+  if (!ids) {
+    ids = node.children.map((c) => c.id);
+    childIdsOf.set(node, ids);
+  }
+  return ids;
 }
 
 /**
@@ -273,6 +335,9 @@ function shifted(old: Pending, ticks: number, by: Time): Pending {
             inside: was.inside.map((inner) => moved(inner, by)),
             errors: was.errors,
             far: was.far + ticks,
+            ends: was.ends ? was.ends.plus(by) : null,
+            // The followers among them are these placements, moved: found again when they are put back.
+            ...(was.found === null ? { found: null } : {}),
           },
         }
       : {};
@@ -486,7 +551,7 @@ function compute(
       kind: node.kind,
       track,
       parent,
-      children: childrenKept ? prev.children : node.children.map((c) => c.id),
+      children: childrenKept ? prev.children : childIds(node),
       range,
       props,
       editable: node.editable,
@@ -536,7 +601,7 @@ function compute(
     for (let i = 0; i < pendings.length; i++) {
       const p = pendings[i] as Pending;
       const at = settledEnd(p);
-      if (at) end = Time.max(end, at);
+      if (at) end = later(end, at);
       far = Math.max(far, (p.start as Time).ticks + (p.duration as Time).ticks, (stood[i] as TrackCursor).cursor.ticks);
     }
     const settled: SettledTrack = {
@@ -680,7 +745,7 @@ function compute(
       ...(typeof p.group === "string" ? { group: p.group } : {}),
       ...(camera !== undefined ? { camera } : {}),
       ...(child.implicit ? { implicit: true as const } : {}),
-      items: child.children.map((c) => c.id),
+      items: childIds(child),
     });
     const kept = settling ? settledByTrack.get(child) : undefined;
     if (
@@ -800,10 +865,10 @@ function compute(
   if (made !== before) listMoving();
 
   let compositionEnd = Time.ZERO;
-  for (const settled of settledTracks) compositionEnd = Time.max(compositionEnd, settled.end);
+  for (const settled of settledTracks) compositionEnd = later(compositionEnd, settled.end);
   for (const p of moving) {
     const at = endOf(p);
-    if (at) compositionEnd = Time.max(compositionEnd, at);
+    if (at) compositionEnd = later(compositionEnd, at);
   }
   for (const p of waiting) {
     if (p.durationDep?.kind === "fill" && p.start !== undefined) {
@@ -858,7 +923,7 @@ function compute(
       kind: "track",
       track: child.id,
       parent,
-      children: child.children.map((c) => c.id),
+      children: childIds(child),
       range: TimeRange.EMPTY,
       props,
       editable: child.editable,
@@ -879,7 +944,7 @@ function compute(
         kind: "camera",
         track: null,
         parent: root.id,
-        children: child.children.map((c) => c.id),
+        children: childIds(child),
         range: TimeRange.EMPTY,
         props,
         editable: child.editable,
@@ -935,6 +1000,22 @@ function compute(
     }
   }
   let duration = Time.ZERO;
+  // What the checks after placing find, gathered as each element is placed: an element's own run of placements says
+  // all the checks read of it, so a settled element is checked once. It holds while every placement is a new id;
+  // when one takes another's place (`fresh` below is then more than `items` has), the checks walk the items instead.
+  const texture: ResolveError[] = [];
+  const keys: ResolveError[] = [];
+  const generators: ResolveError[] = [];
+  const followers: Placement[] = [];
+  const gather = (found: Found | null): void => {
+    if (!found) return;
+    if (found.texture.length > 0) texture.push(...found.texture);
+    if (found.keys.length > 0) keys.push(...found.keys);
+    if (found.generators.length > 0) generators.push(...found.generators);
+    if (found.followers.length > 0) followers.push(...found.followers);
+  };
+  /** How many placements were put in `items`, each expected to be a new id. */
+  let fresh = 0;
   for (const p of pending.values()) {
     const placed = p.settled?.placed;
     if (placed) {
@@ -946,9 +1027,11 @@ function compute(
         shortCuts.plain++;
         return compute(original, manifest, log, previous, true);
       }
+      fresh += 1 + placed.inside.length;
+      if (placed.found === undefined) placed.found = findIn(placed.placement, placed.inside, items, manifest);
+      gather(placed.found);
       if (placed.errors.length > 0) errors.push(...placed.errors);
-      if (p.node.kind !== "transition" && !placed.placement.range.isEmpty())
-        duration = Time.max(duration, placed.placement.range.end);
+      if (placed.ends) duration = later(duration, placed.ends);
       continue;
     }
     const start = p.start ?? Time.ZERO;
@@ -970,22 +1053,29 @@ function compute(
     const size = items.size;
     items.set(p.node.id, placement);
     if (p.errors.length > 0) errors.push(...p.errors);
-    if (p.node.kind !== "transition" && !placement.range.isEmpty()) duration = Time.max(duration, placement.range.end);
-    const inside: Placement[] | undefined = p.settled ? [] : undefined;
+    if (p.node.kind !== "transition" && !placement.range.isEmpty()) duration = later(duration, placement.range.end);
+    const inside: Placement[] = p.node.children.length > 0 ? [] : (NOTHING as unknown as Placement[]);
     duration = placeChildren(p.node, placement, items, errors, place, duration, theme, inside);
+    fresh += 1 + inside.length;
+    const found = findIn(placement, inside, items, manifest);
+    gather(found);
     // Kept only when every placement was a new id: one that was not is placed the plain way each time.
-    if (p.settled && inside && items.size === size + 1 + inside.length) {
+    if (p.settled && items.size === size + 1 + inside.length) {
       let far = placement.range.end.ticks;
       for (const inner of inside) far = Math.max(far, inner.range.end.ticks);
-      p.settled.placed = { placement, inside, errors: errors.slice(said), far };
+      const ends = p.node.kind !== "transition" && !placement.range.isEmpty() ? placement.range.end : null;
+      p.settled.placed = { placement, inside, errors: errors.slice(said), far, ends, found };
     }
   }
+  /** The placements put in `items` after the elements': the tracks, the camera and its keys, the markers, the root. */
+  const after: Placement[] = [];
 
   for (const s of structural) {
-    items.set(
-      s.id,
-      reuse(s.kind === "track" || s.kind === "camera" ? { ...s, range: rangeOf(s.range.start, duration) } : s),
+    const item = reuse(
+      s.kind === "track" || s.kind === "camera" ? { ...s, range: rangeOf(s.range.start, duration) } : s,
     );
+    items.set(s.id, item);
+    after.push(item);
     errors.push(...s.errors);
   }
   // A camera's push becomes ordinary camera keys, made once everything it names has a start: the player, the export
@@ -1038,44 +1128,56 @@ function compute(
           lockedProps: [],
           boundProps: {},
         };
-        items.set(id, place(node, null, camera.id, T(key.at), Time.ZERO, props, [], undefined, undefined));
+        const item = place(node, null, camera.id, T(key.at), Time.ZERO, props, [], undefined, undefined);
+        items.set(id, item);
+        after.push(item);
         ids.push(id);
       }
-      if (ids.length > 0) items.set(camera.id, reuse({ ...pushed, children: [...pushed.children, ...ids] }));
+      if (ids.length > 0) {
+        // The camera, set again with its keys: the same id on purpose, in the place it has.
+        const withKeys = reuse({ ...pushed, children: [...pushed.children, ...ids] });
+        items.set(camera.id, withKeys);
+        after[after.indexOf(pushed)] = withKeys;
+      }
     }
   }
-  items.set(
-    root.id,
-    reuse({
-      id: root.id,
-      kind: "composition",
-      track: null,
-      parent: null,
-      children: root.children.map((c) => c.id),
-      range: rangeOf(Time.ZERO, duration),
-      props: compParsed,
-      editable: root.editable,
-      lockedProps: root.lockedProps,
-      boundProps: root.boundProps,
-      errors: [],
-      ...themedField(compParsed),
-    }),
-  );
-  // One walk of the items sorts out the few each check reads; each check then says its errors in the items' order.
-  const effects: Placement[] = [];
-  const keyframes: Placement[] = [];
-  const generators: Placement[] = [];
-  const followers: Placement[] = [];
-  for (const item of items.values()) {
-    if (item.kind === "effect") effects.push(item);
-    else if (item.kind === "keyframe") keyframes.push(item);
-    else if (item.kind === "generator") generators.push(item);
-    if (FOLLOW_KINDS.has(item.kind) && followOf(item) !== undefined) followers.push(item);
+  const composition = reuse({
+    id: root.id,
+    kind: "composition",
+    track: null,
+    parent: null,
+    children: childIds(root),
+    range: rangeOf(Time.ZERO, duration),
+    props: compParsed,
+    editable: root.editable,
+    lockedProps: root.lockedProps,
+    boundProps: root.boundProps,
+    errors: [],
+    ...themedField(compParsed),
+  });
+  items.set(root.id, composition);
+  after.push(composition);
+  if (items.size === fresh + after.length && !cachesOff()) {
+    // Every placement was a new id, so the items are in the order they were placed, as each was when it was read.
+    gather(findIn(after[0] as Placement, after.slice(1), items, manifest));
+    errors.push(...texture, ...keys, ...generators, ...followErrors(followers, items, tracks));
+  } else {
+    // One walk of the items sorts out the few each check reads; each check then says its errors in the items' order.
+    const effects: Placement[] = [];
+    const keyframes: Placement[] = [];
+    const made: Placement[] = [];
+    const following: Placement[] = [];
+    for (const item of items.values()) {
+      if (item.kind === "effect") effects.push(item);
+      else if (item.kind === "keyframe") keyframes.push(item);
+      else if (item.kind === "generator") made.push(item);
+      if (FOLLOW_KINDS.has(item.kind) && followOf(item) !== undefined) following.push(item);
+    }
+    errors.push(...textureErrors(effects, manifest));
+    errors.push(...keyframeErrors(keyframes, items));
+    errors.push(...generatorErrors(made, items));
+    errors.push(...followErrors(following, items, tracks));
   }
-  errors.push(...textureErrors(effects, manifest));
-  errors.push(...keyframeErrors(keyframes, items));
-  errors.push(...generatorErrors(generators, items));
-  errors.push(...followErrors(followers, items, tracks));
   const rate = rateOf(compParsed.fps, root.id, errors);
   // A time the file says past the limit is held at it (`T`, `plusClamped`), so a video that reaches it is too long.
   if (duration.toSeconds() > MAX_SECONDS)
