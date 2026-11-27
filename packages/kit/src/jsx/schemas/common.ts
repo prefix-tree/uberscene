@@ -155,12 +155,48 @@ const generatorSchema = <S extends z.ZodType>(value: S): z.ZodType<GeneratorOf<z
   ]) as unknown as z.ZodType<GeneratorOf<z.output<S>>, GeneratorOf<z.input<S>>>;
 
 /**
- * A value written as a constant, as a list of keys when it changes over time, or as a generator when it is computed
- * (`{ type: "wiggle", amount: 2 }`). The resolver takes keys and generators out before it parses the props
- * (`expandKeys` in the SDK), so a parsed prop holds the constant, or nothing.
+ * A value read from another element's: `{ link: "logo.transform.rotation" }` is that value at the same moment of the
+ * video, whatever it is written as there (a number, keys, a generator, a link of its own).
+ */
+export interface Link {
+  /** The value to read: an element's id, then the path of one of its numbers that can change over time. */
+  link: string;
+  /** What the value read is multiplied by. Left out, 1. */
+  scale?: number | undefined;
+  /** What is added after `scale`, in this value's own units. Left out, 0. */
+  offset?: number | undefined;
+  /** How many seconds behind it runs: the value the other one had this long ago. Left out, 0. */
+  delay?: number | undefined;
+}
+
+// Named, as a generator is, so a declaration file writes `Link` on each animatable prop.
+const linkSchema: z.ZodType<Link> = z.strictObject({
+  link: z
+    .string()
+    .regex(refPattern(["prop"]), 'a link names an element and one of its values, as "logo.transform.rotation"'),
+  scale: z.number().optional(),
+  offset: z.number().optional(),
+  delay: z.number().nonnegative().optional(),
+});
+
+/** Whether a value written in a prop is a link: an object with a `link`. */
+export function isLink(value: unknown): value is Link {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    typeof (value as { link?: unknown }).link === "string"
+  );
+}
+
+/**
+ * A value written as a constant, as a list of keys when it changes over time, as a generator when it is computed
+ * (`{ type: "wiggle", amount: 2 }`), or as a link to another element's value (`{ link: "logo.transform.rotation" }`).
+ * The resolver takes keys, generators and links out before it parses the props (`expandKeys` in the SDK), so a parsed
+ * prop holds the constant, or nothing.
  */
 export const animatable = <S extends z.ZodType>(value: S) =>
-  z.union([value, keysSchema(value), generatorSchema(value)]).transform((v) => v as z.output<S>);
+  z.union([value, keysSchema(value), generatorSchema(value), linkSchema]).transform((v) => v as z.output<S>);
 
 /** Which point of an element's box `box.x` and `box.y` place: a corner, the middle of an edge, or the centre. */
 export const BOX_ORIGINS = [

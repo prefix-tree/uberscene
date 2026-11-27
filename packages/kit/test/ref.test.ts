@@ -59,6 +59,14 @@ describe("the reference grammar", () => {
       id: "logo",
       path: "transform.rotation",
     });
+    // A step into a list: the first effect's radius.
+    expect(parseRef("logo.effects.0.radius", ["prop"])).toEqual({
+      type: "prop",
+      id: "logo",
+      path: "effects.0.radius",
+    });
+    expect(refPattern(["prop"]).test("logo.effects.0.radius")).toBe(true);
+    expect(refPattern(["prop"]).test("0.effects")).toBe(false);
   });
 
   it("reads only the forms asked for", () => {

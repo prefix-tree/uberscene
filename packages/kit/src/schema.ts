@@ -51,7 +51,9 @@ export {
   type BoxOrigin,
   type ElementBox,
   type GeneratorOf,
+  isLink,
   type KeyOf,
+  type Link,
   type Transform,
 } from "./jsx/schemas/common";
 export { defaultTransitionParams, isBuiltInTransition, TRANSITION_PARAMS } from "./jsx/schemas/transition";

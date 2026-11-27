@@ -43,6 +43,8 @@ export interface InvalidRef {
 
 const ID = "[A-Za-z_][A-Za-z0-9_-]*";
 const ASSET_ID = "[A-Za-z0-9_.-]+";
+/** One step of a path into an element's props: a name, or a place in a list (`effects.0.radius`). */
+const STEP = `(?:${ID}|\\d+)`;
 const MOMENT = "(word|shot|silence|beat):(\\d+)(\\.end)?";
 const ALL_EDGES: readonly RefPoint[] = ["start", "mid", "end"];
 
@@ -66,7 +68,7 @@ function source(form: RefForm, accept: readonly RefForm[], edges: readonly RefPo
     case "tracked":
       return `tracked:${ID}\\.${ID}`;
     case "prop":
-      return `${ID}(?:\\.${ID})+`;
+      return `${ID}(?:\\.${STEP})+`;
   }
 }
 
@@ -85,7 +87,7 @@ const ROLE_RE = new RegExp(`^role:(${ID})$`);
 const ASSET_RE = new RegExp(`^asset:(${ASSET_ID})$`);
 const TRACKED_RE = new RegExp(`^tracked:(${ID})\\.(${ID})$`);
 const ELEMENT_RE = new RegExp(`^(${ID})(?:\\.(start|mid|end))?$`);
-const PROP_RE = new RegExp(`^(${ID})\\.(${ID}(?:\\.${ID})*)$`);
+const PROP_RE = new RegExp(`^(${ID})\\.(${STEP}(?:\\.${STEP})*)$`);
 
 /**
  * Reads a reference as one of the forms in `accept`. Where two forms could read the same text, the earlier ones here

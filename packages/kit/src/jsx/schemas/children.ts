@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { zEasing, zKeyframeProperty, zVideoEffectType } from "../enums";
 import { GENERATOR_TYPES } from "../generators";
+import { refPattern } from "../ref";
 import { idSchema, paramValue, vec2Schema } from "./common";
 import { zMaskType } from "./enums-local";
 
@@ -35,7 +36,17 @@ export const generatorItemSchema = z
   .strictObject({
     property: zKeyframeProperty.optional(),
     param: z.string().optional(),
-    type: z.enum(GENERATOR_TYPES),
+    // `link`: a value read from another element's, which the resolver replaces with that value's keys and generator.
+    type: z.enum([...GENERATOR_TYPES, "link"]),
+    link: z
+      .string()
+      .regex(refPattern(["prop"]), 'a link names an element and one of its values, as "logo.transform.rotation"')
+      .optional(),
+    scale: z.number().optional(),
+    offset: z.number().optional(),
+    delay: z.number().nonnegative().optional(),
+    /** Seconds added to the element's time before a wiggle or a drift is read: where a linked one stands in its own. */
+    shift: z.number().optional(),
     amount: z.number().optional(),
     frequency: z.number().positive().max(60).default(1),
     seed: z.number().int().optional(),

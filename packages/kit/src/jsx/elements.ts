@@ -14,6 +14,7 @@ import {
   maskSchema,
   speedKeySchema,
 } from "./schemas/children";
+import type { Link } from "./schemas/common";
 import { cameraSchema, compositionSchema, gapSchema, markerSchema, trackSchema } from "./schemas/composition";
 import { audioSchema, clipSchema } from "./schemas/media";
 import { angleSchema, cutSchema, multicamSchema } from "./schemas/multicam";
@@ -146,8 +147,8 @@ export type Generated =
   | { readonly type: "drift"; readonly base?: number | readonly Key<number>[]; readonly speed: number }
   | { readonly type: "loop"; readonly keys: readonly Key<number>[]; readonly mode?: "repeat" | "pingpong" };
 
-/** A value written as a constant, as keys over time, or, for a number, as a generator. */
-export type Animatable<V> = V | readonly Key<V>[] | (V extends number ? Generated : never);
+/** A value written as a constant, as keys over time, or, for a number, as a generator or a link to another value. */
+export type Animatable<V> = V | readonly Key<V>[] | (V extends number ? Generated | Readonly<Link> : never);
 
 /** One entry of an element's `effects`: its type, then each of that type's params, a constant or keys. */
 export type EffectSpec<T> = { readonly type: T; readonly enabled?: boolean } & (string extends keyof EffectParamsOf<T>
