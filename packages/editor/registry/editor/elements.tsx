@@ -39,6 +39,10 @@ export const EDITOR_ELEMENTS: { readonly [K in MigratedKind]: EditorElement<K> }
     },
   },
   shape: { kind: "shape", icon: Shapes },
+  svg: { kind: "svg", icon: Shapes },
+  sticker: { kind: "sticker", icon: Shapes },
+  layer: { kind: "layer", icon: Layers },
+  adjustment: { kind: "adjustment", icon: Shapes },
 };
 
 /** The icons of the kinds that have no entry above yet. */
@@ -47,9 +51,7 @@ const OTHER_ICONS: Partial<Record<Kind, LucideIcon>> = {
   audio: Music,
   captions: Captions,
   caption: Captions,
-  svg: Shapes,
   transition: Sparkles,
-  layer: Layers,
 };
 
 /** The text panels of the kinds that have no entry above yet. */
