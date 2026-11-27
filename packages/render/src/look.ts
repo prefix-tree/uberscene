@@ -3,7 +3,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
-import { frameStartSeconds, framesUntil, nearestFrame, round3 } from "@uberscene/kit/schema";
+import { capabilitiesOf, frameStartSeconds, framesUntil, nearestFrame, round3 } from "@uberscene/kit/schema";
 import type { MediaResolver } from "@uberscene/player/engine";
 import {
   aroundMoments,
@@ -35,9 +35,6 @@ export const MAX_LOOK_CELLS = 64;
 /** The space between cells and around the sheet, in pixels, and the colour of it (the tiles' own ground). */
 const SHEET_GAP = 8;
 const SHEET_GROUND = [0x16, 0x16, 0x1d] as const;
-
-/** Overlays drawn as DOM, which a sheet can leave out by hiding them. */
-const DOM_OVERLAYS = new Set(["title", "shape", "svg", "sticker", "layer", "captions"]);
 
 export interface LookOptions {
   readonly state: ResolvedState;
@@ -153,7 +150,8 @@ function leaveOut(state: ResolvedState, id: string): { effects: string[] } | { o
     if (effects.length === 0) throw new Error(`--without ${id}: the adjustment has no effects to leave out`);
     return { effects };
   }
-  if (DOM_OVERLAYS.has(p.kind)) return { overlay: id };
+  // Drawn as DOM alone, which a sheet can leave out by hiding it.
+  if (capabilitiesOf(p.kind).plane === "dom") return { overlay: id };
   throw new Error(
     `--without ${id}: a ${p.kind} cannot be left out without moving the cut; name an effect, an adjustment or an overlay (a title, a shape, an SVG, a sticker, a layer, the captions)`,
   );

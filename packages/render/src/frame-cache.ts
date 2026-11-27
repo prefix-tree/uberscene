@@ -6,7 +6,7 @@ import { createHash } from "node:crypto";
 import { mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { frameStartSeconds, motionBlurOf, shutterTimes } from "@uberscene/kit/schema";
+import { capabilitiesOf, frameStartSeconds, motionBlurOf, shutterTimes } from "@uberscene/kit/schema";
 import type { MediaResolver } from "@uberscene/player/engine";
 import { followOf, lookupAsset, type Placement, type ResolvedState } from "@uberscene/sdk";
 
@@ -25,10 +25,6 @@ const VERSION = (() => {
   }
 })();
 
-/** Elements whose picture is free code or another composition: anything in the file may decide it. */
-const FREE = new Set(["layer", "nested", "multicam"]);
-/** Elements that last as long as the video does: their own range says nothing about a frame. */
-const WHOLE = new Set(["composition", "track", "captions"]);
 /** Elements that draw nothing. */
 const SILENT = new Set(["audio", "marker"]);
 
@@ -199,7 +195,7 @@ export class FrameKeys {
     const tree = state.tree;
     const drawn = times.map((t) =>
       drawnAt(state, t).map((p) => {
-        if (FREE.has(p.kind)) flags.free = true;
+        if (capabilitiesOf(p.kind).freeCode) flags.free = true;
         return stable(
           {
             id: p.id,
@@ -207,7 +203,7 @@ export class FrameKeys {
             track: p.track,
             parent: p.parent,
             // The composition, a track and the captions run the video's whole length, which is not theirs to say.
-            ...(WHOLE.has(p.kind) ? {} : { start: p.start, end: p.end }),
+            ...(capabilitiesOf(p.kind).spansVideo ? {} : { start: p.start, end: p.end }),
             source: p.source,
             between: p.between,
             interior: p.interior,

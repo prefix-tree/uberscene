@@ -21,6 +21,7 @@ import { createRoot } from "react-dom/client";
 
 import { installFreeCodeLibraries } from "@uberscene/graphics/libraries";
 import {
+  capabilitiesOf,
   frameAtSeconds,
   frameStartSeconds,
   layerFramesPending,
@@ -223,8 +224,8 @@ async function start(): Promise<void> {
     }
   };
 
-  /** Kinds the layout check measures: overlays drawn as DOM, and the captions. */
-  const MEASURED = new Set(["title", "shape", "svg", "sticker", "layer", "captions"]);
+  /** What the layout check measures: the overlays drawn as DOM, and the captions. */
+  const measured = (kind: string): boolean => capabilitiesOf(kind).plane === "dom";
   const backdrop = backdropTracks(state);
 
   let out: Uint8Array = new Uint8Array();
@@ -351,7 +352,7 @@ async function start(): Promise<void> {
       await capture(t);
       // Each overlay alone: everything else hidden, the frame drawn, its pixels scanned for ink.
       const cells = [...root.querySelectorAll<HTMLElement>("[data-el][data-kind]")].filter(
-        (el) => MEASURED.has(el.dataset.kind ?? "") && !el.parentElement?.closest("[data-el]"),
+        (el) => measured(el.dataset.kind ?? "") && !el.parentElement?.closest("[data-el]"),
       );
       /** The ink of one element, with the rest of the page hidden. */
       const measure = async (el: HTMLElement | SVGElement) => {
