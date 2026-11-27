@@ -1,4 +1,4 @@
-import type { Kind } from "../elements";
+import { type Kind, kitElement } from "../elements";
 import { capabilitiesOf } from "../jsx/capabilities";
 import { DEFAULT_THEME, MOTIONS, type MotionStyle, type Presets, THEMES } from "./builtins";
 import { lookOnlyPresets } from "./look-presets";
@@ -128,7 +128,7 @@ export function applyTheme(kind: Kind, raw: Readonly<Record<string, unknown>>, t
   if (look && typeof out.style === "string") out.style = own;
 
   const motion = theme.declared ? theme.motion : null;
-  if (motion && capabilitiesOf(kind).themeMotion && !(kind === "title" && out.animation !== undefined)) {
+  if (motion && capabilitiesOf(kind).themeMotion && (kitElement(kind)?.themeMotion?.(out) ?? true)) {
     if (out.enter === undefined && motion.enter) {
       out.enter = motion.enter;
       from.enter = "motion";

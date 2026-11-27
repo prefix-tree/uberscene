@@ -16,7 +16,7 @@ export function titleWords(text: string): string[] {
  */
 export function readTimeNeeded(
   words: number,
-  animation?: { readonly type: string; readonly in?: number; readonly stagger?: number },
+  animation?: { readonly type: string; readonly in?: number | undefined; readonly stagger?: number | undefined },
 ): number {
   const read = READ_TIME.base + READ_TIME.perWord * words;
   const shownIn = animation?.in ?? 0.5;

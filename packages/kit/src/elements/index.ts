@@ -21,15 +21,21 @@ import type {
   layerSchema,
   motionSchema,
   nestedSchema,
-  shapeSchema,
   stickerSchema,
   svgSchema,
   threeSchema,
-  titleSchema,
 } from "../jsx/schemas/overlays";
 import type { transitionSchema } from "../jsx/schemas/transition";
+import type { KitElement } from "./element";
+import { shape } from "./shape";
+import type { shapeSchema } from "./shape/schema";
+import { title } from "./title";
+import type { titleSchema } from "./title/schema";
 
+export type { KitElement } from "./element";
+export type { ShapeElement } from "./shape";
 export type * from "./shared";
+export type { TitleElement } from "./title";
 
 /** The props of a `<Composition>`, as its schema parses them. */
 export interface CompositionProps extends z.output<typeof compositionSchema> {}
@@ -140,3 +146,26 @@ export type KindWith<P extends string> = string extends P
           : never
         : never;
     }[Kind];
+
+/**
+ * The kinds that have a folder of their own in each package (`elements/<kind>/`). Each package's `elements/index.ts`
+ * holds one entry per kind here, so a kind added to this list does not compile until every package has its part. The
+ * other kinds are still described by the tables (`jsx/capabilities.ts` and each package's own).
+ */
+export type MigratedKind = "title" | "shape";
+
+/** The kit's part of each kind that has a folder of its own. */
+export const KIT_ELEMENTS = { title, shape } satisfies { readonly [K in MigratedKind]: KitElement<K> };
+
+/** The plane a kind is drawn on, as a type: what the player's entry for it must hold. */
+export type PlaneOf<K extends MigratedKind> = (typeof KIT_ELEMENTS)[K]["capabilities"]["plane"];
+
+/** Whether `kind` has a folder of its own in each package. */
+export function isMigratedKind(kind: string): kind is MigratedKind {
+  return Object.hasOwn(KIT_ELEMENTS, kind);
+}
+
+/** The kit's part of `kind`, or undefined for a kind that has no folder of its own yet. */
+export function kitElement(kind: Kind): KitElement<Kind> | undefined {
+  return isMigratedKind(kind) ? KIT_ELEMENTS[kind] : undefined;
+}

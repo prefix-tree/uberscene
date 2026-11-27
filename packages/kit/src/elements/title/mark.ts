@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 import { z } from "zod";
 
-import { type ResolvedTheme, themeToken } from "../theme/theme";
-import { colorSchema, fontWeightSchema } from "./schemas/common";
+import { colorSchema, fontWeightSchema } from "../../jsx/schemas/common";
+import { type ResolvedTheme, themeToken } from "../../theme/theme";
 
 /**
  * How a marked stretch of a title's text differs from the rest: its colour (a colour or a theme token, `"$accent"`),

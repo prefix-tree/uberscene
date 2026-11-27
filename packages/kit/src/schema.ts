@@ -29,7 +29,11 @@ export {
   type TransitionParams,
 } from "./effects/registry";
 export { type ColourFunction, fusedColourSource } from "./effects/shapes";
-export type * from "./elements";
+export * from "./elements";
+export { SHAPE_SIZE, shapeSize } from "./elements/shape/size";
+export { isTextMark, type MarkProps, markSchema, moveRuns, type TextRun, themedRuns } from "./elements/title/mark";
+export * from "./elements/title/read-time";
+export { TITLE_LOOK_KEYS } from "./elements/title/schema";
 export { BLOCK_ASPECTS } from "./jsx/block-meta";
 export { type Box, type DrawRect, fitRect, type Placed, placeAxis, placeBox } from "./jsx/box";
 export * from "./jsx/capabilities";
@@ -42,8 +46,6 @@ export * from "./jsx/enums";
 export * from "./jsx/generators";
 export * from "./jsx/key-paths";
 export { knobsOf } from "./jsx/knobs";
-export { isTextMark, type MarkProps, markSchema, moveRuns, type TextRun, themedRuns } from "./jsx/mark";
-export * from "./jsx/read-time";
 export * from "./jsx/ref";
 export * from "./jsx/rendering";
 export {

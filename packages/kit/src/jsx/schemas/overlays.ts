@@ -1,156 +1,22 @@
 import { z } from "zod";
 
-import { zBlendMode, zShapeType, zTextAnimationType } from "../enums";
+import { zBlendMode } from "../enums";
 import {
   adjustmentEffectsProp,
-  animatable,
   assetRefSchema,
   colorSchema,
   entranceProps,
   fitProp,
-  fontWeightSchema,
-  gradientSchema,
   groundProp,
   idSchema,
-  keyed,
   overlayProps,
   placedProps,
-  shadowSchema,
-  textShadowSchema,
-  themedLengthSchema,
   timedProps,
   timeRefSchema,
-  vec2Schema,
   visualProps,
   volumeSchema,
 } from "./common";
-import { zSvgColorType, zTextAlign, zTextDecoration, zTextValign } from "./enums-local";
-
-const textAnimationSchema = z.strictObject({
-  /** Which animation: `typewriter`, `fade`, a slide, `scale` or `wordByWord`. */
-  type: zTextAnimationType,
-  in: z.number().nonnegative().default(0.5),
-  out: z.number().nonnegative().default(0.5),
-  stagger: z.number().nonnegative().optional(),
-});
-
-/** How a title's letters look. Every field has a default, so `{}` is plain white Inter at 48 pixels. */
-const titleLookSchema = z.strictObject({
-  /** A theme title preset this look starts from; the fields written beside it win. */
-  preset: idSchema.optional(),
-  /** The font family: a bundled one, one the file declares, or one from the font catalogue. A theme preset may set it instead. */
-  font: z.string().default("Inter"),
-  /** The letters' size, in pixels. */
-  size: z.number().min(1).max(1000).default(48),
-  /** How heavy the letters are: 100 to 900, or `normal` and `bold`. */
-  weight: fontWeightSchema.default("bold"),
-  /** Slanted letters. */
-  italic: z.boolean().default(false),
-  /** The letters' colour, or a theme token such as `$text`. */
-  color: colorSchema.default("#ffffff"),
-  /** A colour filling the text box behind the letters. */
-  background: colorSchema.optional(),
-  /** An outline around the letters: its colour and thickness in pixels. */
-  stroke: z.strictObject({ color: colorSchema, thickness: z.number().min(0).max(100) }).optional(),
-  /** A drop shadow under the letters: colour, blur and offset in pixels. */
-  shadow: textShadowSchema.optional(),
-  /** Which side of the text box the lines sit against. */
-  align: zTextAlign.default("center"),
-  /** Where in the text box's height the text sits. */
-  valign: zTextValign.default("middle"),
-  /** The distance between lines, as a multiple of the letters' size. */
-  lineHeight: z.number().min(0.1).max(10).default(1.2),
-  /** Extra space between letters, in pixels. */
-  letterSpacing: z.number().min(-100).max(100).default(0),
-  /** A line under, over or through the letters. */
-  decoration: zTextDecoration.optional(),
-});
-
-/** The fields a theme's title preset may hold: the look, without `preset` (a preset does not start from another). */
-export const TITLE_LOOK_KEYS: readonly string[] = Object.keys(titleLookSchema.shape).filter((k) => k !== "preset");
-
-export const titleSchema = z.strictObject({
-  ...timedProps,
-  ...overlayProps,
-  ...entranceProps,
-  /**
-   * How the letters look: a theme title preset by name (`"h1"`), or an object of `font`, `size`, `weight`, `italic`,
-   * `color`, `background`, `stroke`, `shadow`, `align`, `valign`, `lineHeight`, `letterSpacing` and `decoration`, with
-   * `preset` naming the preset it starts from. Without a preset, the theme's `default` title preset applies. The text
-   * box is the title's `box`: its `width` and `height`, the whole frame when left out, so background, align and valign
-   * work inside it.
-   */
-  style: z
-    .union([
-      idSchema.transform((preset): { preset?: string | undefined } => ({ preset })).pipe(titleLookSchema),
-      titleLookSchema,
-    ])
-    .prefault({}),
-  /** An entrance and exit: its type, its seconds in and out, and for wordByWord the delay between words. */
-  animation: textAnimationSchema.optional(),
-});
-
-const fillSchema = z.union([
-  keyed(colorSchema),
-  z.strictObject({
-    type: z.enum(["solid", "gradient", "none"]),
-    color: colorSchema.optional(),
-    gradient: gradientSchema.optional(),
-    opacity: z.number().min(0).max(1).optional(),
-  }),
-]);
-
-const strokeSchema = z.strictObject({
-  /** The outline's colour, or keys to change it (moved in OKLab). */
-  color: keyed(colorSchema),
-  /** The outline's thickness in pixels, or keys or a generator. */
-  thickness: animatable(z.number().nonnegative()),
-  opacity: z.number().min(0).max(1).optional(),
-  dashArray: z.array(z.number().nonnegative()).optional(),
-  /** How far along the dashes start, in pixels, or keys: from the dash length to 0 draws a line on. */
-  dashOffset: animatable(z.number()).optional(),
-  lineCap: z.enum(["butt", "round", "square"]).optional(),
-  lineJoin: z.enum(["miter", "round", "bevel"]).optional(),
-  gradient: gradientSchema.optional(),
-});
-
-export const shapeSchema = z.strictObject({
-  ...timedProps,
-  ...overlayProps,
-  ...groundProp,
-  ...entranceProps,
-  /** A theme preset for shapes. */
-  style: idSchema.optional(),
-  /** Which shape it draws. */
-  type: zShapeType,
-  /** The shape's box width, in pixels, or keys or a generator; left out, 200. */
-  width: animatable(z.number().positive()).optional(),
-  /** The shape's box height, in pixels, or keys or a generator; left out, 200. */
-  height: animatable(z.number().positive()).optional(),
-  /**
-   * A polygon's or path's corners, as fractions of the box from its top left, or keys of such lists: two keys with
-   * as many points move point by point (a morph); otherwise the shape changes at the key.
-   */
-  points: keyed(z.array(vec2Schema)).optional(),
-  /** A colour, or keys of colours (moved in OKLab), or `{ type, color, gradient, opacity }` for a gradient or no fill. */
-  fill: fillSchema.optional(),
-  /** The outline: colour, thickness in pixels, opacity, dashes, caps and joins. */
-  stroke: strokeSchema.optional(),
-  /** A drop shadow: colour, blur and offset in pixels. */
-  shadow: shadowSchema.optional(),
-  /** Several shadows, drawn in order, for layered or inner shadows. */
-  shadows: z.array(shadowSchema).optional(),
-  /** A rectangle's rounded corners, in pixels or a theme token such as `$radius`. */
-  cornerRadius: themedLengthSchema.optional(),
-  /** A rectangle's corners rounded one by one, in pixels. */
-  cornerRadii: z
-    .strictObject({ topLeft: z.number(), topRight: z.number(), bottomRight: z.number(), bottomLeft: z.number() })
-    .optional(),
-  /** How many points a star has; left out, 5. */
-  starPoints: z.number().int().min(3).optional(),
-  /** A star's inner corners, as a fraction of its outer radius; left out, 0.5. */
-  innerRadius: z.number().min(0).max(1).optional(),
-});
+import { zSvgColorType } from "./enums-local";
 
 export const svgSchema = z
   .strictObject({

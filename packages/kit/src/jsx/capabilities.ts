@@ -1,79 +1,30 @@
-import type { Kind } from "../elements";
+import { KIT_ELEMENTS, type Kind } from "../elements";
+import { ITEM, NO_TRAITS, OVERLAY, traits } from "../elements/traits";
 import type { ElementCapabilities } from "./define";
-import {
-  AUDIO_KEY_PATHS,
-  BOX_KEY_PATHS,
-  CAMERA_KEY_PATHS,
-  type KeyPath,
-  SHAPE_KEY_PATHS,
-  TRANSFORM_KEY_PATHS,
-  VOLUME_KEY_PATHS,
-} from "./key-paths";
-
-const none: ElementCapabilities = {
-  timed: false,
-  visual: false,
-  audio: false,
-  trimSource: false,
-  transformable: false,
-  container: false,
-  childKinds: [],
-  placementScope: "none",
-  plane: "none",
-  footage: false,
-  sequenceRole: "none",
-  mainTrack: false,
-  hasText: false,
-  freeCode: false,
-  spansVideo: false,
-  masked: false,
-  themeStyle: "none",
-  themeMotion: false,
-  elementActions: false,
-  playsAsset: false,
-  keyPaths: [],
-};
-
-/** What moves anything with a `transform` and a `box`. */
-const PLACED_KEY_PATHS: readonly KeyPath[] = [...TRANSFORM_KEY_PATHS, ...BOX_KEY_PATHS];
-
-/** What everything placed on a track for a stretch of time has. */
-const item = { timed: true, sequenceRole: "item", placementScope: "track" } as const;
-/** An overlay: drawn on the DOM plane over the canvas, with a transform. */
-const overlay = {
-  ...item,
-  visual: true,
-  transformable: true,
-  container: true,
-  childKinds: ["effect", "keyframe", "mask"],
-  plane: "dom",
-  elementActions: true,
-  keyPaths: PLACED_KEY_PATHS,
-} as const;
-
-const with_ = (over: Partial<ElementCapabilities>): ElementCapabilities => ({ ...none, ...over });
+import { AUDIO_KEY_PATHS, CAMERA_KEY_PATHS, type KeyPath, PLACED_KEY_PATHS, VOLUME_KEY_PATHS } from "./key-paths";
 
 const CLIP_CHILDREN = ["effect", "keyframe", "mask", "speedKey", "freeze"] as const;
 
 /**
  * What each element kind is: the one table the packages ask, in place of lists of kinds of their own. A new question
  * about a kind is a field here (`ElementCapabilities`), and a list of kinds is `kindsWhere` over it. `visual` and
- * `audio` are what the kind can have; whether one clip has a picture or sound is its asset's to say.
+ * `audio` are what the kind can have; whether one clip has a picture or sound is its asset's to say. A kind with a
+ * folder of its own (`elements/<kind>/`) says its row there.
  */
 export const KIND_CAPABILITIES: Readonly<Record<Kind, ElementCapabilities>> = {
-  composition: with_({
+  composition: traits({
     container: true,
     childKinds: ["track", "camera", "marker", "captions"],
     placementScope: "none",
     spansVideo: true,
   }),
-  camera: with_({
+  camera: traits({
     container: true,
     childKinds: ["track"],
     placementScope: "composition",
     keyPaths: CAMERA_KEY_PATHS,
   }),
-  track: with_({
+  track: traits({
     container: true,
     placementScope: "composition",
     spansVideo: true,
@@ -92,8 +43,8 @@ export const KIND_CAPABILITIES: Readonly<Record<Kind, ElementCapabilities>> = {
       "multicam",
     ],
   }),
-  clip: with_({
-    ...item,
+  clip: traits({
+    ...ITEM,
     visual: true,
     audio: true,
     trimSource: true,
@@ -107,8 +58,8 @@ export const KIND_CAPABILITIES: Readonly<Record<Kind, ElementCapabilities>> = {
     playsAsset: true,
     keyPaths: [...PLACED_KEY_PATHS, ...AUDIO_KEY_PATHS],
   }),
-  audio: with_({
-    ...item,
+  audio: traits({
+    ...ITEM,
     audio: true,
     trimSource: true,
     container: true,
@@ -116,24 +67,19 @@ export const KIND_CAPABILITIES: Readonly<Record<Kind, ElementCapabilities>> = {
     playsAsset: true,
     keyPaths: AUDIO_KEY_PATHS,
   }),
-  gap: with_({ timed: true, placementScope: "track", sequenceRole: "empty", mainTrack: true }),
-  transition: with_({
+  gap: traits({ timed: true, placementScope: "track", sequenceRole: "empty", mainTrack: true }),
+  transition: traits({
     timed: true,
     visual: true,
     placementScope: "track",
     sequenceRole: "between",
     mainTrack: true,
   }),
-  title: with_({ ...overlay, hasText: true, themeStyle: "look", themeMotion: true }),
-  shape: with_({
-    ...overlay,
-    themeStyle: "props",
-    themeMotion: true,
-    keyPaths: [...PLACED_KEY_PATHS, ...SHAPE_KEY_PATHS],
-  }),
-  svg: with_({ ...overlay, themeStyle: "props", themeMotion: true }),
-  sticker: with_({ ...overlay, themeStyle: "props", themeMotion: true }),
-  captions: with_({
+  title: KIT_ELEMENTS.title.capabilities,
+  shape: KIT_ELEMENTS.shape.capabilities,
+  svg: traits({ ...OVERLAY, themeStyle: "props", themeMotion: true }),
+  sticker: traits({ ...OVERLAY, themeStyle: "props", themeMotion: true }),
+  captions: traits({
     visual: true,
     container: true,
     childKinds: ["caption"],
@@ -142,19 +88,19 @@ export const KIND_CAPABILITIES: Readonly<Record<Kind, ElementCapabilities>> = {
     spansVideo: true,
     themeStyle: "look",
   }),
-  caption: with_({ timed: true, visual: true, placementScope: "child" }),
-  marker: with_({ placementScope: "composition" }),
-  adjustment: with_({
-    ...item,
+  caption: traits({ timed: true, visual: true, placementScope: "child" }),
+  marker: traits({ placementScope: "composition" }),
+  adjustment: traits({
+    ...ITEM,
     visual: true,
     container: true,
     childKinds: ["effect", "keyframe"],
     plane: "both",
     elementActions: true,
   }),
-  mask: with_({ placementScope: "child" }),
-  nested: with_({
-    ...item,
+  mask: traits({ placementScope: "child" }),
+  nested: traits({
+    ...ITEM,
     visual: true,
     audio: true,
     trimSource: true,
@@ -168,7 +114,7 @@ export const KIND_CAPABILITIES: Readonly<Record<Kind, ElementCapabilities>> = {
     elementActions: true,
     keyPaths: [...PLACED_KEY_PATHS, ...VOLUME_KEY_PATHS],
   }),
-  multicam: with_({
+  multicam: traits({
     container: true,
     childKinds: ["angle", "cut"],
     placementScope: "track",
@@ -176,14 +122,14 @@ export const KIND_CAPABILITIES: Readonly<Record<Kind, ElementCapabilities>> = {
     footage: true,
     freeCode: true,
   }),
-  angle: with_({ placementScope: "child" }),
-  cut: with_({ placementScope: "child" }),
-  layer: with_({ ...overlay, childKinds: ["effect", "keyframe"], freeCode: true }),
-  effect: with_({ container: true, childKinds: ["keyframe"], placementScope: "child" }),
-  keyframe: with_({ placementScope: "child" }),
-  generator: with_({ placementScope: "child" }),
-  speedKey: with_({ placementScope: "child" }),
-  freeze: with_({ placementScope: "child" }),
+  angle: traits({ placementScope: "child" }),
+  cut: traits({ placementScope: "child" }),
+  layer: traits({ ...OVERLAY, childKinds: ["effect", "keyframe"], freeCode: true }),
+  effect: traits({ container: true, childKinds: ["keyframe"], placementScope: "child" }),
+  keyframe: traits({ placementScope: "child" }),
+  generator: traits({ placementScope: "child" }),
+  speedKey: traits({ placementScope: "child" }),
+  freeze: traits({ placementScope: "child" }),
 };
 
 /** Every kind, in the table's order. */
@@ -200,7 +146,7 @@ export function isKind(kind: string): kind is Kind {
  */
 export function capabilitiesOf(kind: Kind): ElementCapabilities {
   // A kind that reached here untyped and is none still answers, as an element that is nothing.
-  return isKind(kind) ? KIND_CAPABILITIES[kind] : none;
+  return isKind(kind) ? KIND_CAPABILITIES[kind] : NO_TRAITS;
 }
 
 /** The paths in a `kind`'s props that keys and generators may sit at. */

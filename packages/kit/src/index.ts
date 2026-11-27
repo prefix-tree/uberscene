@@ -4,6 +4,7 @@
 export * from "./components/index";
 export * from "./diagram/index";
 export { builtInShader } from "./effects/registry";
+export { Mark, type MarkProps } from "./elements/title/mark";
 export {
   type Extrapolate,
   type InterpolateOptions,
@@ -48,7 +49,6 @@ export {
 } from "./jsx/elements";
 export { holdLayerFrame } from "./jsx/engines";
 export { type Knob, type KnobKind, knob } from "./jsx/knobs";
-export { Mark, type MarkProps } from "./jsx/mark";
 export * from "./jsx/narrate";
 export {
   isScene,

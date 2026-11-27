@@ -2,7 +2,7 @@ import type { ReactElement } from "react";
 import type { z } from "zod";
 
 import type { EffectParams, TransitionParams } from "../effects/registry";
-import type { Kind, KindWith } from "../elements";
+import { KIT_ELEMENTS, type Kind, type KindWith } from "../elements";
 import { capabilitiesOf } from "./capabilities";
 import { defineElement, type VocabularyComponent, type VocabularyMeta, type VocabularyProps } from "./define";
 import type { Easing, TransitionType, VideoEffectType } from "./enums";
@@ -24,17 +24,20 @@ import {
   layerSchema,
   motionSchema,
   nestedSchema,
-  shapeSchema,
   stickerSchema,
   svgSchema,
   threeSchema,
-  titleSchema,
 } from "./schemas/overlays";
 import { transitionSchema } from "./schemas/transition";
 import type { EffectRef, TransitionRef } from "./shaders";
 
 const el = <K extends Kind, S extends Parameters<typeof defineElement>[0]["schema"]>(kind: K, schema: S) =>
   defineElement({ kind, schema, capabilities: capabilitiesOf(kind) });
+/** The tag of a kind that has a folder of its own: its kind, schema and row are that folder's. */
+const tag = <K extends Kind, S extends Parameters<typeof defineElement>[0]["schema"]>(element: {
+  readonly kind: K;
+  readonly schema: S;
+}) => el(element.kind, element.schema);
 
 export const Composition = el("composition", compositionSchema);
 export const Track = el("track", trackSchema);
@@ -63,12 +66,10 @@ export interface TransitionComponent extends VocabularyMeta<"transition", typeof
 }
 
 export const Transition = el("transition", transitionSchema) as unknown as TransitionComponent;
-export const Title = el("title", titleSchema) as unknown as WithEffects<
-  VocabularyComponent<"title", typeof titleSchema>
->;
-export const Shape = el("shape", shapeSchema) as unknown as WithEffects<
-  VocabularyComponent<"shape", typeof shapeSchema>
->;
+const titleTag = tag(KIT_ELEMENTS.title);
+export const Title = titleTag as unknown as WithEffects<typeof titleTag>;
+const shapeTag = tag(KIT_ELEMENTS.shape);
+export const Shape = shapeTag as unknown as WithEffects<typeof shapeTag>;
 export const Svg = el("svg", svgSchema) as unknown as WithEffects<VocabularyComponent<"svg", typeof svgSchema>>;
 export const Sticker = el("sticker", stickerSchema) as unknown as WithEffects<
   VocabularyComponent<"sticker", typeof stickerSchema>
