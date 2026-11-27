@@ -1,0 +1,36 @@
+{
+  "counts": {
+    "kit": {
+      "compare": 4,
+      "list": 1
+    },
+    "sdk": {
+      "compare": 141,
+      "list": 27
+    },
+    "player": {
+      "compare": 29,
+      "list": 0
+    },
+    "render": {
+      "compare": 23,
+      "list": 1
+    },
+    "editor": {
+      "compare": 7,
+      "list": 0
+    }
+  },
+  "ignore": [
+    "packages/kit/src/jsx/effect-params.ts: kind === \"transition\"",
+    "packages/kit/src/jsx/shader-definition.ts: kind === \"transition\"",
+    "packages/kit/src/jsx/shaders.ts: kind === \"transition\"",
+    "packages/kit/src/jsx/shaders.ts: p.kind === \"transition\"",
+    "packages/sdk/src/manifest/timeref.ts: case \"marker\":",
+    "packages/sdk/src/inspect/moments.ts: parsed.kind === \"marker\"",
+    "packages/sdk/src/resolve/resolve.ts: parsed.kind === \"marker\"",
+    "packages/sdk/src/inspect/sync.ts: e.kind === \"marker\"",
+    "packages/sdk/src/inspect/sync.ts: point.kind === \"cut\"",
+    "packages/render/src/add.ts: e.kind === \"audio\""
+  ]
+}
