@@ -217,6 +217,11 @@ describe("math on Time", () => {
   it("throws past the limit on plus, and holds at MIN or MAX on plusClamped", () => {
     const six = T("21600");
     expect(() => six.plus(six)).toThrow(RangeError);
+    // Adding or taking away nothing makes no new time.
+    expect(six.plus(Time.ZERO)).toBe(six);
+    expect(six.plusClamped(Time.ZERO)).toBe(six);
+    expect(six.minus(Time.ZERO)).toBe(six);
+    expect(Time.ZERO.plus(six).equals(six)).toBe(true);
     expect(six.plusClamped(six)).toBe(Time.MAX);
     expect(six.negate().plusClamped(six.negate())).toBe(Time.MIN);
     expect(Time.MAX.plusClamped(Time.ofTicks(1))).toBe(Time.MAX);

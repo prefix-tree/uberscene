@@ -155,6 +155,8 @@ export class Time {
 
   /** `this + other`, exact. */
   plus(other: Time): Time {
+    // A time is never changed, so adding nothing is the time itself: no new one is made.
+    if (other.ticks === 0) return this;
     return Time.ofTicks(this.ticks + other.ticks);
   }
 
@@ -163,12 +165,14 @@ export class Time {
    * file that says a time too long, and reports it: a sum at the limit is how it knows.
    */
   plusClamped(other: Time): Time {
+    if (other.ticks === 0) return this;
     const sum = this.ticks + other.ticks;
     return sum >= Number.MAX_SAFE_INTEGER ? Time.MAX : sum <= -Number.MAX_SAFE_INTEGER ? Time.MIN : Time.ofTicks(sum);
   }
 
   /** `this - other`, exact. */
   minus(other: Time): Time {
+    if (other.ticks === 0) return this;
     return Time.ofTicks(this.ticks - other.ticks);
   }
 
