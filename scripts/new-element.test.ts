@@ -47,10 +47,9 @@ function errorsWith(project: string, made: ReturnType<typeof scaffoldElement>): 
   );
   const folders = new Set([...over.keys()].map(dirname));
   const configFile = join(root, project, "tsconfig.json");
-  // The packages build with their own TypeScript; this one is the repo's, which warns of an option they still use.
   const config = ts.getParsedCommandLineOfConfigFile(
     configFile,
-    { ignoreDeprecations: "6.0" },
+    {},
     {
       ...ts.sys,
       onUnRecoverableConfigFileDiagnostic: (d) => assert.fail(ts.flattenDiagnosticMessageText(d.messageText, "\n")),
