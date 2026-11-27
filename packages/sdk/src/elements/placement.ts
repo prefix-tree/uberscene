@@ -8,7 +8,7 @@
 // an element takes a `Placed`, which an unparsed one is not.
 //
 //   const title = placed(state.items.get(id), "title");      // PlacedTitle | undefined
-//   const p = typed(item); if (p.kind === "shape" && p.parsed) p.props.width   // number | undefined
+//   const p = typed(item);                                   // then `p.parsed` and its kind narrow it
 //   if (hasProp(item, "transform")) item.props.transform     // any kind that has one
 
 import type { z } from "zod";

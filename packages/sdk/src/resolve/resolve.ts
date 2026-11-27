@@ -895,7 +895,8 @@ function parseProps(node: CollectedNode, errors: ResolveError[], theme: Resolved
   let data: Record<string, unknown>;
   if (!schema) data = { ...themed.props };
   else {
-    const result = schema.safeParse(node.kind === "composition" ? withoutPending(themed.props) : themed.props);
+    const given = node.kind === "composition" ? withoutPending(themed.props) : themed.props;
+    const result = schema.safeParse(given);
     if (result.success) {
       data = result.data as Record<string, unknown>;
       const declared = declaredShader(node, data, own);
@@ -914,7 +915,6 @@ function parseProps(node: CollectedNode, errors: ResolveError[], theme: Resolved
       // a speed of 0 or a negative duration must not reach the arithmetic and place something for ever, or backwards.
       // First only what is refused goes, a key inside an object where that is where the fault is (`style.size`), so
       // the rest of the prop stays; then the whole prop. Without them the rest usually parses, and takes its defaults.
-      const given = node.kind === "composition" ? withoutPending(themed.props) : themed.props;
       const narrowly = schema.safeParse(without(given, result.error.issues, "deepest"));
       const kept = narrowly.success ? given : without(given, result.error.issues, "prop");
       const again = narrowly.success ? narrowly : schema.safeParse(kept);
