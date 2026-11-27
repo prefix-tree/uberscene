@@ -85,7 +85,8 @@ function overlayProps(tree: CollectedTree, net: ReadonlyMap<string, NetPatch>): 
       dirty.add(node.id);
   }
   if (dirty.size === 0) return tree;
-  const byId = new Map(tree.byId);
+  /** The nodes made again, by id: the patched ones and their ancestors. Every other id is the tree's own node. */
+  const over = new Map<string, CollectedNode>();
   const rebuild = (node: CollectedNode): CollectedNode => {
     if (!dirty.has(node.id)) return node;
     const n = net.get(node.id);
@@ -104,10 +105,72 @@ function overlayProps(tree: CollectedTree, net: ReadonlyMap<string, NetPatch>): 
       ...(text !== undefined ? { text } : {}),
       ...(interior ? { interior } : {}),
     };
-    byId.set(out.id, out);
+    over.set(out.id, out);
     return out;
   };
-  return { root: rebuild(tree.root), byId, errors: tree.errors };
+  return layered(tree, rebuild(tree.root), over);
+}
+
+export interface Layers {
+  readonly base: ReadonlyMap<string, CollectedNode>;
+  readonly over: ReadonlyMap<string, CollectedNode>;
+}
+const layersOf = new WeakMap<CollectedTree, Layers>();
+
+/**
+ * A tree that is `base` with a few nodes made again. Its `byId` is the base's map with those nodes in their places,
+ * and is only built when something reads it: a drag makes one such tree a step, and copying the whole map each time
+ * cost more than the patch. `nodeIn` and `nodesIn` read the tree without building it.
+ */
+function layered(base: CollectedTree, root: CollectedNode, over: ReadonlyMap<string, CollectedNode>): CollectedTree {
+  const tree = { root, errors: base.errors } as CollectedTree;
+  let built: Map<string, CollectedNode> | undefined;
+  Object.defineProperty(tree, "byId", {
+    enumerable: true,
+    configurable: true,
+    get(): ReadonlyMap<string, CollectedNode> {
+      if (!built) {
+        built = new Map(base.byId);
+        for (const [id, node] of over) built.set(id, node);
+      }
+      return built;
+    },
+  });
+  layersOf.set(tree, { base: base.byId, over });
+  return tree;
+}
+
+/** The node with this id, as `tree.byId.get(id)` gives it. */
+export function nodeIn(tree: CollectedTree, id: string): CollectedNode | undefined {
+  const layers = layersOf.get(tree);
+  if (!layers) return tree.byId.get(id);
+  return layers.over.get(id) ?? layers.base.get(id);
+}
+
+/** Whether the tree has a node with this id, as `tree.byId.has(id)` says. */
+export function hasNodeIn(tree: CollectedTree, id: string): boolean {
+  const layers = layersOf.get(tree);
+  return layers ? layers.base.has(id) : tree.byId.has(id);
+}
+
+/** Every node of the tree, in the order `tree.byId.values()` gives them. */
+export function* nodesIn(tree: CollectedTree): IterableIterator<CollectedNode> {
+  const layers = layersOf.get(tree);
+  if (!layers) {
+    yield* tree.byId.values();
+    return;
+  }
+  for (const [id, node] of layers.base) yield layers.over.get(id) ?? node;
+}
+
+/** The tree this one is laid over and the nodes made again, when it is one with only props and text patched. */
+export function layersIn(tree: CollectedTree): Layers | undefined {
+  return layersOf.get(tree);
+}
+
+/** Whether the tree is another with only props and text patched: the same ids, in the same places. */
+export function sameIdsAsSource(tree: CollectedTree): boolean {
+  return layersOf.has(tree);
 }
 
 function push<T>(map: Map<string, T[]>, key: string, value: T): void {

@@ -5,6 +5,7 @@ import { framesUntil, type Rate, round3 } from "@uberscene/kit/schema";
 import type { ResolveError } from "../resolve/errors";
 import { derivedOrigin } from "../resolve/expand";
 import { followOf } from "../resolve/follow";
+import { nodeIn } from "../resolve/overlay";
 import type { Placement, ResolvedState } from "../resolve/resolve";
 import { endSeconds, lengthSeconds, startSeconds, T } from "../time";
 import { type BeatRow, beatRows, type MusicRow, musicRows } from "./music";
@@ -271,7 +272,7 @@ function elementRow(state: ResolvedState, p: Placement, frame: (t: number) => nu
   const props = p.props;
   const follow = followOf(p);
   // A title's words are the element's children, kept on its node; a caption's are a prop.
-  const text = p.kind === "title" ? state.tree.byId.get(p.id)?.text : p.kind === "caption" ? props.text : undefined;
+  const text = p.kind === "title" ? nodeIn(state.tree, p.id)?.text : p.kind === "caption" ? props.text : undefined;
   return {
     id: p.id,
     kind: p.kind,

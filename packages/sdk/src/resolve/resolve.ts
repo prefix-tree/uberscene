@@ -54,9 +54,9 @@ import {
   timelineWords,
 } from "./captions";
 import type { ResolveError } from "./errors";
-import { derivedOrigin, expandKeys } from "./expand";
+import { derivedOrigin, expandedRoot, expandKeys } from "./expand";
 import { FOLLOW_KINDS, followOf } from "./follow";
-import { overlay } from "./overlay";
+import { overlay, sameIdsAsSource } from "./overlay";
 import { type PushSpec, pushKeys } from "./push";
 import { placeScene, type SceneUse, sceneAssetId, withSceneAssets } from "./scene3d";
 import { shapeKeyProblem } from "./shape-keys";
@@ -212,6 +212,47 @@ const settledByTrack = new Cache<CollectedNode, SettledTrack>();
 /** Counts the `Pending`s one `compute` makes or takes, before it places anything. */
 let entered = 0;
 
+const sourceIdsUnique = new WeakMap<CollectedTree, boolean>();
+const sceneInside = new Cache<CollectedNode, boolean>();
+
+/** Whether a clip in `node` or under it plays a 3D scene. Kept by node, so an edit looks again only along its path. */
+function playsScene(node: CollectedNode): boolean {
+  const known = sceneInside.get(node);
+  if (known !== undefined) return known;
+  let found = node.kind === "clip" && isScene(node.props.src);
+  for (let i = 0; !found && i < node.children.length; i++) found = playsScene(node.children[i] as CollectedNode);
+  sceneInside.set(node, found);
+  return found;
+}
+
+/**
+ * The expanded root of `written`, when the tree can be placed by walking it: then `tree.byId.get(track.id)` is the
+ * track's own node for every track, and the manifest needs no scene assets. Null when it cannot, and the tree is
+ * placed with its `byId`. It can when
+ *
+ * - the file gives each id to one node (`collect` reports a second use as `DUPLICATE_ID`), and the log only patches
+ *   props and text, so the written tree has the file's ids;
+ * - no track's id has a dot in it: an item made from a prop is named `<element>.<path>`, so none can take such an id;
+ * - no clip plays a scene.
+ */
+function walkable(original: CollectedTree, written: CollectedTree): CollectedNode | null {
+  if (written !== original && !sameIdsAsSource(written)) return null;
+  let unique = sourceIdsUnique.get(original);
+  if (unique === undefined) {
+    unique = !original.errors.some((e) => e.code === "DUPLICATE_ID");
+    sourceIdsUnique.set(original, unique);
+  }
+  if (!unique) return null;
+  const root = expandedRoot(written.root);
+  const dotted = (track: CollectedNode): boolean => track.id.includes(".");
+  for (const child of root.children) {
+    if (child.kind === "track" && dotted(child)) return null;
+    if (child.kind === "camera")
+      for (const inner of child.children) if (inner.kind === "track" && dotted(inner)) return null;
+  }
+  return playsScene(root) ? null : root;
+}
+
 /** Whether every track of the composition, those in its camera among them, has an id of its own. */
 function uniqueTracks(root: CollectedNode): boolean {
   const ids = new Set<string>();
@@ -291,18 +332,22 @@ function compute(
   // The tree as written, with the log over it: what the editor reads and writes. Its key lists, effects, speed keys
   // and holds are expanded into items for placing.
   const written = overlay(original, log);
-  const tree = expandKeys(written);
+  // The tree's `byId` is not needed to place it when each track is found from the root and no clip plays a scene:
+  // see `walkable`. Then the keys are expanded from the root alone, and nothing copies the map.
+  const walked = plain || cachesOff() ? null : walkable(original, written);
+  const tree = walked ? null : expandKeys(written);
   fileShaders = original.shaders ?? [];
-  const errors: ResolveError[] = [...tree.errors];
-  const root = tree.root;
+  const errors: ResolveError[] = [...written.errors];
+  const root = walked ?? (tree as CollectedTree).root;
   const theme = resolveTheme(root.props.theme);
   const compParsed = parseProps(root, errors, theme);
   // A clip that plays a 3D scene reads its length from an asset made for it (`withSceneAssets`).
-  manifest = withSceneAssets(manifest, tree, {
-    fps: rateValue(rateOf(compParsed.fps, root.id, [])),
-    width: Number(compParsed.width ?? 1920),
-    height: Number(compParsed.height ?? 1080),
-  });
+  if (tree)
+    manifest = withSceneAssets(manifest, tree, {
+      fps: rateValue(rateOf(compParsed.fps, root.id, [])),
+      width: Number(compParsed.width ?? 1920),
+      height: Number(compParsed.height ?? 1080),
+    });
   const scenes = new Map<string, SceneUse>();
   const markers = new Map<string, number>();
   const pending = new Map<string, Pending>();
@@ -375,7 +420,9 @@ function compute(
   const markersKey = markersSignature(markers);
   const shaders = original.shaders;
   // Two tracks with one id are placed as one, twice: nothing of theirs is kept.
-  const settling = !plain && !cachesOff() && uniqueTracks(root);
+  const settling = !plain && !cachesOff() && (walked !== null || uniqueTracks(root));
+  /** Each track's node, in the order of `tracks`. */
+  const trackNodes: CollectedNode[] = [];
   /** The tracks taken as they were settled, which are not placed again. */
   const taken = new Set<CollectedNode>();
   // How many elements are given a `Pending`: more than `pending` holds when two share an id.
@@ -383,6 +430,7 @@ function compute(
   let order = 0;
   // A camera's tracks are numbered in place, so the file's order is the drawing order across the camera's edge.
   const addTrack = (child: CollectedNode, camera: string | undefined): void => {
+    trackNodes.push(child);
     const p = parseProps(child, errors, theme);
     tracks.push({
       id: child.id,
@@ -472,8 +520,10 @@ function compute(
   }
 
   // Place track children: sequence cursors, free starts; anchors and dependent durations by iteration.
-  for (const track of tracks) {
-    const trackNode = tree.byId.get(track.id);
+  for (let i = 0; i < tracks.length; i++) {
+    const track = tracks[i] as ResolvedTrack;
+    // The node the tree has under the track's id: the track's own, unless another node took the id.
+    const trackNode = tree ? tree.byId.get(track.id) : trackNodes[i];
     if (!trackNode || taken.has(trackNode)) continue;
     placeTrack(trackNode, track, pending, theme, errors);
     if (!settling) continue;

@@ -36,15 +36,24 @@ const expanded = new Cache<CollectedNode, CollectedNode>();
 
 /** The tree with each element's keys, effects, speed keys and holds as items under it. The same tree when none. */
 export function expandKeys(tree: CollectedTree): CollectedTree {
-  let changed = false;
   const byId = new Map(tree.byId);
+  const root = expandInto(tree.root, byId);
+  return root !== tree.root ? { ...tree, root, byId } : tree;
+}
+
+/**
+ * The root of the tree `expandKeys` gives, without its `byId`: for a reader that walks the tree from the root, and
+ * a tree whose ids are known to be each one node's.
+ */
+export function expandedRoot(root: CollectedNode): CollectedNode {
+  return expandInto(root, null);
+}
+
+function expandInto(top: CollectedNode, byId: Map<string, CollectedNode> | null): CollectedNode {
   const visit = (node: CollectedNode): CollectedNode => {
     const cached = expanded.get(node);
     if (cached) {
-      if (cached !== node) {
-        changed = true;
-        index(cached, byId);
-      }
+      if (cached !== node && byId) index(cached, byId);
       return cached;
     }
     const kids = node.children.map(visit);
@@ -57,16 +66,14 @@ export function expandKeys(tree: CollectedTree): CollectedTree {
             props: own?.props ?? node.props,
             children: [...kids, ...(own?.derived ?? [])],
           };
-    if (out !== node) {
-      changed = true;
+    if (out !== node && byId) {
       byId.set(out.id, out);
       for (const d of own?.derived ?? []) index(d, byId);
     }
     expanded.set(node, out);
     return out;
   };
-  const root = visit(tree.root);
-  return changed ? { ...tree, root, byId } : tree;
+  return visit(top);
 }
 
 function index(node: CollectedNode, byId: Map<string, CollectedNode>): void {

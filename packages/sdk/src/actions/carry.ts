@@ -8,6 +8,7 @@ import { createPatchLog } from "../patches/log";
 import type { Json } from "../patches/types";
 import { type Dependent, dependentsOf } from "../resolve/dependents";
 import { followOf } from "../resolve/follow";
+import { hasNodeIn, nodeIn } from "../resolve/overlay";
 import { ownRestBox, restBox } from "../resolve/push";
 import { type Placement, type ResolvedState, resolve } from "../resolve/resolve";
 import { lengthSeconds, S } from "../time";
@@ -42,9 +43,9 @@ export function carry<T extends ActionType>(
       if (!repairs) return handler.invert(action, before);
       // The inverses are taken on a scratch run of the same steps, each against the state the step before left.
       const log = createPatchLog({
-        isSource: (id) => before.tree.byId.has(id),
-        sourceParent: (id) => before.tree.byId.get(id)?.parent ?? null,
-        sourceNode: (id) => before.tree.byId.get(id),
+        isSource: (id) => hasNodeIn(before.tree, id),
+        sourceParent: (id) => nodeIn(before.tree, id)?.parent ?? null,
+        sourceNode: (id) => nodeIn(before.tree, id),
       });
       const current = () => resolve(before.tree, before.manifest, log);
       const ctx: ApplyContext = { before, manifest: before.manifest, current };
@@ -83,7 +84,7 @@ const setProps = (id: string, props: Record<string, Json | undefined>): ActionIn
 /** The clip before `id` on its track, skipping transitions and gaps. */
 function clipBefore(state: ResolvedState, id: string): Placement | undefined {
   const track = state.tracks.find((t) => t.items.includes(id));
-  const siblings = track ? (state.tree.byId.get(track.id)?.children ?? []) : [];
+  const siblings = track ? (nodeIn(state.tree, track.id)?.children ?? []) : [];
   for (let i = siblings.findIndex((c) => c.id === id) - 1; i >= 0; i--) {
     const kind = siblings[i]?.kind;
     if (kind !== "transition" && kind !== "gap") return state.items.get(siblings[i]!.id);
@@ -137,7 +138,7 @@ export function carryRemoval(id: string, before: ResolvedState): Carry | null {
 /** The clip a transition leads into on its track, else the one it leaves; transitions and gaps are skipped. */
 function clipBeside(state: ResolvedState, id: string): Placement | undefined {
   const track = state.tracks.find((t) => t.items.includes(id));
-  const siblings = track ? (state.tree.byId.get(track.id)?.children ?? []) : [];
+  const siblings = track ? (nodeIn(state.tree, track.id)?.children ?? []) : [];
   const at = siblings.findIndex((c) => c.id === id);
   const isClip = (kind: string | undefined) => kind !== undefined && kind !== "transition" && kind !== "gap";
   const next = siblings.slice(at + 1).find((c) => c.kind !== "transition");
@@ -172,7 +173,7 @@ export function carryTransitionRemoval(id: string, before: ResolvedState): Carry
 /** Whether what follows `id` on its track, past any transitions, is a clip a transition can join (not a gap). */
 function hasClipAfter(state: ResolvedState, id: string): boolean {
   const track = state.tracks.find((t) => t.items.includes(id));
-  const siblings = track ? (state.tree.byId.get(track.id)?.children ?? []) : [];
+  const siblings = track ? (nodeIn(state.tree, track.id)?.children ?? []) : [];
   const next = siblings.slice(siblings.findIndex((c) => c.id === id) + 1).find((c) => c.kind !== "transition");
   return next !== undefined && next.kind !== "gap";
 }
@@ -256,8 +257,8 @@ function unfollow(child: string, leader: string, before: ResolvedState): ActionI
   const l = before.items.get(leader);
   const next = l ? followOf(l) : undefined;
   if (!c || !l) return setProps(child, { follow: next });
-  const own = (before.tree.byId.get(child)?.props ?? {}) as Record<string, unknown>;
-  const lead = (before.tree.byId.get(leader)?.props ?? {}) as Record<string, unknown>;
+  const own = (nodeIn(before.tree, child)?.props ?? {}) as Record<string, unknown>;
+  const lead = (nodeIn(before.tree, leader)?.props ?? {}) as Record<string, unknown>;
   const rel = S(c.range.start.minus(l.range.start));
   const comp = { width: before.composition.width, height: before.composition.height };
   const outer = next ? restBox(before.items.get(next) ?? l, comp, before.manifest, before.items) : null;
