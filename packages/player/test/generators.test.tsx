@@ -1,12 +1,13 @@
 import { Composition, Shape, Track } from "@uberscene/kit";
+import type { Kind } from "@uberscene/kit/schema";
 import { collectModule, resolve } from "@uberscene/sdk/resolver";
 
 import { mountPlayer } from "./helpers/react";
 import { fixtureManifest, makeState } from "./helpers/state";
 import { animatedBox, animatedTransform, buildFramePlan, keyframedParam, keyframedValue } from "./internal";
 
-const child = (id: string, kind: string, props: Record<string, unknown>) => ({ id, kind, props });
-const stateOf = (children: ReturnType<typeof child>[], kind = "clip") =>
+const child = (id: string, kind: Kind, props: Record<string, unknown>) => ({ id, kind, props });
+const stateOf = (children: ReturnType<typeof child>[], kind: Kind = "clip") =>
   makeState({
     tracks: [
       {

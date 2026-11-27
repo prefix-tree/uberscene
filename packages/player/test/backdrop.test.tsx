@@ -1,8 +1,8 @@
 import { mountPlayer } from "./helpers/react";
-import { makeState } from "./helpers/state";
+import { makeState, type TrackSpec } from "./helpers/state";
 import { backdropTracks, buildFramePlan } from "./internal";
 
-const under = {
+const under: TrackSpec = {
   id: "under",
   layout: "free" as const,
   items: [
@@ -15,8 +15,8 @@ const under = {
     },
   ],
 };
-const main = { id: "main", items: [{ id: "c1", kind: "clip", source: { in: 0, out: 4, asset: "a" } }] };
-const over = {
+const main: TrackSpec = { id: "main", items: [{ id: "c1", kind: "clip", source: { in: 0, out: 4, asset: "a" } }] };
+const over: TrackSpec = {
   id: "over",
   layout: "free" as const,
   items: [{ id: "t1", kind: "title", start: 0, duration: 4, props: { text: "Hi" } }],

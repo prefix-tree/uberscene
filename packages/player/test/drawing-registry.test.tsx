@@ -1,4 +1,4 @@
-import { KIND_CAPABILITIES, kindsWhere } from "@uberscene/kit/schema";
+import { capabilitiesOf, isKind, type Kind, kindsWhere } from "@uberscene/kit/schema";
 
 import { CANVAS_OPS } from "../src/model/canvas-ops";
 import { INTRINSIC_SIZE, overlaySize } from "../src/overlays/size";
@@ -19,8 +19,8 @@ describe("the drawing tables", () => {
   });
 
   it("have nothing for a kind the kind table does not know", () => {
-    for (const kind of Object.keys(CANVAS_OPS)) expect(KIND_CAPABILITIES[kind]).toBeDefined();
-    for (const kind of Object.keys(INTRINSIC_SIZE)) expect(KIND_CAPABILITIES[kind]).toBeDefined();
+    for (const kind of Object.keys(CANVAS_OPS)) expect(isKind(kind), kind).toBe(true);
+    for (const kind of Object.keys(INTRINSIC_SIZE)) expect(isKind(kind), kind).toBe(true);
   });
 
   it("have a DOM drawing for exactly the kinds drawn as DOM", () => {
@@ -31,7 +31,7 @@ describe("the drawing tables", () => {
 
   it("stand over every track what lasts the whole video, and run effects over what is DOM alone", () => {
     for (const [kind, drawing] of Object.entries(DOM_DRAWING)) {
-      const traits = KIND_CAPABILITIES[kind]!;
+      const traits = capabilitiesOf(kind as Kind);
       expect(drawing.where === "top", kind).toBe(traits.spansVideo);
       expect(drawing.effects === "pipeline", kind).toBe(traits.timed && traits.plane === "dom");
     }
@@ -39,7 +39,7 @@ describe("the drawing tables", () => {
 
   it("compare the words of what has text", () => {
     for (const [kind, drawing] of Object.entries(DOM_DRAWING))
-      expect(drawing.same !== undefined, kind).toBe(KIND_CAPABILITIES[kind]!.hasText);
+      expect(drawing.same !== undefined, kind).toBe(capabilitiesOf(kind as Kind).hasText);
   });
 
   it("size only what is drawn as DOM, and a kind with no size of its own is the frame's", () => {

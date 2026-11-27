@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { resolveTheme, Time, TimeRange } from "@uberscene/kit/schema";
+import { type Kind, resolveTheme, Time, TimeRange } from "@uberscene/kit/schema";
 import {
   type AssetManifest,
   buildRefGraph,
@@ -42,7 +42,7 @@ export function fixtureElement() {
 
 export interface ItemSpec {
   id: string;
-  kind: string;
+  kind: Kind;
   start?: number;
   duration?: number;
   source?: { in: number; out: number; speed?: number; asset: string };
@@ -120,7 +120,7 @@ export function makeState(spec: StateSpec): ResolvedState {
 
   const node = (
     id: string,
-    kind: string,
+    kind: Kind,
     parent: string | null,
     props: Record<string, unknown>,
     children: CollectedNode[],

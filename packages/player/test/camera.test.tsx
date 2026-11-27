@@ -1,6 +1,6 @@
 import { FakeFrame, FakeFrameSource, recorderCanvas, recorderContext } from "./helpers/fakes";
 import { mountPlayer } from "./helpers/react";
-import { makeState, type StateSpec } from "./helpers/state";
+import { type ItemSpec, makeState, type StateSpec, type TrackSpec } from "./helpers/state";
 import {
   buildFramePlan,
   CanvasPainter,
@@ -11,17 +11,17 @@ import {
   type Matrix2D,
 } from "./internal";
 
-const clip = (id: string) => ({ id, kind: "clip", source: { in: 0, out: 4, asset: "a" } });
-const shape = (id: string) => ({
+const clip = (id: string): ItemSpec => ({ id, kind: "clip", source: { in: 0, out: 4, asset: "a" } });
+const shape = (id: string): ItemSpec => ({
   id,
   kind: "shape",
   start: 0,
   duration: 4,
   props: { type: "rectangle", box: { x: 100, y: 50, width: 200, height: 100 }, fill: "#2244ff" },
 });
-const main = { id: "main", items: [clip("talk")] };
-const cards = { id: "cards", layout: "free" as const, items: [shape("card")] };
-const logo = { id: "logo", layout: "free" as const, items: [shape("mark")] };
+const main: TrackSpec = { id: "main", items: [clip("talk")] };
+const cards: TrackSpec = { id: "cards", layout: "free" as const, items: [shape("card")] };
+const logo: TrackSpec = { id: "logo", layout: "free" as const, items: [shape("mark")] };
 const tracks = [main, cards, logo];
 const under = (camera: NonNullable<StateSpec["camera"]>) => makeState({ tracks, camera });
 const COMP = { width: 640, height: 360 };
@@ -96,7 +96,7 @@ describe("footage under the camera", () => {
   });
 
   it("cuts a wipe in the camera's space", () => {
-    const wipe = {
+    const wipe: TrackSpec = {
       id: "main",
       items: [clip("a1"), { id: "x", kind: "transition", duration: 1, props: { type: "wipe" } }, clip("a2")],
     };
