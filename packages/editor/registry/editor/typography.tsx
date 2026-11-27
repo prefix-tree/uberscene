@@ -13,7 +13,7 @@ import {
 import type { ReactNode } from "react";
 
 import { useEdit, useEditor } from "@uberscene/editor";
-import { FONT_CATALOG, findFont } from "@uberscene/kit/schema";
+import { capabilitiesOf, FONT_CATALOG, findFont } from "@uberscene/kit/schema";
 import type { ActionInput } from "@uberscene/sdk";
 
 import { type Access, ColorField, fail, Group, LockMark, NumberField, Row } from "./fields";
@@ -81,7 +81,7 @@ export function Typography({ id, onError }: { id: string; onError: (message: str
   const { state } = useEditor();
   const edit = useEdit();
   const item = state.items.get(id);
-  if (!item || (item.kind !== "title" && item.kind !== "captions")) return null;
+  if (!item || capabilitiesOf(item.kind).themeStyle !== "look") return null;
   const kind = item.kind as Kind;
   const has = (key: string) => KEYS[kind].has(key);
   // What the file writes (a preset name alone, an object, or nothing) and what the text looks like now.
