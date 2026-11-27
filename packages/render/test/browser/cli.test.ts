@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import generateMedia, { mediaDir } from "../../../player/e2e/gen-media";
@@ -133,6 +133,77 @@ describe("uberscene", () => {
     expect(r.stderr).toContain("15 frames");
     expect(r.status).toBe(0);
     expect(probe(out)).toMatchObject({ codec: "vp9", frames: 15 });
+  });
+
+  describe("queue", () => {
+    const manifest = `export const manifest = { assets: { bars: { id: "bars", kind: "video", duration: 10, fps: 30, width: 640, height: 360 }, gone: { id: "gone", kind: "video", duration: 10, fps: 30, width: 640, height: 360 } } };`;
+    const cut = (asset: string) =>
+      `import { Clip, Composition, Track } from "@uberscene/kit";\n${manifest}\nexport const defaults = { length: 0.5 };\nexport default function Video({ length }: { length: number }) { return <Composition fps={30} width={640} height={360}><Track id="t"><Clip id="c" src="asset:${asset}" in={0} out={length} /></Track></Composition>; }\n`;
+    let folder = "";
+    beforeAll(() => {
+      folder = join(dir, "queue");
+      mkdirSync(join(folder, "cuts"), { recursive: true });
+      writeFileSync(join(folder, "cuts", "tiny.tsx"), cut("bars"));
+      writeFileSync(join(folder, "cuts", "broken.tsx"), cut("gone"));
+    });
+    const queue = (name: string, jobs: unknown[]) => {
+      const path = join(folder, name);
+      writeFileSync(path, JSON.stringify({ jobs }));
+      return path;
+    };
+
+    it("renders every job of a queue, paths from the queue file, and sums them up", () => {
+      const path = queue("three.json", [
+        { file: "cuts/tiny.tsx", out: "out/a.webm", silent: true },
+        { file: "cuts/tiny.tsx", out: "out/b.mp4", silent: true, quality: "low" },
+        { file: "cuts/tiny.tsx", out: "out/c.webm", silent: true, props: { length: 1 } },
+      ]);
+      const r = run("queue", path, "--media", mediaDir, "--quiet");
+      expect(r.stderr).toContain("[1/3] cuts/tiny.tsx -> out/a.webm");
+      expect(r.stderr).toContain("3 jobs: 3 done");
+      expect(r.status).toBe(0);
+      expect(probe(join(folder, "out", "a.webm"))).toMatchObject({ codec: "vp9", frames: 15 });
+      expect(probe(join(folder, "out", "b.mp4"))).toMatchObject({ codec: "h264", frames: 15 });
+      expect(probe(join(folder, "out", "c.webm"))).toMatchObject({ codec: "vp9", frames: 30 });
+    });
+
+    it("goes on past a failing job with --continue-on-error, and exits 1", () => {
+      const path = queue("failing.json", [
+        { file: "cuts/tiny.tsx", out: "keep/a.webm", silent: true },
+        { file: "cuts/broken.tsx", out: "keep/b.webm", silent: true },
+        { file: "cuts/tiny.tsx", out: "keep/c.webm", silent: true },
+      ]);
+      const r = run("queue", path, "--media", mediaDir, "--quiet", "--continue-on-error", "--json");
+      expect(r.status).toBe(1);
+      const report = JSON.parse(r.stdout) as { jobs: { status: string; error?: string }[]; failed: number };
+      expect(report.jobs.map((j) => j.status)).toEqual(["done", "failed", "done"]);
+      expect(report.jobs[1]?.error).toMatch(/no media file for asset "gone"/);
+      expect(existsSync(join(folder, "keep", "a.webm"))).toBe(true);
+      expect(existsSync(join(folder, "keep", "b.webm"))).toBe(false);
+      expect(existsSync(join(folder, "keep", "c.webm"))).toBe(true);
+    });
+
+    it("stops at the first failing job without it", () => {
+      const path = queue("stopping.json", [
+        { file: "cuts/broken.tsx", out: "stop/a.webm", silent: true },
+        { file: "cuts/tiny.tsx", out: "stop/b.webm", silent: true },
+      ]);
+      const r = run("queue", path, "--media", mediaDir, "--quiet");
+      expect(r.status).toBe(1);
+      expect(r.stderr).toContain("2. stop/b.webm: skipped");
+      expect(existsSync(join(folder, "stop", "b.webm"))).toBe(false);
+    });
+
+    it("checks every job before the first renders", () => {
+      const path = queue("typo.json", [
+        { file: "cuts/tiny.tsx", out: "typo/a.webm" },
+        { file: "cuts/tiny.tsx", out: "typo/b.webm", codec: "h265" },
+      ]);
+      const r = run("queue", path, "--media", mediaDir, "--quiet");
+      expect(r.status).toBe(1);
+      expect(r.stderr).toContain("job 2 (typo/b.webm): codec wants avc, vp9, av1, prores");
+      expect(existsSync(join(folder, "typo", "a.webm"))).toBe(false);
+    });
   });
 
   it("prints usage when there is nothing to render", () => {

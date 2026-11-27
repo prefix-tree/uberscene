@@ -185,6 +185,8 @@ Work in this order, and check after each stage.
    `.mp4` is H.264 and AAC, `.webm` VP9 and Opus, `.mp3` or `.wav` the sound alone. The first export downloads a
    Chrome to draw with. Commands find `uberscene.json` in the file's folder or a folder above it. Media is found in the file's folder,
    beside the manifest, in `media/` beside it, or in `--media <dir>`.
+   Several cuts at once (a wide and a tall one, one per set of props): list them in a queue file,
+   `{ "jobs": [{ "file": "video.tsx", "out": "out/wide.mp4" }, ...] }`, and run `npx uberscene queue jobs.json`.
 
 Scale the check to the change: a one-word trim needs no still; new graphics always do.
 
