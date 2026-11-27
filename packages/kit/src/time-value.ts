@@ -141,12 +141,16 @@ export class Time {
 
   /** The earliest of some times. */
   static min(first: Time, ...rest: readonly Time[]): Time {
-    return rest.reduce((a, b) => (b.ticks < a.ticks ? b : a), first);
+    let least = first;
+    for (let i = 0; i < rest.length; i++) if ((rest[i] as Time).ticks < least.ticks) least = rest[i] as Time;
+    return least;
   }
 
   /** The latest of some times. */
   static max(first: Time, ...rest: readonly Time[]): Time {
-    return rest.reduce((a, b) => (b.ticks > a.ticks ? b : a), first);
+    let most = first;
+    for (let i = 0; i < rest.length; i++) if ((rest[i] as Time).ticks > most.ticks) most = rest[i] as Time;
+    return most;
   }
 
   /** `this + other`, exact. */

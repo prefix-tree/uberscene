@@ -183,6 +183,21 @@ describe("math on Time", () => {
     }
   });
 
+  it("takes the earliest and the latest of any number of times, the first of equals", () => {
+    const [a, b, c] = [Time.ofTicks(5), Time.ofTicks(-3), Time.ofTicks(9)];
+    expect(Time.min(a)).toBe(a);
+    expect(Time.max(a)).toBe(a);
+    expect(Time.min(a, b)).toBe(b);
+    expect(Time.max(a, b)).toBe(a);
+    expect(Time.min(a, b, c)).toBe(b);
+    expect(Time.max(a, b, c)).toBe(c);
+    expect(Time.max(b, a, c, a)).toBe(c);
+    const again = Time.ofTicks(5);
+    expect(Time.min(a, again)).toBe(a);
+    expect(Time.max(a, again)).toBe(a);
+    expect(Time.max(b, a, again)).toBe(a);
+  });
+
   it("orders consistently: compare, isBefore, equals, min, max and sort agree", () => {
     for (let i = 0; i < 1000; i++) {
       const a = Time.ofTicks(int(-1e6, 1e6));
