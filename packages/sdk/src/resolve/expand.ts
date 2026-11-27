@@ -8,6 +8,7 @@ import { CAMERA_FIELDS, capabilitiesOf, generatorSeed, isGenerator } from "@uber
 
 import { createPatchLog } from "../patches/log";
 import type { Json, PatchLog } from "../patches/types";
+import { Cache } from "./cache";
 import type { CollectedNode, CollectedTree } from "./tree";
 
 /** A list of keys: objects, each with `at` and `value`. Anything else (a number, a list of numbers) is a constant. */
@@ -31,7 +32,7 @@ const CROP_FIELDS = ["x", "y", "width", "height"] as const;
 /** A crop's fields when none is written: the whole picture. */
 const CROP_WHOLE = { x: 0, y: 0, width: 1, height: 1 } as const;
 
-const expanded = new WeakMap<CollectedNode, CollectedNode>();
+const expanded = new Cache<CollectedNode, CollectedNode>();
 
 /** The tree with each element's keys, effects, speed keys and holds as items under it. The same tree when none. */
 export function expandKeys(tree: CollectedTree): CollectedTree {

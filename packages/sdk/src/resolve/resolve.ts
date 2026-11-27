@@ -41,6 +41,7 @@ import { parseTimeRef, resolveTimeRef } from "../manifest/timeref";
 import { type AssetEntry, type AssetManifest, assetIdOf, lookupAsset } from "../manifest/types";
 import type { PatchLog } from "../patches/types";
 import { T } from "../time";
+import { Cache, uncached } from "./cache";
 import {
   type AssetPlay,
   assetPlay,
@@ -202,6 +203,14 @@ export function resolve(tree: CollectedTree, manifest: AssetManifest, log?: Patc
   if (log) byLog.set(log, memo);
   else byTree.set(tree, memo);
   return state;
+}
+
+/**
+ * The same answer as `resolve`, worked out from the tree and the log alone: no cache is read or written and no
+ * earlier placement is handed back. Slow; it is what the tests hold a cached resolve to.
+ */
+export function resolveFresh(tree: CollectedTree, manifest: AssetManifest, log?: PatchLog): ResolvedState {
+  return uncached(() => compute(tree, manifest, log));
 }
 
 /**
@@ -698,7 +707,7 @@ interface ParsedProps {
  * mutated, and is what `Placement.props` points at, so untouched placements
  * keep it across resolves and consumers can memoise on its identity.
  */
-const parsedByProps = new WeakMap<object, ParsedProps>();
+const parsedByProps = new Cache<object, ParsedProps>();
 /** Which parsed props the theme supplied, keyed by the parsed `data`. */
 const themedByData = new WeakMap<object, Readonly<Record<string, ThemeOrigin>>>();
 
@@ -936,7 +945,7 @@ interface IntrinsicEntry {
     Pick<Pending, "props" | "errors" | "source" | "start" | "duration" | "durationDep" | "anchorDep">
   >;
 }
-const intrinsicByNode = new WeakMap<CollectedNode, IntrinsicEntry>();
+const intrinsicByNode = new Cache<CollectedNode, IntrinsicEntry>();
 
 function markersSignature(markers: ReadonlyMap<string, number>): string {
   let key = "";
@@ -1106,7 +1115,7 @@ function intrinsicCompute(
   return p;
 }
 
-const framedByProps = new WeakMap<Record<string, unknown>, { key: string; props: Record<string, unknown> }>();
+const framedByProps = new Cache<Record<string, unknown>, { key: string; props: Record<string, unknown> }>();
 
 /** `frame` as a `transform.crop`: a window of the composition's aspect over the source, slid to the focus. A written crop wins. Memoised so an unchanged clip keeps its placement. */
 function framed(
@@ -1951,7 +1960,7 @@ interface CueMemo {
   readonly props: Record<string, unknown>;
   readonly nodes: readonly CollectedNode[];
 }
-const cuesByCaptions = new WeakMap<CollectedNode, CueMemo>();
+const cuesByCaptions = new Cache<CollectedNode, CueMemo>();
 
 /**
  * Captions follow the clips: a word reference on a literal <Caption> means
