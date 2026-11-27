@@ -534,7 +534,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/kit/schema`
 
-323 exports.
+331 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -591,6 +591,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `DERIVED_KINDS` | const |  |
 | `DERIVED_SCHEMAS` | const | The resolver's own item kinds. |
 | `DerivedKind` | type |  |
+| `DrawPlane` | type |  |
 | `DrawRect` | interface | A rectangle in composition pixels. |
 | `ease` | function | `name` applied to `x` clamped to 0..1; an unknown or missing name is linear. |
 | `Easing` | type |  |
@@ -666,25 +667,29 @@ Every name each entry exports, read from the code. The sections above explain th
 | `installSceneSource` | function |  |
 | `isBuiltInTransition` | function |  |
 | `isBundledFont` | function |  |
+| `isDomOverlay` | function | Drawn as DOM alone, over the canvas, for a stretch of time. |
 | `isDropFrame` | const | Whether a rate is shown in drop-frame timecode. |
 | `isGenerator` | function | Whether a value written in a prop is a generator. |
 | `isKeyframeProperty` | function | A property a key list can animate, as the resolver names it (`transform.opacity` for <code v-pre>transform={{ opacity: […] }}</code>). |
 | `isNeutral` | function | Whether a built-in effect changes nothing with these params. |
+| `isSequenceItem` | function | Something placed on a track that a cut or an anchor can name. |
 | `isShaderRef` | function | Whether a value is an effect or transition a file declared. |
 | `isTextMark` | function | Whether a component is `<Mark>`. |
 | `isVocabulary` | function |  |
 | `Key` | interface | One key of a value that changes over time. |
 | `KEYFRAME_PROPERTIES` | const |  |
 | `KeyOf` | interface | One key of a value, as a generator's `base` or a loop's `keys` hold it. |
-| `KIND_CAPABILITIES` | const | What each element kind can do. |
+| `KIND_CAPABILITIES` | const | What each element kind is. |
 | `kindOf` | function |  |
+| `kindsWhere` | function | The kinds whose entry passes `test`, in the table's order. |
+| `kindsWithProp` | function | The kinds whose schema has `prop`, in the vocabulary's order. |
 | `knobsOf` | function | The knobs of a file's `schema`, in the order it lists them, with the value each has in `values` (the file's `defaults` merged with any props given). |
 | `Layer` | const | The `<Layer>` element ([reference](/reference/elements/layer)). |
 | `layerEngine` | function |  |
 | `LayerEngine` | type | What draws an engine Layer (`<Three>`, `<Motion>`). |
 | `layerFramesPending` | function | How many holds are open. |
 | `MAIN_TRACK_ID` | const | The id of the track made of the clips written straight in a `<Composition>`. |
-| `MAIN_TRACK_KINDS` | const | What may be written straight in a `<Composition>` to make that track. |
+| `MAIN_TRACK_KINDS` | const | What may be written straight in a `<Composition>` to make its main track. |
 | `Marker` | const | The `<Marker>` element ([reference](/reference/elements/marker)). |
 | `MarkProps` | type |  |
 | `markSchema` | const | How a marked stretch of a title's text differs from the rest. |
@@ -718,6 +723,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `NTSC_RATES` | const | The NTSC rates, written as the strings people say them as. |
 | `Oklab` | interface | A colour in OKLab. |
 | `OldEasing` | type | An easing name spelled the way it was before 0.6, which free code still takes. |
+| `onOverlayPlane` | function | Stands on the overlay plane for a stretch of time. |
 | `PALETTE_KEYS` | const | The palette names every built-in theme fills. |
 | `parseColor` | function | A CSS colour as sRGB with alpha. |
 | `parseRate` | function | A frame rate as an exact fraction. |
@@ -760,6 +766,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `secondAndFrame` | function | The whole second a frame falls in and the frame's place within it, for a timecode. |
 | `secondsToTicks` | const | Seconds as the nearest tick. |
 | `secondsToTicksExact` | const | Seconds as the nearest tick. |
+| `SequenceRole` | type |  |
 | `SHADER_ONLY_EFFECTS` | const | Built-in shader effects with no CSS filter to fall back on. |
 | `shaderDefinition` | function | Checks a declaration and makes its definition; throws what is wrong with it. |
 | `ShaderDefinition` | interface |  |
@@ -798,6 +805,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `ThemeProps` | type |  |
 | `THEMES` | const |  |
 | `themeSchema` | const |  |
+| `ThemeStyle` | type |  |
 | `themeToken` | function | The value of `$name`, or undefined. |
 | `Three` | const | The `<Three>` element ([reference](/reference/elements/three)). |
 | `ticks` | function | A count as ticks. |
