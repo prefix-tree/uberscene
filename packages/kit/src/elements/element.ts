@@ -6,6 +6,7 @@ import type { z } from "zod";
 import type { DrawPlane, ElementCapabilities } from "../jsx/define";
 import type { Kind, KindProps } from "./index";
 
+/** The kit's part of one element kind: its schema, its row in the kind table, and a sample of it. */
 export interface KitElement<K extends Kind, P extends DrawPlane = DrawPlane> {
   readonly kind: K;
   /** What its props are checked against. It parses to the kind's props (`KindProps[K]`). */
