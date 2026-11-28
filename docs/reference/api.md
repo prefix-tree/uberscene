@@ -534,7 +534,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/kit/schema`
 
-424 exports.
+428 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -670,6 +670,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `fromOklab` | function | An OKLab colour back in sRGB, each channel clamped to 0..1, with alpha `alpha`. |
 | `fusedColourSource` | function | One effect pass that draws a run of colour transforms in order. |
 | `Gap` | const | The `<Gap>` element ([reference](/reference/elements/gap)). |
+| `GapElement` | interface | The kit's part of a gap. |
 | `GapProps` | interface | The props of a `<Gap>`, as its schema parses them. |
 | `GaussOutside` | type | Past the frame's edge. |
 | `gaussScale` | function | The scale a blur of σ frame pixels is drawn at. |
@@ -690,10 +691,12 @@ Every name each entry exports, read from the code. The sections above explain th
 | `installLayerEngine` | function | Install (or with `null`, remove) the engine that draws `<Layer engine={name}>` tags such as `<Three>`. |
 | `installSceneSource` | function |  |
 | `InvalidRef` | interface | A reference that reads as none of the forms asked for. |
+| `isBetween` | function | Stands between two items of a sequence, with no place of its own in the video. |
 | `isBuiltInTransition` | function |  |
 | `isBundledFont` | function |  |
 | `isDomOverlay` | function | Drawn as DOM alone, over the canvas, for a stretch of time. |
 | `isDropFrame` | const | Whether a rate is shown in drop-frame timecode. |
+| `isEmptyTime` | function | Holds empty time in a sequence, before the next item. |
 | `isGenerator` | function | Whether a value written in a prop is a generator. |
 | `isKeyframeProperty` | function | A property a key list can animate, as the resolver names it (`transform.opacity` for <code v-pre>transform={{ opacity: […] }}</code>). |
 | `isKind` | function | Whether a string is an element kind. |
@@ -933,6 +936,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `TRANSITION_PARAMS` | const | Per-type params schemas of the built-in transitions. |
 | `TRANSITION_TYPES` | const | The built-in transition types, in the registry's order. |
 | `TransitionComponent` | interface | `<Transition>`. |
+| `TransitionElement` | interface | The kit's part of a transition. |
 | `TransitionEntry` | interface |  |
 | `TransitionParams` | type | The params a built-in transition takes, as written in `<Transition params>`. |
 | `TransitionParamsOf` | type | The params of a transition type. |
