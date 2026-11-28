@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { themeSchema } from "../../theme/schema";
 import { zEasing, zTrackLayout, zTrackRole } from "../enums";
+import { ref } from "../ref-sites";
 import { animatable, colorSchema, gradientSchema, idSchema } from "./common";
 
 export const compositionSchema = z.strictObject({
@@ -97,12 +98,12 @@ export const cameraSchema = z.strictObject({
   push: z
     .strictObject({
       /** The elements to make room for, on the camera's tracks, each as it starts. */
-      on: z.array(idSchema).min(1),
+      on: z.array(ref("push", idSchema)).min(1),
       /**
        * The only elements that must stay in view, a speaker for one, with those in `on`. Left out, everything on the
        * camera's tracks that is on screen at the moment stays in view.
        */
-      keep: z.array(idSchema).optional(),
+      keep: z.array(ref("push", idSchema)).optional(),
       /** How far inside the frame's edge everything sits, in pixels. Left out, a twentieth of the frame's shorter side. */
       margin: z.number().min(0).optional(),
       /** How long each move takes, in seconds, from the moment its element starts. */

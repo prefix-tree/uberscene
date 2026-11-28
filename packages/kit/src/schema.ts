@@ -47,6 +47,7 @@ export * from "./jsx/generators";
 export * from "./jsx/key-paths";
 export { knobsOf } from "./jsx/knobs";
 export * from "./jsx/ref";
+export * from "./jsx/ref-sites";
 export * from "./jsx/rendering";
 export { zKeyframeProperty } from "./jsx/schemas/children";
 export {

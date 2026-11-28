@@ -3,6 +3,7 @@ import { z } from "zod";
 import { zBlendMode, zEasing, zEntranceAnimation, zFitMode, zVideoEffectType } from "../enums";
 import { type KeyHow, markKey } from "../key-path";
 import { refPattern } from "../ref";
+import { ref } from "../ref-sites";
 
 // Every pattern here is made from the one reference grammar (`../ref`).
 const ID_PATTERN = refPattern(["element"], []);
@@ -26,15 +27,18 @@ export const themedLengthSchema = z
   .union([z.number().nonnegative(), z.string().regex(/^\$[A-Za-z][A-Za-z0-9_-]*$/, 'theme tokens look like "$radius"')])
   .transform((v) => (typeof v === "number" ? v : 0));
 
-export const timeRefSchema = z.union([
-  z.number().nonnegative(),
-  z
-    .string()
-    .regex(
-      TIME_REF_PATTERN,
-      'time references look like "word:12", "shot:4.end", "silence:2", "beat:16" or "marker:ID"',
-    ),
-]);
+export const timeRefSchema = ref(
+  "marker",
+  z.union([
+    z.number().nonnegative(),
+    z
+      .string()
+      .regex(
+        TIME_REF_PATTERN,
+        'time references look like "word:12", "shot:4.end", "silence:2", "beat:16" or "marker:ID"',
+      ),
+  ]),
+);
 
 /** A word, shot, silence or beat of an element's source, as `at` names it on an anchor or a duration's `until`. */
 const momentSchema = z
@@ -45,12 +49,12 @@ const durationSchema = z.union([
   z.number().positive(),
   z.literal("fill"),
   z.literal("source"),
-  z.strictObject({ match: idSchema }),
+  z.strictObject({ match: ref("match", idSchema) }),
   /**
    * Lasts until the element named ends, wherever this one starts; with `at`, until that element plays a word, shot,
    * silence or beat of its source (`{ until: "talk", at: "word:54.end" }`), which follows it when the cut changes.
    */
-  z.strictObject({ until: idSchema, at: momentSchema.optional() }),
+  z.strictObject({ until: ref("until", idSchema), at: momentSchema.optional() }),
 ]);
 
 /** Props shared by everything that occupies time on a track. */
@@ -60,12 +64,13 @@ export const timedProps = {
   /** Seconds from the start of the video. Free-layout tracks only; on a sequence track the element follows the one before it. */
   start: z.number().nonnegative().optional(),
   /** Overlays: start relative to another element's start, or to its end with `id.end`. */
-  anchor: z
-    .union([
+  anchor: ref(
+    "anchor",
+    z.union([
       z.literal("start"),
       z.string().regex(refPattern(["element"], ["end"]), 'anchors look like "hook", "hook.end" or "start"'),
-    ])
-    .optional(),
+    ]),
+  ).optional(),
   /** With `anchor`: a word, shot, silence or beat of the anchor's source (`word:14655`, `beat:16`); the start is where the anchor plays it, plus `offset`. */
   at: momentSchema.optional(),
   /** Seconds added to the start that `anchor` and `at` give; negative starts earlier. */
@@ -375,7 +380,7 @@ const followProp = {
    * left, centred in it when `x` or `y` is left out), and that element's transform, entrance and exit carry it, up
    * the chain. Its opacity, crop and corners stay its own.
    */
-  follow: idSchema.optional(),
+  follow: ref("follow", idSchema).optional(),
 };
 
 /** A transform and a box alone: what the paths that move anything placed are read from. */
@@ -428,7 +433,7 @@ export const audioProps = {
    */
   duck: z
     .strictObject({
-      under: idSchema,
+      under: ref("duck", idSchema),
       to: z.number().min(0).max(1),
       attack: z.number().nonnegative().optional(),
       release: z.number().nonnegative().optional(),

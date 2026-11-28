@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { refPattern } from "../ref";
+import { ref } from "../ref-sites";
 import { isScene, type Scene } from "../scene3d";
 import { assetRefSchema, audioProps, ramped, timedProps, timeRefSchema, visualProps } from "./common";
 
@@ -47,7 +48,7 @@ export const clipSchema = z.strictObject({
    * With a scene: moments of the edit handed into it by name, which its keys may use for `at`. `{ reveal:
    * "marker:reveal" }` puts the scene's `reveal` where the marker is, wherever the clip or the marker moves.
    */
-  times: z.record(z.string(), editTimeSchema).optional(),
+  times: z.record(z.string(), ref("sceneTime", editTimeSchema)).optional(),
   ...visualProps,
   ...audioProps,
   /** Reframe to the composition's aspect: the resolver writes `transform.crop` from the source size and this focus, unless a crop is written. */
