@@ -45,48 +45,46 @@ export const EDITOR_ELEMENTS: { readonly [K in MigratedKind]: EditorElement<K> }
   shape: { kind: "shape", icon: Shapes },
   svg: { kind: "svg", icon: Shapes },
   sticker: { kind: "sticker", icon: Shapes },
+  captions: {
+    kind: "captions",
+    icon: Captions,
+    look: {
+      keys: new Set([
+        "preset",
+        "font",
+        "weight",
+        "size",
+        "align",
+        "color",
+        "background",
+        "stroke",
+        "shadow",
+        "highlight",
+        "highlightBox",
+        "upcoming",
+      ]),
+      write: (id, style) => {
+        const action = { type: "caption/setStyle", params: { captionsId: id, style } };
+        return action as ActionInput;
+      },
+      justify: false,
+    },
+  },
+  caption: { kind: "caption", icon: Captions },
   layer: { kind: "layer", icon: Layers },
   adjustment: { kind: "adjustment", icon: Shapes },
   nested: { kind: "nested", icon: Shapes },
-};
-
-/** The icons of the kinds that have no entry above yet. */
-const OTHER_ICONS: Partial<Record<Kind, LucideIcon>> = {
-  captions: Captions,
-  caption: Captions,
-};
-
-/** The text panels of the kinds that have no entry above yet. */
-const OTHER_LOOKS: Partial<Record<Kind, LookPanel>> = {
-  captions: {
-    keys: new Set([
-      "preset",
-      "font",
-      "weight",
-      "size",
-      "align",
-      "color",
-      "background",
-      "stroke",
-      "shadow",
-      "highlight",
-      "highlightBox",
-      "upcoming",
-    ]),
-    write: (id, style) => {
-      const action = { type: "caption/setStyle", params: { captionsId: id, style } };
-      return action as ActionInput;
-    },
-    justify: false,
-  },
+  multicam: { kind: "multicam", icon: Shapes },
+  angle: { kind: "angle", icon: Shapes },
+  cut: { kind: "cut", icon: Shapes },
 };
 
 /** A kind's icon in the layers list. */
 export function iconOf(kind: Kind): LucideIcon {
-  return (isMigratedKind(kind) ? EDITOR_ELEMENTS[kind].icon : OTHER_ICONS[kind]) ?? Shapes;
+  return isMigratedKind(kind) ? EDITOR_ELEMENTS[kind].icon : Shapes;
 }
 
 /** A kind's text panel, or undefined for a kind whose `style` is not a text look. */
 export function lookPanelOf(kind: Kind): LookPanel | undefined {
-  return isMigratedKind(kind) ? EDITOR_ELEMENTS[kind].look : OTHER_LOOKS[kind];
+  return isMigratedKind(kind) ? EDITOR_ELEMENTS[kind].look : undefined;
 }
