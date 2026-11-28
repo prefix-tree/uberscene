@@ -13,8 +13,8 @@ import {
   isEmptyTime,
   type Kind,
   keyPathOfProperty,
-  MAIN_TRACK_KINDS,
   MAX_SECONDS,
+  onMainTrack,
   parseRate,
   type Rate,
   RESPELLED_VALUES,
@@ -112,8 +112,6 @@ function withRange(source: PendingSource | undefined): PlacementSource | undefin
   const start = T(source.in);
   return { ...source, range: rangeOf(start, T(source.out).minus(start)) };
 }
-
-const MAIN_KINDS: ReadonlySet<string> = new Set(MAIN_TRACK_KINDS);
 
 export interface ResolvedTrack {
   readonly id: string;
@@ -1082,7 +1080,7 @@ function compute(
       intrinsic(child, null, pending, manifest, markers, markersKey, theme, errors);
     } else if (sdkElement(child.kind)?.makes?.when === "placing") {
       errors.push({ code: "INVALID_CHILD", id: child.id, message: "<Multicam> belongs inside a <Track>" });
-    } else if (MAIN_KINDS.has(child.kind)) {
+    } else if (onMainTrack(child.kind)) {
       // Left here only when the id "main" is taken, which `collect` has reported.
     } else if (child.kind !== "marker") {
       errors.push({

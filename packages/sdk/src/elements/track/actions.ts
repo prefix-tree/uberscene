@@ -1,11 +1,6 @@
 import { isBetween, isEmptyTime, type Kind, Time } from "@uberscene/kit/schema";
 
-import { makesOnTrack } from "../../elements";
-import { gapNode } from "../../elements/gap";
-import type { PatchLog } from "../../patches/types";
-import type { Placement, ResolvedState } from "../../resolve/resolve";
-import { S, startSeconds, T } from "../../time";
-import { carry, carryTrackRemoval } from "../carry";
+import { carry, carryTrackRemoval } from "../../actions/carry";
 import {
   define,
   insertNode,
@@ -17,9 +12,14 @@ import {
   setProps,
   siblingAfter,
   uniqueId,
-} from "../handler-kit";
-import { type ActionInput, invalid, type NodeSpec, nodeSpecOf, ok } from "../types";
-import { restoreTiming } from "./clip-timing";
+} from "../../actions/handler-kit";
+import { restoreTiming } from "../../actions/handlers/clip-timing";
+import { type ActionInput, invalid, type NodeSpec, nodeSpecOf, ok } from "../../actions/types";
+import type { PatchLog } from "../../patches/types";
+import type { Placement, ResolvedState } from "../../resolve/resolve";
+import { S, startSeconds, T } from "../../time";
+import { makesOnTrack } from "..";
+import { gapNode } from "../gap";
 
 /** A microsecond, in ticks: a hole or an overlap smaller than this is none. */
 const EPS = T(1e-6);

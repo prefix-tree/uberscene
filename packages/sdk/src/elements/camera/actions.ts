@@ -1,11 +1,11 @@
 // A camera is a parent of the tracks it moves, so putting one in and taking it out are moves of tracks: they keep
 // their place in the file, and with it what draws over what.
 
+import { define, insertNode, makePropHandler, rawNode, siblingAfter } from "../../actions/handler-kit";
+import { type ActionInput, type CameraPush, invalid, ok, type ValidationResult } from "../../actions/types";
 import type { Json } from "../../patches/types";
 import type { ResolvedState } from "../../resolve/resolve";
 import { startSeconds } from "../../time";
-import { define, insertNode, makePropHandler, rawNode, siblingAfter } from "../handler-kit";
-import { type ActionInput, type CameraPush, invalid, ok, type ValidationResult } from "../types";
 
 const FIELDS = ["x", "y", "zoom", "rotation"] as const;
 

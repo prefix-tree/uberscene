@@ -1,7 +1,7 @@
+import { carry, carryMarkerRemoval } from "../../actions/carry";
+import { define, insertNode, makePropHandler, rawNode, siblingAfter } from "../../actions/handler-kit";
+import { invalid, nodeOfSpec, nodeSpecOf, ok } from "../../actions/types";
 import type { Json } from "../../patches/types";
-import { carry, carryMarkerRemoval } from "../carry";
-import { define, insertNode, makePropHandler, rawNode, siblingAfter } from "../handler-kit";
-import { invalid, nodeOfSpec, nodeSpecOf, ok } from "../types";
 
 define({
   type: "marker/add",

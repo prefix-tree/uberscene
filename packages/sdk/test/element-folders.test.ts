@@ -42,7 +42,7 @@ describe("the kinds with a folder of their own", () => {
     expect(Object.keys(SDK_ELEMENTS).sort()).toEqual(Object.keys(KIT_ELEMENTS).sort());
     for (const [kind, element] of Object.entries(SDK_ELEMENTS)) expect(element.kind).toBe(kind);
     expect(sdkElement("title")).toBe(SDK_ELEMENTS.title);
-    expect(sdkElement("track")).toBeUndefined();
+    expect(sdkElement("effect")).toBeUndefined();
   });
 });
 

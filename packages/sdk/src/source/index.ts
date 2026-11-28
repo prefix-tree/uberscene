@@ -1,14 +1,7 @@
 import traverseModule from "@babel/traverse";
 import * as t from "@babel/types";
 
-import {
-  COMPONENT_NAMES,
-  ELEMENTS,
-  ENGINE_LAYERS,
-  type Kind,
-  MAIN_TRACK_ID,
-  MAIN_TRACK_KINDS,
-} from "@uberscene/kit/schema";
+import { COMPONENT_NAMES, ELEMENTS, ENGINE_LAYERS, type Kind, MAIN_TRACK_ID, onMainTrack } from "@uberscene/kit/schema";
 
 import type { Json } from "../patches/types";
 import { INTERIOR_PREFIX } from "../resolve/tree";
@@ -64,8 +57,6 @@ interface InteriorSite {
   readonly lockedProps: readonly string[];
   readonly boundProps: Readonly<Record<string, string>>;
 }
-
-const MAIN_KINDS: ReadonlySet<string> = new Set(MAIN_TRACK_KINDS);
 
 export interface ElementSite {
   readonly generated: false;
@@ -400,7 +391,7 @@ export function buildSourceIndex(text: string): SourceIndex {
   // for it, spanning from the first of them to the last.
   if (compositionId !== null && !elements.has(MAIN_TRACK_ID)) {
     const direct = [...elements.values()]
-      .filter((e) => e.parent === compositionId && MAIN_KINDS.has(e.kind))
+      .filter((e) => e.parent === compositionId && onMainTrack(e.kind))
       .sort((a, b) => a.range[0] - b.range[0]);
     const first = direct[0];
     const last = direct[direct.length - 1];

@@ -92,9 +92,17 @@ function keysFor(key: KeyPath): { at: number; value: unknown }[] {
   ];
 }
 
-// A kind that stands only inside another (a cue, a camera angle, a cut) is held to what concerns it alone: its sample
+// A kind that stands only inside another (a cue, a camera angle, a cut), or that is the shape of the file, is held to
+// what concerns it alone: its sample
 // resolves, it is placed or read as written, and it has a page. Its parent's sample runs what it is offered.
-const STANDS_INSIDE = (kind: MigratedKind): boolean => KIT_ELEMENTS[kind].traits.placementScope === "child";
+const STANDS_INSIDE = (kind: MigratedKind): boolean => {
+  const { placementScope, plane } = KIT_ELEMENTS[kind].traits;
+  // The structural kinds (the composition, a track, the camera, a marker) are the file's shape: not elements a tool
+  // lists in its rows, and their actions are held by their own tests.
+  return (
+    placementScope === "child" || placementScope === "none" || (placementScope === "composition" && plane === "none")
+  );
+};
 
 describe.each(SAMPLE_KINDS.filter(STANDS_INSIDE).map((kind) => [kind, sampleFile(kind)] as const))(
   "a %s, inside its parent",
