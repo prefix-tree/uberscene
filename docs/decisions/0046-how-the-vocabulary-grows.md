@@ -261,20 +261,56 @@ player (4.1) and 7.1 s for render (6.5), measured on one busy machine.
 - **Mixed circles across times, places and values as one check:** they cannot occur, and the check would refuse
   legal files.
 
+## The second pull request: every kind in its folder
+
+Every kind a file writes now has a folder in each package: the media (clip, audio, nested), the transition and the
+gap, captions and their cues, multicam with its angles and cuts, and the structural kinds (composition, track, camera,
+marker). The kinds an element holds (a mask, an effect, a key, a generator, a speed key, a hold) have no folder: each
+says its row in `packages/kit/src/elements/derived.ts`. The fallback tables are deleted; the kind table is computed
+from the folders and those rows.
+
+What the entries learned to say, each in place of a test for a kind's name:
+
+- `SdkElement.timing`, `shader` and `complete`: how long a transition or a gap lasts, which shaders a transition's type
+  names, and the params a built-in transition fills in.
+- `SdkElement.makes`: a kind that makes elements of its own. A multicam makes a clip of each cut as its track is
+  placed; captions make their cues once every track is. `made` marks a cue, timed by its captions.
+- `PlayerElement.decodes`, `sound` and `shownBy`: what is decoded to paint a clip, how a nested sequence is heard, and
+  what stands for a multicam on its track. Footage paints through one shared op.
+- `RenderElement.drawsNothing`: a sound has no part in a frame's key.
+- `isBetween` and `isEmptyTime` ask a kind's sequence role; `onMainTrack` is the one question for the main track.
+
+Where the shape of the file is read (the resolver's walk, the source index, the fold, a reference's `marker:` and
+`track:` prefixes), the structural kinds are still named, as section 4 says. Each such file is listed in the
+ratchet's `allow`, with the kinds it may name and why. The layout check's three uses of the captions' name are listed
+there too, to move into the export's captions folder.
+
+Measured on the second pull request:
+
+| | compare | list | cast | read |
+|---|---|---|---|---|
+| sdk, before | 121 | 23 | 70 | 74 |
+| sdk, after | 36 | 3 | 70 | 74 |
+| player, before | 10 | 0 | 30 | 24 |
+| player, after | 0 | 0 | 27 | 23 |
+| render, before | 18 | 1 | 11 | 1 |
+| render, after | 9 | 0 | 11 | 1 |
+
+The kit counts went from 3, 1, 4, 3 to 2, 1, 4, 3, and the editor's stayed at 4 (the camera's panel). Kit
+declarations are 1.01 MB, from 1.04. A new element still writes six files and changes seven. The edit step's bench
+and the typecheck times are the same as main's, and nothing drawn moved a pixel.
+
+Two bugs the conformance suite found on the way, each fixed with a test: an edit that sets props was offered where
+its own test said no (an effect to remove on an element with none), and removing a track was refused when another
+track's element read one of its elements.
+
 ## What is next
 
-A second pull request, after this one:
-
-- The kinds not yet moved: the media elements (clip, audio, nested), the transition and the gap, captions and
-  multicam, and the structural kinds (composition, track, camera, marker). The tables this design replaced stay as
-  their fallback until then, and are deleted with the last of them.
-- `Placement` as the typed union in the public types, and the items the resolver makes (keys, generators, effects,
-  speed keys, holds) as typed kinds without folders.
+- `Placement` as the typed union in the public types.
 - The 101 action handlers as a typed table.
 
 Proposed, not planned:
 
 - Anchors and matched lengths placed in the graph's order, in place of repeated passes, with one circle report.
-- Hooks for the kinds that place children of their own (captions, multicam), one per phase of the resolver.
 - One list of references on the inspect rows, in place of a field per kind of reference, and one action that bakes
   any reference into what it reads (`camera/bakePush` for all of them).
