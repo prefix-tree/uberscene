@@ -5,6 +5,7 @@ import {
   capabilitiesOf,
   type ElementBox,
   frameStartSeconds,
+  isBetween,
   rateLabel,
   round3,
   secondsToTicks,
@@ -253,7 +254,7 @@ export function formatTimeline(file: string, rows: TimelineRows): string {
         ? `${seconds(e.start).padStart(7)}–${seconds(e.end).padEnd(7)}`
         : seconds(e.start).padStart(7).padEnd(15);
     const parts = [when, e.kind.padEnd(10), e.id];
-    if (e.kind === "transition")
+    if (isBetween(e.kind))
       parts.push(`${e.type ?? ""} (${e.on === undefined ? `${e.from} → ${e.to}` : `${e.edge} of ${e.on}`})`);
     if (e.ground) parts.push("ground");
     if (e.asset)
