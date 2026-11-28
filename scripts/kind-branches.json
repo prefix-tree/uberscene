@@ -1,25 +1,25 @@
 {
   "counts": {
     "kit": {
-      "compare": 3,
+      "compare": 2,
       "list": 1,
       "cast": 4,
       "read": 3
     },
     "sdk": {
-      "compare": 114,
-      "list": 22,
+      "compare": 89,
+      "list": 20,
       "cast": 70,
       "read": 74
     },
     "player": {
-      "compare": 4,
+      "compare": 3,
       "list": 0,
       "cast": 27,
       "read": 23
     },
     "render": {
-      "compare": 18,
+      "compare": 17,
       "list": 0,
       "cast": 11,
       "read": 1
@@ -32,8 +32,6 @@
     }
   },
   "ignore": [
-    "packages/kit/src/jsx/effect-params.ts: kind === \"transition\"",
-    "packages/kit/src/jsx/shader-definition.ts: kind === \"transition\"",
     "packages/kit/src/jsx/shaders.ts: p.kind === \"transition\"",
     "packages/sdk/src/inspect/sync.ts: e.kind === \"marker\""
   ],
@@ -56,6 +54,11 @@
       "file": "packages/player/src/model/visible.ts",
       "kinds": ["clip"],
       "why": "A multicam is drawn through the clips made of its cuts. Goes with the multicam's own folder."
+    },
+    {
+      "file": "packages/kit/src/jsx/shaders.ts",
+      "kinds": ["transition"],
+      "why": "A shader the file declares with transition() is marked as a transition's, by that name, and a file uses shaders when an effect or a transition names one. The kind table cannot be asked here: it loads after this file."
     }
   ]
 }
