@@ -20,6 +20,7 @@ import { sdkElement } from "../elements";
 import { shortCuts } from "./cache";
 import type { ResolveError } from "./errors";
 import { expandedRoot } from "./expand";
+import { inside } from "./inside";
 import { EFFECT_PARAM_PATH } from "./link";
 import type { CollectedNode, CollectedTree } from "./tree";
 
@@ -486,12 +487,9 @@ function readMarked(kind: RefKind, sites: readonly RefSite[], node: CollectedNod
   return out ?? NOTHING;
 }
 
-/** Every reference a node writes, as text: the kind of reference, the prop it sits at and what is written there. */
-export function referencesWritten(node: CollectedNode): { type: string; prop: string; text: string }[] {
-  return writtenOf(node).flatMap(({ kind, written }) =>
-    written.map((w) => ({ type: kind.name, prop: w.prop, text: w.text })),
-  );
-}
+// The tests read what each node writes, text and all, without the package exporting it.
+inside.written = (node) =>
+  writtenOf(node).flatMap(({ kind, written }) => written.map((w) => ({ type: kind.name, prop: w.prop, text: w.text })));
 
 /** The ids a written reference names, among what exists. */
 function named(target: RefTarget, ctx: RefContext): string[] {

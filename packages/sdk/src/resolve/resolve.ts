@@ -62,7 +62,7 @@ import { derivedOrigin, expandedRoot, expandKeys, expansionOf } from "./expand";
 import { lowerLinks } from "./link";
 import { layersIn, nodeIn, overlay, sameIdsAsSource } from "./overlay";
 import { type PushSpec, pushKeys } from "./push";
-import { graphOf, graphOfFile, type InFileOrder, type RefContext, type RefGraph } from "./refs";
+import { graphOf, graphOfFile, type InFileOrder, REF_KINDS, type RefContext, type RefGraph } from "./refs";
 import { placeScene, type SceneUse, sceneAssetId, withSceneAssets } from "./scene3d";
 import { freezeHoldsOf, heldWithin, holdTotal, rampAdvance, rampInverse, reachedHolds, speedKeysOf } from "./speed";
 import type { CollectedNode, CollectedTree, Editable, LayerInterior } from "./tree";
@@ -475,6 +475,12 @@ function walkable(
   if (dotted) return null;
   return playsScene(root, source) ? null : root;
 }
+
+/**
+ * The ways to refer whose errors the resolver says where it does their work: a duck's on the sound, a push's and a
+ * link's where their keys are made. Every other way's errors are said together, after the checks of the items.
+ */
+const SAID_WITH_THEIR_WORK: ReadonlySet<string> = new Set(["duck", "push", "link"]);
 
 /** Each track of the composition, those in its camera among them, in the file's order. */
 function eachTrack(root: CollectedNode, visit: (track: CollectedNode) => void): void {
@@ -1525,7 +1531,11 @@ function compute(
     errors.push(...keyframeErrors(keyframes, items));
     errors.push(...generatorErrors(made, items));
   }
-  errors.push(...(refs.errors.get("follow") ?? []));
+  // What the graph found wrong with each other way to refer (a follow that names nothing), in the order of the ways.
+  for (const name of Object.keys(REF_KINDS)) {
+    const found = SAID_WITH_THEIR_WORK.has(name) ? undefined : refs.errors.get(name);
+    if (found) errors.push(...found);
+  }
   const rate = rateOf(compParsed.fps, root.id, errors);
   // A time the file says past the limit is held at it (`T`, `plusClamped`), so a video that reaches it is too long.
   if (duration.toSeconds() > MAX_SECONDS)

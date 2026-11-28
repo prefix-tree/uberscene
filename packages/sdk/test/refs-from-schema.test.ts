@@ -10,7 +10,7 @@ import { describe, expect, it } from "vitest";
 import { resolve } from "@uberscene/sdk";
 
 import { expandKeys } from "../src/resolve/expand";
-import { referencesWritten } from "../src/resolve/refs";
+import { inside } from "../src/resolve/inside";
 import { CORPUS, type CorpusFile, folder, treeOf } from "./editing/corpus";
 import { manifest } from "./helpers";
 
@@ -72,7 +72,7 @@ function written(file: CorpusFile): string[] {
   const out: string[] = [];
   // A link is read from the items the resolver makes of an element's props, so the tree is read with them.
   for (const node of expandKeys(state.tree).byId.values())
-    for (const w of referencesWritten(node)) out.push(`${node.id} ${w.type} ${w.prop}=${w.text}`);
+    for (const w of inside.written?.(node) ?? []) out.push(`${node.id} ${w.type} ${w.prop}=${w.text}`);
   return out;
 }
 
