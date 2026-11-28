@@ -30,6 +30,7 @@
     "registry:build": "tsx packages/editor/scripts/registry.ts",
     "docs:test": "node --import tsx --test scripts/decisions.test.ts scripts/generated-files.test.ts scripts/skill.test.ts scripts/skill-sync.test.ts scripts/stage-release.test.mjs",
     "docs:bench": "tsx scripts/site-bench.ts",
+    "bench:edit": "pnpm --filter @uberscene/sdk bench:edit",
     "docs:examples": "pnpm --filter @uberscene/example-showcase docs",
     "blocks:previews": "tsx packages/render/scripts/block-previews.ts",
     "build": "pnpm -r build",

@@ -2,6 +2,7 @@ import { tidySeconds } from "@uberscene/kit/schema";
 
 import { asJson } from "../patches/log";
 import type { Json, PatchLog } from "../patches/types";
+import { hasNodeIn, nodeIn } from "../resolve/overlay";
 import type { Placement as ResolvedPlacement, ResolvedState } from "../resolve/resolve";
 import { type CollectedNode, INTERIOR_PREFIX } from "../resolve/tree";
 import { type ActionHandler, type ElementTarget, registerHandler } from "./registry";
@@ -138,7 +139,7 @@ export function onElement(spec: TargetSpec = {}): ElementTarget {
 // ── raw access ──────────────────────────────────────────────────────────────
 
 export function rawNode(state: ResolvedState, id: string): CollectedNode | undefined {
-  return state.tree.byId.get(id);
+  return nodeIn(state.tree, id);
 }
 
 export function rawProp(state: ResolvedState, id: string, prop: string): Json | undefined {
@@ -177,7 +178,7 @@ export function placementOf(state: ResolvedState, id: string): PlacementSpec {
 /** `base`, or `base-2`, `base-3`, … until it names nothing in the tree, the resolved items or `taken`. */
 export function uniqueId(state: ResolvedState, base: string, taken: ReadonlySet<string> = new Set()): string {
   let id = base;
-  for (let n = 2; state.tree.byId.has(id) || state.items.has(id) || taken.has(id); n++) id = `${base}-${n}`;
+  for (let n = 2; hasNodeIn(state.tree, id) || state.items.has(id) || taken.has(id); n++) id = `${base}-${n}`;
   return id;
 }
 

@@ -8,6 +8,7 @@ import { CAMERA_FIELDS, capabilitiesOf, generatorSeed, isGenerator } from "@uber
 
 import { createPatchLog } from "../patches/log";
 import type { Json, PatchLog } from "../patches/types";
+import { Cache } from "./cache";
 import type { CollectedNode, CollectedTree } from "./tree";
 
 /** A list of keys: objects, each with `at` and `value`. Anything else (a number, a list of numbers) is a constant. */
@@ -31,22 +32,53 @@ const CROP_FIELDS = ["x", "y", "width", "height"] as const;
 /** A crop's fields when none is written: the whole picture. */
 const CROP_WHOLE = { x: 0, y: 0, width: 1, height: 1 } as const;
 
-const expanded = new WeakMap<CollectedNode, CollectedNode>();
+const expanded = new Cache<CollectedNode, CollectedNode>();
+
+/** What `node` expands to, when it has been expanded: itself when it has no keys, effects or holds anywhere inside. */
+export function expansionOf(node: CollectedNode): CollectedNode | undefined {
+  return expanded.get(node);
+}
 
 /** The tree with each element's keys, effects, speed keys and holds as items under it. The same tree when none. */
 export function expandKeys(tree: CollectedTree): CollectedTree {
-  let changed = false;
   const byId = new Map(tree.byId);
+  const root = expandInto(tree.root, byId);
+  return root !== tree.root ? { ...tree, root, byId } : tree;
+}
+
+/**
+ * The root of the tree `expandKeys` gives, without its `byId`: for a reader that walks the tree from the root, and
+ * a tree whose ids are known to be each one node's.
+ */
+export function expandedRoot(root: CollectedNode, source?: ReadonlyMap<string, CollectedNode>): CollectedNode {
+  return expandInto(root, null, source);
+}
+
+/**
+ * `source`, when given, is the tree `top` was made from by patching props: a node made again has the children of
+ * the node it replaces but for the patched ones, so it takes their expansions from that node's and looks up none.
+ */
+function expandInto(
+  top: CollectedNode,
+  byId: Map<string, CollectedNode> | null,
+  source?: ReadonlyMap<string, CollectedNode>,
+): CollectedNode {
   const visit = (node: CollectedNode): CollectedNode => {
     const cached = expanded.get(node);
     if (cached) {
-      if (cached !== node) {
-        changed = true;
-        index(cached, byId);
-      }
+      if (cached !== node && byId) index(cached, byId);
       return cached;
     }
-    const kids = node.children.map(visit);
+    const was = source?.get(node.id);
+    const before = was && was !== node && was.children.length === node.children.length ? expanded.get(was) : undefined;
+    let kids: CollectedNode[];
+    if (was && before) {
+      kids = new Array<CollectedNode>(node.children.length);
+      for (let i = 0; i < kids.length; i++) {
+        const child = node.children[i] as CollectedNode;
+        kids[i] = child === was.children[i] ? (before.children[i] as CollectedNode) : visit(child);
+      }
+    } else kids = node.children.map(visit);
     const own = expandNode(node);
     const out =
       own === null && kids.every((k, i) => k === node.children[i])
@@ -56,16 +88,15 @@ export function expandKeys(tree: CollectedTree): CollectedTree {
             props: own?.props ?? node.props,
             children: [...kids, ...(own?.derived ?? [])],
           };
-    if (out !== node) {
-      changed = true;
+    if (out !== node && byId) {
       byId.set(out.id, out);
       for (const d of own?.derived ?? []) index(d, byId);
     }
-    expanded.set(node, out);
+    // A node the log made again is made again by the next patch too: its expansion is never asked for twice.
+    if (!was || was === node) expanded.set(node, out);
     return out;
   };
-  const root = visit(tree.root);
-  return changed ? { ...tree, root, byId } : tree;
+  return visit(top);
 }
 
 function index(node: CollectedNode, byId: Map<string, CollectedNode>): void {
