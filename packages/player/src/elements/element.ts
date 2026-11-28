@@ -34,6 +34,11 @@ export interface PlayerElement<K extends MigratedKind> {
    * video: what the decoder pool keeps a decoder open for near the play head. Left out, nothing is decoded for it.
    */
   readonly decodes?: (state: ResolvedState, placement: PlacementMap[K]) => Decoded | null;
+  /**
+   * What is drawn and heard in its place on its track, in time order: a multicam's clips, made of its cuts. Left out,
+   * it stands for itself.
+   */
+  readonly shownBy?: (state: ResolvedState, placement: PlacementMap[K]) => readonly Placement[];
   /** How it is heard, for a kind whose sound is not its asset's alone (a nested sequence plays its own tracks). */
   readonly sound?: Sound<K>;
 }

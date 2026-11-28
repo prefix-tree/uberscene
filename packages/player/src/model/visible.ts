@@ -6,10 +6,10 @@ import {
   type ResolvedState,
   type ResolvedTrack,
   secondsSinceStart,
-  startSeconds,
   startTicks,
 } from "@uberscene/sdk/resolver";
 
+import { shownFor } from "../elements";
 import { ease } from "./keyframes";
 
 export interface TransitionRole {
@@ -73,14 +73,7 @@ export function trackItems(state: ResolvedState, track: ResolvedTrack): Placemen
   for (const id of track.items) {
     const p = state.items.get(id);
     if (!p) continue;
-    if (p.kind === "multicam") {
-      const generated = [...state.items.values()]
-        .filter((q) => q.parent === id && q.kind === "clip")
-        .sort((a, b) => startSeconds(a) - startSeconds(b));
-      out.push(...generated);
-      continue;
-    }
-    out.push(p);
+    out.push(...shownFor(state, p));
   }
   return out;
 }

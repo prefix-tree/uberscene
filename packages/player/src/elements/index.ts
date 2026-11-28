@@ -6,10 +6,12 @@ import { type Placement, placed, type ResolvedState } from "@uberscene/sdk/resol
 import type { IntrinsicSize } from "../overlays/size";
 import { adjustment } from "./adjustment";
 import { audio } from "./audio";
+import { caption, captions } from "./captions";
 import { clip } from "./clip";
 import type { Decoded, PlayerElement, SoundInput } from "./element";
 import { gap } from "./gap";
 import { layer } from "./layer";
+import { angle, cut, multicam } from "./multicam";
 import { nested } from "./nested";
 import { shape } from "./shape";
 import { sticker } from "./sticker";
@@ -26,9 +28,14 @@ export const PLAYER_ELEMENTS: { readonly [K in MigratedKind]: PlayerElement<K> }
   shape,
   svg,
   sticker,
+  captions,
+  caption,
   layer,
   adjustment,
   nested,
+  multicam,
+  angle,
+  cut,
 };
 
 function sizeAs<K extends MigratedKind>(
@@ -89,4 +96,18 @@ function soundAs<K extends MigratedKind>(kind: K, p: Placement): ElementSound | 
 /** How `p` is heard, where its kind says so; undefined where it plays its own asset. */
 export function elementSound(p: Placement): ElementSound | undefined {
   return isMigratedKind(p.kind) ? soundAs(p.kind, p) : undefined;
+}
+
+function shownAs<K extends MigratedKind>(
+  kind: K,
+  state: ResolvedState,
+  p: Placement,
+): readonly Placement[] | undefined {
+  const placement = placed(p, kind);
+  return placement && PLAYER_ELEMENTS[kind].shownBy?.(state, placement);
+}
+
+/** What is drawn and heard in `p`'s place on its track: what its kind gives (a multicam's clips), or `p` itself. */
+export function shownFor(state: ResolvedState, p: Placement): readonly Placement[] {
+  return (isMigratedKind(p.kind) ? shownAs(p.kind, state, p) : undefined) ?? [p];
 }

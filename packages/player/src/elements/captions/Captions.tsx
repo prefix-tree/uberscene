@@ -1,6 +1,6 @@
 import type { Placement, ResolvedState } from "@uberscene/sdk/resolver";
 
-import { captionsContent } from "../../overlays/content";
+import { captionsContent } from "./content";
 
 export interface CaptionsProps {
   readonly placement: Placement;

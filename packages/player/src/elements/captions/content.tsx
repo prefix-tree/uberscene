@@ -6,9 +6,9 @@ import type { CSSProperties, ReactNode } from "react";
 import { fontFamily } from "@uberscene/kit";
 import { lengthSeconds, type Placement, secondsSinceStart, startSeconds } from "@uberscene/sdk/resolver";
 
-import { isVisibleAt } from "../model/visible";
-import { captionPlace, captionPlacement } from "./caption-placement";
-import type { ElementProps } from "./layout";
+import { isVisibleAt } from "../../model/visible";
+import { captionPlace, captionPlacement } from "../../overlays/caption-placement";
+import type { ElementProps } from "../../overlays/layout";
 
 /**
  * What each overlay element draws, as a React tree with no hooks and no DOM

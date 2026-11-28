@@ -15,7 +15,8 @@ import { buildAudioPlan, buildFramePlan, visiblePlacements } from "./internal";
 /** The plane the kit says a kind stands on, as any plane. */
 const planeOf = (kind: MigratedKind): DrawPlane => KIT_ELEMENTS[kind].traits.plane;
 
-describe.each(SAMPLE_KINDS)("a %s", (kind) => {
+// A kind that stands only inside another (a cue, a camera angle, a cut) is drawn by its parent, whose sample shows it.
+describe.each(SAMPLE_KINDS.filter((kind) => KIT_ELEMENTS[kind].traits.placementScope !== "child"))("a %s", (kind) => {
   const file = sampleFile(kind);
   const module = loadModule(file.text) as { default: () => ReactNode };
   const load = () => resolve(collectModule(module as never, {}, { index: buildSourceIndex(file.text) }), file.manifest);
@@ -24,6 +25,11 @@ describe.each(SAMPLE_KINDS)("a %s", (kind) => {
     const state = load();
     expect(state.errors).toEqual([]);
     // A kind on no plane is heard, or is drawn by others (a transition by its clips) and keeps its stretch of time.
+    // One drawn over every track (captions) is not among a track's visible elements: it spans the video.
+    if (KIT_ELEMENTS[kind].traits.placementScope === "composition") {
+      expect(state.items.get(SAMPLE)?.range.isEmpty()).toBe(false);
+      return;
+    }
     if (planeOf(kind) !== "none") expect(visiblePlacements(state, 1).map((v) => v.placement.id)).toContain(SAMPLE);
     else if (capabilitiesOf(kind).audio) expect(buildAudioPlan(state, 0, 3).map((o) => o.id)).toContain(SAMPLE);
     else expect(state.items.get(SAMPLE)?.range.isEmpty()).toBe(false);
