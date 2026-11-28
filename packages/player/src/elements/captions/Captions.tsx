@@ -1,0 +1,14 @@
+import type { Placement, ResolvedState } from "@uberscene/sdk/resolver";
+
+import { captionsContent } from "./content";
+
+export interface CaptionsProps {
+  readonly placement: Placement;
+  readonly state: ResolvedState;
+  readonly time: number;
+}
+
+/** The active caption lines, positioned by the captions style; karaoke colours words by their timing. */
+export function Captions(p: CaptionsProps) {
+  return captionsContent(p);
+}

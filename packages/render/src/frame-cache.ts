@@ -2,6 +2,7 @@
 // elements on screen at that time with their resolved props, the media files they read, the composition's settings,
 // the fonts, and the version of UberScene and of Chrome. A frame an edit did not touch keeps its key, so it is read
 // from disk instead of drawn again; a frame it did touch gets a new key, and the old file is simply never read.
+
 import { createHash } from "node:crypto";
 import { mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -10,14 +11,17 @@ import { capabilitiesOf, frameStartSeconds, motionBlurOf, shutterTimes } from "@
 import type { MediaResolver } from "@uberscene/player/engine";
 import {
   endSeconds,
+  isCaptions,
   lengthTicks,
   lookupAsset,
+  makesOnTrack,
   type Placement,
   REF_KINDS,
   type ResolvedState,
   startSeconds,
 } from "@uberscene/sdk";
 
+import { drawsNothing } from "./elements";
 import type { FontFile } from "./fonts";
 import type { ExportSource } from "./renderer";
 import { CHROME_MILESTONE } from "./web/chrome";
@@ -32,9 +36,6 @@ const VERSION = (() => {
     return "unknown";
   }
 })();
-
-/** Elements that draw nothing. */
-const SILENT = new Set(["audio", "marker"]);
 
 /**
  * A value as text, the same for the same value whatever its key order. What JSON cannot hold is written by what it
@@ -90,15 +91,16 @@ function drawnAt(state: ResolvedState, t: number): Placement[] {
     for (const id of p.children) {
       const child = state.items.get(id);
       // Captions hold a cue for every line said; only the one on screen draws.
-      if (child && (p.kind !== "captions" || covers(child))) add(child);
+      if (child && (!isCaptions(p.kind) || covers(child))) add(child);
     }
   };
   for (const p of state.items.values()) {
     if (p.kind === "composition" || p.kind === "track") out.set(p.id, p);
-    else if (!SILENT.has(p.kind) && lengthTicks(p) > 0 && covers(p)) {
+    // A sound draws nothing, and a marker is a moment with no length: neither is in a frame's key.
+    else if (!drawsNothing(p.kind) && lengthTicks(p) > 0 && covers(p)) {
       const parent = state.items.get(p.parent ?? "");
       // A child is added with its parent; a multicam's generated clips name it as their parent and are added here.
-      if (!parent || parent.kind === "track" || parent.kind === "composition" || parent.kind === "multicam") add(p);
+      if (!parent || parent.kind === "track" || parent.kind === "composition" || makesOnTrack(parent.kind)) add(p);
     }
   }
   return [...out.values()];

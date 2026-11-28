@@ -4,6 +4,7 @@ import {
   capabilitiesOf,
   frameStartSeconds,
   framesUntil,
+  isBetween,
   nearestFrame,
   onOverlayPlane,
   parseRef,
@@ -12,9 +13,9 @@ import {
   Time,
 } from "@uberscene/kit/schema";
 
+import { type AssetPlay, onTimeline } from "../elements/captions/cues";
 import { entriesOf, parseTimeRef } from "../manifest/timeref";
 import { type AssetEntry, lookupAsset } from "../manifest/types";
-import { type AssetPlay, onTimeline } from "../resolve/captions";
 import type { Placement, ResolvedState } from "../resolve/resolve";
 import { endSeconds, S, startSeconds } from "../time";
 import { playOf, playsOf } from "./plays";
@@ -161,7 +162,7 @@ export function resolveMoments(
         errors.push(`${m.text}: the file has no element with the id "${m.id}"`);
       } else if (p.range.isEmpty()) {
         errors.push(`${m.text}: ${p.kind} "${m.id}" has no time of its own on the timeline`);
-      } else if (p.kind === "transition" && !m.point) {
+      } else if (isBetween(p.kind) && !m.point) {
         const [a, b] = p.between ?? ["the clip before", "the clip after"];
         add(
           `${m.id}.before`,
@@ -262,7 +263,7 @@ export function aroundMoments(
     const t = Math.min(Math.max(0, time), duration);
     return { label, time: round3(t), frame: Math.min(frames - 1, nearestFrame(t, rate)), about };
   };
-  if (p.kind === "transition") {
+  if (isBetween(p.kind)) {
     const [a, b] = p.between ?? ["the clip before", "the clip after"];
     return {
       errors: [],
@@ -309,7 +310,7 @@ export function skimMoments(state: ResolvedState): Moment[] {
     found.push({ label, time: round3(t), frame: Math.min(frames - 1, nearestFrame(t, rate)), about });
   };
   const overlayMids = new Set<string>();
-  const transitions = [...state.items.values()].filter((p) => p.kind === "transition");
+  const transitions = [...state.items.values()].filter((p) => isBetween(p.kind));
   for (const p of state.items.values()) {
     if (p.range.isEmpty() || p.track === null) continue;
     if (capabilitiesOf(p.kind).plane === "canvas") {

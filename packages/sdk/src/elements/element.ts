@@ -1,8 +1,9 @@
 // What the SDK says of one element kind, in the kind's own folder (`elements/<kind>/index.ts`), beside the kit's
 // part (`KitElement`) and typed by the kind's placement: what the resolver, the tools and the lint ask of a kind, in
 // place of a test for its name where they work.
-import type { Box, Kind } from "@uberscene/kit/schema";
+import type { Box, Kind, KindProps, Time } from "@uberscene/kit/schema";
 
+import type { Makes } from "../resolve/resolve";
 import type { CollectedNode } from "../resolve/tree";
 import type { Deprecation } from "../source/lint/deprecation";
 import type { PlacementFacts, PlacementMap } from "./placement";
@@ -31,6 +32,22 @@ interface SdkElementBase<K extends Kind> {
   readonly moved?: (at: string, keys: readonly string[]) => readonly string[];
   /** The lint's rows for the kind's old spellings, which `uberscene lint --fix` moves a file across. */
   readonly deprecations?: readonly Deprecation[];
+  /**
+   * How long it lasts from its props as written, for a kind that plays no source and takes no length from another
+   * element: a transition's overlap, a gap's empty time. Its props may not have parsed.
+   */
+  readonly timing?: (written: Readonly<Record<string, unknown>>) => Time;
+  /**
+   * The shaders its `type` may name, besides the built-ins, when the file declares one with `transition()`: what the
+   * resolver checks its params against.
+   */
+  readonly shader?: "transition";
+  /** Its parsed props with what the schema leaves to the kind filled in: a built-in transition's params. */
+  readonly complete?: (props: KindProps[K]) => KindProps[K];
+  /** How it makes elements of its own: a multicam its clips, captions their cues. Such a kind spans the video. */
+  readonly makes?: Makes;
+  /** It is timed by the kind that holds it, which makes or places it (a cue, by its captions). */
+  readonly made?: true;
 }
 
 /**

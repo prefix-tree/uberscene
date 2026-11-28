@@ -5,20 +5,45 @@ import { type Placement, placed, type ResolvedState } from "@uberscene/sdk/resol
 
 import type { IntrinsicSize } from "../overlays/size";
 import { adjustment } from "./adjustment";
-import type { PlayerElement } from "./element";
+import { audio } from "./audio";
+import { camera } from "./camera";
+import { caption, captions } from "./captions";
+import { clip } from "./clip";
+import { composition } from "./composition";
+import type { Decoded, PlayerElement, SoundInput } from "./element";
+import { gap } from "./gap";
 import { layer } from "./layer";
+import { marker } from "./marker";
+import { angle, cut, multicam } from "./multicam";
+import { nested } from "./nested";
 import { shape } from "./shape";
 import { sticker } from "./sticker";
 import { svg } from "./svg";
 import { title } from "./title";
+import { track } from "./track";
+import { transition } from "./transition";
 
 export const PLAYER_ELEMENTS: { readonly [K in MigratedKind]: PlayerElement<K> } = {
+  composition,
+  camera,
+  track,
+  clip,
+  audio,
+  gap,
+  transition,
   title,
   shape,
   svg,
   sticker,
+  captions,
+  caption,
+  marker,
   layer,
   adjustment,
+  nested,
+  multicam,
+  angle,
+  cut,
 };
 
 function sizeAs<K extends MigratedKind>(
@@ -46,4 +71,51 @@ export function elementSize(
   loaded?: string,
 ): IntrinsicSize | undefined {
   return isMigratedKind(p.kind) ? sizeAs(p.kind, state, p, children, rel, loaded) : undefined;
+}
+
+function decodedAs<K extends MigratedKind>(kind: K, state: ResolvedState, p: Placement): Decoded | null {
+  const placement = placed(p, kind);
+  return (placement && PLAYER_ELEMENTS[kind].decodes?.(state, placement)) ?? null;
+}
+
+/** What `p` is decoded from to be painted, or null for a kind that paints no decoded video, or one that did not parse. */
+export function decodedOf(state: ResolvedState, p: Placement): Decoded | null {
+  return isMigratedKind(p.kind) ? decodedAs(p.kind, state, p) : null;
+}
+
+/** How a placement is heard, for a kind that is not heard by playing its own asset. */
+export interface ElementSound {
+  readonly occurrences: (
+    input: Omit<SoundInput<MigratedKind>, "placement">,
+  ) => ReturnType<NonNullable<PlayerElement<MigratedKind>["sound"]>["occurrences"]>;
+  readonly heard: (state: ResolvedState) => boolean;
+}
+
+function soundAs<K extends MigratedKind>(kind: K, p: Placement): ElementSound | undefined {
+  const sound = PLAYER_ELEMENTS[kind].sound;
+  const placement = placed(p, kind);
+  if (!sound || !placement) return undefined;
+  return {
+    occurrences: (input) => sound.occurrences({ ...input, placement }),
+    heard: (state) => sound.heard(state, placement),
+  };
+}
+
+/** How `p` is heard, where its kind says so; undefined where it plays its own asset. */
+export function elementSound(p: Placement): ElementSound | undefined {
+  return isMigratedKind(p.kind) ? soundAs(p.kind, p) : undefined;
+}
+
+function shownAs<K extends MigratedKind>(
+  kind: K,
+  state: ResolvedState,
+  p: Placement,
+): readonly Placement[] | undefined {
+  const placement = placed(p, kind);
+  return placement && PLAYER_ELEMENTS[kind].shownBy?.(state, placement);
+}
+
+/** What is drawn and heard in `p`'s place on its track: what its kind gives (a multicam's clips), or `p` itself. */
+export function shownFor(state: ResolvedState, p: Placement): readonly Placement[] {
+  return (isMigratedKind(p.kind) ? shownAs(p.kind, state, p) : undefined) ?? [p];
 }

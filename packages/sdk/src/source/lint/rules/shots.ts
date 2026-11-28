@@ -1,3 +1,5 @@
+import { capabilitiesOf } from "@uberscene/kit/schema";
+
 import { resolveTimeRef } from "../../../manifest/timeref";
 import { type AssetEntry, lookupAsset } from "../../../manifest/types";
 import type { ElementSite } from "../../index";
@@ -48,7 +50,8 @@ function* cutClips(
   needShots = true,
 ) {
   for (const site of index.elements.values()) {
-    if (site.kind !== "clip") continue;
+    const { footage, playsAsset } = capabilitiesOf(site.kind);
+    if (!footage || !playsAsset) continue;
     const src = site.props.get("src")?.literal;
     if (typeof src !== "string") continue;
     const asset = lookupAsset(manifest, src);

@@ -26,9 +26,10 @@ type Actions = Partial<Record<ActionType, SampleAction>>;
 /** The params for every action, on a sample of `kind`. */
 export function sampleActions({ kind, effects }: SampleOf): Actions {
   // A value that keys go on: an element's own opacity, or, for one with no transform, a param of its first effect.
-  const own = capabilitiesOf(kind).transformable;
-  const path = own ? "transform.opacity" : "effects.0.amount";
-  const wiggled = own ? "transform.rotation" : "effects.0.amount";
+  const { transformable: own, audio } = capabilitiesOf(kind);
+  // A sound with no picture keys its level.
+  const path = own ? "transform.opacity" : audio ? "volume" : "effects.0.amount";
+  const wiggled = own ? "transform.rotation" : audio ? "volume" : "effects.0.amount";
   // The effect the suite adds is the last one.
   const index = effects.length;
   const keys: ActionInput = {
@@ -47,6 +48,17 @@ export function sampleActions({ kind, effects }: SampleOf): Actions {
   const invert: ActionInput = { type: "effect/add", params: { id, effect: { type: "invert" } } };
 
   const all: Actions = {
+    "audio/setDuck": { input: { type: "audio/setDuck", params: { id, duck: { under: "samples", to: 0.3 } } } },
+    "audio/setFade": { input: { type: "audio/setFade", params: { id, in: 0.5, out: 0.5 } } },
+    "audio/setVolume": { input: { type: "audio/setVolume", params: { id, volume: 0.5 } } },
+    "clip/setFit": { input: { type: "clip/setFit", params: { id, value: "cover" } } },
+    "clip/setReverse": { input: { type: "clip/setReverse", params: { id, value: true } } },
+    "clip/setSpeed": { input: { type: "clip/setSpeed", params: { id, speed: 2 } } },
+    "clip/slip": { input: { type: "clip/slip", params: { id, delta: 0.5 } } },
+    "freeze/setAll": {
+      input: { type: "freeze/setAll", params: { id, freezes: [{ start: 0.5, duration: 0.5, source: 0.5 }] } },
+    },
+    "nested/extract": { input: { type: "nested/extract", params: { id } } },
     "box/update": { input: { type: "box/update", params: { id, box: { x: 400, y: 300 } } } },
     // Something stands before it once it starts later, so there is a gap to close.
     "clip/closeGapBefore": {
@@ -106,8 +118,78 @@ export function sampleActions({ kind, effects }: SampleOf): Actions {
   return { ...all, ...ONLY[kind] };
 }
 
+const blurOn = (): ActionInput => ({ type: "effect/add", params: { id, effect: { type: "blur", radius: 4 } } });
+
 /** Where an action goes its own way on one kind's sample. */
+/**
+ * Offered on any element that draws or sounds, and refused on one whose schema has no place for what they write:
+ * an element's own effects, a length of its own.
+ */
+const NO_EFFECTS: Actions = {
+  "effect/add": { input: blurOn(), refused: "BREAKS_FILE" },
+  "effect/setStack": {
+    input: { type: "effect/setStack", params: { id, effects: [{ type: "blur", radius: 2 }] } },
+    refused: "BREAKS_FILE",
+  },
+};
+const NO_LENGTH: Actions = {
+  "clip/trimToPlayhead": {
+    input: { type: "clip/trimToPlayhead", params: { id, at: 1, edge: "out" } },
+    refused: "BREAKS_FILE",
+  },
+};
+
 const ONLY: Partial<Record<MigratedKind, Actions>> = {
+  captions: {
+    ...NO_EFFECTS,
+    ...NO_LENGTH,
+    "caption/setAnimation": {
+      input: { type: "caption/setAnimation", params: { captionsId: id, animation: "typewriter" } },
+    },
+    "caption/setStyle": { input: { type: "caption/setStyle", params: { captionsId: id, style: { size: 40 } } } },
+    "source/setProp": { input: { type: "source/setProp", params: { id, prop: "maxGap", value: 1 } } },
+    "source/setProps": { input: { type: "source/setProps", params: { id, props: { maxGap: 1 } } } },
+  },
+  multicam: {
+    ...NO_LENGTH,
+    // Alone on its sequence, it has nothing to move after.
+    "clip/move": {
+      input: { type: "clip/move", params: { id, place: { start: 1 } } },
+      refused: "UNSUPPORTED_ON_LAYOUT",
+    },
+    "multicam/addCut": {
+      input: { type: "multicam/addCut", params: { id, cutId: "third", at: 1, angle: "wide" } },
+    },
+    "multicam/remove": { input: { type: "multicam/remove", params: { id } } },
+    "source/setProp": { input: { type: "source/setProp", params: { id, prop: "sync", value: 0.5 } } },
+    "source/setProps": { input: { type: "source/setProps", params: { id, props: { sync: 0.5 } } } },
+  },
+  gap: {
+    // In a sequence an element moves by what it follows, and its stretch is where its neighbours put it.
+    "clip/move": { input: { type: "clip/move", params: { id, place: { after: "after" } } } },
+    "clip/slide": { input: { type: "clip/slide", params: { id, delta: 0.25 } } },
+    // It stands from 1 s to 2 s.
+    "clip/trim": { input: { type: "clip/trim", params: { id, edge: "out", value: 1.5 } } },
+    "clip/trimToPlayhead": { input: { type: "clip/trimToPlayhead", params: { id, at: 1.5, edge: "out" } } },
+  },
+  transition: {
+    "clip/move": { input: { type: "clip/move", params: { id, place: { after: "after" } } }, refused: "BREAKS_FILE" },
+    // It overlaps the clips by its length, before the cut: from 1.5 s to 2 s.
+    "clip/trimToPlayhead": { input: { type: "clip/trimToPlayhead", params: { id, at: 1.75, edge: "out" } } },
+    "transition/remove": { input: { type: "transition/remove", params: { transitionId: id } } },
+    "transition/update": { input: { type: "transition/update", params: { transitionId: id, duration: 0.25 } } },
+  },
+  audio: {
+    // A sound's length is its trim: the sample writes `out`, and a `duration` beside it would say it twice.
+    "source/setProp": { input: { type: "source/setProp", params: { id, prop: "out", value: 2 } } },
+    "source/setProps": { input: { type: "source/setProps", params: { id, props: { out: 2 } } } },
+    // Its level and pan take keys or a link, and no generator, as the mixer reads them; the action is offered on
+    // anything with a value that changes over time, and refuses these paths.
+    "generator/set": {
+      input: { type: "generator/set", params: { id, path: "volume", generator: { type: "wiggle", amount: 0.1 } } },
+      refused: "INVALID_PARAMS",
+    },
+  },
   svg: {
     // The sample's drawing is written inline, and an SVG takes its markup or a file, not both.
     "clip/setSource": {

@@ -6,10 +6,11 @@
 // (typed in `dom-drawing.ts`). Each has its registry (`elements/index.ts`, `elements/canvas.ts`, `elements/dom.tsx`),
 // typed over the kinds that have folders and the plane each stands on, so a part left out does not compile.
 import type { MigratedKind, PlaneOf } from "@uberscene/kit/schema";
-import type { Placement, PlacementMap, ResolvedState } from "@uberscene/sdk/resolver";
+import type { AssetEntry, Placement, PlacementMap, ResolvedState, ResolvedTrack } from "@uberscene/sdk/resolver";
 
+import type { AudioOccurrence } from "../model/audio-plan";
 import type { PlanContext } from "../model/canvas-ops";
-import type { DrawOp } from "../model/frame-plan";
+import type { DrawOp, ResolveNested } from "../model/frame-plan";
 import type { VisibleItem } from "../model/visible";
 import type { IntrinsicSize } from "../overlays/size";
 
@@ -28,6 +29,41 @@ export interface PlayerElement<K extends MigratedKind> {
     rel: number,
     loaded?: string,
   ) => IntrinsicSize;
+  /**
+   * The asset frames are decoded from to paint it, and the matte read beside them, for a kind that paints decoded
+   * video: what the decoder pool keeps a decoder open for near the play head. Left out, nothing is decoded for it.
+   */
+  readonly decodes?: (state: ResolvedState, placement: PlacementMap[K]) => Decoded | null;
+  /**
+   * What is drawn and heard in its place on its track, in time order: a multicam's clips, made of its cuts. Left out,
+   * it stands for itself.
+   */
+  readonly shownBy?: (state: ResolvedState, placement: PlacementMap[K]) => readonly Placement[];
+  /** How it is heard, for a kind whose sound is not its asset's alone (a nested sequence plays its own tracks). */
+  readonly sound?: Sound<K>;
+}
+
+/** What a placement is decoded from: its asset, and the asset of its matte. */
+export interface Decoded {
+  readonly asset: AssetEntry;
+  readonly matte: string | null;
+}
+
+/** How a kind is heard, in place of playing its own asset: what it plays, and whether it is heard at all. */
+export interface Sound<K extends MigratedKind> {
+  readonly occurrences: (input: SoundInput<K>) => readonly AudioOccurrence[];
+  /** Whether it makes any sound over its stretch, for what ducks under it. */
+  readonly heard: (state: ResolvedState, placement: PlacementMap[K]) => boolean;
+}
+
+/** What a kind's sound is planned from. */
+export interface SoundInput<K extends MigratedKind> {
+  readonly state: ResolvedState;
+  readonly placement: PlacementMap[K];
+  readonly track: ResolvedTrack;
+  readonly from: number;
+  readonly to: number;
+  readonly resolveNested: ResolveNested | undefined;
 }
 
 /** The kinds with a folder that paint on the canvas: each must have canvas ops (`elements/canvas.ts`), and no other may. */

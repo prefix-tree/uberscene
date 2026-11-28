@@ -6,7 +6,6 @@ import type { ReactNode } from "react";
 
 import { ELEMENT_DOM } from "../../elements/dom";
 import type { ElementProps } from "../../overlays/layout";
-import { Captions } from "./Captions";
 
 export interface DomDrawing {
   /** The element, from what every overlay is given; `interior` is a layer's content, made by the host. */
@@ -20,9 +19,4 @@ export interface DomDrawing {
 export const DOM_DRAWING: Readonly<Record<string, DomDrawing>> = {
   // The kinds with a folder of their own (`elements/<kind>/dom.tsx`).
   ...ELEMENT_DOM,
-  captions: {
-    render: (props) => <Captions placement={props.placement} state={props.state} time={props.time} />,
-    where: "top",
-    effects: "none",
-  },
 };

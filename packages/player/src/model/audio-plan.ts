@@ -19,6 +19,7 @@ import {
 } from "@uberscene/sdk/resolver";
 
 import { AUDIO_CHUNK_S, DUCK_ATTACK_S, DUCK_RELEASE_S, ENVELOPE_STEP_S } from "../constants";
+import { elementSound } from "../elements";
 import type { ResolveNested } from "./frame-plan";
 import { keyframedValue } from "./keyframes";
 
@@ -62,8 +63,9 @@ export function buildAudioPlan(
       // A sound whose props did not parse is not played, as an element is not drawn: its level is not a number to read.
       if (!capabilitiesOf(p.kind).audio || !p.parsed) continue;
       if (endTicks(p) <= secondsToTicks(from) || startTicks(p) >= secondsToTicks(to)) continue;
-      if (p.kind === "nested") {
-        out.push(...nestedOccurrences(state, p, track, from, to, resolveNested));
+      const sound = elementSound(p);
+      if (sound) {
+        out.push(...sound.occurrences({ state, track, from, to, resolveNested }));
         continue;
       }
       const src = p.source;
@@ -171,44 +173,6 @@ function rateEnvelope(keys: readonly RampKey[], u1: number, u2: number): GainPoi
       for (let u = a.at + ENVELOPE_STEP_S; u < b.at; u += ENVELOPE_STEP_S) if (u > u1 && u < u2) times.add(u);
   }
   return [...times].sort((x, y) => x - y).map((u) => [u, round(rampSpeed(keys, u))] as const);
-}
-
-function nestedOccurrences(
-  state: ResolvedState,
-  p: Placement,
-  track: ResolvedTrack,
-  from: number,
-  to: number,
-  resolveNested: ResolveNested | undefined,
-): AudioOccurrence[] {
-  const inner = resolveNested?.(p);
-  const src = p.source;
-  if (!inner || !src) return [];
-  // shortcut: a nested placement plays at its constant speed, its own speed keys and freezes are ignored; map through rampInverse/freezeShift if nested ramps are wanted.
-  const toInner = (t: number): number => src.in + secondsSinceStart(p, t) * src.speed;
-  const toOuter = (t: number): number => startSeconds(p) + (t - src.in) / src.speed;
-  const outerEnvelope = buildGainEnvelope(p, track, state, startSeconds(p), endSeconds(p));
-  return buildAudioPlan(
-    inner,
-    toInner(Math.max(from, startSeconds(p))),
-    toInner(Math.min(to, endSeconds(p))),
-    resolveNested,
-  )
-    .map((o) => {
-      const compStart = Math.max(startSeconds(p), toOuter(o.compStart));
-      const compEnd = Math.min(endSeconds(p), toOuter(o.compEnd));
-      const inner = o.gain.map(([t, v]) => [toOuter(t), v] as const);
-      return {
-        ...o,
-        id: `${p.id}/${o.id}`,
-        compStart,
-        compEnd,
-        speed: o.speed * src.speed,
-        ...(o.rate ? { rate: o.rate.map(([t, v]) => [round(toOuter(t)), v * src.speed] as const) } : {}),
-        gain: multiplyEnvelopes([inner, outerEnvelope], compStart, compEnd),
-      };
-    })
-    .filter((o) => o.compEnd > o.compStart);
 }
 
 type Factor = (t: number) => number;
@@ -322,7 +286,8 @@ export function duckIntervals(state: ResolvedState, under: string, exceptId: str
 }
 
 function hasSound(state: ResolvedState, p: Placement): boolean {
-  if (p.kind === "nested") return true;
+  const sound = elementSound(p);
+  if (sound) return sound.heard(state);
   const asset = p.source ? lookupAsset(state.manifest, p.source.asset) : null;
   return (
     asset !== null &&
@@ -365,7 +330,7 @@ export function envelopeAt(pts: readonly (readonly [number, number])[], t: numbe
   return last[1];
 }
 
-function multiplyEnvelopes(envs: readonly (readonly GainPoint[])[], from: number, to: number): GainPoint[] {
+export function multiplyEnvelopes(envs: readonly (readonly GainPoint[])[], from: number, to: number): GainPoint[] {
   const times = new Set<number>([from, to]);
   for (const e of envs) for (const [t] of e) if (t >= from && t <= to) times.add(t);
   return [...times]
@@ -373,6 +338,7 @@ function multiplyEnvelopes(envs: readonly (readonly GainPoint[])[], from: number
     .map((t) => [round(t), round(envs.reduce((acc, e) => acc * (e.length ? envelopeAt(e, t) : 1), 1))] as const);
 }
 
-function round(v: number): number {
+/** Seconds kept to the microsecond, so a ramp's points do not drift by float noise. */
+export function round(v: number): number {
   return Math.round(v * 1e6) / 1e6;
 }

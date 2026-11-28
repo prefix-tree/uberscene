@@ -4,7 +4,8 @@
 // here to the groups in `jsx/schemas/common.ts`.
 import type { z } from "zod";
 
-import type { audioSchema, clipSchema } from "../jsx/schemas/media";
+import type { audioSchema } from "./audio/schema";
+import type { clipSchema } from "./clip/schema";
 import type { layerSchema } from "./layer/schema";
 import type { titleSchema } from "./title/schema";
 

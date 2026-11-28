@@ -1,5 +1,6 @@
 import { capabilitiesOf, type Kind } from "@uberscene/kit/schema";
 
+import { makesOnTrack } from "../../elements";
 import { carry, carryRemoval } from "../carry";
 import {
   define,
@@ -36,10 +37,10 @@ function placementErrors(
 }
 
 /** What `element/remove` takes: anything placed on a track, except a multicam, which has its own remove and restore. */
-const isTrackItem = (kind: Kind): boolean => capabilitiesOf(kind).placementScope === "track" && kind !== "multicam";
+const isTrackItem = (kind: Kind): boolean => capabilitiesOf(kind).placementScope === "track" && !makesOnTrack(kind);
 
 /** A media element on a track: a <Clip> (picture and sound) or an <Audio> (sound only). */
-function addMedia<T extends "clip/add" | "audio/add">(type: T, kind: "clip" | "audio") {
+export function addMedia<T extends "clip/add" | "audio/add">(type: T, kind: "clip" | "audio") {
   define({
     type,
     validate: (a, state) => {
@@ -62,9 +63,6 @@ function addMedia<T extends "clip/add" | "audio/add">(type: T, kind: "clip" | "a
     fold: () => [],
   });
 }
-
-addMedia("clip/add", "clip");
-addMedia("audio/add", "audio");
 
 define(carry(
   {

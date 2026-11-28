@@ -41,6 +41,17 @@ export interface KitElement<K extends Kind, P extends DrawPlane = DrawPlane> {
    */
   readonly sampleBeneath?: string;
   /**
+   * Code the sample's file writes before its video, for a sample that names something of its own: the component a
+   * nested sequence places.
+   */
+  readonly sampleCode?: string;
+  /**
+   * The track the sample is written on: a free one (the default), or a sequence, for a kind that stands only between
+   * or among the clips of one (a transition, a gap), or straight in the composition (captions). Such a sample writes
+   * what it needs around it too.
+   */
+  readonly sampleTrack?: "free" | "sequence" | "composition";
+  /**
    * Its children in the file are free code, kept whole as its interior for the player to draw, and never read as
    * elements: a layer.
    */

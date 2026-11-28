@@ -1,13 +1,13 @@
 import type { ReactNode } from "react";
 
-import { type DrawPlane, KIT_ELEMENTS, type MigratedKind } from "@uberscene/kit/schema";
+import { capabilitiesOf, type DrawPlane, KIT_ELEMENTS, type MigratedKind } from "@uberscene/kit/schema";
 import { buildSourceIndex, collectModule, loadModule, placed, resolve } from "@uberscene/sdk";
 
 import { SAMPLE, SAMPLE_KINDS, sampleFile } from "../../sdk/test/conformance/sample";
 import { elementSize, PLAYER_ELEMENTS } from "../src/elements";
 import { overlaySize } from "../src/overlays/size";
 import { mountPlayer } from "./helpers/react";
-import { buildFramePlan, visiblePlacements } from "./internal";
+import { buildAudioPlan, buildFramePlan, visiblePlacements } from "./internal";
 
 // The conformance suite's part in the player (the rest is `packages/sdk/test/conformance`): every kind that has a
 // folder of its own is drawn from its sample, on the plane the kit says it stands on.
@@ -15,18 +15,37 @@ import { buildFramePlan, visiblePlacements } from "./internal";
 /** The plane the kit says a kind stands on, as any plane. */
 const planeOf = (kind: MigratedKind): DrawPlane => KIT_ELEMENTS[kind].traits.plane;
 
-describe.each(SAMPLE_KINDS)("a %s", (kind) => {
+// A kind that stands only inside another (a cue, a camera angle, a cut) is drawn by its parent, whose sample shows it.
+describe.each(
+  SAMPLE_KINDS.filter((kind) => {
+    const { placementScope, plane } = KIT_ELEMENTS[kind].traits;
+    return !(
+      placementScope === "child" ||
+      placementScope === "none" ||
+      (placementScope === "composition" && plane === "none")
+    );
+  }),
+)("a %s", (kind) => {
   const file = sampleFile(kind);
   const module = loadModule(file.text) as { default: () => ReactNode };
   const load = () => resolve(collectModule(module as never, {}, { index: buildSourceIndex(file.text) }), file.manifest);
 
-  it("shows while it is on the timeline, at a size of its own", () => {
+  it("shows (or, not drawn, is heard) while it is on the timeline, at a size of its own", () => {
     const state = load();
     expect(state.errors).toEqual([]);
-    expect(visiblePlacements(state, 1).map((v) => v.placement.id)).toContain(SAMPLE);
+    // A kind on no plane is heard, or is drawn by others (a transition by its clips) and keeps its stretch of time.
+    // One drawn over every track (captions) is not among a track's visible elements: it spans the video.
+    if (KIT_ELEMENTS[kind].traits.placementScope === "composition") {
+      expect(state.items.get(SAMPLE)?.range.isEmpty()).toBe(false);
+      return;
+    }
+    if (planeOf(kind) !== "none") expect(visiblePlacements(state, 1).map((v) => v.placement.id)).toContain(SAMPLE);
+    else if (capabilitiesOf(kind).audio) expect(buildAudioPlan(state, 0, 3).map((o) => o.id)).toContain(SAMPLE);
+    else expect(state.items.get(SAMPLE)?.range.isEmpty()).toBe(false);
     const placement = placed(state.items.get(SAMPLE), kind);
     expect(placement).toBeDefined();
-    if (!placement) return;
+    // A kind that is heard and not drawn has no size.
+    if (!placement || planeOf(kind) === "none") return;
     const drawn = overlaySize(state, placement, [], 1);
     expect(drawn.size.width).toBeGreaterThan(0);
     expect(drawn.size.height).toBeGreaterThan(0);

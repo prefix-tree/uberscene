@@ -2,7 +2,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { parseArgs } from "node:util";
 
-import { MOMENT_FORMS, subtitles } from "@uberscene/sdk";
+import { isCue, MOMENT_FORMS, subtitles } from "@uberscene/sdk";
 
 import { addAsset, describeAdded, snippetOf } from "./add";
 import { blockSheet, formatBlocks, listBlocks } from "./blocks";
@@ -502,7 +502,7 @@ async function main(): Promise<number> {
       ...(values.from !== undefined ? { from: numberFlag("from", values.from) } : {}),
       ...(values.to !== undefined ? { to: numberFlag("to", values.to) } : {}),
     };
-    if (![...loaded.state.items.values()].some((p) => p.kind === "caption"))
+    if (![...loaded.state.items.values()].some((p) => isCue(p.kind)))
       process.stderr.write(`warning: ${file} has no captions; ${path} holds none\n`);
     writeFileSync(resolve(path), subtitles(loaded.state, { format, ...range }));
     process.stderr.write(`${path}: ${format === "srt" ? "SRT" : "WebVTT"} captions\n`);

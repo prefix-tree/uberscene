@@ -5,9 +5,15 @@ import { placed } from "@uberscene/sdk/resolver";
 
 import type { CanvasOps } from "../model/canvas-ops";
 import { adjustmentOps } from "./adjustment/canvas";
+import { clipOps } from "./clip/canvas";
 import type { CanvasKind, CanvasOpsOf } from "./element";
+import { nestedOps } from "./nested/canvas";
 
-export const PLAYER_CANVAS: { readonly [K in CanvasKind]: CanvasOpsOf<K> } = { adjustment: adjustmentOps };
+export const PLAYER_CANVAS: { readonly [K in CanvasKind]: CanvasOpsOf<K> } = {
+  clip: clipOps,
+  adjustment: adjustmentOps,
+  nested: nestedOps,
+};
 
 /** A kind's ops as the frame plan calls them, whatever the kind: it paints a placement of its kind that parsed. */
 function loose<K extends CanvasKind>(kind: K): CanvasOps {

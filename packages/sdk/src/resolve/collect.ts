@@ -13,8 +13,8 @@ import {
   type Kind,
   keepsInterior,
   MAIN_TRACK_ID,
-  MAIN_TRACK_KINDS,
   markSchema,
+  onMainTrack,
   type ShaderDefinition,
   type TextRun,
 } from "@uberscene/kit/schema";
@@ -309,14 +309,12 @@ function collectChildren(
   return out;
 }
 
-const MAIN_KINDS: ReadonlySet<string> = new Set(MAIN_TRACK_KINDS);
-
 /**
  * The clips, transitions and gaps written straight in a composition make its main track: one sequence, the bottom
  * one, whatever tracks the file writes around them.
  */
 function withMainTrack(children: CollectedNode[], composition: string, walker: Walker): CollectedNode[] {
-  const direct = children.filter((c) => MAIN_KINDS.has(c.kind));
+  const direct = children.filter((c) => onMainTrack(c.kind));
   if (direct.length === 0) return children;
   if (walker.byId.has(MAIN_TRACK_ID)) {
     const taken = walker.byId.get(MAIN_TRACK_ID) as CollectedNode;
@@ -347,7 +345,7 @@ function withMainTrack(children: CollectedNode[], composition: string, walker: W
     implicit: true,
   };
   walker.byId.set(track.id, track);
-  return [track, ...children.filter((c) => !MAIN_KINDS.has(c.kind))];
+  return [track, ...children.filter((c) => !onMainTrack(c.kind))];
 }
 
 function makeNode(

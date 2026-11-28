@@ -1,10 +1,12 @@
 // `uberscene inspect video.tsx`: the timeline read back as an editor reads it, in text or as flat JSON rows, and what
 // is on screen and heard at chosen moments. It runs the resolver and the player's model only: no browser, no media.
+
 import type { Knob } from "@uberscene/kit";
 import {
   capabilitiesOf,
   type ElementBox,
   frameStartSeconds,
+  isBetween,
   rateLabel,
   round3,
   secondsToTicks,
@@ -27,6 +29,8 @@ import {
   type EventRow,
   endSeconds,
   followOf,
+  isCaptions,
+  isCue,
   lengthSeconds,
   listenRange,
   lookupAsset,
@@ -173,8 +177,8 @@ export function describeAt(state: ResolvedState, moment: Moment): MomentView {
   const word = spokenWords(state).find((w) => within(w.start, w.end));
   const caption = [...state.items.values()].find(
     (p) =>
-      p.kind === "caption" &&
-      state.items.get(p.parent ?? "")?.kind === "captions" &&
+      isCue(p.kind) &&
+      isCaptions(state.items.get(p.parent ?? "")?.kind ?? "composition") &&
       within(startSeconds(p), endSeconds(p)),
   );
   const view = cameraValuesAt(state, t);
@@ -253,7 +257,7 @@ export function formatTimeline(file: string, rows: TimelineRows): string {
         ? `${seconds(e.start).padStart(7)}–${seconds(e.end).padEnd(7)}`
         : seconds(e.start).padStart(7).padEnd(15);
     const parts = [when, e.kind.padEnd(10), e.id];
-    if (e.kind === "transition")
+    if (isBetween(e.kind))
       parts.push(`${e.type ?? ""} (${e.on === undefined ? `${e.from} → ${e.to}` : `${e.edge} of ${e.on}`})`);
     if (e.ground) parts.push("ground");
     if (e.asset)
@@ -294,12 +298,12 @@ export function formatTimeline(file: string, rows: TimelineRows): string {
     );
     for (const e of rows.elements) if (e.track === track.id && e.parent === track.id) lines.push(line(e));
   }
-  const loose = rows.elements.filter((e) => e.track === null && e.kind !== "caption");
+  const loose = rows.elements.filter((e) => e.track === null && !isCue(e.kind));
   if (loose.length > 0) {
     lines.push("composition");
     for (const e of loose) {
       lines.push(line(e));
-      if (e.kind === "captions") for (const cue of rows.elements) if (cue.parent === e.id) lines.push(`  ${line(cue)}`);
+      if (isCaptions(e.kind)) for (const cue of rows.elements) if (cue.parent === e.id) lines.push(`  ${line(cue)}`);
     }
   }
   if (rows.cuts.length > 0)

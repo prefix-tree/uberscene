@@ -4,7 +4,6 @@
 // parsing, so a parsed prop holds the constant), so declarations name them instead of printing them.
 import type { z } from "zod";
 
-import type { captionSchema, captionsSchema } from "../jsx/schemas/captions";
 import type {
   effectSchema,
   freezeSchema,
@@ -13,16 +12,29 @@ import type {
   maskSchema,
   speedKeySchema,
 } from "../jsx/schemas/children";
-import type { cameraSchema, compositionSchema, gapSchema, markerSchema, trackSchema } from "../jsx/schemas/composition";
-import type { audioSchema, clipSchema } from "../jsx/schemas/media";
-import type { angleSchema, cutSchema, multicamSchema } from "../jsx/schemas/multicam";
-import type { nestedSchema } from "../jsx/schemas/overlays";
-import type { transitionSchema } from "../jsx/schemas/transition";
 import { adjustment } from "./adjustment";
 import type { adjustmentSchema } from "./adjustment/schema";
+import { audio } from "./audio";
+import type { audioSchema } from "./audio/schema";
+import { camera } from "./camera";
+import type { cameraSchema } from "./camera/schema";
+import { caption, captions } from "./captions";
+import type { captionSchema, captionsSchema } from "./captions/schema";
+import { clip } from "./clip";
+import type { clipSchema } from "./clip/schema";
+import { composition } from "./composition";
+import type { compositionSchema } from "./composition/schema";
 import type { KitElement } from "./element";
+import { gap } from "./gap";
+import type { gapSchema } from "./gap/schema";
 import { layer } from "./layer";
 import type { layerSchema, motionSchema, threeSchema } from "./layer/schema";
+import { marker } from "./marker";
+import type { markerSchema } from "./marker/schema";
+import { angle, cut, multicam } from "./multicam";
+import type { angleSchema, cutSchema, multicamSchema } from "./multicam/schema";
+import { nested } from "./nested";
+import type { nestedSchema } from "./nested/schema";
 import { shape } from "./shape";
 import type { shapeSchema } from "./shape/schema";
 import { sticker } from "./sticker";
@@ -31,15 +43,30 @@ import { svg } from "./svg";
 import type { svgSchema } from "./svg/schema";
 import { title } from "./title";
 import type { titleSchema } from "./title/schema";
+import { track } from "./track";
+import type { trackSchema } from "./track/schema";
+import { transition } from "./transition";
+import type { transitionSchema } from "./transition/schema";
 
 export type { AdjustmentElement } from "./adjustment";
+export type { AudioElement } from "./audio";
+export type { CameraElement } from "./camera";
+export type { CaptionElement, CaptionsElement } from "./captions";
+export type { ClipElement } from "./clip";
+export type { CompositionElement } from "./composition";
 export type { ElementGroup, KitElement } from "./element";
+export type { GapElement } from "./gap";
 export type { LayerElement } from "./layer";
+export type { MarkerElement } from "./marker";
+export type { AngleElement, CutElement, MulticamElement } from "./multicam";
+export type { NestedElement } from "./nested";
 export type { ShapeElement } from "./shape";
 export type * from "./shared";
 export type { StickerElement } from "./sticker";
 export type { SvgElement } from "./svg";
 export type { TitleElement } from "./title";
+export type { TrackElement } from "./track";
+export type { TransitionElement } from "./transition";
 
 /** The props of a `<Composition>`, as its schema parses them. */
 export interface CompositionProps extends z.output<typeof compositionSchema> {}
@@ -152,27 +179,48 @@ export type KindWith<P extends string> = string extends P
     }[Kind];
 
 /** The kit's part of each kind that has a folder of its own: the one list of them, which the type below is read from. */
-export const KIT_ELEMENTS = { title, shape, svg, sticker, layer, adjustment } satisfies {
+export const KIT_ELEMENTS = {
+  composition,
+  camera,
+  track,
+  clip,
+  audio,
+  gap,
+  transition,
+  title,
+  shape,
+  svg,
+  sticker,
+  captions,
+  caption,
+  marker,
+  adjustment,
+  nested,
+  multicam,
+  angle,
+  cut,
+  layer,
+} satisfies {
   readonly [K in Kind]?: KitElement<K>;
 };
 
 /**
- * The kinds that have a folder of their own in each package (`elements/<kind>/`): the keys of `KIT_ELEMENTS`. Each
- * package's `elements/index.ts` holds one entry per kind here, so a kind added to the kit's registry does not compile
- * until every package has its part. The other kinds are still described by the tables (`jsx/capabilities.ts` and each
- * package's own).
+ * The kinds a file writes, each with a folder of its own in each package (`elements/<kind>/`): the keys of
+ * `KIT_ELEMENTS`. Each package's `elements/index.ts` holds one entry per kind here, so a kind added to the kit's
+ * registry does not compile until every package has its part. The kinds held inside an element (a mask, an effect, a
+ * key) have no folder: their rows are in `elements/derived.ts`.
  */
 export type MigratedKind = keyof typeof KIT_ELEMENTS;
 
 /** The plane a kind is drawn on, as a type: what the player's entry for it must hold. */
 export type PlaneOf<K extends MigratedKind> = (typeof KIT_ELEMENTS)[K]["traits"]["plane"];
 
-/** Whether `kind` has a folder of its own in each package. */
+/** Whether `kind` has a folder of its own in each package: every kind a file writes, but those held inside an element. */
 export function isMigratedKind(kind: string): kind is MigratedKind {
   return Object.hasOwn(KIT_ELEMENTS, kind);
 }
 
-/** The kit's part of `kind`, or undefined for a kind that has no folder of its own yet. */
+/** The kit's part of `kind`, or undefined for a kind held inside an element, which has no folder. */
 export function kitElement(kind: Kind): KitElement<Kind> | undefined {
   return isMigratedKind(kind) ? KIT_ELEMENTS[kind] : undefined;
 }

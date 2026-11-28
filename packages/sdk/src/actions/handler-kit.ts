@@ -262,22 +262,29 @@ export interface PropHandlerSpec<T extends ActionType, P extends string = string
    * The element it is about, for `affordances()`. Left out, an action that targets `id` gets one from `kinds` and
    * `props`; one with its own `target` gets none unless it names the param here.
    */
-  readonly targets?: TargetSpec<P>;
+  readonly targets?: TargetSpec<P> | ElementTarget;
 }
+
+const isElementTarget = <P extends string>(t: TargetSpec<P> | ElementTarget): t is ElementTarget => "accepts" in t;
 
 /** An action that sets literal props on one element; the inverse sets the prior values. */
 export function makePropHandler<T extends ActionType, P extends string = string>(
   spec: PropHandlerSpec<T, P>,
 ): ActionHandler<T> {
   const target = spec.target ?? ((params: Params<T>) => (params as { id: string }).id);
-  const targets =
-    spec.targets !== undefined || spec.target === undefined
-      ? onElement({
-          ...(spec.kinds ? { kinds: spec.kinds } : {}),
-          ...(spec.props ? { props: spec.props } : {}),
-          ...spec.targets,
-        })
-      : undefined;
+  const given = spec.targets;
+  // A target made with `onElement` keeps its own test (its `when`, whether it takes a locked element), and is held to
+  // the kinds and props the action writes besides.
+  const targets: ElementTarget | undefined =
+    given !== undefined && isElementTarget(given)
+      ? { param: given.param, accepts: (item, state) => ofKind(spec, item) && given.accepts(item, state) }
+      : given !== undefined || spec.target === undefined
+        ? onElement({
+            ...(spec.kinds ? { kinds: spec.kinds } : {}),
+            ...(spec.props ? { props: spec.props } : {}),
+            ...given,
+          })
+        : undefined;
   const handler: ActionHandler<T> = {
     type: spec.type,
     ...(targets ? { targets } : {}),

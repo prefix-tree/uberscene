@@ -116,7 +116,12 @@ function effectsOf(state: ResolvedState, id: string): Record<string, Json>[] {
   return Array.isArray(v) ? (v as Record<string, Json>[]).map((e) => ({ ...e })) : [];
 }
 
-const keyTargets = onElement({ when: (item) => !item.range.isEmpty() });
+/** The kinds with a value that can change over time: a path keys may sit at, or effects whose params take keys. */
+const KEYABLE: ReadonlySet<Kind> = new Set(
+  KINDS.filter((kind) => keyPathsOf(kind).length > 0 || kindTakes(kind, "effects")),
+);
+
+const keyTargets = onElement({ when: (item) => KEYABLE.has(item.kind) && !item.range.isEmpty() });
 
 function insideElement(state: ResolvedState, id: string, at: number): ValidationResult {
   const item = state.items.get(id);
@@ -185,7 +190,7 @@ function requireKey(state: ResolvedState, id: string, path: string, at: number):
 
 define(makePropHandler({
   type: "key/update",
-  targets: onElement({ when: (item, state) => hasKeys(state, item.id) }),
+  targets: onElement({ when: (item, state) => KEYABLE.has(item.kind) && hasKeys(state, item.id) }),
   write: (p, state) =>
     writeKeys(
       state,
@@ -210,7 +215,11 @@ define(makePropHandler({
 
 define(makePropHandler({
   type: "key/move",
-  targets: onElement({ onLocked: true, onOpaque: true, when: (item, state) => hasKeys(state, item.id) }),
+  targets: onElement({
+    onLocked: true,
+    onOpaque: true,
+    when: (item, state) => KEYABLE.has(item.kind) && hasKeys(state, item.id),
+  }),
   write: (p, state) =>
     writeKeys(
       state,
@@ -226,7 +235,7 @@ define(makePropHandler({
 
 define(makePropHandler({
   type: "key/remove",
-  targets: onElement({ when: (item, state) => hasKeys(state, item.id) }),
+  targets: onElement({ when: (item, state) => KEYABLE.has(item.kind) && hasKeys(state, item.id) }),
   write: (p, state) =>
     writeKeys(
       state,

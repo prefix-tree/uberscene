@@ -22,6 +22,9 @@ export const NO_TRAITS: KindTraits = {
   playsAsset: false,
 };
 
+/** What footage holds as items of its own: its effects, keys, a mask, speed keys and holds. */
+export const FOOTAGE_CHILDREN = ["effect", "keyframe", "mask", "speedKey", "freeze"] as const;
+
 /** What everything placed on a track for a stretch of time has. */
 export const ITEM = { timed: true, sequenceRole: "item", placementScope: "track" } as const;
 
@@ -36,6 +39,12 @@ const OVERLAY = {
 
 /** A kind's row: every trait off, but those in `over`. */
 export const traits = (over: Partial<KindTraits>): KindTraits => ({ ...NO_TRAITS, ...over });
+
+/** A kind's row with its plane as a type, for a kind not on the DOM plane: what the player must have to draw it. */
+export const planeTraits = <P extends KindTraits["plane"]>(
+  plane: P,
+  over: Partial<Omit<KindTraits, "plane">> = {},
+): KindTraits & { readonly plane: P } => ({ ...NO_TRAITS, ...over, plane });
 
 /** An overlay's row: `OVERLAY`, and what `over` adds. Its plane is the DOM's, which is what the player must draw. */
 export const overlayTraits = (

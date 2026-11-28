@@ -5,6 +5,7 @@ import { placed } from "@uberscene/sdk/resolver";
 
 import type { DomDrawing } from "../react/elements";
 import { adjustmentDom } from "./adjustment/dom";
+import { captionsDom } from "./captions/dom";
 import type { DomDrawingOf, DomKind } from "./dom-drawing";
 import { layerDom } from "./layer/dom";
 import { shapeDom } from "./shape/dom";
@@ -17,6 +18,7 @@ export const PLAYER_DOM: { readonly [K in DomKind]: DomDrawingOf<K> } = {
   shape: shapeDom,
   svg: svgDom,
   sticker: stickerDom,
+  captions: captionsDom,
   layer: layerDom,
   adjustment: adjustmentDom,
 };

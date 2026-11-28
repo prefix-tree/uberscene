@@ -1,7 +1,9 @@
 // The resolved timeline as flat rows: one array per kind of thing, each row with its id, its seconds and its frames.
 // Flat rows are what jq, a short script or a SQL table take as they are.
-import { capabilitiesOf, framesUntil, type Kind, type Rate, round3 } from "@uberscene/kit/schema";
 
+import { capabilitiesOf, framesUntil, isBetween, type Kind, type Rate, round3 } from "@uberscene/kit/schema";
+
+import { isCue } from "../elements";
 import type { ResolveError } from "../resolve/errors";
 import { derivedOrigin } from "../resolve/expand";
 import { followOf } from "../resolve/follow";
@@ -208,7 +210,7 @@ export function timelineRows(state: ResolvedState): TimelineRows {
     const clips = track.items
       .map((id) => state.items.get(id))
       .filter((p): p is Placement => p !== undefined && capabilitiesOf(p.kind).trimSource);
-    const transitions = [...state.items.values()].filter((p) => p.kind === "transition" && p.track === track.id);
+    const transitions = [...state.items.values()].filter((p) => isBetween(p.kind) && p.track === track.id);
     for (let i = 0; i + 1 < clips.length; i++) {
       const a = clips[i] as Placement,
         b = clips[i + 1] as Placement;
@@ -269,7 +271,7 @@ function elementRow(p: Placement, frame: (t: number) => number): ElementRow {
   const props = p.props;
   const follow = followOf(p);
   // The words of a kind whose content is words (a title) are on its placement; a caption's are a prop.
-  const text = p.text ?? (p.kind === "caption" ? props.text : undefined);
+  const text = p.text ?? (isCue(p.kind) ? props.text : undefined);
   return {
     id: p.id,
     kind: p.kind,
@@ -288,10 +290,10 @@ function elementRow(p: Placement, frame: (t: number) => number): ElementRow {
     ...(typeof props.at === "string" || typeof props.at === "number" ? { at: props.at } : {}),
     ...(typeof props.offset === "number" ? { offset: props.offset } : {}),
     ...followsOf(props.duration),
-    ...(p.kind === "transition" && typeof props.type === "string" ? { type: props.type } : {}),
-    ...(p.kind === "transition" && typeof props.type !== "string" ? { type: shaderName(props.type) } : {}),
+    ...(isBetween(p.kind) && typeof props.type === "string" ? { type: props.type } : {}),
+    ...(isBetween(p.kind) && typeof props.type !== "string" ? { type: shaderName(props.type) } : {}),
     ...(p.between ? { from: p.between[0], to: p.between[1] } : {}),
-    ...(p.kind === "transition" && typeof p.props.on === "string"
+    ...(isBetween(p.kind) && typeof p.props.on === "string"
       ? { on: p.props.on, edge: p.props.edge === "in" ? ("in" as const) : ("out" as const) }
       : {}),
     ...(typeof props.label === "string" ? { label: props.label } : {}),

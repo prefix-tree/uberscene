@@ -1,5 +1,5 @@
 import { type Kind, kitElement } from "../elements";
-import { capabilitiesOf } from "../jsx/capabilities";
+import { capabilitiesOf, isBetween } from "../jsx/capabilities";
 import { DEFAULT_THEME, MOTIONS, type MotionStyle, type Presets, THEMES } from "./builtins";
 import { lookOnlyPresets } from "./look-presets";
 import { type ThemeProps, TOKEN_PATTERN, themeSchema } from "./schema";
@@ -138,7 +138,7 @@ export function applyTheme(kind: Kind, raw: Readonly<Record<string, unknown>>, t
       from.exit = "motion";
     }
   }
-  if (motion && kind === "transition" && motion.transition) {
+  if (motion && isBetween(kind) && motion.transition) {
     if (out.type === undefined && motion.transition.type) {
       out.type = motion.transition.type;
       from.type = "motion";

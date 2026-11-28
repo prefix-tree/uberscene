@@ -4,21 +4,34 @@ import type { z } from "zod";
 import type { EffectParams, TransitionParams } from "../effects/registry";
 import {
   type AdjustmentElement,
+  type AngleElement,
+  type AudioElement,
+  type CameraElement,
+  type CaptionElement,
+  type CaptionsElement,
+  type ClipElement,
+  type CompositionElement,
+  type CutElement,
+  type GapElement,
   KIT_ELEMENTS,
   type Kind,
   type KindWith,
   kitElement,
   type LayerElement,
+  type MarkerElement,
+  type MulticamElement,
+  type NestedElement,
   type ShapeElement,
   type StickerElement,
   type SvgElement,
   type TitleElement,
+  type TrackElement,
+  type TransitionElement,
 } from "../elements";
 import { motionSchema, threeSchema } from "../elements/layer/schema";
 import { capabilitiesOf } from "./capabilities";
 import { defineElement, type VocabularyComponent, type VocabularyMeta, type VocabularyProps } from "./define";
 import type { Easing, TransitionType, VideoEffectType } from "./enums";
-import { captionSchema, captionsSchema } from "./schemas/captions";
 import {
   effectSchema,
   freezeSchema,
@@ -28,11 +41,6 @@ import {
   speedKeySchema,
 } from "./schemas/children";
 import type { Link } from "./schemas/common";
-import { cameraSchema, compositionSchema, gapSchema, markerSchema, trackSchema } from "./schemas/composition";
-import { audioSchema, clipSchema } from "./schemas/media";
-import { angleSchema, cutSchema, multicamSchema } from "./schemas/multicam";
-import { nestedSchema } from "./schemas/overlays";
-import { transitionSchema } from "./schemas/transition";
 import type { EffectRef, TransitionRef } from "./shaders";
 
 const el = <K extends Kind, S extends Parameters<typeof defineElement>[0]["schema"]>(kind: K, schema: S) =>
@@ -43,13 +51,22 @@ const tag = <K extends Kind, S extends Parameters<typeof defineElement>[0]["sche
   readonly schema: S;
 }) => el(element.kind, element.schema);
 
-export const Composition = el("composition", compositionSchema);
-export const Track = el("track", trackSchema);
-export const Camera = el("camera", cameraSchema);
-export const Clip = el("clip", clipSchema) as unknown as WithEffects<VocabularyComponent<"clip", typeof clipSchema>>;
-export const Audio = el("audio", audioSchema);
-export const Gap = el("gap", gapSchema);
-type TransitionBase = Omit<VocabularyProps<typeof transitionSchema>, "type" | "params">;
+/** The tag's type by its element's name, so a declaration file names the schema and does not print it again. */
+type TagOf<E extends { readonly kind: Kind; readonly schema: z.ZodType }> = VocabularyComponent<E["kind"], E["schema"]>;
+
+const compositionTag: TagOf<CompositionElement> = tag(KIT_ELEMENTS.composition);
+export const Composition = compositionTag;
+const trackTag: TagOf<TrackElement> = tag(KIT_ELEMENTS.track);
+export const Track = trackTag;
+const cameraTag: TagOf<CameraElement> = tag(KIT_ELEMENTS.camera);
+export const Camera = cameraTag;
+const clipTag: TagOf<ClipElement> = tag(KIT_ELEMENTS.clip);
+export const Clip = clipTag as unknown as WithEffects<TagOf<ClipElement>>;
+const audioTag: TagOf<AudioElement> = tag(KIT_ELEMENTS.audio);
+export const Audio = audioTag;
+const gapTag: TagOf<GapElement> = tag(KIT_ELEMENTS.gap);
+export const Gap = gapTag;
+type TransitionBase = Omit<VocabularyProps<TransitionElement["schema"]>, "type" | "params">;
 
 /** The params of a transition type: a built-in's, or those of one `transition()` returned. */
 export type TransitionParamsOf<T> = T extends TransitionType
@@ -62,16 +79,14 @@ export type TransitionParamsOf<T> = T extends TransitionType
  * `<Transition>`: a built-in by its type, with that type's params (crossfade when the type is left out), or one the file
  * declares by what `transition()` returned, with its own params.
  */
-export interface TransitionComponent extends VocabularyMeta<"transition", typeof transitionSchema> {
+export interface TransitionComponent extends VocabularyMeta<"transition", TransitionElement["schema"]> {
   // biome-ignore lint/suspicious/noExplicitAny: any ref, whatever its params; they are read back by TransitionParamsOf.
   <T extends TransitionType | TransitionRef<any> = "crossfade">(
     props: TransitionBase & { type?: T; params?: TransitionParamsOf<T> },
   ): ReactElement | null;
 }
 
-export const Transition = el("transition", transitionSchema) as unknown as TransitionComponent;
-/** The tag's type by its element's name, so a declaration file names the schema and does not print it again. */
-type TagOf<E extends { readonly kind: Kind; readonly schema: z.ZodType }> = VocabularyComponent<E["kind"], E["schema"]>;
+export const Transition = tag(KIT_ELEMENTS.transition) as unknown as TransitionComponent;
 const titleTag: TagOf<TitleElement> = tag(KIT_ELEMENTS.title);
 export const Title = titleTag as unknown as WithEffects<TagOf<TitleElement>>;
 const shapeTag: TagOf<ShapeElement> = tag(KIT_ELEMENTS.shape);
@@ -80,18 +95,23 @@ const svgTag: TagOf<SvgElement> = tag(KIT_ELEMENTS.svg);
 export const Svg = svgTag as unknown as WithEffects<TagOf<SvgElement>>;
 const stickerTag: TagOf<StickerElement> = tag(KIT_ELEMENTS.sticker);
 export const Sticker = stickerTag as unknown as WithEffects<TagOf<StickerElement>>;
-export const Captions = el("captions", captionsSchema);
-export const Caption = el("caption", captionSchema);
-export const Marker = el("marker", markerSchema);
+const captionsTag: TagOf<CaptionsElement> = tag(KIT_ELEMENTS.captions);
+export const Captions = captionsTag;
+const captionTag: TagOf<CaptionElement> = tag(KIT_ELEMENTS.caption);
+export const Caption = captionTag;
+const markerTag: TagOf<MarkerElement> = tag(KIT_ELEMENTS.marker);
+export const Marker = markerTag;
 const adjustmentTag: TagOf<AdjustmentElement> = tag(KIT_ELEMENTS.adjustment);
 export const Adjustment = adjustmentTag as unknown as WithEffects<TagOf<AdjustmentElement>>;
 export const Mask = el("mask", maskSchema);
-export const Nested = el("nested", nestedSchema) as unknown as WithEffects<
-  VocabularyComponent<"nested", typeof nestedSchema>
->;
-export const Multicam = el("multicam", multicamSchema);
-export const Angle = el("angle", angleSchema);
-export const Cut = el("cut", cutSchema);
+const nestedTag: TagOf<NestedElement> = tag(KIT_ELEMENTS.nested);
+export const Nested = nestedTag as unknown as WithEffects<TagOf<NestedElement>>;
+const multicamTag: TagOf<MulticamElement> = tag(KIT_ELEMENTS.multicam);
+export const Multicam = multicamTag;
+const angleTag: TagOf<AngleElement> = tag(KIT_ELEMENTS.angle);
+export const Angle = angleTag;
+const cutTag: TagOf<CutElement> = tag(KIT_ELEMENTS.cut);
+export const Cut = cutTag;
 const layerTag: TagOf<LayerElement> = tag(KIT_ELEMENTS.layer);
 export const Layer = layerTag as unknown as WithEffects<TagOf<LayerElement>>;
 /** A Layer a library draws: a `layer` component with the engine's own props, and the engine's name. */

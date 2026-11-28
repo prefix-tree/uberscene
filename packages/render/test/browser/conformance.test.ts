@@ -1,8 +1,10 @@
 // The conformance suite's part in the export (the rest is `packages/sdk/test/conformance`): a still of every kind
-// that has a folder of its own, from its sample, is not blank. Needs Chrome 157: the cached Chrome for Testing, or
+// that has a folder of its own and is drawn, from its sample, is not blank. Needs Chrome 157: the cached Chrome for Testing, or
 // UBERSCENE_CHROMIUM.
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+
+import { KIT_ELEMENTS } from "@uberscene/kit/schema";
 
 import { SAMPLE_KINDS, SAMPLE_MANIFEST, sampleFile } from "../../../sdk/test/conformance/sample";
 import { directoryResolver, loadVideo, renderStill } from "../../src";
@@ -20,7 +22,10 @@ beforeAll(() => {
 });
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
-it.each(SAMPLE_KINDS)("a still of a %s is not blank", async (kind) => {
+/** The kinds that are drawn: a sound is heard, and has no still. */
+const DRAWN = SAMPLE_KINDS.filter((kind) => KIT_ELEMENTS[kind].traits.plane !== "none");
+
+it.each(DRAWN)("a still of a %s is not blank", async (kind) => {
   const file = join(dir, `${kind}.tsx`);
   // The file says its own manifest, in place of one beside it.
   const sample = sampleFile(kind);

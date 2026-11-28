@@ -167,8 +167,21 @@ export function makeState(spec: StateSpec): ResolvedState {
     const text = hasText ? (it.text ?? (typeof written === "string" ? written : "")) : it.text;
     const raw: Record<string, unknown> = { id: it.id, ...(hasText ? given : (it.props ?? {})) };
     // A kind with a folder of its own is drawn from its props as their types, so they are parsed as the resolver does.
+    // A test writes footage's source apart (`source`), and a nested sequence's scene not at all: what its schema
+    // needs is filled from them.
+    const shape = (SCHEMAS_BY_KIND[it.kind] as unknown as { shape?: Record<string, unknown> }).shape ?? {};
+    const filled: Record<string, unknown> = {
+      ...("src" in shape && raw.src === undefined ? { src: `asset:${it.source?.asset ?? "missing"}` } : {}),
+      ...("of" in shape && raw.of === undefined ? { of: () => null } : {}),
+      ...raw,
+    };
     const props = isMigratedKind(it.kind)
-      ? (SCHEMAS_BY_KIND[it.kind].parse({ start, duration, ...raw }) as Record<string, unknown>)
+      ? (SCHEMAS_BY_KIND[it.kind].parse({
+          // Its timing, where its schema takes it: a transition and a gap take a length and no start.
+          ...("start" in shape ? { start } : {}),
+          ...("duration" in shape ? { duration } : {}),
+          ...filled,
+        }) as Record<string, unknown>)
       : raw;
     const childNodes: CollectedNode[] = [];
     const childPlacements: Placement[] = [];

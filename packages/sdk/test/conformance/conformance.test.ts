@@ -14,8 +14,16 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { type KeyPath, KIT_ELEMENTS, keyPathsOf, SCHEMAS_BY_KIND } from "@uberscene/kit/schema";
-import { type ActionInput, affordances, foldToSource, lint, type ResolvedState, timelineRows } from "@uberscene/sdk";
+import { type KeyPath, KIT_ELEMENTS, keyPathsOf, type MigratedKind, SCHEMAS_BY_KIND } from "@uberscene/kit/schema";
+import {
+  type ActionInput,
+  type ActionType,
+  affordances,
+  foldToSource,
+  lint,
+  type ResolvedState,
+  timelineRows,
+} from "@uberscene/sdk";
 
 import { executorFor, resolveText } from "../editing/corpus";
 import { serialize } from "../helpers";
@@ -45,6 +53,18 @@ function expectWrittenBack(file: File, exec: ReturnType<typeof executorFor>): vo
   expect(serialize(reloaded)).toEqual(serialize(exec.state()));
 }
 
+/** The actions the sample is offered, as it stands or once an action's setup has run. */
+function offeredTo(file: File, start: ResolvedState, actions: ReturnType<typeof sampleActions>): ActionType[] {
+  const now = new Set(affordances(start, SAMPLE)?.actions ?? []);
+  const after = Object.entries(actions).flatMap(([type, sample]) => {
+    if (now.has(type as ActionType) || !sample?.setup) return [];
+    const exec = executorFor(file);
+    for (const edit of sample.setup) exec.execute(edit);
+    return (affordances(exec.state(), SAMPLE)?.actions ?? []).includes(type as ActionType) ? [type as ActionType] : [];
+  });
+  return [...now, ...after];
+}
+
 /** Two keys a path takes: the first of these values its own check accepts, and a number where it has no check. */
 function keysFor(key: KeyPath): { at: number; value: unknown }[] {
   const candidates: unknown[][] = [
@@ -72,99 +92,135 @@ function keysFor(key: KeyPath): { at: number; value: unknown }[] {
   ];
 }
 
-describe.each(SAMPLE_KINDS.map((kind) => [kind, sampleFile(kind)] as const))("a %s", (kind, file) => {
-  const start = resolveText(file.text, file.manifest, file.files);
+// A kind that stands only inside another (a cue, a camera angle, a cut), or that is the shape of the file, is held to
+// what concerns it alone: its sample
+// resolves, it is placed or read as written, and it has a page. Its parent's sample runs what it is offered.
+const STANDS_INSIDE = (kind: MigratedKind): boolean => {
+  const { placementScope, plane } = KIT_ELEMENTS[kind].traits;
+  // The structural kinds (the composition, a track, the camera, a marker) are the file's shape: not elements a tool
+  // lists in its rows, and their actions are held by their own tests.
+  return (
+    placementScope === "child" || placementScope === "none" || (placementScope === "composition" && plane === "none")
+  );
+};
 
-  it("resolves and lints clean from its sample", () => {
-    expect(start.errors).toEqual([]);
-    expect(lint(file.text, { manifest: file.manifest })).toEqual([]);
-  });
+describe.each(SAMPLE_KINDS.filter(STANDS_INSIDE).map((kind) => [kind, sampleFile(kind)] as const))(
+  "a %s, inside its parent",
+  (kind, file) => {
+    it("resolves and lints clean from its sample", () => {
+      const state = resolveText(file.text, file.manifest, file.files);
+      expect(state.errors).toEqual([]);
+      expect(lint(file.text, { manifest: file.manifest })).toEqual([]);
+    });
 
-  it("is placed as its kind, with the props its schema parses to", () => {
-    const placement = start.items.get(SAMPLE);
-    expect(placement, `the sample must have the id "${SAMPLE}"`).toBeDefined();
-    expect(placement?.kind).toBe(kind);
-    expect(placement?.parsed).toBe(true);
-    expect(SCHEMAS_BY_KIND[kind].safeParse(placement?.props).success).toBe(true);
-    expect(KIT_ELEMENTS[kind].schema).toBe(SCHEMAS_BY_KIND[kind]);
-  });
+    it("has a reference page", () => {
+      const page = `docs/reference/elements/${tagOf(kind).toLowerCase()}.md`;
+      expect(existsSync(join(root, page)), page).toBe(true);
+    });
+  },
+);
 
-  it.each(keyPathsOf(kind).map((key) => [key.path, key] as const))("takes keys at %s", (path, key) => {
-    const exec = executorFor(file);
-    const before = serialize(exec.state());
-    const keys = keysFor(key);
-    const result = exec.execute({ type: "key/setAll", params: { id: SAMPLE, path, keys } } as ActionInput);
-    expect(result.errors ?? []).toEqual([]);
-    expect(exec.state().errors).toEqual([]);
-    const made = [...exec.state().items.values()].filter(
-      (item) => item.parent === SAMPLE && item.kind === "keyframe" && item.props.property === key.property,
-    );
-    expect(made.map((item) => item.props.value)).toEqual(keys.map((k) => k.value));
-    expectWrittenBack(file, exec);
-    expect(exec.undo()?.ok).toBe(true);
-    expect(serialize(exec.state())).toEqual(before);
-  });
+describe.each(SAMPLE_KINDS.filter((kind) => !STANDS_INSIDE(kind)).map((kind) => [kind, sampleFile(kind)] as const))(
+  "a %s",
+  (kind, file) => {
+    const start = resolveText(file.text, file.manifest, file.files);
 
-  it("has a row for the tools", () => {
-    const row = timelineRows(start).elements.find((element) => element.id === SAMPLE);
-    expect(row).toMatchObject({ id: SAMPLE, kind, track: "samples", start: 0 });
-    // What its placement holds from the file is in the row: a kind of words shows them.
-    const text = start.items.get(SAMPLE)?.text;
-    if (text !== undefined) expect(row?.text).toBe(text);
-  });
+    it("resolves and lints clean from its sample", () => {
+      expect(start.errors).toEqual([]);
+      expect(lint(file.text, { manifest: file.manifest })).toEqual([]);
+    });
 
-  const offered = affordances(start, SAMPLE)?.actions ?? [];
-  const actions = sampleActions({ kind, effects: effectsOf(start) });
+    it("is placed as its kind, with the props its schema parses to", () => {
+      const placement = start.items.get(SAMPLE);
+      expect(placement, `the sample must have the id "${SAMPLE}"`).toBeDefined();
+      expect(placement?.kind).toBe(kind);
+      expect(placement?.parsed).toBe(true);
+      expect(SCHEMAS_BY_KIND[kind].safeParse(placement?.props).success).toBe(true);
+      expect(KIT_ELEMENTS[kind].schema).toBe(SCHEMAS_BY_KIND[kind]);
+    });
 
-  it("is offered actions", () => {
-    expect(offered.length).toBeGreaterThan(0);
-  });
-
-  it.each(offered)("%s runs, undoes, redoes and writes back (or is refused, where the params say so)", (type) => {
-    const sample = actions[type];
-    expect(sample, `a ${kind} is offered ${type}: give it params in ${PARAMS_FILE}`).toBeDefined();
-    if (!sample) return;
-    const exec = executorFor(file);
-    for (const edit of sample.setup ?? []) expect(exec.execute(edit).errors ?? [], `setup ${edit.type}`).toEqual([]);
-    const before = serialize(exec.state());
-    if (sample.refused !== undefined) {
-      expect(exec.can(sample.input)).toMatchObject({ ok: false, errors: [{ code: sample.refused }] });
-      expect(exec.execute(sample.input).ok).toBe(false);
+    it.each(keyPathsOf(kind).map((key) => [key.path, key] as const))("takes keys at %s", (path, key) => {
+      const exec = executorFor(file);
+      const before = serialize(exec.state());
+      const keys = keysFor(key);
+      const result = exec.execute({ type: "key/setAll", params: { id: SAMPLE, path, keys } } as ActionInput);
+      expect(result.errors ?? []).toEqual([]);
+      expect(exec.state().errors).toEqual([]);
+      const made = [...exec.state().items.values()].filter(
+        (item) => item.parent === SAMPLE && item.kind === "keyframe" && item.props.property === key.property,
+      );
+      expect(made.map((item) => item.props.value)).toEqual(keys.map((k) => k.value));
+      expectWrittenBack(file, exec);
+      expect(exec.undo()?.ok).toBe(true);
       expect(serialize(exec.state())).toEqual(before);
-      return;
-    }
-    expect(exec.can(sample.input)).toEqual({ ok: true });
-    const result = exec.execute(sample.input);
-    expect(result.errors ?? []).toEqual([]);
-    expect(result.ok).toBe(true);
-    const after = serialize(exec.state());
-    expect(after).not.toEqual(before);
-    expect(exec.state().errors).toEqual([]);
-    expectWrittenBack(file, exec);
-    expect(exec.undo()?.ok).toBe(true);
-    expect(serialize(exec.state())).toEqual(before);
-    expect(exec.redo()?.ok).toBe(true);
-    expect(serialize(exec.state())).toEqual(after);
-  });
+    });
 
-  it("has a reference page", () => {
-    const page = `docs/reference/elements/${tagOf(kind).toLowerCase()}.md`;
-    expect(existsSync(join(root, page)), page).toBe(true);
-  });
-});
+    it("has a row for the tools", () => {
+      const row = timelineRows(start).elements.find((element) => element.id === SAMPLE);
+      const where = KIT_ELEMENTS[kind].sampleTrack;
+      expect(row).toMatchObject({ id: SAMPLE, kind, track: where === "composition" ? null : "samples" });
+      // On a free track the sample starts where it says; in a sequence, where its neighbours put it.
+      if (where !== "sequence") expect(row?.start).toBe(0);
+      // What its placement holds from the file is in the row: a kind of words shows them.
+      const text = start.items.get(SAMPLE)?.text;
+      if (text !== undefined) expect(row?.text).toBe(text);
+    });
+
+    const actions = sampleActions({ kind, effects: effectsOf(start) });
+    // What it is offered as it stands, and once each action's setup has made something for it to work on (a key to
+    // move, a second effect to reorder).
+    const offered = offeredTo(file, start, actions);
+
+    it("is offered actions", () => {
+      expect(offered.length).toBeGreaterThan(0);
+    });
+
+    it.each(offered)("%s runs, undoes, redoes and writes back (or is refused, where the params say so)", (type) => {
+      const sample = actions[type];
+      expect(sample, `a ${kind} is offered ${type}: give it params in ${PARAMS_FILE}`).toBeDefined();
+      if (!sample) return;
+      const exec = executorFor(file);
+      for (const edit of sample.setup ?? []) expect(exec.execute(edit).errors ?? [], `setup ${edit.type}`).toEqual([]);
+      const before = serialize(exec.state());
+      if (sample.refused !== undefined) {
+        expect(exec.can(sample.input)).toMatchObject({ ok: false, errors: [{ code: sample.refused }] });
+        expect(exec.execute(sample.input).ok).toBe(false);
+        expect(serialize(exec.state())).toEqual(before);
+        return;
+      }
+      expect(exec.can(sample.input)).toEqual({ ok: true });
+      const result = exec.execute(sample.input);
+      expect(result.errors ?? []).toEqual([]);
+      expect(result.ok).toBe(true);
+      const after = serialize(exec.state());
+      expect(after).not.toEqual(before);
+      expect(exec.state().errors).toEqual([]);
+      expectWrittenBack(file, exec);
+      expect(exec.undo()?.ok).toBe(true);
+      expect(serialize(exec.state())).toEqual(before);
+      expect(exec.redo()?.ok).toBe(true);
+      expect(serialize(exec.state())).toEqual(after);
+    });
+
+    it("has a reference page", () => {
+      const page = `docs/reference/elements/${tagOf(kind).toLowerCase()}.md`;
+      expect(existsSync(join(root, page)), page).toBe(true);
+    });
+  },
+);
 
 describe("the sample actions", () => {
   it("are each offered to some kind, so none is left behind when an action goes", () => {
-    const left = SAMPLE_KINDS.flatMap((kind) => {
+    const kinds = SAMPLE_KINDS.filter((kind) => !STANDS_INSIDE(kind));
+    const left = kinds.flatMap((kind) => {
       const file = sampleFile(kind);
       const state = resolveText(file.text, file.manifest, file.files);
-      const offered = new Set<string>(affordances(state, SAMPLE)?.actions ?? []);
-      return Object.keys(sampleActions({ kind, effects: effectsOf(state) })).filter((type) => !offered.has(type));
+      const actions = sampleActions({ kind, effects: effectsOf(state) });
+      const offered = new Set<string>(offeredTo(file, state, actions));
+      return Object.keys(actions).filter((type) => !offered.has(type));
     });
     // Params written for an action no kind is offered any more.
-    const everywhere = [...new Set(left)].filter(
-      (type) => left.filter((t) => t === type).length === SAMPLE_KINDS.length,
-    );
+    const everywhere = [...new Set(left)].filter((type) => left.filter((t) => t === type).length === kinds.length);
     expect(everywhere).toEqual([]);
   });
 });

@@ -36,6 +36,16 @@ const after =
     return text.slice(0, i + anchor.length) + added + text.slice(i + anchor.length);
   };
 
+/** `added` right after the first match of `anchor`, an import line that may name more than one thing. */
+const afterMatch =
+  (anchor: RegExp, added: string): Edit =>
+  (text, file) => {
+    const m = anchor.exec(text);
+    if (!m) missing(file, String(anchor));
+    const end = m.index + m[0].length;
+    return text.slice(0, end) + added + text.slice(end);
+  };
+
 /** `added` right before the first `anchor`. */
 const before =
   (anchor: string, added: string): Edit =>
@@ -199,7 +209,10 @@ export const ${kind}Dom: DomDrawingOf<"${kind}"> = {
       lastIn("SDK_ELEMENTS", registry("SDK_ELEMENTS"), kind),
     ],
     "packages/player/src/elements/index.ts": [
-      after(`import type { PlayerElement } from "./element";\n`, `import { ${kind} } from "./${kind}";\n`),
+      afterMatch(
+        /import type \{[^}]*\bPlayerElement\b[^}]*\} from "\.\/element";\n/,
+        `import { ${kind} } from "./${kind}";\n`,
+      ),
       lastIn("PLAYER_ELEMENTS", registry("PLAYER_ELEMENTS"), kind),
     ],
     "packages/player/src/elements/dom.tsx": [
