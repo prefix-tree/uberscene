@@ -27,6 +27,8 @@ export interface EditorElement<K extends MigratedKind> {
 export const EDITOR_ELEMENTS: { readonly [K in MigratedKind]: EditorElement<K> } = {
   clip: { kind: "clip", icon: Clapperboard },
   audio: { kind: "audio", icon: Music },
+  gap: { kind: "gap", icon: Shapes },
+  transition: { kind: "transition", icon: Sparkles },
   title: {
     kind: "title",
     icon: Type,
@@ -52,7 +54,6 @@ export const EDITOR_ELEMENTS: { readonly [K in MigratedKind]: EditorElement<K> }
 const OTHER_ICONS: Partial<Record<Kind, LucideIcon>> = {
   captions: Captions,
   caption: Captions,
-  transition: Sparkles,
 };
 
 /** The text panels of the kinds that have no entry above yet. */
