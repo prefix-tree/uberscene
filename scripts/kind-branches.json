@@ -7,20 +7,20 @@
       "read": 3
     },
     "sdk": {
-      "compare": 121,
-      "list": 23,
+      "compare": 114,
+      "list": 22,
       "cast": 70,
       "read": 74
     },
     "player": {
-      "compare": 10,
+      "compare": 4,
       "list": 0,
-      "cast": 30,
-      "read": 24
+      "cast": 27,
+      "read": 23
     },
     "render": {
       "compare": 18,
-      "list": 1,
+      "list": 0,
       "cast": 11,
       "read": 1
     },
@@ -41,6 +41,21 @@
     {
       "file": "packages/kit/src/theme/schema.ts",
       "why": "STYLED_KINDS is the theme schema's own list of the kinds a theme holds presets for, written out so the theme's type has their names; a test holds it to the kinds' themeStyle."
+    },
+    {
+      "file": "packages/sdk/src/actions/handlers/multicam.ts",
+      "kinds": ["clip"],
+      "why": "A multicam's cuts are clips the resolver makes; its actions find them and write them out as clips. Goes with the multicam's own folder."
+    },
+    {
+      "file": "packages/sdk/src/resolve/resolve.ts",
+      "kinds": ["clip"],
+      "why": "A multicam's cuts are made as clips. Goes with the multicam's own folder."
+    },
+    {
+      "file": "packages/player/src/model/visible.ts",
+      "kinds": ["clip"],
+      "why": "A multicam is drawn through the clips made of its cuts. Goes with the multicam's own folder."
     }
   ]
 }
