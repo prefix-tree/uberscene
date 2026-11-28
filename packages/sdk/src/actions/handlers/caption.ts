@@ -33,7 +33,7 @@ function generatedCues(state: ResolvedState, captionsId: string) {
       (p) =>
         p.parent === captionsId && p.kind === "caption" && p.editable === "generated" && !state.tree.byId.has(p.id),
     )
-    .sort((a, b) => a.start - b.start);
+    .sort((a, b) => a.range.start.compare(b.range.start));
 }
 
 /**

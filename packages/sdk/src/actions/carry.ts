@@ -2,14 +2,16 @@
 // titles anchored to it, transitions beside it, lengths that follow it. Left alone, those point at nothing or at a word
 // the clip no longer plays. A carried action repairs them with ordinary actions of its own, run before or after the
 // edit, so the patches, the write-back and the undo of the repairs are those of the actions they are.
-import { BOX_ORIGIN_POINT, type BoxOrigin, type CurveKey, curveAt, round3 } from "@uberscene/kit/schema";
+import { BOX_ORIGIN_POINT, type BoxOrigin, type CurveKey, curveAt, round3, Time } from "@uberscene/kit/schema";
 
 import { createPatchLog } from "../patches/log";
 import type { Json } from "../patches/types";
 import { type Dependent, dependentsOf } from "../resolve/dependents";
 import { followOf } from "../resolve/follow";
+import { hasNodeIn, nodeIn } from "../resolve/overlay";
 import { ownRestBox, restBox } from "../resolve/push";
 import { type Placement, type ResolvedState, resolve } from "../resolve/resolve";
+import { lengthSeconds, S } from "../time";
 import { type ActionHandler, type ApplyContext, getHandler, inverseOf } from "./registry";
 import type { Action, ActionInput, ActionType } from "./types";
 
@@ -41,9 +43,9 @@ export function carry<T extends ActionType>(
       if (!repairs) return handler.invert(action, before);
       // The inverses are taken on a scratch run of the same steps, each against the state the step before left.
       const log = createPatchLog({
-        isSource: (id) => before.tree.byId.has(id),
-        sourceParent: (id) => before.tree.byId.get(id)?.parent ?? null,
-        sourceNode: (id) => before.tree.byId.get(id),
+        isSource: (id) => hasNodeIn(before.tree, id),
+        sourceParent: (id) => nodeIn(before.tree, id)?.parent ?? null,
+        sourceNode: (id) => nodeIn(before.tree, id),
       });
       const current = () => resolve(before.tree, before.manifest, log);
       const ctx: ApplyContext = { before, manifest: before.manifest, current };
@@ -82,7 +84,7 @@ const setProps = (id: string, props: Record<string, Json | undefined>): ActionIn
 /** The clip before `id` on its track, skipping transitions and gaps. */
 function clipBefore(state: ResolvedState, id: string): Placement | undefined {
   const track = state.tracks.find((t) => t.items.includes(id));
-  const siblings = track ? (state.tree.byId.get(track.id)?.children ?? []) : [];
+  const siblings = track ? (nodeIn(state.tree, track.id)?.children ?? []) : [];
   for (let i = siblings.findIndex((c) => c.id === id) - 1; i >= 0; i--) {
     const kind = siblings[i]?.kind;
     if (kind !== "transition" && kind !== "gap") return state.items.get(siblings[i]!.id);
@@ -108,7 +110,7 @@ export function carryRemoval(id: string, before: ResolvedState): Carry | null {
   for (const d of deps) {
     if (d.kind !== "match" && d.kind !== "until") continue;
     const p = before.items.get(d.id);
-    if (p && !removed.has(d.id)) pre.push(setProps(d.id, { duration: round3(p.duration) }));
+    if (p && !removed.has(d.id)) pre.push(setProps(d.id, { duration: lengthSeconds(p) }));
   }
   for (const d of deps) if (d.kind === "follow" && !removed.has(d.id)) pre.push(unfollow(d.id, id, before));
   for (const d of anchored) {
@@ -118,8 +120,8 @@ export function carryRemoval(id: string, before: ResolvedState): Carry | null {
       pre.push({ type: "element/remove", params: { id: d.id } });
       continue;
     }
-    const room = Math.max(0, prev.duration - p.duration);
-    const offset = round3(Math.min(room, Math.max(0, p.start - prev.start)));
+    const room = Time.max(Time.ZERO, prev.range.duration.minus(p.range.duration));
+    const offset = S(Time.min(room, Time.max(Time.ZERO, p.range.start.minus(prev.range.start))));
     pre.push(setProps(d.id, { anchor: prev.id, at: undefined, offset }));
   }
   // With a clip on each side once this one is gone, one transition still joins them: the one before it, if any.
@@ -136,7 +138,7 @@ export function carryRemoval(id: string, before: ResolvedState): Carry | null {
 /** The clip a transition leads into on its track, else the one it leaves; transitions and gaps are skipped. */
 function clipBeside(state: ResolvedState, id: string): Placement | undefined {
   const track = state.tracks.find((t) => t.items.includes(id));
-  const siblings = track ? (state.tree.byId.get(track.id)?.children ?? []) : [];
+  const siblings = track ? (nodeIn(state.tree, track.id)?.children ?? []) : [];
   const at = siblings.findIndex((c) => c.id === id);
   const isClip = (kind: string | undefined) => kind !== undefined && kind !== "transition" && kind !== "gap";
   const next = siblings.slice(at + 1).find((c) => c.kind !== "transition");
@@ -158,9 +160,12 @@ export function carryTransitionRemoval(id: string, before: ResolvedState): Carry
   for (const d of deps) {
     const p = before.items.get(d.id);
     if (!p) continue;
-    if (d.kind === "match" || d.kind === "until") pre.push(setProps(d.id, { duration: round3(p.duration) }));
+    if (d.kind === "match" || d.kind === "until") pre.push(setProps(d.id, { duration: lengthSeconds(p) }));
     else if (!target) pre.push({ type: "element/remove", params: { id: d.id } });
-    else pre.push(setProps(d.id, { anchor: target.id, at: undefined, offset: round3(p.start - target.start) }));
+    else
+      pre.push(
+        setProps(d.id, { anchor: target.id, at: undefined, offset: S(p.range.start.minus(target.range.start)) }),
+      );
   }
   return pre.length > 0 ? { pre } : null;
 }
@@ -168,7 +173,7 @@ export function carryTransitionRemoval(id: string, before: ResolvedState): Carry
 /** Whether what follows `id` on its track, past any transitions, is a clip a transition can join (not a gap). */
 function hasClipAfter(state: ResolvedState, id: string): boolean {
   const track = state.tracks.find((t) => t.items.includes(id));
-  const siblings = track ? (state.tree.byId.get(track.id)?.children ?? []) : [];
+  const siblings = track ? (nodeIn(state.tree, track.id)?.children ?? []) : [];
   const next = siblings.slice(siblings.findIndex((c) => c.id === id) + 1).find((c) => c.kind !== "transition");
   return next !== undefined && next.kind !== "gap";
 }
@@ -216,15 +221,18 @@ export function carryTrim(id: string, before: ResolvedState): Carry | null {
       const post: ActionInput[] = [];
       for (const d of deps) {
         if (d.kind === "until") {
-          const was = before.items.get(d.id)?.duration;
+          const was = before.items.get(d.id);
           if (lostWord(after, d.id, "duration") && was !== undefined)
-            post.push(setProps(d.id, { duration: round3(was) }));
+            post.push(setProps(d.id, { duration: lengthSeconds(was) }));
           continue;
         }
         if (!lostWord(after, d.id)) continue;
-        const was = before.items.get(d.id)?.start ?? clip.start;
+        const was = (before.items.get(d.id) ?? clip).range.start;
         post.push(
-          setProps(d.id, { at: undefined, offset: round3(Math.min(clip.duration, Math.max(0, was - clip.start))) }),
+          setProps(d.id, {
+            at: undefined,
+            offset: S(Time.min(clip.range.duration, Time.max(Time.ZERO, was.minus(clip.range.start)))),
+          }),
         );
       }
       return post;
@@ -249,9 +257,9 @@ function unfollow(child: string, leader: string, before: ResolvedState): ActionI
   const l = before.items.get(leader);
   const next = l ? followOf(l) : undefined;
   if (!c || !l) return setProps(child, { follow: next });
-  const own = (before.tree.byId.get(child)?.props ?? {}) as Record<string, unknown>;
-  const lead = (before.tree.byId.get(leader)?.props ?? {}) as Record<string, unknown>;
-  const rel = c.start - l.start;
+  const own = (nodeIn(before.tree, child)?.props ?? {}) as Record<string, unknown>;
+  const lead = (nodeIn(before.tree, leader)?.props ?? {}) as Record<string, unknown>;
+  const rel = S(c.range.start.minus(l.range.start));
   const comp = { width: before.composition.width, height: before.composition.height };
   const outer = next ? restBox(before.items.get(next) ?? l, comp, before.manifest, before.items) : null;
   const outerFrame = outer && next && before.items.has(next) ? { width: outer.w, height: outer.h } : comp;

@@ -148,11 +148,11 @@ for (const [name, film] of Object.entries(FILMS)) {
   // 2. The lines to light: each shown element's `id="…"` line, while it is on screen.
   const lines = code.split("\n");
   const lit = [...video.state.items.values()]
-    .filter((p) => SHOWN.has(p.kind) && p.end > p.start)
+    .filter((p) => SHOWN.has(p.kind) && !p.range.isEmpty())
     .flatMap((p) => {
       // Written as a prop, or as a field of a table the file maps to elements.
       const line = lines.findIndex((l) => l.includes(`id="${p.id}"`) || l.includes(`id: "${p.id}"`));
-      return line >= 0 ? [{ line, from: round(p.start), to: round(p.end) }] : [];
+      return line >= 0 ? [{ line, from: round(p.range.start.toSeconds()), to: round(p.range.end.toSeconds()) }] : [];
     });
 
   // 3. The film as an asset of the frame.

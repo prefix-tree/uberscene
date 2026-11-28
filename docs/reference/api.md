@@ -536,10 +536,11 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/kit/schema`
 
-291 exports.
+325 exports.
 
 | Export | Kind | |
 |---|---|---|
+| `addTicks` | const | `a + b`, exact. |
 | `Adjustment` | const | The `<Adjustment>` element ([reference](/reference/elements/adjustment)). |
 | `Angle` | const | The `<Angle>` element ([reference](/reference/elements/angle)). |
 | `Animatable` | type | A value written as a constant, as keys over time, or, for a number, as a generator. |
@@ -570,6 +571,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `CatalogFont` | interface | One family to choose from. |
 | `CheckedEffects` | type | Each entry of an `effects` list checked against its own type. |
 | `clamp01` | const | `x` held to 0..1. |
+| `clampTicks` | const | `t` held to `[lo, hi]`. |
 | `Clip` | const | The `<Clip>` element ([reference](/reference/elements/clip)). |
 | `ColourFunction` | interface | A built-in colour transform's function, in parts a fused source can combine. |
 | `COMPONENT_NAMES` | const | The components' names. |
@@ -610,6 +612,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `EFFECTS` | const |  |
 | `EFFECTS_NOT_RENDERED` | const |  |
 | `EffectSpec` | type | One entry of an element's `effects`. |
+| `elapsedSeconds` | const | `t - start` as an exact difference. |
 | `ElementBox` | type |  |
 | `ElementCapabilities` | interface |  |
 | `ElementDefinition` | interface |  |
@@ -637,9 +640,11 @@ Every name each entry exports, read from the code. The sections above explain th
 | `formatColor` | function | A colour as CSS. |
 | `frameAt` | const | The frame a tick falls in. |
 | `frameAtSeconds` | const | The frame a time in seconds falls in, never below 0. |
+| `frameOfTicks` | const | The frame a tick falls in, floored. |
 | `FrameRate` | type | What `fps` may be. |
 | `frameStart` | const | The first tick of a frame. |
 | `frameStartSeconds` | const | When a frame starts, in seconds. |
+| `frameStartTicks` | const | The first tick of a frame. |
 | `framesUntil` | const | The first frame that starts at or after a time. |
 | `fromOklab` | function | An OKLab colour back in sRGB, each channel clamped to 0..1, with alpha `alpha`. |
 | `fusedColourSource` | function | One effect pass that draws a run of colour transforms in order. |
@@ -690,6 +695,8 @@ Every name each entry exports, read from the code. The sections above explain th
 | `MASK_TYPES` | const |  |
 | `MASKED_KINDS` | const | Masks render on these kinds, one per element. |
 | `MAX_SECONDS` | const | The longest time ticks hold exactly as a JavaScript number. |
+| `maxTicks` | const | The later of two times, or the longer of two lengths. |
+| `minTicks` | const | The earlier of two times, or the shorter of two lengths. |
 | `mixColor` | function | The colour `t` of the way from `from` to `to` (0 is `from`, 1 is `to`), moved in OKLab, with alpha moved in a straight line and the colour weighted by it, so a fade to `transparent` keeps its hue instead of passing through black. |
 | `monotoneCurve` | function | The curve through `points` (x strictly increasing) as a function on 0..1, clamped to 0..1. |
 | `Motion` | const | The `<Motion>` element ([reference](/reference/elements/motion)). |
@@ -702,6 +709,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `MotionStyle` | interface | What a motion style fills where an element says nothing. |
 | `motionStyleSchema` | const |  |
 | `moveRuns` | function | The runs of `before` carried onto its new text `after`. |
+| `mulRatio` | const | `t · num / den` to the tick, rounded down (Euclidean for a negative `den`), as craft-time's `mul_ratio`. |
 | `Multicam` | const | The `<Multicam>` element ([reference](/reference/elements/multicam)). |
 | `nearestFont` | function | The listed family whose name is nearest a misspelt one, when one is near enough to be what was meant. |
 | `nearestFrame` | const | The frame nearest a time, for times given by a person (`--at 2.5`) rather than computed. |
@@ -721,6 +729,12 @@ Every name each entry exports, read from the code. The sections above explain th
 | `PlacementScope` | type |  |
 | `POST_EFFECTS` | const | Effects the painter draws over the element after it. |
 | `Presets` | type |  |
+| `rangeContains` | const | Whether `t` is in `[start, end)`. |
+| `rangeEnd` | const | The first tick after a range. |
+| `rangeFromBounds` | const | The range from `start` up to, but not including, `end`. |
+| `rangeIntersect` | function | The stretch two ranges share, or null when they share none. |
+| `rangeIsEmpty` | const | Whether a range holds no time. |
+| `rangesOverlap` | const | Whether two ranges share any time. |
 | `Rate` | interface | A frame rate as an exact fraction. |
 | `rateLabel` | function | The rate as people write it. |
 | `rateProblem` | function | Why a rate cannot be used, or null. |
@@ -741,11 +755,13 @@ Every name each entry exports, read from the code. The sections above explain th
 | `sampleAtSeconds` | const | The audio sample a time in seconds falls in. |
 | `sampleRateProblem` | function | Why a sample rate cannot be used, or null. |
 | `samplesUntil` | const | The first sample that starts at or after a time. |
+| `scaleTicks` | const | `t` scaled by a factor that need not be a fraction (a clip speed of 1.5), to the nearest tick. |
 | `sceneSource` | function |  |
 | `SceneSourceFactory` | type | Makes the frames of a 3D scene a clip plays (`<Clip src={scene}>`), drawn at `width` by `height`. |
 | `SCHEMAS_BY_KIND` | const |  |
 | `secondAndFrame` | function | The whole second a frame falls in and the frame's place within it, for a timecode. |
 | `secondsToTicks` | const | Seconds as the nearest tick. |
+| `secondsToTicksExact` | const | Seconds as the nearest tick. |
 | `SHADER_ONLY_EFFECTS` | const | Built-in shader effects with no CSS filter to fall back on. |
 | `shaderDefinition` | function | Checks a declaration and makes its definition; throws what is wrong with it. |
 | `ShaderDefinition` | interface |  |
@@ -757,11 +773,14 @@ Every name each entry exports, read from the code. The sections above explain th
 | `SHAPE_TYPES` | const |  |
 | `shutterTimes` | function | The composition seconds a frame at `t` averages. |
 | `smoothNoise` | function | Smooth noise from -1 to 1 along `x`. |
+| `snapToFrame` | const | `t` moved down to the start of the frame it falls in. |
+| `snapToNearestFrame` | function | `t` moved to the nearest frame start; a time halfway between two goes to the earlier, as craft-time's `snap_nearest`. |
 | `springAt` | function | Where a spring released at rest from `from` toward `to` is after `time` seconds. |
 | `SpringConfig` | interface | A spring's physics. |
 | `Sticker` | const | The `<Sticker>` element ([reference](/reference/elements/sticker)). |
 | `STYLED_KINDS` | const | Element kinds a theme can hold named presets for; their elements pick one with `style`. |
 | `StyledKind` | type |  |
+| `subTicks` | const | `a - b`, exact. |
 | `Svg` | const | The `<Svg>` element ([reference](/reference/elements/svg)). |
 | `SVG_COLOR_TYPES` | const |  |
 | `TEXT_ALIGNS` | const |  |
@@ -783,10 +802,24 @@ Every name each entry exports, read from the code. The sections above explain th
 | `themeSchema` | const |  |
 | `themeToken` | function | The value of `$name`, or undefined. |
 | `Three` | const | The `<Three>` element ([reference](/reference/elements/three)). |
+| `TickRange` | interface | A half-open stretch of time in raw ticks, `[start, start + duration)`, as craft-time's `TimeRange`. |
+| `ticks` | function | A count as ticks. |
+| `Ticks` | type | A time or a length in ticks. |
 | `TICKS_PER_SECOND` | const | Ticks in one second. |
+| `ticksAsSeconds` | const | Ticks as seconds, for display and for animation code, which is continuous. |
+| `ticksFromRational` | function | A container timestamp, `pts · num / den` seconds, as ticks, rounded down, as craft-time's `from_rational`. |
+| `ticksFromUnits` | function | A count of `units` at `perSecond` (samples at 48 000) as ticks, rounded toward zero, as craft-time's `from_units`. |
 | `ticksPerFrame` | const | Ticks in one frame. |
+| `ticksToFileSeconds` | function | Ticks as the number a file should say. |
+| `ticksToRationalFloor` | function | Ticks as a timestamp in a `num / den` timebase, rounded down, as craft-time's `to_rational_floor`. |
+| `ticksToRationalRound` | function | Ticks as a timestamp in a `num / den` timebase, to the nearest unit with halves up, as craft-time's `to_rational_round`. |
 | `ticksToSeconds` | const |  |
+| `ticksToUnitsFloor` | const | Ticks as a count of units at `perSecond`, floored, as craft-time's `to_units_floor`. |
+| `tidySeconds` | function | A computed time without its float noise, keeping where it really falls. |
+| `Time` | class | A point or a length on the timeline, as a whole number of ticks. |
 | `timecode` | function | SMPTE timecode of a frame, `HH:MM:SS:FF`. |
+| `timeRange` | const | The range that starts at `start` and lasts `duration`. |
+| `TimeRange` | class | A half-open stretch of the timeline, `[start, start + duration)`, as craft-time's `TimeRange`. |
 | `Title` | const | The `<Title>` element ([reference](/reference/elements/title)). |
 | `titleWords` | function | The words of a title's text, as the player reveals them word by word. |
 | `TOKEN_PATTERN` | const | A whole prop value naming a theme value. |
@@ -823,6 +856,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `zCaptionAnimation` | const |  |
 | `zEasing` | const |  |
 | `zEntranceAnimation` | const |  |
+| `ZERO_TICKS` | const | No time. |
 | `zFitMode` | const |  |
 | `zKeyframeProperty` | const |  |
 | `zShapeType` | const |  |
@@ -834,7 +868,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/sdk`
 
-241 exports.
+249 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -902,6 +936,8 @@ Every name each entry exports, read from the code. The sections above explain th
 | `ElementRow` | interface |  |
 | `ElementSite` | interface |  |
 | `EMPTY_MANIFEST` | const |  |
+| `endSeconds` | const | Where a placement ends, in seconds. |
+| `endTicks` | const | Where a placement ends, as a count of ticks. |
 | `entriesOf` | function | An asset's list of words, shots, silences or beats. |
 | `EVENT_KINDS` | const |  |
 | `EventKind` | type |  |
@@ -950,6 +986,8 @@ Every name each entry exports, read from the code. The sections above explain th
 | `LayerActions` | interface |  |
 | `LayerInterior` | interface |  |
 | `LayerPlacement` | interface |  |
+| `lengthSeconds` | const | How long a placement is, in seconds. |
+| `lengthTicks` | const | How long a placement is, as a count of ticks. |
 | `lineRange` | function | Widen an element range to swallow its own line(s). |
 | `lint` | function | Static checks on a video file. |
 | `LintOptions` | interface |  |
@@ -995,6 +1033,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `PatchLog` | interface |  |
 | `PatchLogOptions` | interface |  |
 | `Placement` | interface |  |
+| `PlacementSource` | interface | The part of an asset a clip or audio plays. |
 | `PlacementSpec` | type | Where a new element goes. |
 | `planCues` | function | Group timeline words into cues. |
 | `playOf` | function | The play of one clip or audio placement, or null for an element that plays no asset. |
@@ -1032,6 +1071,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `samePlacement` | function | Whether two placements would render and edit the same; used to hand back the previous object. |
 | `SceneFn` | type |  |
 | `SceneUse` | interface | A scene a clip plays, and the moments the clip hands in, in scene seconds. |
+| `secondsSinceStart` | const | Seconds from a placement's start to `t` (seconds), worked out exactly. |
 | `Shot` | interface |  |
 | `Silence` | interface |  |
 | `skimMoments` | function | The moments an editor skims a cut by. |
@@ -1045,6 +1085,8 @@ Every name each entry exports, read from the code. The sections above explain th
 | `stableJson` | function |  |
 | `StageEdit` | type |  |
 | `stageOf` | function | The scene file's stage, as data. |
+| `startSeconds` | const | Where a placement starts, in seconds. |
+| `startTicks` | const | Where a placement starts, as a count of ticks. |
 | `SubjectBox` | interface | A subject's box at source second `t`, as fractions of the source picture (0..1 from its top left). |
 | `SubtitleOptions` | interface |  |
 | `subtitles` | function | The captions the cut plays, as an SRT or WebVTT file. |
@@ -1082,7 +1124,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/sdk/resolver`
 
-84 exports.
+92 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -1107,6 +1149,8 @@ Every name each entry exports, read from the code. The sections above explain th
 | `dependentsOf` | function | The elements that depend on `id`, in timeline order of the file, each once per way it depends. |
 | `Editable` | type |  |
 | `EMPTY_MANIFEST` | const |  |
+| `endSeconds` | const | Where a placement ends, in seconds. |
+| `endTicks` | const | Where a placement ends, as a count of ticks. |
 | `entriesOf` | function | An asset's list of words, shots, silences or beats. |
 | `findParentOf` | function |  |
 | `FOLLOW_KINDS` | const | The kinds that take a `follow`, and the kinds one may follow. |
@@ -1124,6 +1168,8 @@ Every name each entry exports, read from the code. The sections above explain th
 | `isTimeRefString` | function |  |
 | `Json` | type |  |
 | `LayerInterior` | interface |  |
+| `lengthSeconds` | const | How long a placement is, in seconds. |
+| `lengthTicks` | const | How long a placement is, as a count of ticks. |
 | `lookupAsset` | function |  |
 | `NetPatch` | interface | The reduced effect of every patch on one element. |
 | `onTimeline` | function | Composition time of an asset second, through the first play that covers it; null when it is not on the timeline. |
@@ -1135,6 +1181,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `Patch` | type | One change recorded by an action. |
 | `PatchLog` | interface |  |
 | `Placement` | interface |  |
+| `PlacementSource` | interface | The part of an asset a clip or audio plays. |
 | `planCues` | function | Group timeline words into cues. |
 | `playsKey` | function | A stable key for the plays of one asset, so an unchanged timeline reuses the generated nodes. |
 | `Presence` | type |  |
@@ -1155,10 +1202,13 @@ Every name each entry exports, read from the code. The sections above explain th
 | `samePlacement` | function | Whether two placements would render and edit the same; used to hand back the previous object. |
 | `SceneFn` | type |  |
 | `SceneUse` | interface | A scene a clip plays, and the moments the clip hands in, in scene seconds. |
+| `secondsSinceStart` | const | Seconds from a placement's start to `t` (seconds), worked out exactly. |
 | `Shot` | interface |  |
 | `Silence` | interface |  |
 | `SourceIndexLike` | interface |  |
 | `speedKeysOf` | function | A clip's speed keys (from `speed={[…]}`), sorted by `at`. |
+| `startSeconds` | const | Where a placement starts, in seconds. |
+| `startTicks` | const | Where a placement starts, as a count of ticks. |
 | `SubjectBox` | interface | A subject's box at source second `t`, as fractions of the source picture (0..1 from its top left). |
 | `SubtitleOptions` | interface |  |
 | `subtitles` | function | The captions the cut plays, as an SRT or WebVTT file. |

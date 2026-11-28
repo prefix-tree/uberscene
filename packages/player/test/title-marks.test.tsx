@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { resolveTheme, type TextRun } from "@uberscene/kit/schema";
+import { resolveTheme, type TextRun, Time, TimeRange } from "@uberscene/kit/schema";
 import type { Placement, ResolvedState } from "@uberscene/sdk";
 
 import { titleContent } from "../src/overlays/content";
@@ -14,8 +14,7 @@ function box(text: string, runs: readonly TextRun[], animation?: object, time = 
   const placement = {
     id: "t",
     kind: "title",
-    start: 0,
-    duration: 2,
+    range: TimeRange.of(Time.ZERO, Time.seconds(2)),
     props: { style: { color: "#ff0000" }, ...(animation ? { animation } : {}) },
   } as unknown as Placement;
   const state = (theme ? { theme: resolveTheme(undefined) } : {}) as ResolvedState;

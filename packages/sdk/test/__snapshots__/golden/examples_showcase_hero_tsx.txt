@@ -1,0 +1,10 @@
+composition composition 30/1 frames 360
+woodblock layer 0-360
+name title 156-341
+tagline title 167-219
+agent title 219-257
+hand title 257-294
+code title 294-341
+print track 0-360
+words track 0-360
+composition composition 0-360

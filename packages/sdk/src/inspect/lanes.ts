@@ -3,6 +3,7 @@
 // timeline, from the timeline itself: what a breakdown of a film's sound shows under the film.
 import { lookupAsset } from "../manifest/types";
 import type { Placement, ResolvedState } from "../resolve/resolve";
+import { endSeconds, startSeconds } from "../time";
 
 export interface LaneClip {
   readonly id: string;
@@ -63,15 +64,15 @@ export function timelineLanes(state: ResolvedState, { steps = 25 }: { steps?: nu
     const clips: LaneClip[] = [];
     for (const id of track.items) {
       const p = state.items.get(id);
-      if (!p || !SHOWN.has(p.kind) || !(p.end > p.start)) continue;
+      if (!p || !SHOWN.has(p.kind) || !(endSeconds(p) > startSeconds(p))) continue;
       // What a helper or a loop made inside an element stands with its parent.
       if (p.parent !== null && p.parent !== track.id) continue;
       const level = p.kind === "audio" ? levelOf(state, p, steps) : undefined;
       clips.push({
         id: p.id,
         kind: p.kind,
-        from: round3(p.start),
-        to: round3(p.end),
+        from: round3(startSeconds(p)),
+        to: round3(endSeconds(p)),
         label: p.id,
         ...(level ? { level } : {}),
       });
@@ -105,8 +106,9 @@ function levelOf(state: ResolvedState, p: Placement, steps: number): number[] | 
   const wave = source ? lookupAsset(state.manifest, source.asset)?.waveform : undefined;
   if (!source || !wave || wave.peaks.length === 0) return undefined;
   const volume = typeof p.props.volume === "number" ? p.props.volume : 1;
-  const n = Math.max(1, Math.round((p.end - p.start) * steps));
-  const span = (p.end - p.start) / n;
+  const length = endSeconds(p) - startSeconds(p);
+  const n = Math.max(1, Math.round(length * steps));
+  const span = length / n;
   const out: number[] = [];
   for (let i = 0; i < n; i++) {
     // The step's stretch of the source, in its own seconds.

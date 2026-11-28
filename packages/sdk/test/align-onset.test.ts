@@ -34,21 +34,21 @@ describe('align="onset"', () => {
     const state = placed('<Audio id="boom" src="asset:hit" anchor="b" align="onset" />');
     expect(state.errors).toEqual([]);
     const boom = state.items.get("boom");
-    expect(boom?.start).toBeCloseTo(4 - 0.3, 6);
+    expect(boom?.range.start.toSeconds()).toBeCloseTo(4 - 0.3, 6);
     expect(boom?.source?.in).toBe(0);
   });
 
   it("counts from where the sound is trimmed in, and does nothing once the onset is cut away", () => {
     const later = placed('<Audio id="boom" src="asset:hit" start={4} in={0.1} align="onset" />');
-    expect(later.items.get("boom")?.start).toBeCloseTo(3.8, 6);
+    expect(later.items.get("boom")?.range.start.toSeconds()).toBeCloseTo(3.8, 6);
     const past = placed('<Audio id="boom" src="asset:hit" start={4} in={0.5} align="onset" />');
-    expect(past.items.get("boom")?.start).toBe(4);
+    expect(past.items.get("boom")?.range.start.toSeconds()).toBe(4);
   });
 
   it("trims the front of a sound that would start before the video", () => {
     const state = placed('<Audio id="boom" src="asset:hit" start={0.1} align="onset" />');
     const boom = state.items.get("boom");
-    expect(boom?.start).toBe(0);
+    expect(boom?.range.start.toSeconds()).toBe(0);
     expect(boom?.source?.in).toBeCloseTo(0.2, 6);
   });
 

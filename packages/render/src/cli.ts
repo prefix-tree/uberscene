@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { parseArgs } from "node:util";
 
@@ -13,14 +13,15 @@ import { fontSheet, formatFonts, listFonts } from "./fonts-list";
 import { inspect } from "./inspect";
 import { checkLayout, formatLayout, type Insets, SAFE_ZONES, type SafeZoneName } from "./layout-check";
 import { formatLint, lintErrors, lintFiles } from "./lint-files";
-import { loadVideo } from "./load";
+import { type LoadOptions, loadVideo } from "./load";
 import { renderLook } from "./look";
 import { mediaFolders } from "./manifest-file";
 import { matteCommand } from "./matte/cli";
 import { directoryResolver } from "./media";
 import { checkMotion, formatMotion } from "./motion-check";
 import { installCodec } from "./native/codecs";
-import { draftPath, renderVideo } from "./renderer";
+import { formatQueue, readQueue, runQueue } from "./queue";
+import { draftPath, type RenderOptions, renderVideo } from "./renderer";
 import { installSkills } from "./skills";
 import { soundCommand } from "./sounds/cli";
 import { renderStill } from "./still";
@@ -62,6 +63,7 @@ const USAGE = `Usage: uberscene <file.tsx> --out <video.mp4|.webm|.mp3|.wav> [--
        uberscene fetch <library:id> [--id <id>] [--from <s> --to <s>] [--height <px>] [--dir <folder>] [--manifest <file>]
        uberscene credits [--manifest <file>] [--out CREDITS.md]
        uberscene sound [<name> [--duration <s>] [--seed <n>] [--id <id>] [--out <file.wav>] [--manifest <file>]] [--json]
+       uberscene queue <jobs.json> [--continue-on-error] [--json] [--media <dir>] [--tabs <n>] [--quiet]
 
   Every export draws its frames in Chrome. The first one downloads Chrome for Testing ${CHROME_MILESTONE} into
   ~/.cache/uberscene/browsers (or UBERSCENE_BROWSER_CACHE); UBERSCENE_CHROMIUM names a Chrome ${CHROME_MILESTONE} to use
@@ -149,6 +151,13 @@ const USAGE = `Usage: uberscene <file.tsx> --out <video.mp4|.webm|.mp3|.wav> [--
                         spelled the way an earlier version took them. One line per finding, as a compiler prints
                         them; it exits 1 when an error is left. The file is read, never run
   --fix                 (lint) write each file with the fixes its findings carry, then report what is left
+  queue <jobs.json>     export several videos in order, then print one line per job and the totals; exits 1 unless
+                        every job rendered. The file is { "jobs": [...] } or the list alone; a job is { file, out }
+                        with any of props, from, to, codec, quality, bitrate, manifest, draft and silent, meaning
+                        what the flags of the same name mean. Paths are relative to the queue file. Every job is
+                        checked before the first renders. --media, --tabs, --font, --import, --keyframe and
+                        --continue apply to every job; --json prints the summary as JSON
+  --continue-on-error   (queue) run every job even when one fails; without it the first failure stops the queue
   browser install       download Chrome for Testing now, rather than on the first export
   codecs install        download the native codecs for this machine now, rather than on the first native export
   --srt <file>          also write the captions the cut plays as SRT, timed like the export (alone: only that)
@@ -313,6 +322,7 @@ async function main(): Promise<number> {
       fresh: { type: "boolean" },
       seed: { type: "string" },
       attribution: { type: "boolean" },
+      "continue-on-error": { type: "boolean" },
     },
   });
   if (positionals[0] === "add") return add(positionals.slice(1), values);
@@ -346,6 +356,13 @@ async function main(): Promise<number> {
     ...(values.props ? { props: JSON.parse(values.props) as Record<string, unknown> } : {}),
     ...(values.import ? { imports: Object.fromEntries(values.import.map(readImport)) } : {}),
   };
+  if (positionals[0] === "queue") {
+    if (!positionals[1] || positionals.length > 2) {
+      process.stderr.write(USAGE);
+      return 2;
+    }
+    return queue(positionals[1], values, loadOptions, frameTimeout);
+  }
   if (positionals[0] === "fonts") {
     if (positionals.length > 1) {
       process.stderr.write(USAGE);
@@ -610,34 +627,132 @@ async function main(): Promise<number> {
     throw new Error("--quality and --bitrate both set the size; pass one");
   if (values.codec !== undefined && !["avc", "vp9", "av1", "prores"].includes(values.codec))
     throw new Error(`--codec wants avc, vp9, av1 or prores, got "${values.codec}"`);
-  const tabs = values.tabs === undefined ? 1 : Math.floor(Number(values.tabs));
-  if (!(tabs >= 1)) throw new Error(`--tabs wants a number of pages, got "${values.tabs}"`);
-  const tty = process.stderr.isTTY && !values.quiet;
-  // A draft goes beside the file --out names, under its own name: it never replaces the video.
-  const written = values.draft ? draftPath(out) : out;
-  const result = await renderVideo({
-    ...common,
-    out: resolve(written),
+  await exportVideo(common, out, {
+    ...exportFlags(values),
     ...(values.draft ? { draft: true } : {}),
-    tabs,
     ...(values.from !== undefined ? { from: numberFlag("from", values.from) } : {}),
     ...(values.to !== undefined ? { to: numberFlag("to", values.to) } : {}),
-    ...(values.codec ? { videoCodec: values.codec as VideoCodec } : {}),
+    ...(values.codec ? { codec: values.codec as VideoCodec } : {}),
     ...(values.bitrate !== undefined ? { bitrate: numberFlag("bitrate", values.bitrate) } : {}),
     ...(values.quality ? { quality: values.quality as QualityName } : {}),
     ...(values.silent ? { silent: true } : {}),
-    ...(values.copy ? { smartCopy: true } : {}),
-    ...(values.keyframe !== undefined ? { keyFrameInterval: numberFlag("keyframe", values.keyframe) } : {}),
-    ...(values.continue ? { onAssetError: "continue" as const } : {}),
+    ...(values.copy ? { copy: true } : {}),
+  });
+  return 0;
+}
+
+/** How one video export is made: the flags the single command and a queue job share. */
+interface VideoExport {
+  readonly draft?: boolean;
+  readonly from?: number;
+  readonly to?: number;
+  readonly codec?: VideoCodec;
+  readonly bitrate?: number;
+  readonly quality?: QualityName;
+  readonly silent?: boolean;
+  readonly copy?: boolean;
+  readonly keyframe?: number;
+  readonly continue?: boolean;
+  readonly tabs: number;
+  readonly quiet?: boolean;
+}
+
+/** The flags every video export of one command takes, single or queued. */
+function exportFlags(values: {
+  tabs?: string | undefined;
+  keyframe?: string | undefined;
+  continue?: boolean | undefined;
+  quiet?: boolean | undefined;
+}): VideoExport {
+  const tabs = values.tabs === undefined ? 1 : Math.floor(Number(values.tabs));
+  if (!(tabs >= 1)) throw new Error(`--tabs wants a number of pages, got "${values.tabs}"`);
+  return {
+    tabs,
+    ...(values.keyframe !== undefined ? { keyframe: numberFlag("keyframe", values.keyframe) } : {}),
+    ...(values.continue ? { continue: true } : {}),
+    ...(values.quiet ? { quiet: true } : {}),
+  };
+}
+
+/** One video export with its progress, warnings and result line, as the single command and a queue job print them. */
+async function exportVideo(common: Omit<RenderOptions, "out">, out: string, how: VideoExport): Promise<void> {
+  const tty = process.stderr.isTTY && !how.quiet;
+  // A draft goes beside the file --out names, under its own name: it never replaces the video.
+  const written = how.draft ? draftPath(out) : out;
+  const result = await renderVideo({
+    ...common,
+    out: resolve(written),
+    ...(how.draft ? { draft: true } : {}),
+    tabs: how.tabs,
+    ...(how.from !== undefined ? { from: how.from } : {}),
+    ...(how.to !== undefined ? { to: how.to } : {}),
+    ...(how.codec ? { videoCodec: how.codec } : {}),
+    ...(how.bitrate !== undefined ? { bitrate: how.bitrate } : {}),
+    ...(how.quality ? { quality: how.quality } : {}),
+    ...(how.silent ? { silent: true } : {}),
+    ...(how.copy ? { smartCopy: true } : {}),
+    ...(how.keyframe !== undefined ? { keyFrameInterval: how.keyframe } : {}),
+    ...(how.continue ? { onAssetError: "continue" as const } : {}),
     onProgress: tty ? (p) => process.stderr.write(`\rframe ${p.frame}/${p.frames}`) : () => undefined,
   });
   if (tty) process.stderr.write("\n");
   for (const w of result.warnings) process.stderr.write(`warning: ${w}\n`);
   const seconds = (result.wallMs / 1000).toFixed(1);
   process.stderr.write(
-    `${written}: ${values.draft ? "a draft, every second frame at half size: " : ""}${result.frames} frames, ${result.width}x${result.height} at ${Number(result.fps.toFixed(3))} fps${result.audio ? ", with sound" : ""}, in ${seconds}s${result.tabs > 1 ? ` on ${result.tabs} tabs` : ""}${result.copiedFrames > 0 ? `, ${result.copiedFrames} frames copied` : ""}${nativeNote(result.codecs)} (${(result.frames / (result.wallMs / 1000)).toFixed(1)} fps)\n`,
+    `${written}: ${how.draft ? "a draft, every second frame at half size: " : ""}${result.frames} frames, ${result.width}x${result.height} at ${Number(result.fps.toFixed(3))} fps${result.audio ? ", with sound" : ""}, in ${seconds}s${result.tabs > 1 ? ` on ${result.tabs} tabs` : ""}${result.copiedFrames > 0 ? `, ${result.copiedFrames} frames copied` : ""}${nativeNote(result.codecs)} (${(result.frames / (result.wallMs / 1000)).toFixed(1)} fps)\n`,
   );
-  return 0;
+}
+
+/** `uberscene queue jobs.json`: each job exported in order, then one summary; exits 1 unless every job rendered. */
+async function queue(
+  path: string,
+  values: Parameters<typeof exportFlags>[0] & {
+    "continue-on-error"?: boolean | undefined;
+    json?: boolean | undefined;
+    media?: string | undefined;
+    font?: string[] | undefined;
+  },
+  loadOptions: LoadOptions,
+  frameTimeout: { frameTimeout?: number },
+): Promise<number> {
+  const jobs = readQueue(path);
+  const flags = exportFlags(values);
+  const fonts = (values.font ?? []).map(readFont);
+  const report = await runQueue(jobs, {
+    ...(values["continue-on-error"] ? { continueOnError: true } : {}),
+    onStart: (job, i, count) => process.stderr.write(`[${i + 1}/${count}] ${job.label.file} -> ${job.label.out}\n`),
+    render: async (job) => {
+      const loaded = await loadVideo(job.file, {
+        ...loadOptions,
+        ...(job.props ? { props: job.props } : {}),
+        ...(job.manifest ? { manifest: job.manifest } : {}),
+      });
+      for (const e of loaded.state.errors) process.stderr.write(`warning: ${e.id ?? "?"}: ${e.message}\n`);
+      const common = {
+        state: loaded.state,
+        source: loaded.source,
+        media: directoryResolver(mediaIn(values.media, job.file, loaded.manifestPath), loaded.manifest),
+        fonts,
+        onLog: (m: string) => process.stderr.write(`${m}\n`),
+        ...frameTimeout,
+      };
+      // Queues tend to write into an out/ folder: make it, as the single command does not need to.
+      mkdirSync(dirname(job.out), { recursive: true });
+      await exportVideo(common, job.out, {
+        ...flags,
+        ...(job.draft ? { draft: true } : {}),
+        ...(job.from !== undefined ? { from: job.from } : {}),
+        ...(job.to !== undefined ? { to: job.to } : {}),
+        ...(job.codec ? { codec: job.codec } : {}),
+        ...(job.bitrate !== undefined ? { bitrate: job.bitrate } : {}),
+        ...(job.quality ? { quality: job.quality } : {}),
+        ...(job.silent ? { silent: true } : {}),
+      });
+    },
+  });
+  if (values.json) process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+  else process.stderr.write(formatQueue(report));
+  return report.done === report.jobs.length ? 0 : 1;
 }
 
 /** What each number flag takes, for its check and its message. */

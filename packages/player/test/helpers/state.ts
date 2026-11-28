@@ -1,18 +1,29 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { resolveTheme } from "@uberscene/kit/schema";
+import { resolveTheme, Time, TimeRange } from "@uberscene/kit/schema";
 import {
   type AssetManifest,
   type CollectedNode,
   collectModule,
+  endSeconds,
   type Placement,
   type ResolvedState,
   type ResolvedTrack,
   resolve,
-} from "@uberscene/sdk";
+} from "@uberscene/sdk/resolver";
 
 import * as sample from "../../../sdk/fixtures/sample";
+
+/** A range in ticks from seconds, as the resolver makes it. */
+function rangeOf(start: number, duration: number): TimeRange {
+  return TimeRange.of(Time.seconds(start), Time.seconds(Math.max(0, duration)));
+}
+
+/** A placement's times, as its range. */
+function timeOf(start: number, duration: number) {
+  return { range: rangeOf(start, duration) };
+}
 
 export const kitFixturesDir = join(import.meta.dirname, "..", "..", "..", "sdk", "fixtures");
 export const fixtureManifest = JSON.parse(
@@ -131,7 +142,15 @@ export function makeState(spec: StateSpec): ResolvedState {
 
   const place = (it: ItemSpec, track: string, parent: string, start: number): Placement => {
     const speed = it.source?.speed ?? 1;
-    const source = it.source ? { in: it.source.in, out: it.source.out, speed, asset: it.source.asset } : undefined;
+    const source = it.source
+      ? {
+          in: it.source.in,
+          out: it.source.out,
+          speed,
+          asset: it.source.asset,
+          range: rangeOf(it.source.in, it.source.out - it.source.in),
+        }
+      : undefined;
     const duration = it.duration ?? (source ? (source.out - source.in) / speed : it.kind === "transition" ? 0.5 : 5);
     const props = { id: it.id, ...(it.props ?? {}) };
     const childNodes: CollectedNode[] = [];
@@ -156,9 +175,7 @@ export function makeState(spec: StateSpec): ResolvedState {
           track,
           parent: c.id,
           children: [],
-          start: at,
-          end: at,
-          duration: 0,
+          ...timeOf(at, 0),
           props: { id: g.id, ...(g.props ?? {}) },
           editable: "literal",
           lockedProps: [],
@@ -174,9 +191,7 @@ export function makeState(spec: StateSpec): ResolvedState {
         track,
         parent: it.id,
         children: grand.map((g) => g.id),
-        start: cs,
-        end: cs + cd,
-        duration: cd,
+        ...timeOf(cs, cd),
         props: { id: c.id, ...(c.props ?? {}) },
         editable: "literal",
         lockedProps: [],
@@ -202,9 +217,7 @@ export function makeState(spec: StateSpec): ResolvedState {
       track,
       parent,
       children: childPlacements.map((c) => c.id),
-      start,
-      end: start + duration,
-      duration,
+      ...timeOf(start, duration),
       ...(source ? { source } : {}),
       props,
       editable: "literal",
@@ -238,7 +251,7 @@ export function makeState(spec: StateSpec): ResolvedState {
         pendingTransition = null;
         const p = place(it, t.id, t.id, cursor);
         placed.push(p);
-        cursor = p.end;
+        cursor = endSeconds(p);
         prev = it.kind === "gap" ? null : p;
       } else {
         placed.push(place(it, t.id, t.id, it.start ?? 0));
@@ -265,7 +278,7 @@ export function makeState(spec: StateSpec): ResolvedState {
     });
   });
 
-  const duration = Math.max(0, ...[...items.values()].filter((i) => i.kind !== "transition").map((i) => i.end));
+  const duration = Math.max(0, ...[...items.values()].filter((i) => i.kind !== "transition").map((i) => endSeconds(i)));
   for (const t of tracks) {
     items.set(t.id, {
       id: t.id,
@@ -273,9 +286,7 @@ export function makeState(spec: StateSpec): ResolvedState {
       track: t.id,
       parent: "composition",
       children: t.items,
-      start: 0,
-      end: duration,
-      duration,
+      ...timeOf(0, duration),
       props: { id: t.id, layout: t.layout },
       editable: "literal",
       lockedProps: [],
@@ -294,9 +305,7 @@ export function makeState(spec: StateSpec): ResolvedState {
         track: null,
         parent: "cam",
         children: [],
-        start: at,
-        end: at,
-        duration: 0,
+        ...timeOf(at, 0),
         props: { id, property: `camera.${field}`, at, value, easing: easing ?? "linear" },
       });
       return id;
@@ -308,9 +317,7 @@ export function makeState(spec: StateSpec): ResolvedState {
       track: null,
       parent: "composition",
       children: [...spec.camera.tracks, ...keys],
-      start: 0,
-      end: duration,
-      duration,
+      ...timeOf(0, duration),
       props: { id: "cam", x: 0, y: 0, zoom: 1, rotation: 0, ...spec.camera.props },
     });
     for (const [i, t] of tracks.entries()) if (spec.camera.tracks.includes(t.id)) tracks[i] = { ...t, camera: "cam" };
@@ -329,9 +336,7 @@ export function makeState(spec: StateSpec): ResolvedState {
     track: null,
     parent: null,
     children: tracks.map((t) => t.id),
-    start: 0,
-    end: duration,
-    duration,
+    ...timeOf(0, duration),
     props: compProps,
     editable: "literal",
     lockedProps: [],
@@ -339,7 +344,15 @@ export function makeState(spec: StateSpec): ResolvedState {
     errors: [],
   });
   return {
-    composition: { id: "composition", fps, rate: { num: fps, den: 1 }, width, height, duration },
+    composition: {
+      id: "composition",
+      fps,
+      rate: { num: fps, den: 1 },
+      width,
+      height,
+      duration,
+      length: Time.seconds(duration),
+    },
     tracks,
     items,
     errors: [],

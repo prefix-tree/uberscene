@@ -1,11 +1,13 @@
 // The resolved timeline as flat rows: one array per kind of thing, each row with its id, its seconds and its frames.
 // Flat rows are what jq, a short script or a SQL table take as they are.
-import { framesUntil, nearestFrame, type Rate, round3 } from "@uberscene/kit/schema";
+import { framesUntil, type Rate, round3 } from "@uberscene/kit/schema";
 
 import type { ResolveError } from "../resolve/errors";
 import { derivedOrigin } from "../resolve/expand";
 import { followOf } from "../resolve/follow";
+import { nodeIn } from "../resolve/overlay";
 import type { Placement, ResolvedState } from "../resolve/resolve";
+import { endSeconds, lengthSeconds, startSeconds, T } from "../time";
 import { type BeatRow, beatRows, type MusicRow, musicRows } from "./music";
 import { spokenWords, timelineBeats } from "./plays";
 
@@ -155,7 +157,8 @@ const NOT_ELEMENTS = new Set([
 /** The flat rows of a resolved timeline. */
 export function timelineRows(state: ResolvedState): TimelineRows {
   const { rate } = state.composition;
-  const frame = (t: number): number => nearestFrame(t, rate);
+  // The first frame that shows it: an element, word or cut at 0.51 s is first seen on frame 16 at 30 fps, not 15.
+  const frame = (t: number): number => framesUntil(t, rate);
   const elements: ElementRow[] = [];
   const effects: EffectRow[] = [];
   const keyframes: KeyframeRow[] = [];
@@ -189,8 +192,8 @@ export function timelineRows(state: ResolvedState): TimelineRows {
         id: p.id,
         element: origin?.id ?? p.parent ?? "",
         property: origin ? origin.path.replace(/\.\d+$/, "") : String(p.props.property ?? ""),
-        at: round3(p.start),
-        frame: frame(p.start),
+        at: round3(startSeconds(p)),
+        frame: frame(startSeconds(p)),
         value: p.props.value,
         ...(typeof p.props.easing === "string" ? { easing: p.props.easing } : {}),
       });
@@ -213,11 +216,11 @@ export function timelineRows(state: ResolvedState): TimelineRows {
       const a = clips[i] as Placement,
         b = clips[i + 1] as Placement;
       // Clips with a gap between them do not cut to each other; overlays on a track are placed, not cut.
-      if (b.start > a.end + 1e-6) continue;
+      if (b.range.start.isAfter(a.range.end.plus(T(1e-6)))) continue;
       const over = transitions.find((t) => t.between?.[0] === a.id && t.between[1] === b.id);
       cuts.push({
-        time: round3(b.start),
-        frame: frame(b.start),
+        time: round3(startSeconds(b)),
+        frame: frame(startSeconds(b)),
         track: track.id,
         from: a.id,
         to: b.id,
@@ -269,17 +272,17 @@ function elementRow(state: ResolvedState, p: Placement, frame: (t: number) => nu
   const props = p.props;
   const follow = followOf(p);
   // A title's words are the element's children, kept on its node; a caption's are a prop.
-  const text = p.kind === "title" ? state.tree.byId.get(p.id)?.text : p.kind === "caption" ? props.text : undefined;
+  const text = p.kind === "title" ? nodeIn(state.tree, p.id)?.text : p.kind === "caption" ? props.text : undefined;
   return {
     id: p.id,
     kind: p.kind,
     track: p.track,
     parent: p.parent,
-    start: round3(p.start),
-    end: round3(p.end),
-    duration: round3(p.end - p.start),
-    startFrame: frame(p.start),
-    endFrame: frame(p.end),
+    start: round3(startSeconds(p)),
+    end: round3(endSeconds(p)),
+    duration: round3(lengthSeconds(p)),
+    startFrame: frame(startSeconds(p)),
+    endFrame: frame(endSeconds(p)),
     ...(p.source
       ? { asset: p.source.asset, in: round3(p.source.in), out: round3(p.source.out), speed: p.source.speed }
       : {}),

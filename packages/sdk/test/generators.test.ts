@@ -11,7 +11,7 @@ import {
   resolve,
 } from "@uberscene/sdk";
 
-import { manifest } from "./helpers";
+import { manifest, seconds } from "./helpers";
 
 const file = (body: string) => `import { Camera, Clip, Composition, Shape, Title, Track } from "@uberscene/kit";
 
@@ -61,7 +61,7 @@ describe("a generator written in place of a value", () => {
     // Nothing is left in the prop: the rotation it is added to is the default.
     expect(state.items.get("card")?.props.transform).toBeUndefined();
     const g = state.items.get("card.transform.rotation.generator");
-    expect(g).toMatchObject({ start: 1, end: 5 });
+    expect(seconds(g)).toMatchObject({ start: 1, end: 5 });
   });
 
   it("keeps the seed a file gives", () => {

@@ -5,6 +5,7 @@ import { nearestFrame } from "@uberscene/kit/schema";
 
 import { lookupAsset } from "../manifest/types";
 import type { Placement, ResolvedState } from "../resolve/resolve";
+import { endSeconds, startSeconds } from "../time";
 import { type MusicRow, musicRows } from "./music";
 import { spokenWords, type TimelineEntry, timelineBeats, timelineEntries } from "./plays";
 import { type CutRow, timelineRows } from "./rows";
@@ -323,10 +324,10 @@ function soundPoints(state: ResolvedState, cuts: readonly CutRow[], frameMs: num
   const effects = new Set(state.tracks.filter((t) => t.role === "effects").map((t) => t.id));
   const out: SoundPoint[] = [];
   for (const p of state.items.values()) {
-    if (p.kind !== "audio" || p.track === null || !effects.has(p.track) || !(p.end > p.start)) continue;
+    if (p.kind !== "audio" || p.track === null || !effects.has(p.track) || !(endSeconds(p) > startSeconds(p))) continue;
     const onset = p.source ? lookupAsset(state.manifest, p.source.asset)?.onset : undefined;
     const lead = p.source && onset !== undefined ? Math.max(0, (onset - p.source.in) / p.source.speed) : 0;
-    const time = Math.round((p.start + lead) * 1000) / 1000;
+    const time = Math.round((startSeconds(p) + lead) * 1000) / 1000;
     const nearest = cuts.reduce<CutRow | null>(
       (best, c) => (best === null || Math.abs(c.time - time) < Math.abs(best.time - time) ? c : best),
       null,

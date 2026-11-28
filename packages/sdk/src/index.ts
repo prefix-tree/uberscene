@@ -69,3 +69,12 @@ export { parseSource, type Range, rangeOf } from "./source/parse";
 export { elementName, printElement, printLiteral, printProp, printValue } from "./source/print";
 export { editStage, type StageEdit, stageOf } from "./source/stage";
 export { wrapMainTrack } from "./source/wrap-track";
+export {
+  endSeconds,
+  endTicks,
+  lengthSeconds,
+  lengthTicks,
+  secondsSinceStart,
+  startSeconds,
+  startTicks,
+} from "./time";

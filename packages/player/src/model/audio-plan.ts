@@ -1,5 +1,7 @@
-import { capabilitiesOf } from "@uberscene/kit/schema";
+import { capabilitiesOf, secondsToTicks } from "@uberscene/kit/schema";
 import {
+  endSeconds,
+  endTicks,
   type FreezeHold,
   freezeHoldsOf,
   lookupAsset,
@@ -10,7 +12,10 @@ import {
   rampAdvance,
   rampInverse,
   rampSpeed,
+  secondsSinceStart,
   speedKeysOf,
+  startSeconds,
+  startTicks,
 } from "@uberscene/sdk/resolver";
 
 import { AUDIO_CHUNK_S, DUCK_ATTACK_S, DUCK_RELEASE_S, ENVELOPE_STEP_S } from "../constants";
@@ -55,7 +60,7 @@ export function buildAudioPlan(
       (q) => q.track === track.id && q.parent !== null && q.kind !== "transition",
     )) {
       if (!capabilitiesOf(p.kind).audio) continue;
-      if (p.end <= from || p.start >= to) continue;
+      if (endTicks(p) <= secondsToTicks(from) || startTicks(p) >= secondsToTicks(to)) continue;
       if (p.kind === "nested") {
         out.push(...nestedOccurrences(state, p, track, from, to, resolveNested));
         continue;
@@ -65,7 +70,7 @@ export function buildAudioPlan(
       const asset = lookupAsset(state.manifest, src.asset);
       if (!asset || asset.kind === "image" || (asset.kind === "video" && !asset.audio)) continue;
       const reverse = p.props.reverse === true;
-      const envelope = buildGainEnvelope(p, track, state, p.start, p.end);
+      const envelope = buildGainEnvelope(p, track, state, startSeconds(p), endSeconds(p));
       const children = p.children.map((id) => state.items.get(id)).filter((c): c is Placement => c !== undefined);
       const pan = panEnvelope(p, children);
       for (const chunk of chunksOf(p, src, reverse, speedKeysOf(children), freezeHoldsOf(children))) {
@@ -138,7 +143,7 @@ function chunksOf(
     if (s2 - s1 < 1e-9) continue;
     const [u1, u2] = (reverse ? [length - s2, length - s1] : [s1, s2]).map(inverse) as [number, number];
     const mid = (u1 + u2) / 2;
-    const offset = p.start + holdAt.reduce((n, h) => (h.u <= mid ? n + h.duration : n), 0);
+    const offset = startSeconds(p) + holdAt.reduce((n, h) => (h.u <= mid ? n + h.duration : n), 0);
     const compStart = round(offset + u1),
       compEnd = round(offset + u2);
     const rate = ramp ? rateEnvelope(keys, u1, u2).map(([u, v]) => [round(offset + u), v] as const) : undefined;
@@ -179,13 +184,18 @@ function nestedOccurrences(
   const src = p.source;
   if (!inner || !src) return [];
   // shortcut: a nested placement plays at its constant speed, its own speed keys and freezes are ignored; map through rampInverse/freezeShift if nested ramps are wanted.
-  const toInner = (t: number): number => src.in + (t - p.start) * src.speed;
-  const toOuter = (t: number): number => p.start + (t - src.in) / src.speed;
-  const outerEnvelope = buildGainEnvelope(p, track, state, p.start, p.end);
-  return buildAudioPlan(inner, toInner(Math.max(from, p.start)), toInner(Math.min(to, p.end)), resolveNested)
+  const toInner = (t: number): number => src.in + secondsSinceStart(p, t) * src.speed;
+  const toOuter = (t: number): number => startSeconds(p) + (t - src.in) / src.speed;
+  const outerEnvelope = buildGainEnvelope(p, track, state, startSeconds(p), endSeconds(p));
+  return buildAudioPlan(
+    inner,
+    toInner(Math.max(from, startSeconds(p))),
+    toInner(Math.min(to, endSeconds(p))),
+    resolveNested,
+  )
     .map((o) => {
-      const compStart = Math.max(p.start, toOuter(o.compStart));
-      const compEnd = Math.min(p.end, toOuter(o.compEnd));
+      const compStart = Math.max(startSeconds(p), toOuter(o.compStart));
+      const compEnd = Math.min(endSeconds(p), toOuter(o.compEnd));
       const inner = o.gain.map(([t, v]) => [toOuter(t), v] as const);
       return {
         ...o,
@@ -223,8 +233,8 @@ export function buildGainEnvelope(
 
   const kfs = children.filter((c) => c.kind === "keyframe" && c.props.property === "audio.volume");
   if (kfs.length > 0) {
-    factors.push((t) => Number(keyframedValue(children, "audio.volume", t - p.start, volume)));
-    const ats = kfs.map((k) => p.start + Number(k.props.at ?? 0)).sort((a, b) => a - b);
+    factors.push((t) => Number(keyframedValue(children, "audio.volume", secondsSinceStart(p, t), volume)));
+    const ats = kfs.map((k) => startSeconds(p) + Number(k.props.at ?? 0)).sort((a, b) => a - b);
     ats.forEach((at) => breaks.add(at));
     for (let i = 0; i < ats.length - 1; i++) ramps.push([ats[i]!, ats[i + 1]!]);
   } else {
@@ -233,15 +243,15 @@ export function buildGainEnvelope(
 
   const fade = p.props.fade as { in?: number; out?: number } | undefined;
   if (fade?.in && fade.in > 0) {
-    const a = p.start,
-      b = p.start + fade.in;
+    const a = startSeconds(p),
+      b = startSeconds(p) + fade.in;
     factors.push((t) => (t <= a ? 0 : t >= b ? 1 : (t - a) / (b - a)));
     breaks.add(a);
     breaks.add(b);
   }
   if (fade?.out && fade.out > 0) {
-    const a = p.end - fade.out,
-      b = p.end;
+    const a = endSeconds(p) - fade.out,
+      b = endSeconds(p);
     factors.push((t) => (t <= a ? 1 : t >= b ? 0 : (b - t) / (b - a)));
     breaks.add(a);
     breaks.add(b);
@@ -298,8 +308,8 @@ export function duckIntervals(state: ResolvedState, under: string, exceptId: str
         capabilitiesOf(q.kind).audio &&
         hasSound(state, q),
     )
-    .filter((q) => q.end > q.start)
-    .map((q) => [q.start, q.end] as [number, number])
+    .filter((q) => endSeconds(q) > startSeconds(q))
+    .map((q) => [startSeconds(q), endSeconds(q)] as [number, number])
     .sort((a, b) => a[0] - b[0]);
   const merged: [number, number][] = [];
   for (const r of ranges) {
@@ -333,7 +343,9 @@ function panEnvelope(p: Placement, children: readonly Placement[]): GainPoint[] 
       for (let r = ats[i]! + ENVELOPE_STEP_S; r < ats[i + 1]!; r += ENVELOPE_STEP_S) rels.add(r);
     return [...rels]
       .sort((a, b) => a - b)
-      .map((rel) => [round(p.start + rel), round(Number(keyframedValue(children, "audio.pan", rel, 0)))] as const);
+      .map(
+        (rel) => [round(startSeconds(p) + rel), round(Number(keyframedValue(children, "audio.pan", rel, 0)))] as const,
+      );
   }
   return undefined;
 }

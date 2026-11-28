@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 
 import type { ElementBox, FitMode, Transform } from "@uberscene/kit/schema";
-import type { Placement, ResolvedState } from "@uberscene/sdk/resolver";
+import { lengthSeconds, type Placement, type ResolvedState, secondsSinceStart } from "@uberscene/sdk/resolver";
 
 import { trackCamera } from "../model/camera";
 import { blendOf } from "../model/frame-plan";
@@ -61,7 +61,7 @@ export interface OverlayLayout {
  * others fade instead.
  */
 export function overlayLayout(p: ElementProps, size: Box, fit: FitMode = "none", drawable = false): OverlayLayout {
-  const rel = p.time - p.placement.start;
+  const rel = secondsSinceStart(p.placement, p.time);
   const transform = animatedTransform(p.placement.props.transform as Transform | undefined, p.children, rel);
   const box = animatedBox(p.placement.props.box as ElementBox | undefined, p.children, rel);
   // With a `follow`, the box is read in the followed element's box and its place carries it (overlays/space.ts).
@@ -73,7 +73,7 @@ export function overlayLayout(p: ElementProps, size: Box, fit: FitMode = "none",
   const blend = p.placement.props.blend;
   const props = p.placement.props as { enter?: GraphicAnimation; exit?: GraphicAnimation };
   const motion = combine(
-    motionAt(props.enter, props.exit, rel, p.placement.duration, layout.rect.w, layout.rect.h),
+    motionAt(props.enter, props.exit, rel, lengthSeconds(p.placement), layout.rect.w, layout.rect.h),
     transitionMotion(p.transition, layout.rect.w, layout.rect.h),
   );
   const fadeForDraw = !drawable && motion.draw !== null ? motion.draw : 1;

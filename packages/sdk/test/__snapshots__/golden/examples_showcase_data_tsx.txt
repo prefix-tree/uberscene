@@ -1,0 +1,11 @@
+composition composition 30/1 frames 355
+talk clip 0-355 source 12-367 x1
+frame layer 0-222
+before layer 63-216
+after layer 140-218
+four layer 211-283
+forty layer 327-354
+main track 0-355
+chart track 0-355
+numbers track 0-355
+composition composition 0-355

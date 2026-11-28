@@ -1,0 +1,30 @@
+composition composition 30/1 frames 426
+p1 clip 0-120 source 0-120 x1
+p1.transform.scale.x.0 keyframe 0-0
+p1.transform.scale.x.1 keyframe 120-120
+p1.transform.scale.y.0 keyframe 0-0
+p1.transform.scale.y.1 keyframe 120-120
+x1 transition 102-120
+p2 clip 102-222 source 0-120 x1
+p2.transform.scale.x.0 keyframe 102-102
+p2.transform.scale.x.1 keyframe 222-222
+p2.transform.scale.y.0 keyframe 102-102
+p2.transform.scale.y.1 keyframe 222-222
+x2 transition 204-222
+p3 clip 204-324 source 0-120 x1
+p3.transform.scale.x.0 keyframe 204-204
+p3.transform.scale.x.1 keyframe 324-324
+p3.transform.scale.y.0 keyframe 204-204
+p3.transform.scale.y.1 keyframe 324-324
+x3 transition 306-324
+p4 clip 306-426 source 0-120 x1
+p4.transform.scale.x.0 keyframe 306-306
+p4.transform.scale.x.1 keyframe 426-426
+p4.transform.scale.y.0 keyframe 306-306
+p4.transform.scale.y.1 keyframe 426-426
+title title 15-105
+bed audio 0-426 source 0-426 x1
+photos track 0-426
+overlays track 0-426
+music track 0-426
+composition composition 0-426

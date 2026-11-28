@@ -1,0 +1,21 @@
+composition composition 30/1 frames 333
+talk clip 0-333 source 12-345 x1
+dim layer 0-333
+every-shot layer 0-45
+fresh-grind layer 48-93
+tamp layer 97-145
+water-finds layer 145-202
+crema-lands layer 220-283
+on-top layer 284-332
+captions captions 0-333
+captions-1 caption 0-36
+captions-2 caption 38-83
+captions-3 caption 97-131
+captions-4 caption 133-183
+captions-5 caption 185-207
+captions-6 caption 220-282
+captions-7 caption 284-333
+main track 0-333
+shade track 0-333
+type track 0-333
+composition composition 0-333

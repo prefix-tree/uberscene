@@ -20,7 +20,7 @@ function use(text = edit, scene = sceneText): { use: SceneUse; start: number; in
   const clip = state.items.get("crossing-shot")!;
   return {
     use: state.scenes!.get(clip.source!.asset)!,
-    start: clip.start,
+    start: clip.range.start.toSeconds(),
     in: clip.source!.in,
     speed: clip.source!.speed,
   };

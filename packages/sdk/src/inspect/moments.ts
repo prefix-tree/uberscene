@@ -1,11 +1,12 @@
 // Moments: the places on a timeline a person or an agent asks to look at, written the way the file is written (an
 // element's id, a word, a shot, a marker) or as plain time (seconds, a frame, a range).
-import { frameStartSeconds, framesUntil, nearestFrame, round3 } from "@uberscene/kit/schema";
+import { frameStartSeconds, framesUntil, nearestFrame, type Rate, round3, Time } from "@uberscene/kit/schema";
 
 import { entriesOf, parseTimeRef } from "../manifest/timeref";
 import { type AssetEntry, lookupAsset } from "../manifest/types";
 import { type AssetPlay, onTimeline } from "../resolve/captions";
-import type { ResolvedState } from "../resolve/resolve";
+import type { Placement, ResolvedState } from "../resolve/resolve";
+import { endSeconds, S, startSeconds } from "../time";
 import { playOf, playsOf } from "./plays";
 
 export type ParsedMoment =
@@ -153,21 +154,25 @@ export function resolveMoments(
       const p = state.items.get(m.id);
       if (!p) {
         errors.push(`${m.text}: the file has no element with the id "${m.id}"`);
-      } else if (!(p.end > p.start)) {
+      } else if (p.range.isEmpty()) {
         errors.push(`${m.text}: ${p.kind} "${m.id}" has no time of its own on the timeline`);
       } else if (p.kind === "transition" && !m.point) {
         const [a, b] = p.between ?? ["the clip before", "the clip after"];
-        add(`${m.id}.before`, Math.max(0, p.start - frameStartSeconds(1, rate)), `last frame of ${a} before ${m.id}`);
-        add(`${m.id}.after`, Math.min(p.end, duration), `first frame of ${b} after ${m.id}`);
+        add(
+          `${m.id}.before`,
+          Math.max(0, startSeconds(p) - frameStartSeconds(1, rate)),
+          `last frame of ${a} before ${m.id}`,
+        );
+        add(`${m.id}.after`, Math.min(endSeconds(p), duration), `first frame of ${b} after ${m.id}`);
       } else {
         const point = m.point ?? "mid";
         // The end is the last frame the element is on, not the first frame after it.
         const time =
           point === "start"
-            ? p.start
+            ? startSeconds(p)
             : point === "end"
-              ? Math.max(p.start, p.end - frameStartSeconds(1, rate))
-              : (p.start + p.end) / 2;
+              ? lastFrameS(p, rate)
+              : (startSeconds(p) + endSeconds(p)) / 2;
         const name = point === "mid" ? "middle" : point;
         add(m.text, time, `${name} of ${p.kind} ${m.id}`);
       }
@@ -187,7 +192,7 @@ function resolveRef(
   const parsed = parseTimeRef(m.ref);
   if (parsed.kind === "marker") {
     const marker = state.items.get(parsed.id);
-    const at = marker?.kind === "marker" ? Number(marker.props.start ?? marker.start) : Number.NaN;
+    const at = marker?.kind === "marker" ? Number(marker.props.start ?? startSeconds(marker)) : Number.NaN;
     if (Number.isFinite(at)) add(m.text, at, `marker ${parsed.id}`);
     else errors.push(`${m.text}: the file has no marker "${parsed.id}"`);
     return;
@@ -245,12 +250,12 @@ export function aroundMoments(
 ): { readonly moments: Moment[]; readonly errors: string[] } {
   const p = state.items.get(id);
   if (!p) return { moments: [], errors: [`${id}: the file has no element with the id "${id}"`] };
-  if (!(p.end > p.start))
+  if (p.range.isEmpty())
     return { moments: [], errors: [`${id}: ${p.kind} "${id}" has no time of its own on the timeline`] };
   const { rate, duration } = state.composition;
   const frames = Math.max(1, framesUntil(duration, rate));
   const f = frameStartSeconds(1, rate);
-  const last = Math.max(p.start, p.end - f);
+  const last = lastFrameS(p, rate);
   const moment = (label: string, time: number, about: string): Moment => {
     const t = Math.min(Math.max(0, time), duration);
     return { label, time: round3(t), frame: Math.min(frames - 1, nearestFrame(t, rate)), about };
@@ -260,18 +265,18 @@ export function aroundMoments(
     return {
       errors: [],
       moments: [
-        moment(`${id}.before`, p.start - f, `last frame of ${a} before ${id}`),
-        moment(`${id}.start`, p.start, `first frame of ${id}`),
-        moment(`${id}.mid`, (p.start + p.end) / 2, `middle of ${id}`),
+        moment(`${id}.before`, startSeconds(p) - f, `last frame of ${a} before ${id}`),
+        moment(`${id}.start`, startSeconds(p), `first frame of ${id}`),
+        moment(`${id}.mid`, (startSeconds(p) + endSeconds(p)) / 2, `middle of ${id}`),
         moment(`${id}.end`, last, `last frame of ${id}`),
-        moment(`${id}.after`, p.end, `first frame of ${b} after ${id}`),
+        moment(`${id}.after`, endSeconds(p), `first frame of ${b} after ${id}`),
       ],
     };
   }
   // How long it takes to come in and to go out: its own entrance and exit, or a title's animation.
   const length = (own: unknown, animated: unknown): number => {
     const seconds = Number((own as { duration?: unknown } | undefined)?.duration ?? animated ?? 0.3);
-    return Math.min(Number.isFinite(seconds) && seconds > 0 ? seconds : 0.3, (p.end - p.start) / 4);
+    return Math.min(Number.isFinite(seconds) && seconds > 0 ? seconds : 0.3, (endSeconds(p) - startSeconds(p)) / 4);
   };
   const animation = p.props.animation as { in?: unknown; out?: unknown } | undefined;
   const enter = length(p.props.enter, animation?.in),
@@ -279,10 +284,10 @@ export function aroundMoments(
   return {
     errors: [],
     moments: [
-      moment(`${id}.start`, p.start, `first frame of ${p.kind} ${id}`),
-      moment(`${id}.entering`, p.start + enter / 2, `${p.kind} ${id} half way in`),
-      moment(`${id}.mid`, (p.start + p.end) / 2, `middle of ${p.kind} ${id}`),
-      moment(`${id}.leaving`, p.end - exit / 2, `${p.kind} ${id} half way out`),
+      moment(`${id}.start`, startSeconds(p), `first frame of ${p.kind} ${id}`),
+      moment(`${id}.entering`, startSeconds(p) + enter / 2, `${p.kind} ${id} half way in`),
+      moment(`${id}.mid`, (startSeconds(p) + endSeconds(p)) / 2, `middle of ${p.kind} ${id}`),
+      moment(`${id}.leaving`, endSeconds(p) - exit / 2, `${p.kind} ${id} half way out`),
       moment(`${id}.end`, last, `last frame of ${p.kind} ${id}`),
     ],
   };
@@ -304,21 +309,21 @@ export function skimMoments(state: ResolvedState): Moment[] {
   const overlayMids = new Set<string>();
   const transitions = [...state.items.values()].filter((p) => p.kind === "transition");
   for (const p of state.items.values()) {
-    if (!(p.end > p.start) || p.track === null) continue;
+    if (p.range.isEmpty() || p.track === null) continue;
     if (p.kind === "clip" || p.kind === "nested") {
       // A clip that comes in through a transition is fully there once the transition is over.
       const into = transitions.find((t) => t.between?.[1] === p.id);
       if (into) {
-        add(`${into.id}.before`, into.start - f, `last frame of ${into.between?.[0]} before ${into.id}`);
-        add(`${into.id}.mid`, (into.start + into.end) / 2, `middle of ${into.id}`);
-        add(`${into.id}.after`, into.end, `first frame of ${p.id} after ${into.id}`);
+        add(`${into.id}.before`, startSeconds(into) - f, `last frame of ${into.between?.[0]} before ${into.id}`);
+        add(`${into.id}.mid`, (startSeconds(into) + endSeconds(into)) / 2, `middle of ${into.id}`);
+        add(`${into.id}.after`, endSeconds(into), `first frame of ${p.id} after ${into.id}`);
       } else {
-        if (p.start > f / 2) add(`${p.id}.before`, p.start - f, `last frame before ${p.kind} ${p.id}`);
-        add(`${p.id}.start`, p.start, `first frame of ${p.kind} ${p.id}`);
+        if (startSeconds(p) > f / 2) add(`${p.id}.before`, startSeconds(p) - f, `last frame before ${p.kind} ${p.id}`);
+        add(`${p.id}.start`, startSeconds(p), `first frame of ${p.kind} ${p.id}`);
       }
     } else if (OVERLAYS.has(p.kind)) {
       overlayMids.add(`${p.id}.mid`);
-      add(`${p.id}.mid`, (p.start + p.end) / 2, `middle of ${p.kind} ${p.id}`);
+      add(`${p.id}.mid`, (startSeconds(p) + endSeconds(p)) / 2, `middle of ${p.kind} ${p.id}`);
     }
   }
   // One moment per frame; overlays that are up together (a lower third's card, name and role) share one look.
@@ -356,8 +361,8 @@ export function listenRange(
   } else if (parsed.kind === "element" && !parsed.point) {
     const p = state.items.get(parsed.id);
     if (!p) return { error: `${input}: the file has no element with the id "${parsed.id}"` };
-    from = p.start;
-    to = p.end;
+    from = startSeconds(p);
+    to = endSeconds(p);
   } else {
     return { error: `"${input}" is not a stretch to ${purpose}; give all, a range such as 2..6, or an element's id` };
   }
@@ -367,4 +372,9 @@ export function listenRange(
       error: `${input}: ${round3(from)}..${round3(to)} s is outside the video, which is ${round3(duration)} s long`,
     };
   return { from: round3(Math.max(0, from)), to: round3(Math.min(duration, to)) };
+}
+
+/** When an element's last frame starts: a frame before its end, worked out in ticks, never before its start. */
+function lastFrameS(p: Placement, rate: Rate): number {
+  return S(Time.max(p.range.start, p.range.end.minus(Time.frames(1, rate))));
 }

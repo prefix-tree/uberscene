@@ -30,13 +30,13 @@ function decoder(id: string, speed = 1) {
 describe("ClipDecoder", () => {
   it("streams ahead into a bounded queue and closes consumed frames", async () => {
     const { source, d, p } = decoder("c1");
-    await d.prime(p.start);
+    await d.prime(p.range.start.toSeconds());
     await flush();
     expect(d.queued).toBeGreaterThan(0);
     expect(d.queued).toBeLessThanOrEqual(QUEUE_MAX);
-    const f = await d.frameFor(p.start + 0.5, true);
+    const f = await d.frameFor(p.range.start.toSeconds() + 0.5, true);
     expect(f!.timestamp).toBeCloseTo(0.5);
-    d.advance(p.start + 0.5);
+    d.advance(p.range.start.toSeconds() + 0.5);
     await flush();
     expect(source.closedCount).toBeGreaterThanOrEqual(14);
     expect(source.live.size).toBeLessThanOrEqual(QUEUE_MAX + 1);
@@ -59,7 +59,7 @@ describe("ClipDecoder", () => {
     const unhandled: unknown[] = [];
     const onUnhandled = (reason: unknown) => unhandled.push(reason);
     process.on("unhandledRejection", onUnhandled);
-    void d.prime(p.start);
+    void d.prime(p.range.start.toSeconds());
     await flush();
     d.dispose();
     release(new Error("Input has been disposed."));
@@ -71,9 +71,9 @@ describe("ClipDecoder", () => {
 
   it("drops frames at double speed", async () => {
     const { source, d, p } = decoder("c2", 2);
-    await d.prime(p.start);
+    await d.prime(p.range.start.toSeconds());
     await flush();
-    const f = await d.frameFor(p.start + 0.25, true);
+    const f = await d.frameFor(p.range.start.toSeconds() + 0.25, true);
     expect(f!.timestamp).toBeCloseTo(0.5);
     expect(source.closedCount).toBeGreaterThanOrEqual(14);
     expect(d.mode).toBe("forward");
@@ -82,18 +82,18 @@ describe("ClipDecoder", () => {
   it("switches to seek mode above the speed threshold", async () => {
     const { source, d, p } = decoder("c1", 8);
     expect(d.mode).toBe("seek");
-    await d.prime(p.start);
-    const f = await d.frameFor(p.start + 1, true);
+    await d.prime(p.range.start.toSeconds());
+    const f = await d.frameFor(p.range.start.toSeconds() + 1, true);
     expect(f!.timestamp).toBeCloseTo(1);
     expect(source.streamsStarted).toBe(0);
   });
 
   it("serves descending frames in reverse", async () => {
     const { d, p } = decoder("c3");
-    await d.prime(p.start);
-    const a = await d.frameFor(p.start + 0.1, true);
-    const b = await d.frameFor(p.start + 0.2, true);
-    const c = await d.frameFor(p.start + 1.5, true);
+    await d.prime(p.range.start.toSeconds());
+    const a = await d.frameFor(p.range.start.toSeconds() + 0.1, true);
+    const b = await d.frameFor(p.range.start.toSeconds() + 0.2, true);
+    const c = await d.frameFor(p.range.start.toSeconds() + 1.5, true);
     expect(a!.timestamp).toBeCloseTo(3.9);
     expect(b!.timestamp).toBeCloseTo(3.8);
     expect(c!.timestamp).toBeCloseTo(2.5);
@@ -102,10 +102,10 @@ describe("ClipDecoder", () => {
 
   it("steps backward through a reversed clip one frame at a time, every step on its own frame", async () => {
     const { source, d, p } = decoder("c3");
-    await d.prime(p.start);
+    await d.prime(p.range.start.toSeconds());
     // Half a frame into each step, so the frame that covers the source time is unambiguous.
     for (let k = 0; k < 119; k++) {
-      const t = p.start + (k + 0.5) / source.fps;
+      const t = p.range.start.toSeconds() + (k + 0.5) / source.fps;
       const st = d.sourceTime(t);
       const f = await d.frameFor(t, true);
       expect({ k, timestamp: f!.timestamp }).toEqual({ k, timestamp: Math.floor(st * source.fps) / source.fps });
@@ -118,47 +118,47 @@ describe("ClipDecoder", () => {
       source.streamsStarted++;
       yield* [];
     };
-    await d.prime(p.start);
-    for (let k = 0; k < 20; k++) await d.frameFor(p.start + k * 0.25, true);
+    await d.prime(p.range.start.toSeconds());
+    for (let k = 0; k < 20; k++) await d.frameFor(p.range.start.toSeconds() + k * 0.25, true);
     // Each empty window moves the low a second down: four of them reach the in point of a 4 s clip.
     expect(source.streamsStarted).toBe(4);
   });
 
   it("retains exactly one frame per freeze", async () => {
     const { source, d, p } = decoder("c4");
-    await d.prime(p.start);
-    const a = await d.frameFor(p.start + 1.2, true);
-    const b = await d.frameFor(p.start + 1.4, true);
+    await d.prime(p.range.start.toSeconds());
+    const a = await d.frameFor(p.range.start.toSeconds() + 1.2, true);
+    const b = await d.frameFor(p.range.start.toSeconds() + 1.4, true);
     expect(a).toBe(b);
     expect(a!.timestamp).toBe(1.5);
     expect(source.retains).toBe(1);
     expect(source.frameAtCalls.filter((t) => t === 1.5)).toHaveLength(1);
     // The hold is inserted: 0.1 s after it ends the clip is 0.1 s past where it stopped.
-    const after = await d.frameFor(p.start + 1.6, true);
+    const after = await d.frameFor(p.range.start.toSeconds() + 1.6, true);
     expect(after!.timestamp).toBeCloseTo(1.1);
   });
 
   it("returns the stale frame while a slow stream catches up", async () => {
     const { source, d, p } = decoder("c1");
     source.slow = true;
-    await d.prime(p.start);
-    const stale = await d.frameFor(p.start + 0.5, false);
+    await d.prime(p.range.start.toSeconds());
+    const stale = await d.frameFor(p.range.start.toSeconds() + 0.5, false);
     expect(stale!.timestamp).toBe(0);
     source.release(30);
     await flush();
-    let fresh = await d.frameFor(p.start + 0.5, false);
+    let fresh = await d.frameFor(p.range.start.toSeconds() + 0.5, false);
     for (let i = 0; i < 10 && fresh!.timestamp < 0.5; i++) {
-      d.advance(p.start + 0.5);
+      d.advance(p.range.start.toSeconds() + 0.5);
       await flush(2);
-      fresh = await d.frameFor(p.start + 0.5, false);
+      fresh = await d.frameFor(p.range.start.toSeconds() + 0.5, false);
     }
     expect(fresh!.timestamp).toBeCloseTo(0.5);
   });
 
   it("fetches the exact frame when waiting after a jump back", async () => {
     const { d, p } = decoder("c1");
-    await d.prime(p.start + 2);
-    const f = await d.frameFor(p.start + 1, true);
+    await d.prime(p.range.start.toSeconds() + 2);
+    const f = await d.frameFor(p.range.start.toSeconds() + 1, true);
     expect(f!.timestamp).toBeCloseTo(1);
   });
 
@@ -178,22 +178,22 @@ describe("ClipDecoder", () => {
     const source = new RoundedSource("a");
     const p = state.items.get("c1")!;
     const d = new ClipDecoder(source, p, childrenOf(state, "c1"), () => 1);
-    await d.prime(p.start);
+    await d.prime(p.range.start.toSeconds());
     await flush();
     // 2/30 = 0.0666…, the frame is stamped 0.067: without a tolerance the previous frame (0.033) is drawn.
-    const f = await d.frameFor(p.start + 2 / 30, true);
+    const f = await d.frameFor(p.range.start.toSeconds() + 2 / 30, true);
     expect(f!.timestamp).toBe(0.067);
-    const g = await d.frameFor(p.start + 5 / 30, true);
+    const g = await d.frameFor(p.range.start.toSeconds() + 5 / 30, true);
     expect(g!.timestamp).toBe(0.167);
     d.dispose();
   });
 
   it("with exact, waits for a slow frame instead of drawing a stale one", async () => {
     const { source, d, p } = decoder("c1");
-    await d.prime(p.start);
+    await d.prime(p.range.start.toSeconds());
     await flush();
     source.slow = true;
-    const slow = d.frameFor(p.start + 1, true, true);
+    const slow = d.frameFor(p.range.start.toSeconds() + 1, true, true);
     let settled = false;
     void slow.then(() => {
       settled = true;
@@ -212,10 +212,10 @@ describe("ClipDecoder", () => {
     // still "covers" the time by its duration. When the queue is full and ends with that earlier frame, the next one
     // is not decoded yet, and the wait must not end with the earlier frame.
     const { d, p } = decoder("c1");
-    await d.prime(p.start);
+    await d.prime(p.range.start.toSeconds());
     await flush();
     expect(d.queued).toBe(QUEUE_TARGET); // frames 0 to 7
-    const f = await d.frameFor(p.start + 8 / 30 - 1e-9, true, true);
+    const f = await d.frameFor(p.range.start.toSeconds() + 8 / 30 - 1e-9, true, true);
     expect(f!.timestamp).toBeCloseTo(8 / 30, 9);
     d.dispose();
   });

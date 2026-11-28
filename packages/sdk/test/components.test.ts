@@ -101,7 +101,11 @@ describe.each(Object.entries(USES))("%s", (name, { use, parts }) => {
     const end = start + (use.includes("duration={6}") ? 6 : 3);
     for (const part of parts) {
       const p = state.items.get(part.split(":")[0]!)!;
-      expect([part, p.start >= start - 1e-9, Math.abs(p.start + p.duration - end) < 1e-6]).toEqual([part, true, true]);
+      expect([
+        part,
+        p.range.start.toSeconds() >= start - 1e-9,
+        Math.abs(p.range.start.toSeconds() + p.range.duration.toSeconds() - end) < 1e-6,
+      ]).toEqual([part, true, true]);
     }
   });
 });
@@ -110,8 +114,8 @@ describe("components", () => {
   it("follow an anchor and a word like any element", () => {
     const { state } = resolved('<LowerThird id="lt" anchor="shot" offset={2} duration={2} name="Maya" />');
     expect(state.errors).toEqual([]);
-    expect(state.items.get("lt-card")!.start).toBeCloseTo(2, 3);
-    expect(state.items.get("lt-name")!.start).toBeCloseTo(2.15, 3);
+    expect(state.items.get("lt-card")!.range.start.toSeconds()).toBeCloseTo(2, 3);
+    expect(state.items.get("lt-name")!.range.start.toSeconds()).toBeCloseTo(2.15, 3);
   });
 
   it("bring each part of a card in at its own word, and take them all away with the card", () => {
@@ -125,7 +129,9 @@ describe("components", () => {
     expect(state.errors).toEqual([]);
     const span = (id: string) => {
       const p = state.items.get(id)!;
-      return [p.start, p.start + p.duration].map((x) => Math.round(x * 1000) / 1000);
+      return [p.range.start.toSeconds(), p.range.start.toSeconds() + p.range.duration.toSeconds()].map(
+        (x) => Math.round(x * 1000) / 1000,
+      );
     };
     // The card: from word 0 (1.5 s) for 4 s. A line with no cue comes in with the card.
     expect(span("tc-card")).toEqual([1.5, 5.5]);
@@ -149,11 +155,13 @@ describe("components", () => {
     expect(state.errors).toEqual([]);
     const ends = ["lt-card", "lt-bar", "lt-name", "lt-role", "tc-card", "tc-line-1", "tc-line-2"].map((id) => {
       const p = state.items.get(id)!;
-      return Math.round((p.start + p.duration) * 1000) / 1000;
+      return Math.round((p.range.start.toSeconds() + p.range.duration.toSeconds()) * 1000) / 1000;
     });
     // The clip plays from 0 to 6 s.
     expect(ends).toEqual([6, 6, 6, 6, 6, 6, 6]);
-    expect(state.items.get("lt-role")!.start).toBeGreaterThan(state.items.get("lt-card")!.start);
+    expect(state.items.get("lt-role")!.range.start.toSeconds()).toBeGreaterThan(
+      state.items.get("lt-card")!.range.start.toSeconds(),
+    );
   });
 
   it("last until another element says a word, every part of them", () => {
@@ -163,11 +171,11 @@ describe("components", () => {
     expect(state.errors).toEqual([]);
     const ends = ["lt-card", "lt-bar", "lt-name", "lt-role"].map((id) => {
       const p = state.items.get(id)!;
-      return Math.round((p.start + p.duration) * 1000) / 1000;
+      return Math.round((p.range.start.toSeconds() + p.range.duration.toSeconds()) * 1000) / 1000;
     });
     const word = state.items.get("lt-card")!;
     expect(new Set(ends).size).toBe(1);
-    expect(ends[0]).toBeGreaterThan(word.start);
+    expect(ends[0]).toBeGreaterThan(word.range.start.toSeconds());
     expect(ends[0]).toBeLessThan(6);
   });
 

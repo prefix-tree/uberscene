@@ -1,0 +1,88 @@
+composition composition 30/1 frames 3549
+room layer 0-3549
+room.effects.0 effect 0-3549
+room.effects.0.intensity.0 keyframe 746-746
+room.effects.0.intensity.1 keyframe 756-756
+room.effects.0.intensity.2 keyframe 3183-3183
+room.effects.0.intensity.3 keyframe 3201-3201
+clock layer 0-3549
+slice layer 0-3549
+numbers layer 0-3549
+intro layer 0-3549
+cue-dots audio 827-831 source 0-4 x1
+cue-one audio 951-952 source 0-1 x1
+cue-cheats audio 687-747 source 0-60 x1
+cue-room1 audio 1454-1475 source 0-21 x1
+cue-room2 audio 2048-2069 source 0-21 x1
+cue-room3 audio 2609-2630 source 0-21 x1
+cue-room4 audio 3015-3036 source 0-21 x1
+cue-back1 audio 1515-1524 source 0-9 x1
+cue-back2 audio 2110-2119 source 0-9 x1
+cue-back3 audio 2671-2680 source 0-9 x1
+cue-shadow audio 1896-1910 source 0-14 x1
+cue-end audio 3519-3549 source 0-30 x1
+said captions 0-3549
+said-1 caption 9-66
+said-2 caption 66-96
+said-3 caption 100-119
+said-4 caption 123-172
+said-5 caption 172-230
+said-6 caption 246-300
+said-7 caption 304-365
+said-8 caption 369-419
+said-9 caption 419-454
+said-10 caption 454-525
+said-11 caption 528-596
+said-12 caption 596-637
+said-13 caption 641-713
+said-14 caption 717-733
+said-15 caption 737-761
+said-16 caption 780-838
+said-17 caption 842-906
+said-18 caption 906-930
+said-19 caption 934-990
+said-20 caption 990-1016
+said-21 caption 1032-1068
+said-22 caption 1072-1119
+said-23 caption 1123-1202
+said-24 caption 1206-1245
+said-25 caption 1248-1316
+said-26 caption 1320-1359
+said-27 caption 1363-1399
+said-28 caption 1403-1439
+said-29 caption 1521-1556
+said-30 caption 1556-1607
+said-31 caption 1607-1670
+said-32 caption 1674-1728
+said-33 caption 1731-1797
+said-34 caption 1800-1852
+said-35 caption 1852-1880
+said-36 caption 1884-1951
+said-37 caption 1955-2015
+said-38 caption 2015-2040
+said-39 caption 2116-2163
+said-40 caption 2163-2198
+said-41 caption 2202-2245
+said-42 caption 2249-2322
+said-43 caption 2322-2377
+said-44 caption 2381-2447
+said-45 caption 2451-2510
+said-46 caption 2510-2545
+said-47 caption 2545-2601
+said-48 caption 2677-2736
+said-49 caption 2740-2793
+said-50 caption 2793-2857
+said-51 caption 2857-2885
+said-52 caption 2889-2936
+said-53 caption 2940-3007
+said-54 caption 3065-3082
+said-55 caption 3086-3141
+said-56 caption 3145-3210
+said-57 caption 3210-3288
+said-58 caption 3307-3337
+said-59 caption 3337-3395
+said-60 caption 3408-3478
+said-61 caption 3478-3515
+stage track 0-3549
+sounds track 0-3549
+composition composition 0-3549

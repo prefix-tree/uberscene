@@ -82,20 +82,23 @@ describe("removing a clip", () => {
       const s = exec.state();
       expect(props(exec, "tb")).toMatchObject({ anchor: "a" });
       expect(props(exec, "tbe")).toMatchObject({ anchor: "a" });
-      expect(props(exec, "tu")).toMatchObject({ anchor: "a", duration: was.get("b")?.duration });
-      expect(props(exec, "tm")).toMatchObject({ duration: was.get("b")?.duration });
+      expect(props(exec, "tu")).toMatchObject({ anchor: "a", duration: was.get("b")?.range.duration.toSeconds() });
+      expect(props(exec, "tm")).toMatchObject({ duration: was.get("b")?.range.duration.toSeconds() });
       // Held inside "a", which still plays where it was: each title ends by the end of "a".
-      for (const id of ["tb", "tbe"]) expect(s.items.get(id)!.end).toBeLessThanOrEqual(s.items.get("a")!.end + 1e-6);
+      for (const id of ["tb", "tbe"])
+        expect(s.items.get(id)!.range.end.toSeconds()).toBeLessThanOrEqual(
+          s.items.get("a")!.range.end.toSeconds() + 1e-6,
+        );
       expect(s.tree.byId.has("x1")).toBe(true);
     });
   });
 
   it("keeps a title's time when the clip before still plays then", () => {
     const exec = executor([], [h(Title, { id: "early", anchor: "c", offset: -1, duration: 0.5 }, "before c")]);
-    const was = exec.state().items.get("early")!.start;
+    const was = exec.state().items.get("early")!.range.start.toSeconds();
     carried(exec, { type: "element/remove", params: { id: "c" } }, () => {
       expect(props(exec, "early")).toMatchObject({ anchor: "b" });
-      expect(exec.state().items.get("early")!.start).toBeCloseTo(was, 3);
+      expect(exec.state().items.get("early")!.range.start.toSeconds()).toBeCloseTo(was, 3);
     });
   });
 
@@ -132,10 +135,10 @@ describe("removing a clip", () => {
 describe("splitting a clip", () => {
   it("moves what belongs to the second half to the new clip", () => {
     const exec = executor();
-    const was = exec.state().items.get("ta")!.start;
+    const was = exec.state().items.get("ta")!.range.start.toSeconds();
     carried(exec, { type: "clip/split", params: { id: "a", at: 2, newId: "a2" } }, () => {
       expect(props(exec, "ta")).toMatchObject({ anchor: "a2", at: "word:6" });
-      expect(exec.state().items.get("ta")!.start).toBeCloseTo(was, 3);
+      expect(exec.state().items.get("ta")!.range.start.toSeconds()).toBeCloseTo(was, 3);
       expect(props(exec, "tae")).toMatchObject({ anchor: "a2.end" });
       expect(props(exec, "tua")).toMatchObject({ duration: { until: "a2" } });
     });
@@ -152,7 +155,7 @@ describe("splitting a clip", () => {
 describe("a length until a word of a clip", () => {
   // tw lasts from a's start until a says word 6, 3.2 s in.
   const tw = h(Title, { id: "tw", anchor: "a", duration: { until: "a", at: "word:6" } }, "until word 6");
-  const length = (exec: Executor) => exec.state().items.get("tw")!.duration;
+  const length = (exec: Executor) => exec.state().items.get("tw")!.range.duration.toSeconds();
 
   it("follows the word to the second half of a split, or stays when the first half still says it", () => {
     const later = executor([], [tw]);
@@ -188,8 +191,8 @@ describe("trimming a clip", () => {
       expect(props(exec, "ta")).not.toHaveProperty("at");
       const ta = s.items.get("ta")!;
       const a = s.items.get("a")!;
-      expect(ta.start).toBeGreaterThanOrEqual(a.start - 1e-6);
-      expect(ta.start).toBeLessThanOrEqual(a.end + 1e-6);
+      expect(ta.range.start.toSeconds()).toBeGreaterThanOrEqual(a.range.start.toSeconds() - 1e-6);
+      expect(ta.range.start.toSeconds()).toBeLessThanOrEqual(a.range.end.toSeconds() + 1e-6);
     });
   });
 

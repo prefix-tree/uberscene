@@ -2,6 +2,7 @@ import { EASING_FN, easingCurve, type OldEasing } from "../easing";
 import type { Easing } from "../jsx/enums";
 import { type LayerClock, useLayer } from "../jsx/use-t";
 import { clamp01 } from "../math";
+import { elapsedSeconds } from "../time";
 
 /**
  * When a part of a diagram happens. Give `start`, seconds of the video (what a narration's cue gives), or `after`,
@@ -38,7 +39,9 @@ function startOf(when: When): number | undefined {
 export function progress(clock: Pick<LayerClock, "time" | "elapsed">, when: When = {}): number {
   if (when.progress !== undefined) return clamp01(when.progress);
   const start = startOf(when);
-  const since = start !== undefined ? clock.time - start : clock.elapsed - (when.after ?? 0);
+  // In ticks, so a cue at 0.1 + 0.2 has started on the frame at 0.3.
+  const since =
+    start !== undefined ? elapsedSeconds(clock.time, start) : elapsedSeconds(clock.elapsed, when.after ?? 0);
   const over = when.over ?? 0.4;
   if (over <= 0) return since >= 0 ? 1 : 0;
   return (easingCurve(when.easing ?? "easeInOut") ?? EASING_FN.easeInOut)(clamp01(since / over));

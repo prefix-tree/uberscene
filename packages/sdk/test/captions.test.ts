@@ -15,7 +15,7 @@ import {
 } from "@uberscene/sdk";
 
 import * as sample from "../fixtures/sample";
-import { fixtureExecutor, fixtureText, manifest, serialize } from "./helpers";
+import { fixtureExecutor, fixtureText, manifest, seconds, serialize } from "./helpers";
 
 const interview = manifest.assets.interview as AssetEntry;
 const w = (i: number, text: string, start: number, end: number, play = "c"): TimelineWord => ({
@@ -173,8 +173,8 @@ describe("captions from the transcript", () => {
   it("times a literal cue's word references where the words play", () => {
     const state = resolve(collectModule(sample), manifest);
     expect(state.errors).toEqual([]);
-    expect(state.items.get("cp1")).toMatchObject({ start: 0, end: 1.5 });
-    expect(state.items.get("cp2")).toMatchObject({ start: 4, end: 6 });
+    expect(seconds(state.items.get("cp1"))).toMatchObject({ start: 0, end: 1.5 });
+    expect(seconds(state.items.get("cp2"))).toMatchObject({ start: 4, end: 6 });
   });
 
   it("refuses a cue on a word that no clip plays, naming the error it would leave", () => {
@@ -192,7 +192,9 @@ describe("captions from the transcript", () => {
     const s = exec.state();
     const cues = [...s.items.values()].filter((p) => p.parent === "cap" && p.kind === "caption");
     // c1 plays word 3 to word 18 from 0; "it" (7.5–7.7) ends past the trim and is left out.
-    expect(cues.map((c) => [c.id, c.editable, c.props.text, c.start, c.end])).toEqual([
+    expect(
+      cues.map((c) => [c.id, c.editable, c.props.text, c.range.start.toSeconds(), c.range.end.toSeconds()]),
+    ).toEqual([
       ["cap-1", "generated", "Hello and welcome back to the show today", 0, 3],
       ["cap-2", "generated", "we are talking about why we built", 3.2, 5.4],
     ]);
@@ -230,7 +232,7 @@ describe("captions from the transcript", () => {
       ["cap-2", "literal"],
     ]);
     expect(s.items.get("cap-2")?.props.text).toBe("we are talking about why we built it!");
-    expect(s.items.get("cap-1")).toMatchObject({ start: 0, editable: "literal" });
+    expect(seconds(s.items.get("cap-1"))).toMatchObject({ start: 0, editable: "literal" });
     exec.undo();
     expect(serialize(exec.state())).toEqual(generated);
     exec.redo();

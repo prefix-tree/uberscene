@@ -32,6 +32,7 @@ npx uberscene find <pixabay|commons|freesound> <words>... [--sound] [--attributi
 npx uberscene fetch <library:id> [--id <id>] [--from <s> --to <s>] [--height <px>] [--dir <folder>] [--manifest <file>]
 npx uberscene credits [--manifest <file>] [--out CREDITS.md]
 npx uberscene sound [<name> [--duration <s>] [--seed <n>] [--id <id>] [--out <file.wav>] [--manifest <file>]] [--json]
+npx uberscene queue <jobs.json> [--continue-on-error] [--json] [--media <dir>] [--tabs <n>] [--quiet]
 ```
 
 `npx uberscene --help` prints the same list.

@@ -46,37 +46,37 @@ describe("placementSourceTime", () => {
 
   it("scales by speed", () => {
     const c2 = item("c2");
-    expect(c2.start).toBe(4);
-    expect(c2.duration).toBe(4);
+    expect(c2.range.start.toSeconds()).toBe(4);
+    expect(c2.range.duration.toSeconds()).toBe(4);
     expect(placementSourceTime(c2, [], 5)).toBe(2);
     expect(placementSourceTime(c2, [], 8)).toBe(8);
   });
 
   it("plays reverse from out", () => {
     const c3 = item("c3");
-    expect(placementSourceTime(c3, [], c3.start)).toBe(5);
-    expect(placementSourceTime(c3, [], c3.start + 1)).toBe(4);
-    expect(placementSourceTime(c3, [], c3.end + 5)).toBe(1);
+    expect(placementSourceTime(c3, [], c3.range.start.toSeconds())).toBe(5);
+    expect(placementSourceTime(c3, [], c3.range.start.toSeconds() + 1)).toBe(4);
+    expect(placementSourceTime(c3, [], c3.range.end.toSeconds() + 5)).toBe(1);
   });
 
   it("integrates speed keys", () => {
     const c4 = item("c4");
     const kids = childrenOf(state, "c4");
-    expect(placementSourceTime(c4, kids, c4.start)).toBe(0);
-    expect(placementSourceTime(c4, kids, c4.start + 1)).toBeCloseTo(1 - 0.125, 3);
-    expect(placementSourceTime(c4, kids, c4.start + 2)).toBeCloseTo(1.5, 3);
-    expect(placementSourceTime(c4, kids, c4.start + 4)).toBeCloseTo(2.5, 3);
+    expect(placementSourceTime(c4, kids, c4.range.start.toSeconds())).toBe(0);
+    expect(placementSourceTime(c4, kids, c4.range.start.toSeconds() + 1)).toBeCloseTo(1 - 0.125, 3);
+    expect(placementSourceTime(c4, kids, c4.range.start.toSeconds() + 2)).toBeCloseTo(1.5, 3);
+    expect(placementSourceTime(c4, kids, c4.range.start.toSeconds() + 4)).toBeCloseTo(2.5, 3);
   });
 
   it("inserts a freeze hold and pushes the rest of the clip later", () => {
     const c5 = item("c5");
     const kids = childrenOf(state, "c5");
-    expect(c5.duration).toBeCloseTo(6.5);
-    expect(placementSourceTime(c5, kids, c5.start + 2.9)).toBeCloseTo(2.9);
-    expect(placementSourceTime(c5, kids, c5.start + 3)).toBe(1.5);
-    expect(placementSourceTime(c5, kids, c5.start + 3.4)).toBe(1.5);
-    expect(placementSourceTime(c5, kids, c5.start + 3.5)).toBeCloseTo(3);
-    expect(placementSourceTime(c5, kids, c5.end)).toBeCloseTo(6);
+    expect(c5.range.duration.toSeconds()).toBeCloseTo(6.5);
+    expect(placementSourceTime(c5, kids, c5.range.start.toSeconds() + 2.9)).toBeCloseTo(2.9);
+    expect(placementSourceTime(c5, kids, c5.range.start.toSeconds() + 3)).toBe(1.5);
+    expect(placementSourceTime(c5, kids, c5.range.start.toSeconds() + 3.4)).toBe(1.5);
+    expect(placementSourceTime(c5, kids, c5.range.start.toSeconds() + 3.5)).toBeCloseTo(3);
+    expect(placementSourceTime(c5, kids, c5.range.end.toSeconds())).toBeCloseTo(6);
   });
 
   it("inverts a speed ramp: advance then inverse round-trips", () => {
@@ -136,15 +136,15 @@ describe("frames", () => {
 
   it("layerClock gives progress and real seconds, clamped to the layer", () => {
     const c1 = item("c1");
-    expect(layerClock(c1, c1.start + 1, 30)).toEqual({
+    expect(layerClock(c1, c1.range.start.toSeconds() + 1, 30)).toEqual({
       t: 0.25,
       elapsed: 1,
       remaining: 3,
       duration: 4,
-      time: c1.start + 1,
+      time: c1.range.start.toSeconds() + 1,
       fps: 30,
     });
-    expect(layerClock(c1, c1.start - 2, 30)).toMatchObject({ t: 0, elapsed: 0, remaining: 4 });
-    expect(layerClock(c1, c1.end + 2, 30)).toMatchObject({ t: 1, elapsed: 4, remaining: 0 });
+    expect(layerClock(c1, c1.range.start.toSeconds() - 2, 30)).toMatchObject({ t: 0, elapsed: 0, remaining: 4 });
+    expect(layerClock(c1, c1.range.end.toSeconds() + 2, 30)).toMatchObject({ t: 1, elapsed: 4, remaining: 0 });
   });
 });

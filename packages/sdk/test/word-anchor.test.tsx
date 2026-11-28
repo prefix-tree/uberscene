@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { Clip, Composition, Gap, Title, Track } from "@uberscene/kit";
 import { collect, Executor, resolve } from "@uberscene/sdk";
 
-import { manifest } from "./helpers";
+import { manifest, seconds } from "./helpers";
 
 // The interview's words: 3 starts at 2.0 s, 9 at 4.0 s, 13 ends at 6.0 s; 1 is at 0.8 s.
 const edit = ({
@@ -39,7 +39,7 @@ const placed = (el: ReturnType<typeof edit>) => {
   const state = resolve(collect(el), manifest);
   const t = state.items.get("ten")!;
   return {
-    start: Math.round(t.start * 1000) / 1000,
+    start: Math.round(t.range.start.toSeconds() * 1000) / 1000,
     errors: t.errors.map((e) => `${e.code}:${e.prop ?? ""}`),
     messages: t.errors.map((e) => e.message),
     state,
@@ -62,7 +62,7 @@ describe("a graphic timed by a word of its anchor", () => {
 
   it("picks the occurrence its anchor names when the footage plays twice", () => {
     const { start, state } = placed(edit({ title: { anchor: "make-2" } }));
-    expect(start).toBe(state.items.get("make-2")!.start + 2);
+    expect(start).toBe(state.items.get("make-2")!.range.start.toSeconds() + 2);
   });
 
   it("reports a word the clip no longer plays, and holds the graphic to the nearest part it plays", () => {
@@ -123,11 +123,11 @@ describe("a graphic timed by a word of its anchor", () => {
     expect(
       exec.execute({ type: "clip/move", params: { id: "ten", place: { anchor: "make-1", offset: 0.5 } } }).ok,
     ).toBe(true);
-    expect(exec.state().items.get("ten")).toMatchObject({ start: 3.5, props: { at: "word:9", offset: 0.5 } });
+    expect(seconds(exec.state().items.get("ten"))).toMatchObject({ start: 3.5, props: { at: "word:9", offset: 0.5 } });
     expect(exec.execute({ type: "clip/setAnchor", params: { id: "ten", anchor: "make-2", offset: 1 } }).ok).toBe(true);
     const ten = exec.state().items.get("ten")!;
     expect(ten.props.at).toBeUndefined();
-    expect(ten.start).toBe(exec.state().items.get("make-2")!.start + 1);
+    expect(ten.range.start.toSeconds()).toBe(exec.state().items.get("make-2")!.range.start.toSeconds() + 1);
     expect(exec.undo()?.ok).toBe(true);
     expect(exec.state().items.get("ten")?.props.at).toBe("word:9");
   });
@@ -135,7 +135,7 @@ describe("a graphic timed by a word of its anchor", () => {
   describe("duration until another element ends", () => {
     const length = (title: Record<string, unknown>) => {
       const r = placed(edit({ title }));
-      return { start: r.start, duration: r.state.items.get("ten")?.duration, errors: r.errors };
+      return { start: r.start, duration: r.state.items.get("ten")?.range.duration.toSeconds(), errors: r.errors };
     };
 
     it("lasts from its word to the end of the clip", () => {
@@ -144,9 +144,11 @@ describe("a graphic timed by a word of its anchor", () => {
     });
 
     it("follows the other element when that one is retimed", () => {
-      expect(placed(edit({ gap: 2, title: { duration: { until: "make-2" } } })).state.items.get("ten")?.duration).toBe(
-        6,
-      );
+      expect(
+        placed(edit({ gap: 2, title: { duration: { until: "make-2" } } }))
+          .state.items.get("ten")
+          ?.range.duration.toSeconds(),
+      ).toBe(6);
     });
 
     it("has no length, and says so, when it starts after the other has ended", () => {
@@ -163,7 +165,7 @@ describe("a graphic timed by a word of its anchor", () => {
   describe("duration until another element plays a word", () => {
     const length = (title: Record<string, unknown>, opts: Parameters<typeof edit>[0] = {}) => {
       const r = placed(edit({ ...opts, title }));
-      return { start: r.start, duration: r.state.items.get("ten")?.duration, errors: r.errors };
+      return { start: r.start, duration: r.state.items.get("ten")?.range.duration.toSeconds(), errors: r.errors };
     };
 
     it("lasts from its start to where the other plays the word", () => {

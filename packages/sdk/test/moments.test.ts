@@ -92,7 +92,7 @@ describe("moments", () => {
     const hook = state.items.get("hook");
     const { moments } = at(state, "hook,hook.start,hook.mid,hook.end");
     expect(moments.map((m) => m.time)).toEqual([1.45, 0, 1.45, Math.round((2.9 - 1 / 30) * 1000) / 1000]);
-    expect(moments[3]?.frame).toBe(Math.round((hook?.end ?? 0) * 30) - 1);
+    expect(moments[3]?.frame).toBe(Math.round((hook?.range.end.toSeconds() ?? 0) * 30) - 1);
     expect(moments[1]?.about).toBe("start of clip hook");
   });
 

@@ -30,7 +30,7 @@ describe("the frame at a cut", () => {
         ],
       });
       const rate = state.composition.rate;
-      const cut = frameAtSeconds(state.items.get("old")!.end, rate);
+      const cut = frameAtSeconds(state.items.get("old")!.range.end.toSeconds(), rate);
       const shown = (n: number) => visiblePlacements(state, frameStartSeconds(n, rate)).map((v) => v.placement.id);
       expect(shown(cut)).toEqual(["new"]);
       expect(shown(cut - 1)).toEqual(["old"]);

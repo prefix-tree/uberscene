@@ -1,0 +1,63 @@
+composition composition 30/1 frames 1071
+open clip 0-180 source 60-240 x1
+open.transform.scale.x.0 keyframe 0-0
+open.transform.scale.x.1 keyframe 180-180
+open.transform.scale.y.0 keyframe 0-0
+open.transform.scale.y.1 keyframe 180-180
+x1 transition 153-180
+pour clip 153-459 source 300-420 x1
+pour.speed.0 speedKey 153-153
+pour.speed.1 speedKey 201-201
+pour.freezes.0 freeze 279-321
+x2 transition 432-459
+shot clip 432-672 source 30-270 x1
+shot.effects.0 effect 432-672
+shot.effects.0.amount.0 keyframe 528-528
+shot.effects.0.amount.1 keyframe 564-564
+x3 transition 648-672
+three clip 648-858 source 720-930 x1
+three.transform.scale.x.0 keyframe 648-648
+three.transform.scale.x.1 keyframe 858-858
+three.transform.scale.y.0 keyframe 648-648
+three.transform.scale.y.1 keyframe 858-858
+three.effects.0 effect 648-858
+x4 transition 831-858
+close clip 831-1071 source 180-420 x1
+grade adjustment 831-1071
+grade.effects.0 effect 831-1071
+grade.effects.1 effect 831-1071
+grade.effects.2 effect 831-1071
+top-scrim layer 648-858
+scrim layer 831-1071
+film adjustment 0-1071
+film.effects.0 effect 0-1071
+film.effects.1 effect 0-1071
+slow title 12-150
+slow-note title 36-150
+method-card shape 168-270
+method-bar shape 171-270
+method-name title 173-270
+method-role title 177-270
+held-line svg 288-330
+held-box shape 282-330
+held-text title 285-330
+fast title 441-525
+look-pill shape 534-654
+look-text title 534-654
+every title 663-825
+closing layer 831-1071
+cue-slow audio 11-20 source 0-9 x1
+cue-x1 audio 149-170 source 0-21 x1
+cue-held audio 279-281 source 0-2 x1
+cue-x2 audio 428-449 source 0-21 x1
+cue-fast audio 440-449 source 0-9 x1
+cue-look audio 534-538 source 0-4 x1
+cue-x3 audio 648-657 source 0-9 x1
+cue-x4 audio 827-848 source 0-21 x1
+cue-build audio 900-960 source 0-60 x1
+cue-end audio 966-1020 source 0-54 x1
+main track 0-1071
+looks track 0-1071
+words track 0-1071
+sounds track 0-1071
+composition composition 0-1071

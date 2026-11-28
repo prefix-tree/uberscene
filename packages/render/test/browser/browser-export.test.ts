@@ -557,7 +557,7 @@ export default function Video() {
   expect(struck.bottom).toBe(both.bottom);
   const ends = ["tc-card", "tc-line-1", "tc-strike-1", "tc-line-2"].map((id) => {
     const p = loaded.state.items.get(id);
-    return p ? p.start + p.duration : -1;
+    return p ? p.range.start.toSeconds() + p.range.duration.toSeconds() : -1;
   });
   expect(ends).toEqual([3, 3, 3, 3]);
 }, 120_000);

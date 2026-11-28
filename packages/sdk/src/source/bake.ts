@@ -52,7 +52,7 @@ function bakeGeneratedChildren(text: string, parentId: string, state: ResolvedSt
   if (!site) return [];
   const generated = [...state.items.values()]
     .filter((p) => p.editable === "generated" && p.parent === parentId && !state.tree.byId.has(p.id))
-    .sort((a, b) => a.start - b.start);
+    .sort((a, b) => a.range.start.compare(b.range.start));
   const parentKind = state.tree.byId.get(parentId)?.kind ?? site.kind;
   const asChildren =
     generated.length > 0 && generated.every((p) => capabilitiesOf(parentKind).childKinds.includes(p.kind));

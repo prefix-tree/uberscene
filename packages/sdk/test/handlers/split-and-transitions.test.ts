@@ -103,7 +103,7 @@ describe("splitting a clip that animates", () => {
 
   it("cuts a speed ramp, the second half starting at the speed the clip had", () => {
     edited({ type: "clip/split", params: { id: "b", at: 6.5, newId: "b2" } }, (exec) => {
-      const cut = exec.state().items.get("b")!.start;
+      const cut = exec.state().items.get("b")!.range.start.toSeconds();
       expect(cut).toBeLessThan(6.5);
       const speeds = (id: string) =>
         (props(exec, id).speed as { at: number; value: number }[]).map((k) => [k.at, k.value]);
