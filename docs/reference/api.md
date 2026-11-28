@@ -534,7 +534,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/kit/schema`
 
-421 exports.
+424 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -549,6 +549,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `applyTheme` | function | An element's raw props with its theme applied, before the schema parses them. |
 | `Audio` | const | The `<Audio>` element ([reference](/reference/elements/audio)). |
 | `AUDIO_KEY_PATHS` | const | A sound's level and its pan. |
+| `AudioElement` | interface | The kit's part of a sound. |
 | `AudioProps` | interface | The props of a `<Audio>`, as its schema parses them. |
 | `BLEND_MODES` | const |  |
 | `blendFor` | function | How a key list on `property` moves. |
@@ -581,6 +582,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `clamp01` | const | `x` held to 0..1. |
 | `clampTicks` | const | `t` held to `[lo, hi]`. |
 | `Clip` | const | The `<Clip>` element ([reference](/reference/elements/clip)). |
+| `ClipElement` | interface | The kit's part of a clip. |
 | `ClipProps` | interface | The props of a `<Clip>`, as its schema parses them. |
 | `ColourFunction` | interface | A built-in colour transform's function, in parts a fused source can combine. |
 | `COMPONENT_NAMES` | const | The components' names. |
@@ -768,6 +770,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `nearestFont` | function | The listed family whose name is nearest a misspelt one, when one is near enough to be what was meant. |
 | `nearestFrame` | const | The frame nearest a time, for times given by a person (`--at 2.5`) rather than computed. |
 | `Nested` | const | The `<Nested>` element ([reference](/reference/elements/nested)). |
+| `NestedElement` | interface | The kit's part of a nested sequence. |
 | `NestedProps` | interface | The props of a `<Nested>`, as its schema parses them. |
 | `NoParams` | type | The params of a shader that declares none. |
 | `NOT_RENDERED` | const |  |
