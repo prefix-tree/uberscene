@@ -5,7 +5,7 @@ draws a sheet of its frames to look at, adds media to the manifest, and makes th
 
 ```sh
 npm install uberscene
-npx uberscene <file.tsx> --out <video.mp4|.webm|.mp3|.wav> [--draft] [options]
+npx uberscene <file.tsx> --out <file> [--format <name>] [--draft] [options]
 npx uberscene <file.tsx> --still <seconds> --out <image.png|.jpg> [options]
 npx uberscene <file.tsx> --check-layout [--safe-zone <zone>] [--subject <x,y,w,h>] [--json] [options]
 npx uberscene <file.tsx> --check-motion [--min <s>] [--step <s>] [--from <s> --to <s>] [--json] [options]
@@ -36,19 +36,19 @@ npx uberscene queue <jobs.json> [--continue-on-error] [--json] [--media <dir>] [
 Every export draws its frames in headless Chrome. The first one downloads Chrome for Testing into
 `~/.cache/uberscene/browsers` (`UBERSCENE_BROWSER_CACHE` moves it); `uberscene browser install` downloads it ahead of
 time. `UBERSCENE_CHROMIUM` names a Chrome 157, the only version the export runs on, to use instead;
-`UBERSCENE_ANY_CHROME=1` lets the export draw on another, with a warning, where Chrome 157 cannot be had. `UBERSCENE_CODECS`
-(`native`, `native-decode` or `native-encode`) hands decoding and encoding to the experimental native codecs
-([The browser it runs in](https://uberscene.prefixtree.xyz/guide/exporting#the-browser-it-runs-in)).
+`UBERSCENE_ANY_CHROME=1` lets the export draw on another, with a warning, where Chrome 157 cannot be had.
+`UBERSCENE_CODECS` (`browser`, `native`, `native-decode` or `native-encode`) sets defaults for `--decode` and `--encode`.
 
-`uberscene codecs install` downloads the native codecs for this machine ahead of the first export with
-`UBERSCENE_CODECS`, from this version's GitHub release into `~/.cache/uberscene/codecs` (`UBERSCENE_CODEC_CACHE`
+`uberscene codecs install` downloads the native codecs for this machine ahead of the first native export,
+from this version's GitHub release into `~/.cache/uberscene/codecs` (`UBERSCENE_CODEC_CACHE`
 moves it), checked against the hash the package carries. See [Native codecs](https://uberscene.prefixtree.xyz/guide/native-codecs#getting-the-binary).
 
 ## Export
 
 | Option | |
 |---|---|
-| `--out <file>` | Where to write. `.mp4` gives H.264 and AAC, `.webm` VP9 and Opus. `.mp3` and `.wav` hold the soundtrack alone. `.mov` gives ProRes, with the [native encoder](https://uberscene.prefixtree.xyz/guide/native-codecs) on. |
+| `--out <file>` | Where to write. `.mp4` gives H.264 and AAC, `.webm` VP9 and Opus, and `.mov` ProRes and PCM. `.mp3` and `.wav` hold the soundtrack alone. |
+| `--format <name>` | Explicit container for video or audio exports. One of `mp4`, `webm`, `mov`, `mp3` or `wav`. If `--out` has an extension, it must match. |
 | `--still <s>` | Write the frame at this time instead, to a `.png` or `.jpg` `--out`. It is kept in [the frame cache](#the-frame-cache); `--no-cache` draws it again. |
 | `--srt <file>` `--vtt <file>` | Also write the captions the cut plays as SRT or WebVTT, timed like the export. Without `--out`, write only them ([Subtitle files](https://uberscene.prefixtree.xyz/guide/captions-and-sound#subtitle-files)). |
 | `--manifest <file>` | The asset manifest. Without it, see [Where the manifest and the media are found](#where-the-manifest-and-the-media-are-found). |
@@ -58,7 +58,9 @@ moves it), checked against the hash the package carries. See [Native codecs](htt
 | `--draft` | A render for watching, not keeping: every second frame, each shown twice as long, at half the width and height and the `low` quality preset. Written beside `--out` as `<name>.draft.<ext>` ([A draft](https://uberscene.prefixtree.xyz/guide/exporting#a-draft)). Not with `--still`, `--check-layout`, `--copy` or `look`. |
 | `--tabs <n>` | Pages of the browser that render pieces at once. Default 1 ([Faster](https://uberscene.prefixtree.xyz/guide/exporting#faster)). |
 | `--copy` | Copy untouched stretches of a VP9 source into a VP9 export without re-encoding them ([Faster](https://uberscene.prefixtree.xyz/guide/exporting#faster)). |
-| `--codec <name>` | `avc` (the default in MP4), `vp9` (the default in WebM), or `av1` in either. A codec the container cannot hold (VP9 in MP4) is an error. `prores` writes a `.mov` when `UBERSCENE_CODECS` turns the native encoder on. |
+| `--codec <name>` | `avc` (default for MP4), `vp9` (default for WebM), `av1` in either, or `prores` (default for MOV). |
+| `--decode <backend>` | `browser` or `native` (experimental). Overrides the decode side of `UBERSCENE_CODECS`. |
+| `--encode <backend>` | `browser` or `native` (experimental). Overrides the encode side of `UBERSCENE_CODECS`. MOV selects the native encoder automatically and requires it. |
 | `--bitrate <bps>` | Video bits per second. Default: about 0.1 per pixel per frame. |
 | `--quality <preset>` | `very-low`, `low`, `medium`, `high` or `very-high`: the encoder picks the bitrate for the size and codec. In place of `--bitrate`. |
 | `--keyframe <s>` | Seconds between keyframes. Default 2. |

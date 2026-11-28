@@ -5,7 +5,7 @@ draws a sheet of its frames to look at, adds media to the manifest, and makes th
 
 ```sh
 npm install uberscene
-npx uberscene <file.tsx> --out <video.mp4|.webm|.mp3|.wav> [--draft] [options]
+npx uberscene <file.tsx> --out <file> [--format <name>] [--draft] [options]
 npx uberscene <file.tsx> --still <seconds> --out <image.png|.jpg> [options]
 npx uberscene <file.tsx> --check-layout [--safe-zone <zone>] [--subject <x,y,w,h>] [--json] [options]
 npx uberscene <file.tsx> --check-motion [--min <s>] [--step <s>] [--from <s> --to <s>] [--json] [options]

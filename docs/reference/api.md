@@ -1344,7 +1344,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `CHROME_MILESTONE` | const | The Chrome milestone UberScene downloads. |
 | `codecModes` | function | The codecs `UBERSCENE_CODECS` asks for; unset or empty is the browser's. |
 | `CodecModes` | interface |  |
-| `Container` | type | MP4, WebM and MOV hold video and sound; MP3 and WAV the soundtrack alone. |
+| `Container` | type |  |
 | `containerOf` | function | The container a file name asks for. |
 | `DEFAULT_SKILL_DIR` | const | Claude Code reads a project's skills from here; other agents take `--dir`. |
 | `describeAt` | function | What is on screen and heard at one moment. |
