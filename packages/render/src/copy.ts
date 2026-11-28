@@ -20,6 +20,7 @@ import {
   visiblePlacements,
 } from "@uberscene/player/engine";
 import type { ResolvedState } from "@uberscene/sdk";
+import { isCue } from "@uberscene/sdk";
 
 import type { VideoCodec } from "./encoding";
 import { compatibleConfig } from "./join";
@@ -246,5 +247,5 @@ export async function feedCopy(
 /** Whether anything but footage shows at `t`: an overlay element, or a caption line. */
 function hasOverlays(state: ResolvedState, t: number): boolean {
   if (visiblePlacements(state, t).some((v) => OVERLAY_KINDS.has(v.placement.kind))) return true;
-  return [...state.items.values()].some((p) => p.kind === "caption" && isVisibleAt(p, t, state.composition.duration));
+  return [...state.items.values()].some((p) => isCue(p.kind) && isVisibleAt(p, t, state.composition.duration));
 }
