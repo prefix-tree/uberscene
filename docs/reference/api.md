@@ -534,7 +534,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/kit/schema`
 
-428 exports.
+433 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -543,6 +543,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `AdjustmentElement` | interface | The kit's part of an adjustment. |
 | `AdjustmentProps` | interface | The props of a `<Adjustment>`, as its schema parses them. |
 | `Angle` | const | The `<Angle>` element ([reference](/reference/elements/angle)). |
+| `AngleElement` | interface | The kit's part of one camera of a multicam. |
 | `AngleProps` | interface | The props of a `<Angle>`, as its schema parses them. |
 | `Animatable` | type | A value written as a constant, as keys over time, or, for a number, as a generator or a link to another value. |
 | `AnyEffectSpec` | type | Any effect a file may write. |
@@ -574,8 +575,10 @@ Every name each entry exports, read from the code. The sections above explain th
 | `capabilitiesOf` | function | What a kind is. |
 | `Caption` | const | The `<Caption>` element ([reference](/reference/elements/caption)). |
 | `CAPTION_ANIMATIONS` | const |  |
+| `CaptionElement` | interface | The kit's part of one cue. |
 | `CaptionProps` | interface | The props of a `<Caption>`, as its schema parses them. |
 | `Captions` | const | The `<Captions>` element ([reference](/reference/elements/captions)). |
+| `CaptionsElement` | interface | The kit's part of the captions. |
 | `CaptionsProps` | interface | The props of a `<Captions>`, as its schema parses them. |
 | `CatalogFont` | interface | One family to choose from. |
 | `CheckedEffects` | type | Each entry of an `effects` list checked against its own type. |
@@ -596,6 +599,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `CurveKey` | interface | One key of a curve. |
 | `CurvePoint` | type | A point of a curve. |
 | `Cut` | const | The `<Cut>` element ([reference](/reference/elements/cut)). |
+| `CutElement` | interface | The kit's part of a switch to an angle. |
 | `CutProps` | interface | The props of a `<Cut>`, as its schema parses them. |
 | `DECLARED` | const | What every value a file declares (an effect, a transition, a font) carries, so collection can recognise it. |
 | `DeclaredFont` | interface | One face a file declares with `font()` or `googleFont()`. |
@@ -769,6 +773,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `moveRuns` | function | The runs of `before` carried onto its new text `after`. |
 | `mulRatio` | const | `t · num / den` to the tick, rounded down (Euclidean for a negative `den`), as craft-time's `mul_ratio`. |
 | `Multicam` | const | The `<Multicam>` element ([reference](/reference/elements/multicam)). |
+| `MulticamElement` | interface | The kit's part of a multicam. |
 | `MulticamProps` | interface | The props of a `<Multicam>`, as its schema parses them. |
 | `nearestFont` | function | The listed family whose name is nearest a misspelt one, when one is near enough to be what was meant. |
 | `nearestFrame` | const | The frame nearest a time, for times given by a person (`--at 2.5`) rather than computed. |
@@ -969,7 +974,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/sdk`
 
-293 exports.
+300 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -1077,6 +1082,8 @@ Every name each entry exports, read from the code. The sections above explain th
 | `InstalledBlock` | interface | A block copied into the project. |
 | `INTERIOR_PREFIX` | const | Prop keys under this prefix address a Layer's handles rather than the Layer's own props. |
 | `invalid` | function |  |
+| `isCaptions` | function | Whether a kind is the video's captions. |
+| `isCue` | function | Whether a kind is one cue of captions, written or made from a transcript. |
 | `isResolveError` | function |  |
 | `isSceneAsset` | function | Whether an asset id is a scene's. |
 | `isTimeRefString` | function |  |
@@ -1100,6 +1107,9 @@ Every name each entry exports, read from the code. The sections above explain th
 | `loadModule` | function |  |
 | `LoadOptions` | interface |  |
 | `lookupAsset` | function |  |
+| `Maker` | interface | What a kind that makes elements of its own is handed (`SdkElement.makes`), while its track is placed. |
+| `Makes` | type | How a kind makes elements of its own. |
+| `makesOnTrack` | function | Whether a kind makes elements of its own as its track is placed (a multicam's clips), which stand for it there. |
 | `MarkerActions` | interface |  |
 | `MaskActions` | interface |  |
 | `MAX_RANGE_MOMENTS` | const | The most moments one range may ask for. |
@@ -1135,6 +1145,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `Patch` | type | One change recorded by an action. |
 | `PatchLog` | interface |  |
 | `PatchLogOptions` | interface |  |
+| `Pending` | interface |  |
 | `placed` | function | `placement` as a parsed placement of `kind`, or undefined when it is missing, of another kind, or did not parse. |
 | `Placed` | type | A placement whose props parsed, of any kind. |
 | `PlacedAdjustment` | interface | A `adjustment` whose props parsed. |
@@ -1152,6 +1163,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `PlacedGenerator` | interface | A `generator` whose props parsed. |
 | `PlacedKeyframe` | interface | A `keyframe` whose props parsed. |
 | `PlacedLayer` | interface | A `layer` whose props parsed. |
+| `PlacedMaker` | interface | What a kind that makes elements once every track is placed is handed. |
 | `PlacedMarker` | interface | A `marker` whose props parsed. |
 | `PlacedMask` | interface | A `mask` whose props parsed. |
 | `PlacedMulticam` | interface | A `multicam` whose props parsed. |
@@ -1269,7 +1281,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/sdk/resolver`
 
-137 exports.
+144 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -1311,6 +1323,8 @@ Every name each entry exports, read from the code. The sections above explain th
 | `InFileOrder` | type | The ids `needed` says yes to, in the order the file has them. |
 | `InstalledBlock` | interface | A block copied into the project. |
 | `INTERIOR_PREFIX` | const | Prop keys under this prefix address a Layer's handles rather than the Layer's own props. |
+| `isCaptions` | function | Whether a kind is the video's captions. |
+| `isCue` | function | Whether a kind is one cue of captions, written or made from a transcript. |
 | `isResolveError` | function |  |
 | `isSceneAsset` | function | Whether an asset id is a scene's. |
 | `isTimeRefString` | function |  |
@@ -1319,6 +1333,9 @@ Every name each entry exports, read from the code. The sections above explain th
 | `lengthSeconds` | const | How long a placement is, in seconds. |
 | `lengthTicks` | const | How long a placement is, as a count of ticks. |
 | `lookupAsset` | function |  |
+| `Maker` | interface | What a kind that makes elements of its own is handed (`SdkElement.makes`), while its track is placed. |
+| `Makes` | type | How a kind makes elements of its own. |
+| `makesOnTrack` | function | Whether a kind makes elements of its own as its track is placed (a multicam's clips), which stand for it there. |
 | `NetPatch` | interface | The reduced effect of every patch on one element. |
 | `onTimeline` | function | Composition time of an asset second, through the first play that covers it; null when it is not on the timeline. |
 | `parseCube` | function | Parses a `.cube` file's text; throws a message naming the line where it is wrong. |
@@ -1329,6 +1346,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `parseTranscript` | function | Reads a transcript into the manifest's word list (`assets.<id>.transcript.words`), sniffing the format when it is not given. |
 | `Patch` | type | One change recorded by an action. |
 | `PatchLog` | interface |  |
+| `Pending` | interface |  |
 | `placed` | function | `placement` as a parsed placement of `kind`, or undefined when it is missing, of another kind, or did not parse. |
 | `Placed` | type | A placement whose props parsed, of any kind. |
 | `PlacedAdjustment` | interface | A `adjustment` whose props parsed. |
@@ -1346,6 +1364,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `PlacedGenerator` | interface | A `generator` whose props parsed. |
 | `PlacedKeyframe` | interface | A `keyframe` whose props parsed. |
 | `PlacedLayer` | interface | A `layer` whose props parsed. |
+| `PlacedMaker` | interface | What a kind that makes elements once every track is placed is handed. |
 | `PlacedMarker` | interface | A `marker` whose props parsed. |
 | `PlacedMask` | interface | A `mask` whose props parsed. |
 | `PlacedMulticam` | interface | A `multicam` whose props parsed. |
