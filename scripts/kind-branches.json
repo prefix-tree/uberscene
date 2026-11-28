@@ -7,19 +7,19 @@
       "read": 3
     },
     "sdk": {
-      "compare": 89,
-      "list": 20,
+      "compare": 52,
+      "list": 9,
       "cast": 70,
       "read": 74
     },
     "player": {
-      "compare": 3,
+      "compare": 0,
       "list": 0,
       "cast": 27,
       "read": 23
     },
     "render": {
-      "compare": 17,
+      "compare": 9,
       "list": 0,
       "cast": 11,
       "read": 1
@@ -41,24 +41,19 @@
       "why": "STYLED_KINDS is the theme schema's own list of the kinds a theme holds presets for, written out so the theme's type has their names; a test holds it to the kinds' themeStyle."
     },
     {
-      "file": "packages/sdk/src/actions/handlers/multicam.ts",
-      "kinds": ["clip"],
-      "why": "A multicam's cuts are clips the resolver makes; its actions find them and write them out as clips. Goes with the multicam's own folder."
-    },
-    {
-      "file": "packages/sdk/src/resolve/resolve.ts",
-      "kinds": ["clip"],
-      "why": "A multicam's cuts are made as clips. Goes with the multicam's own folder."
-    },
-    {
-      "file": "packages/player/src/model/visible.ts",
-      "kinds": ["clip"],
-      "why": "A multicam is drawn through the clips made of its cuts. Goes with the multicam's own folder."
-    },
-    {
       "file": "packages/kit/src/jsx/shaders.ts",
       "kinds": ["transition"],
       "why": "A shader the file declares with transition() is marked as a transition's, by that name, and a file uses shaders when an effect or a transition names one. The kind table cannot be asked here: it loads after this file."
+    },
+    {
+      "file": "packages/render/src/layout-check.ts",
+      "kinds": ["captions"],
+      "why": "The layout check measures the drawn page, where captions are told by the kind on their cell: it checks other elements against their lines, starts their box from the lower safe area and words their fix. To move into render/src/elements/captions with entries for those three."
+    },
+    {
+      "file": "packages/kit/src/jsx/rendering.ts",
+      "kinds": ["captions"],
+      "why": "The table of props that are not drawn as written names the element each is on; the lint reads it."
     }
   ]
 }
