@@ -534,7 +534,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/kit/schema`
 
-433 exports.
+438 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -571,6 +571,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `Camera` | const | The `<Camera>` element ([reference](/reference/elements/camera)). |
 | `CAMERA_FIELDS` | const | What a `<Camera>` animates, and its value when the file writes none. |
 | `CAMERA_KEY_PATHS` | const | What a `<Camera>` animates. |
+| `CameraElement` | interface | The kit's part of a camera. |
 | `CameraProps` | interface | The props of a `<Camera>`, as its schema parses them. |
 | `capabilitiesOf` | function | What a kind is. |
 | `Caption` | const | The `<Caption>` element ([reference](/reference/elements/caption)). |
@@ -592,6 +593,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `ComponentEntry` | interface |  |
 | `COMPONENTS` | const | Every ready-made component by name, with its props schema. |
 | `Composition` | const | The `<Composition>` element ([reference](/reference/elements/composition)). |
+| `CompositionElement` | interface | The kit's part of a composition. |
 | `CompositionProps` | interface | The props of a `<Composition>`, as its schema parses them. |
 | `cssOf` | function | The CSS filter a built-in effect draws as. |
 | `curveAt` | function | The value of a curve at `t`, keys sorted by `at`. |
@@ -746,6 +748,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `MAIN_TRACK_ID` | const | The id of the track made of the clips written straight in a `<Composition>`. |
 | `MAIN_TRACK_KINDS` | const | What may be written straight in a `<Composition>` to make its main track. |
 | `Marker` | const | The `<Marker>` element ([reference](/reference/elements/marker)). |
+| `MarkerElement` | interface | The kit's part of a marker. |
 | `MarkerProps` | interface | The props of a `<Marker>`, as its schema parses them. |
 | `MarkProps` | type |  |
 | `markSchema` | const | How a marked stretch of a title's text differs from the rest. |
@@ -786,6 +789,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `NTSC_RATES` | const | The NTSC rates, written as the strings people say them as. |
 | `Oklab` | interface | A colour in OKLab. |
 | `OldEasing` | type | An easing name spelled the way it was before 0.6, which free code still takes. |
+| `onMainTrack` | function | Whether an element of `kind` written straight in a `<Composition>` goes on its main track. |
 | `onOverlayPlane` | function | Stands on the overlay plane for a stretch of time. |
 | `OverlayProps` | interface | What everything drawn over the picture takes. |
 | `PALETTE_KEYS` | const | The palette names every built-in theme fills. |
@@ -929,6 +933,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `TRACK_FLAGS` | const |  |
 | `TRACK_LAYOUTS` | const |  |
 | `TRACK_ROLES` | const |  |
+| `TrackElement` | interface | The kit's part of a track. |
 | `TrackFlag` | type |  |
 | `TrackLayout` | type |  |
 | `TrackProps` | interface | The props of a `<Track>`, as its schema parses them. |
