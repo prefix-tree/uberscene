@@ -98,6 +98,12 @@ const usedAllows = new Set<string>();
 /** Where a sealed kind is named outside its folders: `file:line  what was written`. */
 const breaches: string[] = [];
 
+/**
+ * A shader's kind, `"effect" | "transition"`: the names of two element kinds, but what a shader is declared as (an
+ * effect's or a transition's), and no element's kind. A type of exactly these names is not counted as kinds.
+ */
+const SHADER_KINDS = new Set(["effect", "transition"]);
+
 /** What a type says of a value compared with a kind's name: it is a kind, it is any string, or it is something else. */
 function holds(checker: ts.TypeChecker, type: ts.Type): "kinds" | "string" | "other" {
   const of = checker.getBaseConstraintOfType(type) ?? type;
@@ -105,6 +111,8 @@ function holds(checker: ts.TypeChecker, type: ts.Type): "kinds" | "string" | "ot
     (t) => (t.flags & (ts.TypeFlags.Undefined | ts.TypeFlags.Null)) === 0,
   );
   if (parts.length === 0) return "other";
+  const names = parts.map((t) => (t.isStringLiteral() ? t.value : null));
+  if (names.length === SHADER_KINDS.size && names.every((n) => n !== null && SHADER_KINDS.has(n))) return "other";
   if (parts.every((t) => t.isStringLiteral() && ALL_KINDS.has(t.value))) return "kinds";
   if (parts.every((t) => (t.flags & ts.TypeFlags.String) !== 0)) return "string";
   return "other";
