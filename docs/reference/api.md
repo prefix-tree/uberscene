@@ -735,7 +735,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `KindTraits` | type | What a kind's row writes of itself. |
 | `KindWith` | type | The kinds whose props have `P`. |
 | `KIT_ELEMENTS` | const | The kit's part of each kind that has a folder of its own. |
-| `kitElement` | function | The kit's part of `kind`, or undefined for a kind that has no folder of its own yet. |
+| `kitElement` | function | The kit's part of `kind`, or undefined for a kind held inside an element, which has no folder. |
 | `KitElement` | interface | The kit's part of one element kind. |
 | `knobsOf` | function | The knobs of a file's `schema`, in the order it lists them, with the value each has in `values` (the file's `defaults` merged with any props given). |
 | `Layer` | const | The `<Layer>` element ([reference](/reference/elements/layer)). |
@@ -759,7 +759,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `MaskProps` | interface | The props of a `<Mask>`, as its schema parses them. |
 | `MAX_SECONDS` | const | The longest time ticks hold exactly as a JavaScript number. |
 | `maxTicks` | const | The later of two times, or the longer of two lengths. |
-| `MigratedKind` | type | The kinds that have a folder of their own in each package (`elements/<kind>/`). |
+| `MigratedKind` | type | The kinds a file writes, each with a folder of its own in each package (`elements/<kind>/`). |
 | `minTicks` | const | The earlier of two times, or the shorter of two lengths. |
 | `mixColor` | function | The colour `t` of the way from `from` to `to` (0 is `from`, 1 is `to`), moved in OKLab, with alpha moved in a straight line and the colour weighted by it, so a fade to `transparent` keeps its hue instead of passing through black. |
 | `monotoneCurve` | function | The curve through `points` (x strictly increasing) as a function on 0..1, clamped to 0..1. |
