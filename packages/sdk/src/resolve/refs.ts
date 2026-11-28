@@ -411,6 +411,13 @@ function writtenOf(node: CollectedNode): WrittenByKind {
   return result;
 }
 
+/** Every reference a node writes, as text: the kind of reference, the prop it sits at and what is written there. */
+export function referencesWritten(node: CollectedNode): { type: string; prop: string; text: string }[] {
+  return writtenOf(node).flatMap(({ kind, written }) =>
+    written.map((w) => ({ type: kind.name, prop: w.prop, text: w.text })),
+  );
+}
+
 /** The ids a written reference names, among what exists. */
 function named(target: RefTarget, ctx: RefContext): string[] {
   switch (target.type) {
