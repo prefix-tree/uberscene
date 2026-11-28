@@ -832,7 +832,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/sdk`
 
-235 exports.
+237 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -857,6 +857,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `AssetManifest` | interface | What the ingest service knows about an asset. |
 | `assetPlay` | function | The play of one clip or audio placement. |
 | `AssetPlay` | interface | Where an asset plays on the timeline. |
+| `AssetSource` | interface | A fetched asset's origin. |
 | `attributeOf` | function | The tag's attribute of that name. |
 | `AudioActions` | interface |  |
 | `AUTO_GROUP_TYPES` | const | Rapid repeats of these on the same target collapse into one undo step (OpenReel's rule). |
@@ -1030,6 +1031,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `Shot` | interface |  |
 | `Silence` | interface |  |
 | `skimMoments` | function | The moments an editor skims a cut by. |
+| `SoundPoint` | interface | A sound effect against the picture. |
 | `SourceActions` | interface |  |
 | `SourceEdit` | type |  |
 | `SourceIndex` | interface |  |
@@ -1067,14 +1069,14 @@ Every name each entry exports, read from the code. The sections above explain th
 | `ValidationResult` | interface |  |
 | `VideoModule` | interface |  |
 | `walk` | function |  |
-| `WaveformSummary` | interface |  |
+| `WaveformSummary` | interface | A sound's level in bins of `binSeconds`. |
 | `withoutEffects` | function | A patch log that turns these effects off (`enabled: false`), each named by the id the resolver gave it (`pour.effects.1`). |
 | `WordRow` | interface |  |
 | `wrapMainTrack` | function | The text with its main clips wrapped in `<Track id="main">`, where the first of them stands; clips written further down, between tracks, are gathered into it in order. |
 
 ### `@uberscene/sdk/resolver`
 
-83 exports.
+84 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -1083,6 +1085,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `AssetManifest` | interface | What the ingest service knows about an asset. |
 | `assetPlay` | function | The play of one clip or audio placement. |
 | `AssetPlay` | interface | Where an asset plays on the timeline. |
+| `AssetSource` | interface | A fetched asset's origin. |
 | `Beat` | interface | A beat of music. |
 | `collect` | function | Walk the element tree the file's default export returned and index every vocabulary element by id. |
 | `CollectedNode` | interface | One vocabulary element as collected from the React element tree, before schema parsing and before placement. |
@@ -1160,7 +1163,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `TranscriptWord` | interface |  |
 | `VideoModule` | interface |  |
 | `walk` | function |  |
-| `WaveformSummary` | interface |  |
+| `WaveformSummary` | interface | A sound's level in bins of `binSeconds`. |
 
 ### `@uberscene/player`
 
@@ -1275,7 +1278,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/render`
 
-101 exports.
+127 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -1302,8 +1305,12 @@ Every name each entry exports, read from the code. The sections above explain th
 | `directoryResolver` | function | Finds each asset's file in a directory, or the first of several that has it. |
 | `draftPath` | function | Where a draft of `out` is written. |
 | `ExportSource` | interface | The file an export loads in its page. |
+| `fetchStock` | function | Fetches a candidate into the project and adds it to the manifest with where it came from. |
+| `FetchStockOptions` | interface |  |
+| `FetchStockResult` | interface |  |
 | `findChrome` | function | The binary the export launches. |
 | `findManifest` | function | The nearest `uberscene.json` from `from` upward; failing that, a `manifest.json` in `from` itself. |
+| `findStock` | function | Searches a library. |
 | `FontFilter` | interface |  |
 | `fontSheet` | function | Draws the families as one image, each setting the same words. |
 | `FontSheetOptions` | interface |  |
@@ -1345,10 +1352,13 @@ Every name each entry exports, read from the code. The sections above explain th
 | `LookResult` | interface |  |
 | `LookSound` | interface |  |
 | `Loudness` | interface |  |
+| `makeSound` | function | Makes a sound of the kit. |
+| `masterGain` | function | The gain that brings a render to `lufs` once soft-clipped under `ceiling` (dBFS). |
 | `MAX_LOOK_CELLS` | const | The most cells one sheet holds. |
 | `MomentView` | interface |  |
 | `MotionCheckOptions` | interface |  |
 | `MotionCheckResult` | interface |  |
+| `parseStockRef` | function | `pixabay:287510` or `commons:Some file.webm`, as its library and its id there. |
 | `PlacedDiagnostic` | interface | A diagnostic with its place as an editor shows it. |
 | `QUALITIES` | const | Mediabunny's quality presets by name; the name travels to the export page. |
 | `QualityName` | type |  |
@@ -1357,6 +1367,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `RenderOptions` | interface |  |
 | `RenderResult` | interface |  |
 | `renderStill` | function | Draws one frame of the composition, as the export draws it, to a PNG or JPEG. |
+| `renderStrudel` | function | Renders a score to samples. |
 | `renderVideo` | function | Exports the composition. |
 | `SAFE_ZONES` | const | Where a platform's own UI covers the picture. |
 | `SafeZoneName` | type |  |
@@ -1366,10 +1377,27 @@ Every name each entry exports, read from the code. The sections above explain th
 | `SkillInstallOptions` | interface |  |
 | `SkillInstallResult` | interface |  |
 | `snippetOf` | function | The element that plays the asset, to paste into the video. |
+| `SOUND_KIT` | const |  |
+| `SoundSpec` | interface |  |
+| `soundWav` | function | A 16-bit PCM WAV file of the samples. |
 | `SourceSpot` | interface | A place in the cut file, as a compiler reports it. |
 | `StillOptions` | interface |  |
 | `StillResult` | interface |  |
 | `StillStretch` | interface | A stretch where the picture does not change. |
+| `StockCandidate` | interface | A search result. |
+| `stockCredits` | function | The credits for every fetched asset in a manifest, as a Markdown table. |
+| `StockFile` | interface | One rendition of a candidate. |
+| `StockSearch` | interface |  |
+| `STRUDEL_LICENCE` | const |  |
+| `STRUDEL_PACKAGES` | const | The versions used, pinned, and checked by the spike's measures (scripts/strudel-spike.ts) when they change. |
+| `strudelAccepted` | function | Whether Strudel's licence has been accepted on this machine, for these versions. |
+| `strudelCacheDir` | function | Where Strudel lives. |
+| `StrudelEngineOptions` | interface |  |
+| `StrudelEvent` | interface | One event the pattern played. |
+| `StrudelLicenceNotAccepted` | class | Thrown when Strudel's licence has not been accepted and there is no one to ask. |
+| `strudelNotice` | function | What is shown before Strudel is fetched the first time. |
+| `StrudelRender` | interface |  |
+| `StrudelScore` | interface |  |
 | `SyncIssue` | interface |  |
 | `SyncPoint` | interface | A cut, or something starting on screen, against the music. |
 | `SyncReport` | interface |  |
@@ -1379,6 +1407,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `WhereResult` | interface |  |
 | `WhereThing` | interface |  |
 | `whereThings` | function | Measures every overlay, the captions and each named part at the moments asked for. |
+| `writeStrudelWav` | function | Writes a render as a 16-bit stereo WAV. |
 | `zoneRect` | function | The rectangle a zone leaves clear, in a frame of the given size. |
 
 ### `@uberscene/graphics`

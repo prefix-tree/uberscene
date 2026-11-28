@@ -21,13 +21,17 @@ npx uberscene fonts [--for <role>] [--category <category>] [--sheet fonts.png [-
 npx uberscene blocks [--for <job>] [--aspect <shape>] [--sheet blocks.png] [--json]
 npx uberscene blocks add <name> [--into <video.tsx> --track <id> --at <moment> [--id <id>] [--duration <s>]] [--dir <folder>] [--force]
 npx uberscene blocks update [<name>...] [--dir <folder>] [--force]
-npx uberscene add <media file>... [--manifest <file>] [--id <id>] [--transcript <file>] [--beats | --no-beats] [--bpm <n> [--first-beat <s>]]
+npx uberscene add <media file>... [--manifest <file>] [--id <id>] [--transcript <file>] [--beats | --no-beats] [--bpm <n> [--first-beat <s>]] [--no-waveform]
 npx uberscene browser install
 npx uberscene codecs install
 npx uberscene matte <footage> [--model <name>] [--accept-licence] [--id <id>] [--manifest <file>] [--force] [--json]
 npx uberscene matte models [--json]
 npx uberscene matte install [<model>] [--accept-licence]
 npx uberscene skills install [--dir <folder>] [--force]
+npx uberscene find <pixabay|commons|freesound> <words>... [--sound] [--attribution] [--orientation portrait|landscape] [--min-duration <s>] [--limit <n>] [--sheet <image>] [--json] [--fresh]
+npx uberscene fetch <library:id> [--id <id>] [--from <s> --to <s>] [--height <px>] [--dir <folder>] [--manifest <file>]
+npx uberscene credits [--manifest <file>] [--out CREDITS.md]
+npx uberscene sound [<name> [--duration <s>] [--seed <n>] [--id <id>] [--out <file.wav>] [--manifest <file>]] [--json]
 ```
 
 `npx uberscene --help` prints the same list.
@@ -108,8 +112,8 @@ Its frames are kept in `.uberscene/cache` like `look`'s, so checking again after
 
 | Option | |
 |---|---|
-| `--check-sync` | Report how the picture sits on the music, without a browser: each cut between two clips of a sequence and each element starting on screen, with its nearest beat and its distance from it in milliseconds and frames. A point within a frame of a beat is `on`; one off it by less than a quarter of a beat is `near`, an issue (`near-beat`) with the `beat:N` to tie it to; one further is `off`, a choice. Music that stops between beats with no fade is `music-cut-off`. Writes no file, and exits with code 3 when it finds issues. |
-| `--json` | Print the report as JSON: `music`, `points`, `summary` and `issues`. |
+| `--check-sync` | Report how the picture sits on the music, without a browser: each cut between two clips of a sequence and each element starting on screen, with its nearest beat and its distance from it in milliseconds and frames. A point within a frame of a beat is `on`; one off it by less than a quarter of a beat is `near`, an issue (`near-beat`) with the `beat:N` to tie it to; one further is `off`, a choice. Music that stops between beats with no fade is `music-cut-off`. Each sound on an `effects` track is listed by where its attack is heard (its start, moved by its onset) against the nearest cut: `on` within a frame, `near` up to 125 ms off, an issue (`sound-off-cut`) whose fix is `anchor="<clip>" align="onset"`. Writes no file, and exits with code 3 when it finds issues. |
+| `--json` | Print the report as JSON: `music`, `points`, `sounds`, `summary` and `issues`. |
 
 ```sh
 npx uberscene video.tsx --check-sync

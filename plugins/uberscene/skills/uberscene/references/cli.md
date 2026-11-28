@@ -21,13 +21,17 @@ npx uberscene fonts [--for <role>] [--category <category>] [--sheet fonts.png [-
 npx uberscene blocks [--for <job>] [--aspect <shape>] [--sheet blocks.png] [--json]
 npx uberscene blocks add <name> [--into <video.tsx> --track <id> --at <moment> [--id <id>] [--duration <s>]] [--dir <folder>] [--force]
 npx uberscene blocks update [<name>...] [--dir <folder>] [--force]
-npx uberscene add <media file>... [--manifest <file>] [--id <id>] [--transcript <file>] [--beats | --no-beats] [--bpm <n> [--first-beat <s>]]
+npx uberscene add <media file>... [--manifest <file>] [--id <id>] [--transcript <file>] [--beats | --no-beats] [--bpm <n> [--first-beat <s>]] [--no-waveform]
 npx uberscene browser install
 npx uberscene codecs install
 npx uberscene matte <footage> [--model <name>] [--accept-licence] [--id <id>] [--manifest <file>] [--force] [--json]
 npx uberscene matte models [--json]
 npx uberscene matte install [<model>] [--accept-licence]
 npx uberscene skills install [--dir <folder>] [--force]
+npx uberscene find <pixabay|commons|freesound> <words>... [--sound] [--attribution] [--orientation portrait|landscape] [--min-duration <s>] [--limit <n>] [--sheet <image>] [--json] [--fresh]
+npx uberscene fetch <library:id> [--id <id>] [--from <s> --to <s>] [--height <px>] [--dir <folder>] [--manifest <file>]
+npx uberscene credits [--manifest <file>] [--out CREDITS.md]
+npx uberscene sound [<name> [--duration <s>] [--seed <n>] [--id <id>] [--out <file.wav>] [--manifest <file>]] [--json]
 ```
 
 `npx uberscene --help` prints the same list.
@@ -108,8 +112,8 @@ Its frames are kept in `.uberscene/cache` like `look`'s, so checking again after
 
 | Option | |
 |---|---|
-| `--check-sync` | Report how the picture sits on the music, without a browser: each cut between two clips of a sequence and each element starting on screen, with its nearest beat and its distance from it in milliseconds and frames. A point within a frame of a beat is `on`; one off it by less than a quarter of a beat is `near`, an issue (`near-beat`) with the `beat:N` to tie it to; one further is `off`, a choice. Music that stops between beats with no fade is `music-cut-off`. Writes no file, and exits with code 3 when it finds issues. |
-| `--json` | Print the report as JSON: `music`, `points`, `summary` and `issues`. |
+| `--check-sync` | Report how the picture sits on the music, without a browser: each cut between two clips of a sequence and each element starting on screen, with its nearest beat and its distance from it in milliseconds and frames. A point within a frame of a beat is `on`; one off it by less than a quarter of a beat is `near`, an issue (`near-beat`) with the `beat:N` to tie it to; one further is `off`, a choice. Music that stops between beats with no fade is `music-cut-off`. Each sound on an `effects` track is listed by where its attack is heard (its start, moved by its onset) against the nearest cut: `on` within a frame, `near` up to 125 ms off, an issue (`sound-off-cut`) whose fix is `anchor="<clip>" align="onset"`. Writes no file, and exits with code 3 when it finds issues. |
+| `--json` | Print the report as JSON: `music`, `points`, `sounds`, `summary` and `issues`. |
 
 ```sh
 npx uberscene video.tsx --check-sync
@@ -541,12 +545,18 @@ is added as a LUT (kind `lut`) after it is checked, for the [`lut` effect](https
 | `--no-beats` | Find no beats. |
 | `--bpm <n>` | Set the beats as an even grid at this tempo instead of finding them: for a song whose beats are found at half speed, or a click track you know. |
 | `--first-beat <s>` | With `--bpm`, the second of the first beat. Default 0. |
+| `--no-waveform` | Leave the sound unmeasured. |
 
 A sound file with no transcript is taken to be music, and `add` finds its beats and its tempo
 (for example `song: audio, 92.4 s, 184 beats at 119.98 BPM`). A clip or an overlay then cuts on them as it cuts on words:
 `anchor="song" at="beat:16"` ([Cut on the beat](https://uberscene.prefixtree.xyz/guide/time#cut-on-the-beat)). Check them in numbers with `--check-sync` ([Sync](https://uberscene.prefixtree.xyz/guide/sync)), and by looking: `look --at
 song@beat:16,song@beat:32 --listen all` draws those moments over the sound. A fast song may come out at half its
 tempo, every other beat; set it with `--bpm`.
+
+Anything with sound is measured too: its `waveform`, the peak and RMS of each 10 ms (wider bins for a recording long
+enough to need more than 4000), which a picture of the timeline draws, and for a sound file its `onset`, the second
+where it first reaches half its loudest, which `<Audio align="onset">` places on the frame. WAV is decoded in Node;
+AAC, Opus and MP3 need ffmpeg on the `PATH`, and without it the sound is left unmeasured with a warning.
 
 ## Making a matte
 
@@ -571,6 +581,69 @@ terminal to ask on and without `--accept-licence`, it prints the licence and exi
 downloads one ahead of time. `UBERSCENE_MODEL_REGISTRY` names a JSON file of models of your own, in the shape of the
 package's `models.json`: each with its source, SHA-256, size, licence, input and output names, and for a model that
 carries state from frame to frame, the inputs and outputs of that state.
+
+## Stock footage and sounds
+
+`uberscene find` searches a stock library and `uberscene fetch` brings one result into the project, with where it
+came from, its author and its licence kept on its manifest entry. `uberscene credits` writes the credits from there.
+
+```sh
+uberscene find pixabay waterfall forest --orientation landscape --min-duration 8 --sheet waterfalls.jpg
+uberscene fetch pixabay:358693 --id falls --from 4 --to 10 --height 1920
+uberscene find freesound wind gust --min-duration 3
+uberscene find commons wind --sound
+uberscene credits --out CREDITS.md
+```
+
+| Library | What | Licence | Key |
+|---|---|---|---|
+| `pixabay` | videos | the Pixabay Content License: free to use in a video, no credit asked | `PIXABAY_API_KEY`, free from [pixabay.com/api/docs](https://pixabay.com/api/docs/); an environment variable, since Pixabay reads it from the address |
+| `commons` | videos and sounds (`--sound`) | each file's own free licence (CC0, CC BY, CC BY-SA, public domain), read from its page | none |
+| `freesound` | recorded sounds, as its high-quality MP3 previews | CC0 only, unless `--attribution` lets in CC BY; never non-commercial | `FREESOUND_API_KEY` from [freesound.org/apiv2/apply](https://freesound.org/apiv2/apply), or a network secret for freesound.org (`Authorization: Token <key>`) |
+
+`find` prints each candidate's ref, length, size, licence and author, best first; `--json` prints them as data and
+`--sheet <image>` draws them as one contact sheet, numbered as listed. A search is kept for a day in
+`~/.cache/uberscene/stock` (`UBERSCENE_STOCK_CACHE` moves it), as Pixabay asks; `--fresh` asks again. The key is never
+written to the cache, the manifest or an error.
+
+| Option | |
+|---|---|
+| `--sound` | (find) Recordings instead of videos (Commons; Freesound has only sounds). |
+| `--attribution` | (find) Also sounds whose licence asks for credit (CC BY). Never non-commercial ones. |
+| `--orientation portrait\|landscape` | (find) Only footage this way up. |
+| `--min-duration <s>` | (find) Only candidates at least this long. |
+| `--limit <n>` | (find) At most this many. Default 20. |
+| `--id <id>` | (fetch) The asset id. Default: made from the title. |
+| `--from <s> --to <s>` | (fetch) Keep only this stretch of the original; only those seconds are read. |
+| `--height <px>` | (fetch) The picture height the film needs: the smallest rendition at least this tall is fetched, so a vertical crop of landscape footage keeps real pixels. Default 1080. |
+| `--dir <folder>` | (fetch) Where the file goes. Default `media` beside the manifest. |
+| `--out <file>` | (credits) Write the table to a file instead of printing it. |
+
+`fetch` downloads the file as the library serves it when the engine plays it as it is (MP4, WebM, WAV). A stretch
+(`--from`/`--to`), an Ogg video or a sound that is not a WAV is converted with ffmpeg, which must be on the `PATH`
+(with libvpx-vp9 for video): footage becomes VP9 WebM, keeping its sound as Opus when it has one, a sound becomes a 48 kHz WAV. A file is
+written under another name and moved into place, so a fetch cut off half way is made again next time.
+
+## The sound kit
+
+`uberscene sound` lists cues and beds made in code, the same bytes on every machine, so they are the project's own to
+share. `uberscene sound <name>` writes one as a WAV into `media/` beside the manifest and adds it.
+
+```sh
+uberscene sound                       # the kit
+uberscene sound whoosh --seed 7       # another take of the whoosh, added as whoosh-7
+uberscene sound wind --duration 12    # a 12-second wind bed
+```
+
+| Kind | Sounds |
+|---|---|
+| Cues | `tick`, `click`, `pop`, `snap`, `whoosh`, `swish`, `suck`, `riser`, `downer`, `thud`, `hit`, `boom`, `chime`, `shimmer` |
+| Beds | `wind`, `rain`, `crackle` (a fire), `water`, `rumble`, `air` (room tone) |
+
+Every sound peaks at -3 dBFS, so layered sounds leave headroom; a bed is meant to run low, under a scene. `--seed`
+gives another take of a sound with noise in it, so a film can lay many whooshes that are not all the same. Each sound
+has a moment (`--json` lists it as a fraction of its length): a riser's and a suck's is their end, so place them to end
+on the cut. From a script, `makeSound(name, { length, seed })` returns the samples and `soundWav(samples)` the file.
 
 ## The agent skill
 

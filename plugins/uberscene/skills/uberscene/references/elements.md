@@ -575,5 +575,6 @@ A stretch of a sound asset: volume and pan (constant or keys), fades, ducking un
 | `pan` | number (-1..1) \| { at, value, easing }[] |  |  | Where it sits between the speakers, from -1 (left) to 1 (right); keys move it. |
 | `fade` | { in, out } |  |  | Seconds the sound fades in at the start and out at the end. |
 | `duck` | { under, to, attack, release } |  |  | Turns this sound down while another plays: `under` is a track id or a track role (`dialogue`), `to` the volume it falls to, `attack` and `release` the seconds it takes to fall and recover. |
+| `align` | "onset" |  |  | `"onset"`: the sound's attack, not its first sample, lands on its start: a hit with a quiet lead-in lands on the frame. The start moves earlier by the time from `in` to the onset `uberscene add` measured. |
 
 Timed, audible, trims its source. No children. [All elements](https://uberscene.prefixtree.xyz/reference/elements/)

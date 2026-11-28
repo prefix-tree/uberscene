@@ -155,8 +155,27 @@ export interface SyncPoint {
   readonly anchored: boolean;
 }
 
+/**
+ * A sound effect against the picture: where its attack falls (its start, moved by the onset `uberscene add`
+ * measured) and the cut nearest it. The eye welds a sound to a cut it lands on; one a few frames off reads as late.
+ */
+export interface SoundPoint {
+  readonly id: string;
+  /** Seconds of the video where its attack is heard. */
+  readonly time: number;
+  /** The nearest cut: `from→to`, its time, and the attack minus the cut. */
+  readonly cut: {
+    readonly label: string;
+    readonly to: string;
+    readonly time: number;
+    readonly offsetMs: number;
+  } | null;
+  /** `on`: within a frame of the cut. `near`: off it by up to 125 ms, which reads as out of sync. `off`: further. */
+  readonly status: "on" | "near" | "off";
+}
+
 export interface SyncIssue {
-  readonly rule: "near-beat" | "music-cut-off";
+  readonly rule: "near-beat" | "music-cut-off" | "sound-off-cut";
   readonly id: string;
   readonly time: number;
   readonly message: string;
@@ -167,6 +186,8 @@ export interface SyncReport {
   readonly music: readonly MusicRow[];
   /** Every cut and every start on screen while music plays, in time order. */
   readonly points: readonly SyncPoint[];
+  /** Every sound on an `effects` track against its nearest cut, in time order, music or not. */
+  readonly sounds: readonly SoundPoint[];
   readonly summary: {
     readonly points: number;
     readonly on: number;
@@ -264,12 +285,25 @@ export function syncReport(state: ResolvedState): SyncReport {
         : "fade it out (fade={{ out: 0.5 }})",
     });
   }
+  const sounds = soundPoints(state, rows.cuts, frameMs);
+  for (const sound of sounds) {
+    if (sound.status !== "near" || !sound.cut) continue;
+    const side = sound.cut.offsetMs > 0 ? "after" : "before";
+    issues.push({
+      rule: "sound-off-cut",
+      id: sound.id,
+      time: sound.time,
+      message: `"${sound.id}" hits at ${sound.time.toFixed(2)} s, ${Math.abs(sound.cut.offsetMs)} ms ${side} the cut ${sound.cut.label} (${sound.cut.time.toFixed(2)} s): close enough to read as out of sync`,
+      fix: `land it on the cut: anchor="${sound.cut.to}" align="onset"`,
+    });
+  }
   issues.sort((a, b) => a.time - b.time);
 
   const count = (status: SyncPoint["status"]): number => points.filter((p) => p.status === status).length;
   return {
     music,
     points,
+    sounds,
     summary: {
       points: points.length,
       on: count("on"),
@@ -280,4 +314,31 @@ export function syncReport(state: ResolvedState): SyncReport {
     },
     issues,
   };
+}
+
+/** How far a sound may be from a cut and still read as one event with it, in milliseconds. */
+const SYNC_MS = 125;
+
+function soundPoints(state: ResolvedState, cuts: readonly CutRow[], frameMs: number): SoundPoint[] {
+  const effects = new Set(state.tracks.filter((t) => t.role === "effects").map((t) => t.id));
+  const out: SoundPoint[] = [];
+  for (const p of state.items.values()) {
+    if (p.kind !== "audio" || p.track === null || !effects.has(p.track) || !(p.end > p.start)) continue;
+    const onset = p.source ? lookupAsset(state.manifest, p.source.asset)?.onset : undefined;
+    const lead = p.source && onset !== undefined ? Math.max(0, (onset - p.source.in) / p.source.speed) : 0;
+    const time = Math.round((p.start + lead) * 1000) / 1000;
+    const nearest = cuts.reduce<CutRow | null>(
+      (best, c) => (best === null || Math.abs(c.time - time) < Math.abs(best.time - time) ? c : best),
+      null,
+    );
+    const offsetMs = nearest ? Math.round((time - nearest.time) * 1000) : 0;
+    const off = Math.abs(offsetMs);
+    out.push({
+      id: p.id,
+      time,
+      cut: nearest ? { label: `${nearest.from}→${nearest.to}`, to: nearest.to, time: nearest.time, offsetMs } : null,
+      status: !nearest ? "off" : off <= frameMs + 0.5 ? "on" : off <= SYNC_MS ? "near" : "off",
+    });
+  }
+  return out.sort((a, b) => a.time - b.time);
 }

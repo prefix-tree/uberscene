@@ -189,11 +189,21 @@ With `--json`:
 |---|---|---|
 | `near-beat` | A cut or a start is more than a frame from a beat, and less than a quarter of a beat. | A start: `anchor="song" at="beat:6"`. A cut in a sequence: end the clip before it on the beat, <code v-pre>duration={{ until: "song", at: "beat:6" }}</code>. |
 | `music-cut-off` | Music stops more than a frame from a beat, before its own end, with no fade out of 0.2 s or more. | End it on a beat, `out="beat:28.end"`, or fade it, <code v-pre>fade={{ out: 0.5 }}</code>. |
+| `sound-off-cut` | A sound on an `effects` track hits more than a frame and at most 125 ms from the nearest cut. | Hang it off the clip it lands on and place it by its attack: `anchor="b" align="onset"`. |
 
 The lint has one more, on the file's text: `numeric-on-beat` warns when a numeric `in` or `out` of the music is a
 beat's own time, and names the `beat:N` to write, which stays right when the song is added again.
 
-A video with no music that has beats gives an empty report and says so.
+A video with no music that has beats says so, and still reports its sounds.
+
+### Sounds on the cut
+
+The eye welds a sound to a cut it lands on, so a hit, a whoosh or a snap belongs on its frame. The report lists every
+sound on a track of role `effects` by where its attack is heard: its start, moved by its `onset` (where it first
+reaches half its loudest, which `uberscene add` measures), against the nearest cut. Within a frame it is `on`; up to
+125 ms off, it reads as out of sync and is an issue; further, it is a choice (a sound that leads its picture on
+purpose, a J-cut, belongs on another track). `<Audio align="onset">` places a sound by its attack, so a hit with a
+quiet lead-in still lands on the frame.
 
 ## A worked example
 

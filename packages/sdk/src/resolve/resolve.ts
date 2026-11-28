@@ -481,6 +481,7 @@ function compute(
   }
   let duration = 0;
   for (const p of pending.values()) {
+    if (p.node.kind === "audio" && p.props.align === "onset" && p.source) alignOnset(p, manifest);
     const start = p.start as number;
     const length = p.duration as number;
     if (p.source && isScene(p.props.src)) {
@@ -2032,4 +2033,34 @@ function rateOf(fps: unknown, id: string, errors: ResolveError[]): Rate {
     errors.push({ code: "SCHEMA", id, prop: "fps", message: (error as Error).message });
     return { num: 30, den: 1 };
   }
+}
+
+/**
+ * `align="onset"`: moves a sound earlier by the time from its `in` to its onset, so its attack lands where it was
+ * placed. A sound that would then start before the video is trimmed at the front instead.
+ */
+function alignOnset(p: Pending, manifest: AssetManifest): void {
+  const source = p.source as NonNullable<Pending["source"]>;
+  const onset = manifest.assets[source.asset]?.onset;
+  if (onset === undefined) {
+    p.errors.push({
+      code: "NO_ONSET",
+      id: p.node.id,
+      prop: "align",
+      message: `align="onset" needs the onset of "${source.asset}": run \`uberscene add\` on it to measure it`,
+    });
+    return;
+  }
+  const lead = (onset - source.in) / source.speed;
+  if (!(lead > 0)) return;
+  const start = (p.start as number) - lead;
+  if (start >= 0) {
+    p.start = start;
+    return;
+  }
+  // Starting before the video: the part before 0 is cut, so the onset still lands where it was placed.
+  const cut = -start;
+  p.start = 0;
+  p.source = { ...source, in: source.in + cut * source.speed };
+  if (p.duration !== undefined) p.duration = Math.max(0, p.duration - cut);
 }

@@ -82,4 +82,9 @@ export const audioSchema = z.strictObject({
   ...timedProps,
   ...sourceProps,
   ...audioProps,
+  /**
+   * `"onset"`: the sound's attack, not its first sample, lands on its start: a hit with a quiet lead-in lands on the
+   * frame. The start moves earlier by the time from `in` to the onset `uberscene add` measured.
+   */
+  align: z.literal("onset").optional(),
 });
