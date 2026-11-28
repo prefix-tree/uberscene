@@ -25,6 +25,9 @@ export interface EditorElement<K extends MigratedKind> {
 }
 
 export const EDITOR_ELEMENTS: { readonly [K in MigratedKind]: EditorElement<K> } = {
+  composition: { kind: "composition", icon: Shapes },
+  camera: { kind: "camera", icon: Shapes },
+  track: { kind: "track", icon: Shapes },
   clip: { kind: "clip", icon: Clapperboard },
   audio: { kind: "audio", icon: Music },
   gap: { kind: "gap", icon: Shapes },
@@ -71,6 +74,7 @@ export const EDITOR_ELEMENTS: { readonly [K in MigratedKind]: EditorElement<K> }
     },
   },
   caption: { kind: "caption", icon: Captions },
+  marker: { kind: "marker", icon: Shapes },
   layer: { kind: "layer", icon: Layers },
   adjustment: { kind: "adjustment", icon: Shapes },
   nested: { kind: "nested", icon: Shapes },
