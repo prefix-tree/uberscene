@@ -25,6 +25,8 @@ export interface EditorElement<K extends MigratedKind> {
 }
 
 export const EDITOR_ELEMENTS: { readonly [K in MigratedKind]: EditorElement<K> } = {
+  clip: { kind: "clip", icon: Clapperboard },
+  audio: { kind: "audio", icon: Music },
   title: {
     kind: "title",
     icon: Type,
@@ -43,12 +45,11 @@ export const EDITOR_ELEMENTS: { readonly [K in MigratedKind]: EditorElement<K> }
   sticker: { kind: "sticker", icon: Shapes },
   layer: { kind: "layer", icon: Layers },
   adjustment: { kind: "adjustment", icon: Shapes },
+  nested: { kind: "nested", icon: Shapes },
 };
 
 /** The icons of the kinds that have no entry above yet. */
 const OTHER_ICONS: Partial<Record<Kind, LucideIcon>> = {
-  clip: Clapperboard,
-  audio: Music,
   captions: Captions,
   caption: Captions,
   transition: Sparkles,
