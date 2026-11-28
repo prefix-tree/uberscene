@@ -92,6 +92,20 @@ describe("affordances", () => {
       expect(a?.actions).not.toContain(type);
   });
 
+  it("of an edit that sets props: only where its own test says, as well as where its props are", () => {
+    const exec = fixtureExecutor();
+    const plain = affordances(exec.state(), "c2")?.actions ?? [];
+    // A clip with no effects has none to remove or reorder, and no keys to move.
+    for (const type of ["effect/remove", "effect/toggle", "effect/update", "effect/setOrder", "key/move", "key/remove"])
+      expect(plain).not.toContain(type);
+    expect(plain).toContain("effect/add");
+    exec.execute({ type: "effect/add", params: { id: "c2", effect: { type: "blur", radius: 2 } } });
+    exec.execute({ type: "key/add", params: { id: "c2", path: "transform.opacity", at: 0.5, value: 0.5 } });
+    const after = affordances(exec.state(), "c2")?.actions ?? [];
+    for (const type of ["effect/remove", "effect/toggle", "effect/update", "key/move", "key/remove"])
+      expect(after).toContain(type);
+  });
+
   it("of an element on a locked track: none of the edits that check the lock", () => {
     const exec = fixtureExecutor();
     exec.execute({ type: "track/setFlag", params: { trackId: "main", flag: "locked", value: true } });
