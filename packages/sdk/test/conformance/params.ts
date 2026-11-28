@@ -125,6 +125,21 @@ export function sampleActions({ kind, effects }: SampleOf): Actions {
 
 /** Where an action goes its own way on one kind's sample. */
 const ONLY: Partial<Record<MigratedKind, Actions>> = {
+  gap: {
+    // In a sequence an element moves by what it follows, and its stretch is where its neighbours put it.
+    "clip/move": { input: { type: "clip/move", params: { id, place: { after: "after" } } } },
+    "clip/slide": { input: { type: "clip/slide", params: { id, delta: 0.25 } } },
+    // It stands from 1 s to 2 s.
+    "clip/trim": { input: { type: "clip/trim", params: { id, edge: "out", value: 1.5 } } },
+    "clip/trimToPlayhead": { input: { type: "clip/trimToPlayhead", params: { id, at: 1.5, edge: "out" } } },
+  },
+  transition: {
+    "clip/move": { input: { type: "clip/move", params: { id, place: { after: "after" } } }, refused: "BREAKS_FILE" },
+    // It overlaps the clips by its length, before the cut: from 1.5 s to 2 s.
+    "clip/trimToPlayhead": { input: { type: "clip/trimToPlayhead", params: { id, at: 1.75, edge: "out" } } },
+    "transition/remove": { input: { type: "transition/remove", params: { transitionId: id } } },
+    "transition/update": { input: { type: "transition/update", params: { transitionId: id, duration: 0.25 } } },
+  },
   audio: {
     // A sound's length is its trim: the sample writes `out`, and a `duration` beside it would say it twice.
     "source/setProp": { input: { type: "source/setProp", params: { id, prop: "out", value: 2 } } },

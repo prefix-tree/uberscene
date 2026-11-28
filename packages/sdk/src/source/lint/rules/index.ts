@@ -1,4 +1,4 @@
-import { capabilitiesOf, kindsWithProp, MAIN_TRACK_ID } from "@uberscene/kit/schema";
+import { capabilitiesOf, isEmptyTime, kindsWithProp, MAIN_TRACK_ID } from "@uberscene/kit/schema";
 
 import { lookupAsset } from "../../../manifest/types";
 import type { ElementSite, SourceIndex } from "../../index";
@@ -209,7 +209,7 @@ const sequenceGap: Rule = {
     if (!main) return [];
     const out: Diagnostic[] = [];
     for (const site of index.elements.values()) {
-      if (site.kind !== "gap" || site.parent !== main.id) continue;
+      if (!isEmptyTime(site.kind) || site.parent !== main.id) continue;
       out.push({
         rule: "sequence-gap",
         severity: "warning",

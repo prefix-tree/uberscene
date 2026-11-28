@@ -1,5 +1,6 @@
-import { type Kind, Time } from "@uberscene/kit/schema";
+import { isBetween, isEmptyTime, type Kind, Time } from "@uberscene/kit/schema";
 
+import { gapNode } from "../../elements/gap";
 import type { PatchLog } from "../../patches/types";
 import type { Placement, ResolvedState } from "../../resolve/resolve";
 import { S, startSeconds, T } from "../../time";
@@ -306,25 +307,25 @@ function orderedItems(state: Parameters<typeof rawNode>[0], trackId: string) {
     .map((id) => state.items.get(id))
     .filter(
       (i): i is NonNullable<typeof i> =>
-        Boolean(i) && i!.kind !== "transition" && typeof rawProp(state, i!.id, "anchor") !== "string",
+        Boolean(i) && !isBetween(i!.kind) && typeof rawProp(state, i!.id, "anchor") !== "string",
     )
     .sort((x, y) => x.range.start.compare(y.range.start));
 }
 
 /** The children a sequence orders: timed, not anchored, not a transition, gap or multicam; by resolved start. */
 function sequenced(state: ResolvedState, trackId: string): Placement[] {
-  return orderedItems(state, trackId).filter((i) => i.kind !== "gap" && i.kind !== "multicam");
+  return orderedItems(state, trackId).filter((i) => !isEmptyTime(i.kind) && i.kind !== "multicam");
 }
 
 function gapsOf(state: ResolvedState, trackId: string) {
-  return (rawNode(state, trackId)?.children ?? []).filter((c) => c.kind === "gap");
+  return (rawNode(state, trackId)?.children ?? []).filter((c) => isEmptyTime(c.kind));
 }
 
 function betweenTransitions(state: ResolvedState, trackId: string): Placement[] {
   const track = state.tracks.find((t) => t.id === trackId);
   return (track?.items ?? [])
     .map((id) => state.items.get(id))
-    .filter((p): p is Placement => Boolean(p && p.kind === "transition" && p.between));
+    .filter((p): p is Placement => Boolean(p && isBetween(p.kind) && p.between));
 }
 
 function toFree(log: PatchLog, state: ResolvedState, trackId: string): void {
@@ -364,7 +365,7 @@ function plannedGaps(state: ResolvedState, trackId: string): { spec: NodeSpec; n
     if (hole.isAfter(EPS)) {
       const id = uniqueId(state, `gap-${trackId}-${out.length + 1}`, taken);
       taken.add(id);
-      out.push({ spec: { id, kind: "gap", props: { id, duration: S(hole) } }, nextId: item.id });
+      out.push({ spec: gapNode(id, S(hole)), nextId: item.id });
     }
     cursor = item.range.end;
   }

@@ -7,6 +7,7 @@ import { adjustment } from "./adjustment";
 import { audio } from "./audio";
 import { clip } from "./clip";
 import type { SdkElement } from "./element";
+import { gap } from "./gap";
 import { layer } from "./layer";
 import { nested } from "./nested";
 import { typed } from "./placement";
@@ -14,6 +15,7 @@ import { shape } from "./shape";
 import { sticker } from "./sticker";
 import { svg } from "./svg";
 import { title } from "./title";
+import { transition } from "./transition";
 
 export type { SdkElement } from "./element";
 
@@ -21,6 +23,8 @@ export type { SdkElement } from "./element";
 export const SDK_ELEMENTS: { readonly [K in MigratedKind]: SdkElement<K> } = {
   clip,
   audio,
+  gap,
+  transition,
   title,
   shape,
   svg,
@@ -34,6 +38,16 @@ export const SDK_ELEMENTS: { readonly [K in MigratedKind]: SdkElement<K> } = {
 export function sdkElement(kind: Kind): SdkElement<Kind> | undefined {
   // One type for every kind's part: a caller narrows the placement itself before it hands it to a part.
   return isMigratedKind(kind) ? (SDK_ELEMENTS[kind] as SdkElement<Kind>) : undefined;
+}
+
+/**
+ * `kind`'s parsed props with what its schema leaves to the kind filled in (a built-in transition's params), or the
+ * props as they are.
+ */
+export function completed(kind: Kind, parsed: Record<string, unknown>): Record<string, unknown> {
+  const complete = sdkElement(kind)?.complete;
+  // The props parsed against the kind's own schema, so they are its props.
+  return complete ? (complete(parsed as never) as Record<string, unknown>) : parsed;
 }
 
 /** A placement's size at rest, where its kind's props say one and they parsed: a shape's `width` and `height`. */

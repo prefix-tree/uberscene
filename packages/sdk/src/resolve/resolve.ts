@@ -6,11 +6,11 @@ import {
   capabilitiesOf,
   DERIVED_KINDS,
   type DeclaredFont,
-  defaultTransitionParams,
   effectEntry,
   effectParamProblem,
   type FrameRate,
-  isBuiltInTransition,
+  isBetween,
+  isEmptyTime,
   type Kind,
   keyPathOfProperty,
   MAIN_TRACK_KINDS,
@@ -35,17 +35,16 @@ import {
   TRANSITION_TYPES,
   type TrackLayout,
   type TrackRole,
-  type TransitionType,
   themedRuns,
   VIDEO_EFFECT_TYPES,
 } from "@uberscene/kit/schema";
 
-import { sdkElement } from "../elements";
+import { completed, sdkElement } from "../elements";
 import { placeScene, type SceneUse, sceneAssetId, withSceneAssets } from "../elements/clip/scene";
 import { parseTimeRef, resolveTimeRef } from "../manifest/timeref";
 import { type AssetEntry, type AssetManifest, assetIdOf, lookupAsset } from "../manifest/types";
 import type { PatchLog } from "../patches/types";
-import { T } from "../time";
+import { lengthOr, T } from "../time";
 import { Cache, cachesOff, fresh, shortCuts, uncached } from "./cache";
 import {
   type AssetPlay,
@@ -489,9 +488,6 @@ function eachTrack(root: CollectedNode, visit: (track: CollectedNode) => void): 
     else if (child.kind === "camera") for (const inner of child.children) if (inner.kind === "track") visit(inner);
   }
 }
-
-/** Whether a kind stands between two clips of a sequence (a transition), with no place of its own in the video. */
-const isBetween = (kind: Kind): boolean => capabilitiesOf(kind).sequenceRole === "between";
 
 /** Whether a kind's elements are made by the resolver, or are those: a multicam and its clips, captions and a cue. */
 const makesElements = (kind: Kind): boolean => kind === "multicam" || kind === "captions" || kind === "caption";
@@ -1624,18 +1620,23 @@ let fileShaders: readonly ShaderDefinition[] = [];
  * An effect (built-in or the file's own) or a `<Transition>` the file declares: its params checked and filled by
  * its schema. An unknown type is an error naming the built-in ones; null for a built-in transition or another element.
  */
+/** The shaders a kind's `type` names: an effect's, or those its entry says (a transition's). */
+const shaderKindOf = (kind: Kind): "effect" | "transition" | undefined =>
+  kind === "effect" ? "effect" : sdkElement(kind)?.shader;
+
 function declaredShader(
   node: CollectedNode,
   data: Record<string, unknown>,
   own: ResolveError[],
 ): Record<string, unknown> | null {
-  if (node.kind !== "effect" && node.kind !== "transition") return null;
+  const shader = shaderKindOf(node.kind);
+  if (shader === undefined) return null;
   const type = String(data.type);
-  const builtIn = (node.kind === "effect" ? VIDEO_EFFECT_TYPES : TRANSITION_TYPES) as readonly string[];
+  const builtIn = (shader === "effect" ? VIDEO_EFFECT_TYPES : TRANSITION_TYPES) as readonly string[];
   // Every built-in effect is checked by its registry schema; built-in transitions by TRANSITION_PARAMS, elsewhere.
   const kit = node.kind === "effect" ? effectEntry(type)?.params : undefined;
   if (builtIn.includes(type) && !kit) return null;
-  const params = kit ?? shaderFor(fileShaders, node.kind, type)?.params;
+  const params = kit ?? shaderFor(fileShaders, shader, type)?.params;
   if (!params) {
     const moved = node.kind === "effect" && (type === "temperature" || type === "tint");
     own.push({
@@ -1655,7 +1656,7 @@ function declaredShader(
     const renamed =
       issue.code === "unrecognized_keys" && issue.path.length === 0
         ? issue.keys.flatMap((k) => {
-            const now = renamedParam(type, k, node.kind === "transition" ? "transition" : "effect");
+            const now = renamedParam(type, k, shader);
             return now === undefined ? [] : [`param \`${k}\` of "${type}" is now \`${now}\``];
           })
         : [];
@@ -1751,15 +1752,8 @@ function parseProps(node: CollectedNode, errors: ResolveError[], theme: Resolved
       data = result.data as Record<string, unknown>;
       const declared = declaredShader(node, data, own);
       if (declared) data = declared;
-      // A built-in transition's params are validated per type but not filled by its schema; fill them here.
-      else if (node.kind === "transition" && isBuiltInTransition(String(data.type)))
-        data = {
-          ...data,
-          params: {
-            ...defaultTransitionParams(data.type as TransitionType),
-            ...(data.params as Record<string, unknown>),
-          },
-        };
+      // What the schema leaves to the kind: a built-in transition's params.
+      else data = completed(node.kind, data);
     } else {
       // A value the schema refuses is reported and then left out, so the element is placed as if it was not written:
       // a speed of 0 or a negative duration must not reach the arithmetic and place something for ever, or backwards.
@@ -2024,11 +2018,8 @@ function intrinsicCompute(
       if (props.cutout !== undefined && props.cutout !== false)
         own.push(...cutoutErrors(node.id, asset, manifest, scene));
     }
-  } else if (node.kind === "transition") {
-    p.duration = T(lengthOr(props.duration, 0.5));
-  } else if (node.kind === "gap") {
-    // A gap whose duration the schema refused holds no time.
-    p.duration = T(lengthOr(props.duration, 0));
+  } else if (sdkElement(node.kind)?.timing) {
+    p.duration = sdkElement(node.kind)!.timing!(props);
   } else if (node.kind === "caption") {
     // Timed in the captions pass, once the clips that play the asset are placed.
   } else if (node.kind === "captions") {
@@ -2186,11 +2177,6 @@ function textureErrors(effects: readonly Placement[], manifest: AssetManifest): 
 }
 
 /** The seconds a time reference resolved to, or `fallback` with its error recorded. */
-/** A length in seconds as written, or `fallback` for one that is missing or is not a finite, non-negative number. */
-function lengthOr(value: unknown, fallback: number): number {
-  return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : fallback;
-}
-
 function secondsOr(p: Pending, resolved: ReturnType<typeof resolveTimeRef>, fallback: number): number {
   if (typeof resolved === "number") return resolved;
   p.errors.push(resolved);
@@ -2384,7 +2370,7 @@ class TrackPlacer {
       p.duration = Time.ZERO;
       p.durationDep = undefined;
     }
-    if (this.pendingTransition && child.kind === "gap") {
+    if (this.pendingTransition && isEmptyTime(child.kind)) {
       this.pendingTransition.errors.push({
         code: "NOT_ADJACENT",
         id: this.pendingTransition.node.id,
@@ -2445,7 +2431,7 @@ class TrackPlacer {
       p.duration = Time.ZERO;
       p.durationDep = undefined;
     }
-    this.prevClip = child.kind === "gap" ? null : p;
+    this.prevClip = isEmptyTime(child.kind) ? null : p;
   }
 
   finish(): void {

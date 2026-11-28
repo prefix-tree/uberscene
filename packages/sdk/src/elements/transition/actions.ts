@@ -1,3 +1,4 @@
+// The actions that are a transition's alone: adding one between two clips or at an edge, and setting its type.
 import {
   defaultTransitionParams,
   isBuiltInTransition,
@@ -7,10 +8,7 @@ import {
   TRANSITION_TYPES,
 } from "@uberscene/kit/schema";
 
-import type { Json } from "../../patches/types";
-import type { ResolvedState } from "../../resolve/resolve";
-import { T } from "../../time";
-import { carry, carryTransitionRemoval } from "../carry";
+import { carry, carryTransitionRemoval } from "../../actions/carry";
 import {
   define,
   insertNode,
@@ -22,8 +20,11 @@ import {
   requireUnlocked,
   setProps,
   siblingAfter,
-} from "../handler-kit";
-import { type ActionError, invalid, nodeSpecOf, ok } from "../types";
+} from "../../actions/handler-kit";
+import { type ActionError, invalid, nodeSpecOf, ok } from "../../actions/types";
+import type { Json } from "../../patches/types";
+import type { ResolvedState } from "../../resolve/resolve";
+import { T } from "../../time";
 
 function requireTransition(state: ResolvedState, id: string): ActionError | null {
   const node = rawNode(state, id);

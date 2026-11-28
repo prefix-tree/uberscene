@@ -15,7 +15,15 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { type KeyPath, KIT_ELEMENTS, keyPathsOf, SCHEMAS_BY_KIND } from "@uberscene/kit/schema";
-import { type ActionInput, affordances, foldToSource, lint, type ResolvedState, timelineRows } from "@uberscene/sdk";
+import {
+  type ActionInput,
+  type ActionType,
+  affordances,
+  foldToSource,
+  lint,
+  type ResolvedState,
+  timelineRows,
+} from "@uberscene/sdk";
 
 import { executorFor, resolveText } from "../editing/corpus";
 import { serialize } from "../helpers";
@@ -43,6 +51,18 @@ function expectWrittenBack(file: File, exec: ReturnType<typeof executorFor>): vo
   const reloaded = resolveText(folded.text, file.manifest, file.files);
   expect(errorsOf(reloaded)).toEqual(errorsOf(exec.state()));
   expect(serialize(reloaded)).toEqual(serialize(exec.state()));
+}
+
+/** The actions the sample is offered, as it stands or once an action's setup has run. */
+function offeredTo(file: File, start: ResolvedState, actions: ReturnType<typeof sampleActions>): ActionType[] {
+  const now = new Set(affordances(start, SAMPLE)?.actions ?? []);
+  const after = Object.entries(actions).flatMap(([type, sample]) => {
+    if (now.has(type as ActionType) || !sample?.setup) return [];
+    const exec = executorFor(file);
+    for (const edit of sample.setup) exec.execute(edit);
+    return (affordances(exec.state(), SAMPLE)?.actions ?? []).includes(type as ActionType) ? [type as ActionType] : [];
+  });
+  return [...now, ...after];
 }
 
 /** Two keys a path takes: the first of these values its own check accepts, and a number where it has no check. */
@@ -107,14 +127,18 @@ describe.each(SAMPLE_KINDS.map((kind) => [kind, sampleFile(kind)] as const))("a 
 
   it("has a row for the tools", () => {
     const row = timelineRows(start).elements.find((element) => element.id === SAMPLE);
-    expect(row).toMatchObject({ id: SAMPLE, kind, track: "samples", start: 0 });
+    expect(row).toMatchObject({ id: SAMPLE, kind, track: "samples" });
+    // On a free track the sample starts where it says; in a sequence, where its neighbours put it.
+    if (KIT_ELEMENTS[kind].sampleTrack !== "sequence") expect(row?.start).toBe(0);
     // What its placement holds from the file is in the row: a kind of words shows them.
     const text = start.items.get(SAMPLE)?.text;
     if (text !== undefined) expect(row?.text).toBe(text);
   });
 
-  const offered = affordances(start, SAMPLE)?.actions ?? [];
   const actions = sampleActions({ kind, effects: effectsOf(start) });
+  // What it is offered as it stands, and once each action's setup has made something for it to work on (a key to
+  // move, a second effect to reorder).
+  const offered = offeredTo(file, start, actions);
 
   it("is offered actions", () => {
     expect(offered.length).toBeGreaterThan(0);
@@ -158,8 +182,9 @@ describe("the sample actions", () => {
     const left = SAMPLE_KINDS.flatMap((kind) => {
       const file = sampleFile(kind);
       const state = resolveText(file.text, file.manifest, file.files);
-      const offered = new Set<string>(affordances(state, SAMPLE)?.actions ?? []);
-      return Object.keys(sampleActions({ kind, effects: effectsOf(state) })).filter((type) => !offered.has(type));
+      const actions = sampleActions({ kind, effects: effectsOf(state) });
+      const offered = new Set<string>(offeredTo(file, state, actions));
+      return Object.keys(actions).filter((type) => !offered.has(type));
     });
     // Params written for an action no kind is offered any more.
     const everywhere = [...new Set(left)].filter(

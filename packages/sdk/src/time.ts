@@ -39,3 +39,8 @@ export const endSeconds = (p: Ranged): number => p.range.end.toSeconds();
 
 /** Seconds from a placement's start to `t` (seconds), worked out exactly: what a key's or a freeze's `at` measures. */
 export const secondsSinceStart = (p: Ranged, t: number): number => T(t).minus(p.range.start).toSeconds();
+
+/** A length in seconds as written, or `fallback` for one that is missing or is not a finite, non-negative number. */
+export function lengthOr(value: unknown, fallback: number): number {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : fallback;
+}

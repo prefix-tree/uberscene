@@ -4,6 +4,7 @@ import {
   type CurveKey,
   capabilitiesOf,
   curveAt,
+  isEmptyTime,
   isSequenceItem,
   keyPathOf,
   Time,
@@ -637,6 +638,12 @@ function laterOnTrack(state: ResolvedState, item: ResolvedPlacement): ResolvedPl
     );
 }
 
+/** Whether the node with this id holds empty time in its sequence: a gap. */
+function isEmptyTimeNode(state: Parameters<typeof rawNode>[0], id: string): boolean {
+  const node = rawNode(state, id);
+  return node !== undefined && isEmptyTime(node.kind);
+}
+
 /** Free layout: shift this element and every later one left until it meets the previous element. Sequence: remove the Gap before it. */
 define({
   type: "clip/closeGapBefore",
@@ -646,7 +653,7 @@ define({
       if (layout === "anchored") return false;
       if (layout !== "sequence") return true;
       const before = siblingBefore(state, item.id);
-      return before !== null && rawNode(state, before)?.kind === "gap";
+      return before !== null && isEmptyTimeNode(state, before);
     },
   }),
   validate: (a, state) => {
@@ -658,7 +665,7 @@ define({
       return invalid({ code: "UNSUPPORTED_ON_LAYOUT", message: "anchored elements have no gap" });
     if (layout === "sequence") {
       const before = siblingBefore(state, item.id);
-      return before && rawNode(state, before)?.kind === "gap"
+      return before && isEmptyTimeNode(state, before)
         ? ok
         : invalid({ code: "INVALID_PARAMS", message: "no gap before this element" });
     }

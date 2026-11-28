@@ -2,7 +2,7 @@ import traverseModule from "@babel/traverse";
 import * as t from "@babel/types";
 
 import type { TextRun } from "@uberscene/kit/schema";
-import { capabilitiesOf, ELEMENTS, findFont, type Kind, MAIN_TRACK_ID } from "@uberscene/kit/schema";
+import { capabilitiesOf, ELEMENTS, findFont, isBetween, type Kind, MAIN_TRACK_ID } from "@uberscene/kit/schema";
 
 import { type NodeSpec, nodeSpecOf } from "../actions/types";
 import type { Json, NetPatch, PatchLog } from "../patches/types";
@@ -126,7 +126,8 @@ export function fold(
       }) as Json;
     if (typeof value !== "string") return value;
     if (prop === "font") return fontValue(value);
-    const key = prop === "type" && (kind === "effect" || kind === "transition") ? `${kind}:${value}` : null;
+    const shader = kind === "effect" ? "effect" : isBetween(kind) ? "transition" : null;
+    const key = prop === "type" && shader !== null ? `${shader}:${value}` : null;
     const ident = key ? idents.get(key) : undefined;
     return ident ? (new Identifier(ident) as unknown as Json) : value;
   };

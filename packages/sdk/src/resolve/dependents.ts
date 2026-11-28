@@ -1,3 +1,5 @@
+import { isBetween } from "@uberscene/kit/schema";
+
 import { nodeIn } from "./overlay";
 import { REF_KINDS, type RefDependent } from "./refs";
 import type { ResolvedState } from "./resolve";
@@ -30,9 +32,9 @@ export function dependentsOf(state: ResolvedState, id: string): Dependent[] {
     const at = siblings.findIndex((c) => c.id === id);
     const before = siblings[at - 1];
     const after = siblings[at + 1];
-    if (before?.kind === "transition" && typeof before.props.on !== "string")
+    if (before && isBetween(before.kind) && typeof before.props.on !== "string")
       out.push({ kind: "beside", id: before.id, side: "before" });
-    if (after?.kind === "transition" && typeof after.props.on !== "string")
+    if (after && isBetween(after.kind) && typeof after.props.on !== "string")
       out.push({ kind: "beside", id: after.id, side: "after" });
   }
   return out;
