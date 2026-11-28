@@ -205,22 +205,22 @@ export const KIT_ELEMENTS = {
 };
 
 /**
- * The kinds that have a folder of their own in each package (`elements/<kind>/`): the keys of `KIT_ELEMENTS`. Each
- * package's `elements/index.ts` holds one entry per kind here, so a kind added to the kit's registry does not compile
- * until every package has its part. The other kinds are still described by the tables (`jsx/capabilities.ts` and each
- * package's own).
+ * The kinds a file writes, each with a folder of its own in each package (`elements/<kind>/`): the keys of
+ * `KIT_ELEMENTS`. Each package's `elements/index.ts` holds one entry per kind here, so a kind added to the kit's
+ * registry does not compile until every package has its part. The kinds held inside an element (a mask, an effect, a
+ * key) have no folder: their rows are in `elements/derived.ts`.
  */
 export type MigratedKind = keyof typeof KIT_ELEMENTS;
 
 /** The plane a kind is drawn on, as a type: what the player's entry for it must hold. */
 export type PlaneOf<K extends MigratedKind> = (typeof KIT_ELEMENTS)[K]["traits"]["plane"];
 
-/** Whether `kind` has a folder of its own in each package. */
+/** Whether `kind` has a folder of its own in each package: every kind a file writes, but those held inside an element. */
 export function isMigratedKind(kind: string): kind is MigratedKind {
   return Object.hasOwn(KIT_ELEMENTS, kind);
 }
 
-/** The kit's part of `kind`, or undefined for a kind that has no folder of its own yet. */
+/** The kit's part of `kind`, or undefined for a kind held inside an element, which has no folder. */
 export function kitElement(kind: Kind): KitElement<Kind> | undefined {
   return isMigratedKind(kind) ? KIT_ELEMENTS[kind] : undefined;
 }

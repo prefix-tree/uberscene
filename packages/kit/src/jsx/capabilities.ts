@@ -1,33 +1,15 @@
 // What each element kind is: the one table the packages ask, in place of lists of kinds of their own. A kind writes a
-// row of traits (`KindTraits`): a kind with a folder of its own (`elements/<kind>/`) writes it there, the others here.
+// row of traits (`KindTraits`) in its folder (`elements/<kind>/`), or, held inside an element, in `elements/derived.ts`.
 // What its schema already says is read from the schema and never written beside it: what takes a `transform`, what
 // sounds, what trims a source, and the paths keys may sit at.
 import type { z } from "zod";
 
 import type { CurveBlend } from "../easing";
-import { isMigratedKind, KIT_ELEMENTS, type Kind, type MigratedKind } from "../elements";
-import { NO_TRAITS, traits } from "../elements/traits";
+import { isMigratedKind, KIT_ELEMENTS, type Kind } from "../elements";
+import { HELD_ELEMENTS } from "../elements/derived";
+import { NO_TRAITS } from "../elements/traits";
 import type { ElementCapabilities, KindTraits } from "./define";
 import { AUDIO_KEY_PATHS, CAMERA_KEY_PATHS, type KeyPath, keyPathsIn, PLACED_KEY_PATHS } from "./key-paths";
-
-/** What an element holds as items of its own: a mask, and what the resolver makes of its props. None is placed. */
-type HeldKind = "mask" | "effect" | "keyframe" | "generator" | "speedKey" | "freeze";
-
-/** The row of each kind that has no folder of its own yet. */
-const ROWS: { readonly [K in Exclude<Kind, MigratedKind>]: KindTraits } = {
-  mask: traits({ placementScope: "child" }),
-  effect: traits({ childKinds: ["keyframe"], placementScope: "child" }),
-  keyframe: traits({ placementScope: "child" }),
-  generator: traits({ placementScope: "child" }),
-  speedKey: traits({ placementScope: "child" }),
-  freeze: traits({ placementScope: "child" }),
-};
-
-/**
- * The schema of each kind that has no folder of its own yet. What an element holds as items (`HeldKind`) has none
- * here: none takes a transform, sounds or holds keys, and the keys' own schema asks this table what a key may name.
- */
-const SCHEMAS: { readonly [K in Exclude<Kind, MigratedKind | HeldKind>]: z.ZodType } = {};
 
 /** The vocabulary's order. A kind with a folder of its own that is not named here comes after, in its registry's order. */
 const ORDER: readonly Kind[] = [
@@ -65,9 +47,10 @@ export const KINDS: readonly Kind[] = [
   ...(Object.keys(KIT_ELEMENTS) as Kind[]).filter((kind) => !ORDER.includes(kind)),
 ];
 
-const rowOf = (kind: Kind): KindTraits => (isMigratedKind(kind) ? KIT_ELEMENTS[kind].traits : ROWS[kind]);
-const schemaOf = (kind: Kind): z.ZodType | undefined =>
-  isMigratedKind(kind) ? KIT_ELEMENTS[kind].schema : (SCHEMAS as Partial<Record<Kind, z.ZodType>>)[kind];
+const rowOf = (kind: Kind): KindTraits =>
+  isMigratedKind(kind) ? KIT_ELEMENTS[kind].traits : HELD_ELEMENTS[kind].traits;
+/** A held kind's schema is not read here: none takes a transform, sounds or holds keys. */
+const schemaOf = (kind: Kind): z.ZodType | undefined => (isMigratedKind(kind) ? KIT_ELEMENTS[kind].schema : undefined);
 
 /** A kind's whole entry: its row, and what its schema says. */
 function entryOf(kind: Kind): ElementCapabilities {
