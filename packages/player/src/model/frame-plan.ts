@@ -11,7 +11,6 @@ import type { DrawRect, Matrix2D } from "./transform";
 import { visiblePlacements } from "./visible";
 
 export { blendOf } from "./blend";
-export { matteOf } from "./canvas-ops";
 
 export interface MaskSpec {
   readonly shape?: Record<string, unknown> | undefined;

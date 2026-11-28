@@ -1,7 +1,7 @@
-import { endSeconds, lookupAsset, type Placement, type ResolvedState, startSeconds } from "@uberscene/sdk/resolver";
+import { endSeconds, type Placement, type ResolvedState, startSeconds } from "@uberscene/sdk/resolver";
 
 import { MOUNT_AHEAD_S, UNMOUNT_BEHIND_S } from "../constants";
-import { matteOf } from "../model/frame-plan";
+import { decodedOf } from "../elements";
 import { trackItems } from "../model/visible";
 import type { AssetSources } from "./asset-sources";
 import { ClipDecoder } from "./clip-decoder";
@@ -30,14 +30,13 @@ export class DecoderPool {
     for (const track of state.tracks) {
       if (track.hidden) continue;
       for (const p of trackItems(state, track)) {
-        if (p.kind !== "clip" || !p.source) continue;
-        const asset = lookupAsset(state.manifest, p.source.asset);
-        if (!asset) continue;
+        const decoded = decodedOf(state, p);
+        if (!decoded) continue;
         if (t < startSeconds(p) - MOUNT_AHEAD_S || t >= endSeconds(p) + UNMOUNT_BEHIND_S) continue;
         want.set(p.id, {
           p,
           children: p.children.map((id) => state.items.get(id)).filter((c): c is Placement => c !== undefined),
-          matte: matteOf(state, p, asset)?.asset ?? null,
+          matte: decoded.matte,
         });
       }
     }

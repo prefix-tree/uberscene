@@ -5,20 +5,26 @@ import { type Placement, placed, type ResolvedState } from "@uberscene/sdk/resol
 
 import type { IntrinsicSize } from "../overlays/size";
 import { adjustment } from "./adjustment";
-import type { PlayerElement } from "./element";
+import { audio } from "./audio";
+import { clip } from "./clip";
+import type { Decoded, PlayerElement, SoundInput } from "./element";
 import { layer } from "./layer";
+import { nested } from "./nested";
 import { shape } from "./shape";
 import { sticker } from "./sticker";
 import { svg } from "./svg";
 import { title } from "./title";
 
 export const PLAYER_ELEMENTS: { readonly [K in MigratedKind]: PlayerElement<K> } = {
+  clip,
+  audio,
   title,
   shape,
   svg,
   sticker,
   layer,
   adjustment,
+  nested,
 };
 
 function sizeAs<K extends MigratedKind>(
@@ -46,4 +52,37 @@ export function elementSize(
   loaded?: string,
 ): IntrinsicSize | undefined {
   return isMigratedKind(p.kind) ? sizeAs(p.kind, state, p, children, rel, loaded) : undefined;
+}
+
+function decodedAs<K extends MigratedKind>(kind: K, state: ResolvedState, p: Placement): Decoded | null {
+  const placement = placed(p, kind);
+  return (placement && PLAYER_ELEMENTS[kind].decodes?.(state, placement)) ?? null;
+}
+
+/** What `p` is decoded from to be painted, or null for a kind that paints no decoded video, or one that did not parse. */
+export function decodedOf(state: ResolvedState, p: Placement): Decoded | null {
+  return isMigratedKind(p.kind) ? decodedAs(p.kind, state, p) : null;
+}
+
+/** How a placement is heard, for a kind that is not heard by playing its own asset. */
+export interface ElementSound {
+  readonly occurrences: (
+    input: Omit<SoundInput<MigratedKind>, "placement">,
+  ) => ReturnType<NonNullable<PlayerElement<MigratedKind>["sound"]>["occurrences"]>;
+  readonly heard: (state: ResolvedState) => boolean;
+}
+
+function soundAs<K extends MigratedKind>(kind: K, p: Placement): ElementSound | undefined {
+  const sound = PLAYER_ELEMENTS[kind].sound;
+  const placement = placed(p, kind);
+  if (!sound || !placement) return undefined;
+  return {
+    occurrences: (input) => sound.occurrences({ ...input, placement }),
+    heard: (state) => sound.heard(state, placement),
+  };
+}
+
+/** How `p` is heard, where its kind says so; undefined where it plays its own asset. */
+export function elementSound(p: Placement): ElementSound | undefined {
+  return isMigratedKind(p.kind) ? soundAs(p.kind, p) : undefined;
 }
