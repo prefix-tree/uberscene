@@ -414,6 +414,8 @@ describe("cached and from nothing: edits through the executor on the large proje
       const state = exec.state();
       const clips = [...state.items.values()].filter((p) => p.kind === "clip" && p.source);
       const titles = [...state.items.values()].filter((p) => p.kind === "title");
+      // A long row may remove every title or every clip: there is nothing left for these edits to be about.
+      if (clips.length === 0 || titles.length === 0) break;
       const clip = pick(next, clips);
       const title = pick(next, titles);
       const roll = next();
