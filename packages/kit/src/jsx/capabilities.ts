@@ -9,9 +9,7 @@ import { isMigratedKind, KIT_ELEMENTS, type Kind, type MigratedKind } from "../e
 import { NO_TRAITS, traits } from "../elements/traits";
 import type { ElementCapabilities, KindTraits } from "./define";
 import { AUDIO_KEY_PATHS, CAMERA_KEY_PATHS, type KeyPath, keyPathsIn, PLACED_KEY_PATHS } from "./key-paths";
-import { captionSchema, captionsSchema } from "./schemas/captions";
 import { cameraSchema, compositionSchema, markerSchema, trackSchema } from "./schemas/composition";
-import { angleSchema, cutSchema, multicamSchema } from "./schemas/multicam";
 
 /** What an element holds as items of its own: a mask, and what the resolver makes of its props. None is placed. */
 type HeldKind = "mask" | "effect" | "keyframe" | "generator" | "speedKey" | "freeze";
@@ -43,26 +41,8 @@ const ROWS: { readonly [K in Exclude<Kind, MigratedKind>]: KindTraits } = {
       "multicam",
     ],
   }),
-  captions: traits({
-    visual: true,
-    childKinds: ["caption"],
-    placementScope: "composition",
-    plane: "dom",
-    spansVideo: true,
-    themeStyle: "look",
-  }),
-  caption: traits({ timed: true, visual: true, placementScope: "child" }),
   marker: traits({ placementScope: "composition" }),
   mask: traits({ placementScope: "child" }),
-  multicam: traits({
-    childKinds: ["angle", "cut"],
-    placementScope: "track",
-    sequenceRole: "item",
-    footage: true,
-    freeCode: true,
-  }),
-  angle: traits({ placementScope: "child" }),
-  cut: traits({ placementScope: "child" }),
   effect: traits({ childKinds: ["keyframe"], placementScope: "child" }),
   keyframe: traits({ placementScope: "child" }),
   generator: traits({ placementScope: "child" }),
@@ -78,12 +58,7 @@ const SCHEMAS: { readonly [K in Exclude<Kind, MigratedKind | HeldKind>]: z.ZodTy
   composition: compositionSchema,
   camera: cameraSchema,
   track: trackSchema,
-  captions: captionsSchema,
-  caption: captionSchema,
   marker: markerSchema,
-  multicam: multicamSchema,
-  angle: angleSchema,
-  cut: cutSchema,
 };
 
 /** The vocabulary's order. A kind with a folder of its own that is not named here comes after, in its registry's order. */

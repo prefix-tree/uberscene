@@ -4,7 +4,6 @@
 // parsing, so a parsed prop holds the constant), so declarations name them instead of printing them.
 import type { z } from "zod";
 
-import type { captionSchema, captionsSchema } from "../jsx/schemas/captions";
 import type {
   effectSchema,
   freezeSchema,
@@ -14,11 +13,12 @@ import type {
   speedKeySchema,
 } from "../jsx/schemas/children";
 import type { cameraSchema, compositionSchema, markerSchema, trackSchema } from "../jsx/schemas/composition";
-import type { angleSchema, cutSchema, multicamSchema } from "../jsx/schemas/multicam";
 import { adjustment } from "./adjustment";
 import type { adjustmentSchema } from "./adjustment/schema";
 import { audio } from "./audio";
 import type { audioSchema } from "./audio/schema";
+import { caption, captions } from "./captions";
+import type { captionSchema, captionsSchema } from "./captions/schema";
 import { clip } from "./clip";
 import type { clipSchema } from "./clip/schema";
 import type { KitElement } from "./element";
@@ -26,6 +26,8 @@ import { gap } from "./gap";
 import type { gapSchema } from "./gap/schema";
 import { layer } from "./layer";
 import type { layerSchema, motionSchema, threeSchema } from "./layer/schema";
+import { angle, cut, multicam } from "./multicam";
+import type { angleSchema, cutSchema, multicamSchema } from "./multicam/schema";
 import { nested } from "./nested";
 import type { nestedSchema } from "./nested/schema";
 import { shape } from "./shape";
@@ -41,10 +43,12 @@ import type { transitionSchema } from "./transition/schema";
 
 export type { AdjustmentElement } from "./adjustment";
 export type { AudioElement } from "./audio";
+export type { CaptionElement, CaptionsElement } from "./captions";
 export type { ClipElement } from "./clip";
 export type { ElementGroup, KitElement } from "./element";
 export type { GapElement } from "./gap";
 export type { LayerElement } from "./layer";
+export type { AngleElement, CutElement, MulticamElement } from "./multicam";
 export type { NestedElement } from "./nested";
 export type { ShapeElement } from "./shape";
 export type * from "./shared";
@@ -173,8 +177,13 @@ export const KIT_ELEMENTS = {
   shape,
   svg,
   sticker,
+  captions,
+  caption,
   adjustment,
   nested,
+  multicam,
+  angle,
+  cut,
   layer,
 } satisfies {
   readonly [K in Kind]?: KitElement<K>;

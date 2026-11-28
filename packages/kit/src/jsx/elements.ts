@@ -4,14 +4,19 @@ import type { z } from "zod";
 import type { EffectParams, TransitionParams } from "../effects/registry";
 import {
   type AdjustmentElement,
+  type AngleElement,
   type AudioElement,
+  type CaptionElement,
+  type CaptionsElement,
   type ClipElement,
+  type CutElement,
   type GapElement,
   KIT_ELEMENTS,
   type Kind,
   type KindWith,
   kitElement,
   type LayerElement,
+  type MulticamElement,
   type NestedElement,
   type ShapeElement,
   type StickerElement,
@@ -23,7 +28,6 @@ import { motionSchema, threeSchema } from "../elements/layer/schema";
 import { capabilitiesOf } from "./capabilities";
 import { defineElement, type VocabularyComponent, type VocabularyMeta, type VocabularyProps } from "./define";
 import type { Easing, TransitionType, VideoEffectType } from "./enums";
-import { captionSchema, captionsSchema } from "./schemas/captions";
 import {
   effectSchema,
   freezeSchema,
@@ -34,7 +38,6 @@ import {
 } from "./schemas/children";
 import type { Link } from "./schemas/common";
 import { cameraSchema, compositionSchema, markerSchema, trackSchema } from "./schemas/composition";
-import { angleSchema, cutSchema, multicamSchema } from "./schemas/multicam";
 import type { EffectRef, TransitionRef } from "./shaders";
 
 const el = <K extends Kind, S extends Parameters<typeof defineElement>[0]["schema"]>(kind: K, schema: S) =>
@@ -86,17 +89,22 @@ const svgTag: TagOf<SvgElement> = tag(KIT_ELEMENTS.svg);
 export const Svg = svgTag as unknown as WithEffects<TagOf<SvgElement>>;
 const stickerTag: TagOf<StickerElement> = tag(KIT_ELEMENTS.sticker);
 export const Sticker = stickerTag as unknown as WithEffects<TagOf<StickerElement>>;
-export const Captions = el("captions", captionsSchema);
-export const Caption = el("caption", captionSchema);
+const captionsTag: TagOf<CaptionsElement> = tag(KIT_ELEMENTS.captions);
+export const Captions = captionsTag;
+const captionTag: TagOf<CaptionElement> = tag(KIT_ELEMENTS.caption);
+export const Caption = captionTag;
 export const Marker = el("marker", markerSchema);
 const adjustmentTag: TagOf<AdjustmentElement> = tag(KIT_ELEMENTS.adjustment);
 export const Adjustment = adjustmentTag as unknown as WithEffects<TagOf<AdjustmentElement>>;
 export const Mask = el("mask", maskSchema);
 const nestedTag: TagOf<NestedElement> = tag(KIT_ELEMENTS.nested);
 export const Nested = nestedTag as unknown as WithEffects<TagOf<NestedElement>>;
-export const Multicam = el("multicam", multicamSchema);
-export const Angle = el("angle", angleSchema);
-export const Cut = el("cut", cutSchema);
+const multicamTag: TagOf<MulticamElement> = tag(KIT_ELEMENTS.multicam);
+export const Multicam = multicamTag;
+const angleTag: TagOf<AngleElement> = tag(KIT_ELEMENTS.angle);
+export const Angle = angleTag;
+const cutTag: TagOf<CutElement> = tag(KIT_ELEMENTS.cut);
+export const Cut = cutTag;
 const layerTag: TagOf<LayerElement> = tag(KIT_ELEMENTS.layer);
 export const Layer = layerTag as unknown as WithEffects<TagOf<LayerElement>>;
 /** A Layer a library draws: a `layer` component with the engine's own props, and the engine's name. */

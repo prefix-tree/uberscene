@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { zCaptionAnimation } from "../enums";
+import { zCaptionAnimation } from "../../jsx/enums";
 import {
   assetRefSchema,
   colorSchema,
@@ -9,8 +9,8 @@ import {
   idSchema,
   textShadowSchema,
   timeRefSchema,
-} from "./common";
-import { zTextAlign } from "./enums-local";
+} from "../../jsx/schemas/common";
+import { zTextAlign } from "../../jsx/schemas/enums-local";
 
 const captionStyleSchema = z.strictObject({
   /** A theme captions preset this style starts from; the fields written beside it win. */

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { assetRefSchema, colorSchema, idSchema } from "./common";
+import { assetRefSchema, colorSchema, idSchema } from "../../jsx/schemas/common";
 
 export const multicamSchema = z.strictObject({
   /** The group's name. */

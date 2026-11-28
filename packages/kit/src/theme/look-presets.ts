@@ -1,8 +1,8 @@
 // Title and captions presets are a look: each field is one of the element's `style` fields. Kept out of the theme's
 // public exports; the theme schema reports the other fields and `resolveTheme` leaves them out.
 
+import { CAPTIONS_LOOK_KEYS, captionsSchema } from "../elements/captions/schema";
 import { TITLE_LOOK_KEYS, titleSchema } from "../elements/title/schema";
-import { CAPTIONS_LOOK_KEYS, captionsSchema } from "../jsx/schemas/captions";
 
 /** Kinds whose presets are a look: each field is one of the element's `style` fields. */
 const LOOK_PRESETS: Readonly<Record<string, { keys: readonly string[]; props: readonly string[]; plural: string }>> = {
