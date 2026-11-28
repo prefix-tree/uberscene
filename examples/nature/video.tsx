@@ -107,7 +107,7 @@ export default function Video() {
                 { at: 0, value: -H / 2, easing: "easeOutCubic" },
                 { at: 0.25, value: H / 2 },
               ],
-              width: STRIP_W - 4,
+              width: STRIP_W + 1,
               height: H,
               origin: "center",
             }}
@@ -124,7 +124,7 @@ export default function Video() {
               duration={beats * BEAT}
               volume={0}
               fit="cover"
-              box={{ x: STRIP_W * i + STRIP_W / 2, y: H / 2, width: STRIP_W - 4, height: H, origin: "center" }}
+              box={{ x: STRIP_W * i + STRIP_W / 2, y: H / 2, width: STRIP_W + 1, height: H, origin: "center" }}
             />
           ))}
         </Track>
