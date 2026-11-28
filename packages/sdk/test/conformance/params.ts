@@ -67,12 +67,7 @@ export function sampleActions({ kind, effects }: SampleOf): Actions {
     },
     "clip/move": { input: { type: "clip/move", params: { id, place: { start: 1 } } } },
     "clip/rippleDelete": { input: { type: "clip/rippleDelete", params: { id } } },
-    // An anchored element takes an offset in place of a start, and the action leaves the sample's `start` written, so
-    // it is refused: an element takes an anchor where it has no start to begin with.
-    "clip/setAnchor": {
-      input: { type: "clip/setAnchor", params: { id, anchor: PEER, offset: 0.5 } },
-      refused: "BREAKS_FILE",
-    },
+    "clip/setAnchor": { input: { type: "clip/setAnchor", params: { id, anchor: PEER, offset: 0.5 } } },
     "clip/setSource": { input: { type: "clip/setSource", params: { id, src: "asset:other" } } },
     "clip/setBlend": { input: { type: "clip/setBlend", params: { id, mode: "screen" } } },
     "clip/split": { input: { type: "clip/split", params: { id, at: 1, newId: `${id}_b` } } },

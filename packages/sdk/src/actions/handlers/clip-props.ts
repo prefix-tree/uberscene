@@ -1,7 +1,8 @@
 import { kindsWhere, kindTakes } from "@uberscene/kit/schema";
 
 import type { Json } from "../../patches/types";
-import { define, makePropHandler, rawProp } from "../handler-kit";
+import { startSeconds } from "../../time";
+import { define, makePropHandler, placementProps, rawProp } from "../handler-kit";
 import { invalid, ok } from "../types";
 
 // Each action here writes a prop, and applies to the kinds whose schema has it (`props`): the schema says which
@@ -56,12 +57,21 @@ define(makePropHandler({
 }));
 define(makePropHandler({
   type: "clip/setAnchor",
-  // A word `at` names belongs to the anchor's footage: anchoring elsewhere drops it.
-  write: (p, state) => ({
-    anchor: p.anchor,
-    offset: p.anchor === undefined ? undefined : (p.offset ?? 0),
-    ...(p.anchor !== rawProp(state, p.id, "anchor") ? { at: undefined } : {}),
-  }),
+  // Only kinds whose schema has an anchor; an anchored element takes an offset in place of its start, so anchoring
+  // drops the written start, and taking the anchor off writes back the start it stood at (on a free track, which
+  // needs one). A word `at` names belongs to the anchor's footage: anchoring elsewhere drops it.
+  props: ["anchor"],
+  write: (p, state) => {
+    if (p.anchor === undefined) {
+      const item = state.items.get(p.id);
+      const free = item !== undefined && state.tracks.find((t) => t.id === item.track)?.layout === "free";
+      return placementProps(free ? { start: startSeconds(item) } : { after: null });
+    }
+    return {
+      ...placementProps({ anchor: p.anchor, offset: p.offset ?? 0 }),
+      ...(p.anchor !== rawProp(state, p.id, "anchor") ? { at: undefined } : {}),
+    };
+  },
   validate: (a, state) =>
     a.params.anchor === undefined || a.params.anchor === "start" || state.items.has(a.params.anchor)
       ? ok
