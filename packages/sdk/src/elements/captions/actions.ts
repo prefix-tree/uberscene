@@ -1,5 +1,3 @@
-import type { Json, PatchLog } from "../../patches/types";
-import type { ResolvedState } from "../../resolve/resolve";
 import {
   define,
   insertNode,
@@ -10,9 +8,11 @@ import {
   setProps,
   siblingAfter,
   validateTarget,
-} from "../handler-kit";
-import { type ActionError, type ActionInput, invalid, nodeOfSpec, nodeSpecOf, ok } from "../types";
-import { childrenOfKind, replaceAll, stackPosition } from "./stack";
+} from "../../actions/handler-kit";
+import { childrenOfKind, replaceAll, stackPosition } from "../../actions/handlers/stack";
+import { type ActionError, type ActionInput, invalid, nodeOfSpec, nodeSpecOf, ok } from "../../actions/types";
+import type { Json, PatchLog } from "../../patches/types";
+import type { ResolvedState } from "../../resolve/resolve";
 
 function requireCaptions(state: ResolvedState, id: string): ActionError | null {
   return rawNode(state, id)?.kind === "captions"

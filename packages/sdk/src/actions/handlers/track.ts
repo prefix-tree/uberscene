@@ -1,5 +1,6 @@
 import { isBetween, isEmptyTime, type Kind, Time } from "@uberscene/kit/schema";
 
+import { makesOnTrack } from "../../elements";
 import { gapNode } from "../../elements/gap";
 import type { PatchLog } from "../../patches/types";
 import type { Placement, ResolvedState } from "../../resolve/resolve";
@@ -314,7 +315,7 @@ function orderedItems(state: Parameters<typeof rawNode>[0], trackId: string) {
 
 /** The children a sequence orders: timed, not anchored, not a transition, gap or multicam; by resolved start. */
 function sequenced(state: ResolvedState, trackId: string): Placement[] {
-  return orderedItems(state, trackId).filter((i) => !isEmptyTime(i.kind) && i.kind !== "multicam");
+  return orderedItems(state, trackId).filter((i) => !isEmptyTime(i.kind) && !makesOnTrack(i.kind));
 }
 
 function gapsOf(state: ResolvedState, trackId: string) {

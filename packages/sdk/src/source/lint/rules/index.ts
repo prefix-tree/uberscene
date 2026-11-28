@@ -1,5 +1,6 @@
 import { capabilitiesOf, isEmptyTime, kindsWithProp, MAIN_TRACK_ID } from "@uberscene/kit/schema";
 
+import { isCaptions } from "../../../elements";
 import { lookupAsset } from "../../../manifest/types";
 import type { ElementSite, SourceIndex } from "../../index";
 import type { Diagnostic, LintOptions } from "../index";
@@ -120,7 +121,7 @@ const expressionLocked: Rule = {
 const oneCaptions: Rule = {
   name: "one-captions",
   check: (index) => {
-    const sites = [...index.elements.values()].filter((s) => s.kind === "captions");
+    const sites = [...index.elements.values()].filter((s) => isCaptions(s.kind));
     return sites.slice(1).map(
       (s) =>
         ({

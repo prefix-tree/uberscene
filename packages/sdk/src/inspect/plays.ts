@@ -1,7 +1,6 @@
 // Where an asset plays on a resolved timeline: the rule the resolver places captions by, read from the state.
 import { capabilitiesOf } from "@uberscene/kit/schema";
 
-import { lookupAsset } from "../manifest/types";
 import {
   type AssetPlay,
   assetPlay,
@@ -9,7 +8,8 @@ import {
   sameAsset,
   type TimelineWord,
   timelineWords,
-} from "../resolve/captions";
+} from "../elements/captions/cues";
+import { lookupAsset } from "../manifest/types";
 import type { Placement, ResolvedState } from "../resolve/resolve";
 import { startSeconds } from "../time";
 

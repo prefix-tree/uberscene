@@ -1,8 +1,15 @@
 import { round3, tidySeconds } from "@uberscene/kit/schema";
 
-import { type AssetEntry, assetIdOf, type TranscriptWord } from "../manifest/types";
-import { type FreezeHold, freezeHoldsOf, freezeUnshift, type RampKey, rampInverse, speedKeysOf } from "./speed";
-import type { CollectedNode } from "./tree";
+import { type AssetEntry, assetIdOf, type TranscriptWord } from "../../manifest/types";
+import {
+  type FreezeHold,
+  freezeHoldsOf,
+  freezeUnshift,
+  type RampKey,
+  rampInverse,
+  speedKeysOf,
+} from "../../resolve/speed";
+import type { CollectedNode } from "../../resolve/tree";
 
 /** Where an asset plays on the timeline: enough of a placement to map asset seconds to composition seconds. */
 export interface AssetPlay {

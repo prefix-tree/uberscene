@@ -42,15 +42,21 @@ export function sampleFile(kind: MigratedKind): {
   const tags = [...new Set(["Composition", "Shape", "Track", ...used])].sort();
   const peer = `<Shape id="${PEER}" start={0} duration={1} type="rectangle" width={40} height={40} box={{ x: 100, y: 100, origin: "center" }} />`;
   // A sample that stands only in a sequence is written in one, and the element beside it on a free track of its own.
+  const where = KIT_ELEMENTS[kind].sampleTrack;
   const samples =
-    KIT_ELEMENTS[kind].sampleTrack === "sequence"
-      ? `<Track id="samples">
+    where === "composition"
+      ? `<Track id="samples" layout="free">
+        ${peer}
+      </Track>
+      ${KIT_ELEMENTS[kind].sample}`
+      : where === "sequence"
+        ? `<Track id="samples">
         ${KIT_ELEMENTS[kind].sample}
       </Track>
       <Track id="peers" layout="free">
         ${peer}
       </Track>`
-      : `<Track id="samples" layout="free">
+        : `<Track id="samples" layout="free">
         ${KIT_ELEMENTS[kind].sample}
         ${peer}
       </Track>`;

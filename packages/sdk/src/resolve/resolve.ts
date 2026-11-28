@@ -23,7 +23,6 @@ import {
   renamedParam,
   resolveTheme,
   round3,
-  SCHEMAS_BY_KIND,
   type ShaderDefinition,
   sampleRateProblem,
   schemaFor,
@@ -41,22 +40,11 @@ import {
 
 import { completed, sdkElement } from "../elements";
 import { placeScene, type SceneUse, sceneAssetId, withSceneAssets } from "../elements/clip/scene";
-import { parseTimeRef, resolveTimeRef } from "../manifest/timeref";
-import { type AssetEntry, type AssetManifest, assetIdOf, lookupAsset } from "../manifest/types";
+import { resolveTimeRef } from "../manifest/timeref";
+import { type AssetEntry, type AssetManifest, lookupAsset } from "../manifest/types";
 import type { PatchLog } from "../patches/types";
 import { lengthOr, T } from "../time";
 import { Cache, cachesOff, fresh, shortCuts, uncached } from "./cache";
-import {
-  type AssetPlay,
-  assetPlay,
-  type CueOptions,
-  cueNodes,
-  onTimeline,
-  planCues,
-  playsKey,
-  sameAsset,
-  timelineWords,
-} from "./captions";
 import type { ResolveError } from "./errors";
 import { derivedOrigin, expandedRoot, expandKeys, expansionOf } from "./expand";
 import { lowerLinks } from "./link";
@@ -182,7 +170,7 @@ const IMAGE_DEFAULT_DURATION = 5;
 /** A source while the resolver works it out: seconds of the asset, which speed ramps and freezes are computed in. */
 type PendingSource = Omit<PlacementSource, "range">;
 
-interface Pending {
+export interface Pending {
   readonly node: CollectedNode;
   readonly track: string | null;
   readonly parent: string | null;
@@ -490,7 +478,73 @@ function eachTrack(root: CollectedNode, visit: (track: CollectedNode) => void): 
 }
 
 /** Whether a kind's elements are made by the resolver, or are those: a multicam and its clips, captions and a cue. */
-const makesElements = (kind: Kind): boolean => kind === "multicam" || kind === "captions" || kind === "caption";
+const makesElements = (kind: Kind): boolean => {
+  const element = sdkElement(kind);
+  return element?.makes !== undefined || element?.made === true;
+};
+
+/** The children of `node` its kind times itself (a captions' cues), each placed as it is written. */
+function placeMade(
+  node: CollectedNode,
+  track: string | null,
+  pending: Map<string, Pending>,
+  manifest: AssetManifest,
+  markers: ReadonlyMap<string, number>,
+  markersKey: string,
+  theme: ResolvedTheme,
+  errors: ResolveError[],
+): void {
+  for (const child of node.children)
+    if (sdkElement(child.kind)?.made) intrinsic(child, track, pending, manifest, markers, markersKey, theme, errors);
+}
+
+/**
+ * What a kind that makes elements of its own is handed (`SdkElement.makes`), while its track is placed: the state of
+ * this resolve, and how to read its children and add what it makes.
+ */
+export interface Maker {
+  readonly pending: Map<string, Pending>;
+  readonly errors: ResolveError[];
+  readonly theme: ResolvedTheme;
+  /** The track it stands on, or null for a kind placed in the composition. */
+  readonly track: ResolvedTrack | null;
+  /** A child's props, parsed and themed as any element's are. */
+  parse(node: CollectedNode): Record<string, unknown>;
+  /** Adds an element it makes, on `track` under `parent`, with its props parsed: its placement, to time. */
+  add(node: CollectedNode, track: string | null, parent: string, parsed: Record<string, unknown>): Pending;
+  /** Says what a file would write for an element it made (`propsAsWritten`), for props parsed with defaults. */
+  written(parsed: object, written: Readonly<Record<string, unknown>>): void;
+}
+
+/** What a kind that makes elements once every track is placed is handed: besides `Maker`, the whole video. */
+export interface PlacedMaker extends Maker {
+  readonly root: CollectedNode;
+  readonly tracks: readonly ResolvedTrack[];
+  readonly manifest: AssetManifest;
+  readonly markers: ReadonlyMap<string, number>;
+}
+
+/**
+ * How a kind makes elements of its own: as its track is placed (a multicam's clips, from its cuts), or once every
+ * track is (captions' cues, which follow the clips that play their asset).
+ */
+export type Makes =
+  | { readonly when: "placing"; make(maker: Maker, node: CollectedNode, self: Pending): void }
+  | { readonly when: "placed"; make(maker: PlacedMaker, node: CollectedNode, self: Pending): void };
+
+function makerFor<O extends Omit<Maker, "parse" | "add" | "written">>(over: O): O & Maker {
+  return {
+    ...over,
+    parse: (node) => parseProps(node, over.errors, over.theme),
+    add: (node, track, parent, parsed) => {
+      made++;
+      const p = pendingOf(node, track, parent, parsed, []);
+      over.pending.set(node.id, p);
+      return p;
+    },
+    written: (parsed, written) => writtenByProps.set(parsed, written),
+  };
+}
 
 /** The item with this id among those made from the props of `node`, or of an item under it. */
 function derivedUnder(node: CollectedNode, id: string): CollectedNode | undefined {
@@ -1024,9 +1078,9 @@ function compute(
                 : `<Camera> holds <Track>s only: put <${inner.kind}> in a <Track>, or outside the camera`,
           });
       }
-    } else if (child.kind === "captions") {
+    } else if (sdkElement(child.kind)?.makes?.when === "placed") {
       intrinsic(child, null, pending, manifest, markers, markersKey, theme, errors);
-    } else if (child.kind === "multicam") {
+    } else if (sdkElement(child.kind)?.makes?.when === "placing") {
       errors.push({ code: "INVALID_CHILD", id: child.id, message: "<Multicam> belongs inside a <Track>" });
     } else if (MAIN_KINDS.has(child.kind)) {
       // Left here only when the id "main" is taken, which `collect` has reported.
@@ -1155,7 +1209,12 @@ function compute(
     }
   iterateDependencies(waiting, pending, manifest);
   const before = made;
-  placeCaptions(root, pending, tracks, manifest, markers);
+  for (const node of root.children) {
+    const makes = sdkElement(node.kind)?.makes;
+    const self = pending.get(node.id);
+    if (makes?.when === "placed" && self)
+      makes.make(makerFor({ root, pending, tracks, manifest, markers, theme, errors, track: null }), node, self);
+  }
   if (made !== before) listMoving();
 
   let compositionEnd = Time.ZERO;
@@ -1177,7 +1236,8 @@ function compute(
         // A file cannot fill more time than it holds: it plays to its end and stops there.
         const asset = lookupAsset(manifest, p.source.asset);
         // (A multicam's last generated clip is left as it is: its angles are cut to the multicam's own length.)
-        const generated = pending.get(p.parent ?? "")?.node.kind === "multicam";
+        const parent = pending.get(p.parent ?? "");
+        const generated = parent !== undefined && sdkElement(parent.node.kind)?.makes !== undefined;
         if (asset && asset.kind !== "image" && !generated && out > asset.duration + 0.05) {
           const keys = speedKeysOf(p.node.children);
           const left = Math.max(0, asset.duration - p.source.in);
@@ -1846,15 +1906,6 @@ function movedKey(kind: Kind, issue: z.core.$ZodIssue, props: Readonly<Record<st
     const said = element.moved(at, issue.keys);
     return said.length > 0 ? `${said.join(", ")}; ${fix}` : undefined;
   }
-  const listed = (moved: readonly string[], into: string) =>
-    moved.map((k) => `\`${k}\` is now \`${into}.${k}\``).join(", ");
-  if (kind !== "captions") return undefined;
-  if (at === "" && issue.keys.includes("align")) return `${listed(["align"], "style")}; ${fix}`;
-  if (at === "style" && issue.keys.includes("position"))
-    return `style.position moved to box: the captions sit in the lower safe area unless their box says otherwise, as box={{ y, origin: "top" | "center" }}; ${fix}`;
-  const flat = issue.keys.filter((k) => k === "x" || k === "y" || k === "width");
-  if (at === "" && flat.length > 0)
-    return `${flat.join(", ")} moved to box, in pixels from the frame's top left; ${fix}`;
   return undefined;
 }
 
@@ -1902,7 +1953,7 @@ function intrinsic(
   /** False for a node the log made again, which the next patch makes again: what it derives is not kept. */
   keep = true,
 ): void {
-  const parentProps = node.kind === "caption" && node.parent ? pending.get(node.parent)?.props : undefined;
+  const parentProps = sdkElement(node.kind)?.made && node.parent ? pending.get(node.parent)?.props : undefined;
   const hit = intrinsicByNode.get(node);
   if (
     hit &&
@@ -1920,9 +1971,7 @@ function intrinsic(
     if (t.durationDep) p.durationDep = { ...t.durationDep };
     if (t.anchorDep) p.anchorDep = { ...t.anchorDep };
     pending.set(node.id, p);
-    if (node.kind === "captions")
-      for (const child of node.children)
-        if (child.kind === "caption") intrinsic(child, track, pending, manifest, markers, markersKey, theme, errors);
+    placeMade(node, track, pending, manifest, markers, markersKey, theme, errors);
     return;
   }
   entered++;
@@ -2020,17 +2069,13 @@ function intrinsicCompute(
     }
   } else if (sdkElement(node.kind)?.timing) {
     p.duration = sdkElement(node.kind)!.timing!(props);
-  } else if (node.kind === "caption") {
-    // Timed in the captions pass, once the clips that play the asset are placed.
-  } else if (node.kind === "captions") {
+  } else if (sdkElement(node.kind)?.made) {
+    // Timed by the kind that holds it, once what it follows is placed (a cue, once the clips that play its asset).
+  } else if (sdkElement(node.kind)?.makes) {
+    // What makes elements of its own spans the video, and its children it times itself are made with it.
     p.start = Time.ZERO;
     p.durationDep = { kind: "fill" };
-    for (const child of node.children)
-      if (child.kind === "caption") intrinsic(child, track, pending, manifest, markers, markersKey, theme, errors);
-    return p;
-  } else if (node.kind === "multicam") {
-    p.start = Time.ZERO;
-    p.durationDep = { kind: "fill" };
+    placeMade(node, track, pending, manifest, markers, markersKey, theme, errors);
   } else if (caps.timed) {
     if (dur === undefined) p.duration = T(DEFAULT_OVERLAY_DURATION);
     else if (typeof dur === "number") p.duration = T(dur);
@@ -2295,12 +2340,17 @@ class TrackPlacer {
     private readonly errors: ResolveError[],
   ) {}
 
+  private maker(): Maker {
+    return makerFor({ pending: this.pending, errors: this.errors, theme: this.theme, track: this.track });
+  }
+
   step(child: CollectedNode): void {
     const p = this.pending.get(child.id);
     if (!p) return;
     const caps = capabilitiesOf(child.kind);
-    if (child.kind === "multicam") {
-      placeMulticam(child, p, this.track, this.pending, this.theme, this.errors);
+    const makes = sdkElement(child.kind)?.makes;
+    if (makes?.when === "placing") {
+      makes.make(this.maker(), child, p);
       return;
     }
     if (isBetween(child.kind)) {
@@ -2491,84 +2541,6 @@ const writtenByProps = new WeakMap<object, Readonly<Record<string, unknown>>>();
  */
 export function propsAsWritten(placement: Placement): Readonly<Record<string, unknown>> {
   return writtenByProps.get(placement.props) ?? placement.props;
-}
-
-let madeClipDefaults: Readonly<Record<string, unknown>> | undefined;
-/** What the clip schema fills in for a clip that writes only its source: the props a clip the resolver makes takes. */
-function clipDefaults(): Readonly<Record<string, unknown>> {
-  if (!madeClipDefaults) {
-    const {
-      id: _id,
-      src: _src,
-      ...rest
-    } = SCHEMAS_BY_KIND.clip.parse({ id: "made", src: "asset:made" }) as Record<string, unknown>;
-    madeClipDefaults = rest;
-  }
-  return madeClipDefaults;
-}
-
-function placeMulticam(
-  node: CollectedNode,
-  p: Pending,
-  track: ResolvedTrack,
-  pending: Map<string, Pending>,
-  theme: ResolvedTheme,
-  errors: ResolveError[],
-): void {
-  const angles = new Map<string, Record<string, unknown>>();
-  const cuts: { node: CollectedNode; at: number; angle: string }[] = [];
-  for (const child of node.children) {
-    const cp = parseProps(child, errors, theme);
-    if (child.kind === "angle") angles.set(child.id, cp);
-    else if (child.kind === "cut" && typeof cp.at === "number")
-      cuts.push({ node: child, at: cp.at, angle: String(cp.angle) });
-  }
-  cuts.sort((a, b) => a.at - b.at);
-  const sync = Number(p.props.sync ?? 0);
-  p.start = T(cuts[0]?.at ?? 0);
-  cuts.forEach((cut, i) => {
-    const next = cuts[i + 1];
-    const angle = angles.get(cut.angle);
-    if (!angle) {
-      errors.push({
-        code: "DANGLING_ANCHOR",
-        id: cut.node.id,
-        prop: "angle",
-        message: `angle "${cut.angle}" is not in this multicam`,
-      });
-      return;
-    }
-    const id = `${node.id}.${cut.node.id}`;
-    const inSec = Math.max(0, cut.at - sync + Number(angle.offset ?? 0));
-    // What a file would write for this clip, and what the clip schema parses that to: the placement holds the
-    // second, defaults and all, so it reads as any other clip; a bake writes the first.
-    const written = { id, src: angle.src, in: inSec };
-    const parsed = { ...written, ...clipDefaults() };
-    writtenByProps.set(parsed, written);
-    const generated: CollectedNode = {
-      id,
-      kind: "clip",
-      parent: node.id,
-      children: [],
-      editable: "generated",
-      lockedProps: [],
-      boundProps: {},
-      props: written,
-      origin: { helper: "multicam", callerId: node.id, callIndex: 0 },
-    };
-    const gp = pendingOf(generated, track.id, node.id, parsed, []);
-    gp.start = T(cut.at);
-    gp.source = { in: inSec, out: inSec, speed: 1, asset: assetIdOf(String(angle.src)) };
-    if (next) {
-      gp.duration = T(next.at).minus(T(cut.at));
-      gp.source = { ...gp.source, out: inSec + gp.duration.toSeconds() };
-    } else {
-      gp.durationDep = { kind: "fill" };
-    }
-    pending.set(id, gp);
-    made++;
-  });
-  p.durationDep = { kind: "fill" };
 }
 
 /**
@@ -2919,136 +2891,6 @@ function placeChildren(
     end = placeChildren(child, placement, items, errors, place, end, theme, inside);
   }
   return end;
-}
-
-interface CueMemo {
-  readonly key: string;
-  /** Characters to a line: from the cue's own props, or from the composition's size. */
-  readonly maxChars: number;
-  readonly manifest: AssetManifest;
-  readonly props: Record<string, unknown>;
-  readonly nodes: readonly CollectedNode[];
-}
-const cuesByCaptions = new Cache<CollectedNode, CueMemo>();
-
-/**
- * Captions follow the clips: a word reference on a literal <Caption> means
- * the composition time at which that word plays, and <Captions src> with no
- * literal cues generates them from the asset's transcript along the timeline.
- */
-function placeCaptions(
-  root: CollectedNode,
-  pending: Map<string, Pending>,
-  tracks: readonly ResolvedTrack[],
-  manifest: AssetManifest,
-  markers: ReadonlyMap<string, number>,
-): void {
-  for (const node of root.children) {
-    if (node.kind !== "captions") continue;
-    const cp = pending.get(node.id);
-    if (!cp) continue;
-    const src = typeof cp.props.src === "string" ? cp.props.src : null;
-    const asset = src ? lookupAsset(manifest, src) : null;
-    const plays = src ? assetPlays(src, pending, tracks) : [];
-    const literal = node.children.filter((c) => c.kind === "caption");
-    if (literal.length > 0) {
-      for (const child of literal) {
-        const p = pending.get(child.id);
-        if (!p) continue;
-        const s = captionTime(p.props.start, asset, plays, markers, { id: child.id, prop: "start", src });
-        const e = captionTime(p.props.end, asset, plays, markers, { id: child.id, prop: "end", src });
-        if (typeof s !== "number") p.errors.push(s);
-        if (typeof e !== "number") p.errors.push(e);
-        p.start = T(typeof s === "number" ? s : 0);
-        p.duration = typeof s === "number" && typeof e === "number" ? Time.max(Time.ZERO, T(e).minus(T(s))) : Time.ZERO;
-      }
-      continue;
-    }
-    if (!asset?.transcript) continue;
-    const key = playsKey(plays);
-    const hit = cuesByCaptions.get(node);
-    const maxChars = Number(cp.props.maxChars ?? lineChars(root, cp.props.style));
-    let nodes: readonly CollectedNode[];
-    if (hit && hit.key === key && hit.manifest === manifest && hit.props === cp.props && hit.maxChars === maxChars)
-      nodes = hit.nodes;
-    else {
-      const options: CueOptions = {
-        maxChars,
-        maxDuration: Number(cp.props.maxDuration ?? 5),
-        maxGap: Number(cp.props.maxGap ?? 0.8),
-        ...(Array.isArray(cp.props.breakAfter)
-          ? { breakAfter: new Set((cp.props.breakAfter as string[]).map((ref) => Number(ref.slice("word:".length)))) }
-          : {}),
-      };
-      nodes = cueNodes(node, planCues(timelineWords(asset, plays), options), (id) => pending.has(id));
-      cuesByCaptions.set(node, { key, maxChars, manifest, props: cp.props, nodes });
-    }
-    for (const cue of nodes) {
-      made++;
-      const timed = pendingOf(cue, null, node.id, cue.props as Record<string, unknown>, []);
-      timed.start = T(Number(cue.props.start));
-      timed.duration = T(Number(cue.props.end)).minus(T(Number(cue.props.start)));
-      pending.set(cue.id, timed);
-    }
-  }
-}
-
-/**
- * How many characters fit on one caption line: the player's side margins (12% a side on vertical video, 8% otherwise)
- * and cue padding (1 em), at about 0.55 em a character. Never more than the old fixed 42.
- */
-function lineChars(root: CollectedNode, style: unknown): number {
-  const width = Number(root.props.width ?? 1920),
-    height = Number(root.props.height ?? 1080);
-  const size = Number(
-    (typeof style === "object" && style !== null ? (style as { size?: unknown }).size : undefined) ??
-      Math.round(height / 24),
-  );
-  return Math.max(8, Math.min(42, Math.floor((width * (height > width ? 0.76 : 0.84) - size) / (size * 0.55))));
-}
-
-/** Where an asset plays: media placements on visible tracks that draw from it, in start order. */
-function assetPlays(src: string, pending: Map<string, Pending>, tracks: readonly ResolvedTrack[]): AssetPlay[] {
-  const hidden = new Set(tracks.filter((t) => t.hidden).map((t) => t.id));
-  const plays: AssetPlay[] = [];
-  for (const p of pending.values()) {
-    if (!p.source || p.start === undefined || !sameAsset(p.source.asset, src)) continue;
-    if (p.track && hidden.has(p.track)) continue;
-    if (!capabilitiesOf(p.node.kind).playsAsset) continue;
-    plays.push(
-      assetPlay({
-        id: p.node.id,
-        start: p.start.toSeconds(),
-        source: p.source,
-        open: p.duration === undefined,
-        children: p.node.children,
-      }),
-    );
-  }
-  return plays.sort((a, b) => a.start - b.start);
-}
-
-function captionTime(
-  ref: unknown,
-  asset: AssetEntry | null,
-  plays: readonly AssetPlay[],
-  markers: ReadonlyMap<string, number>,
-  ctx: { id: string; prop: string; src: string | null },
-): number | ResolveError {
-  const parsed = parseTimeRef(ref);
-  if (parsed.kind === "seconds" || parsed.kind === "marker" || parsed.kind === "invalid")
-    return resolveTimeRef(ref as never, asset, markers, ctx);
-  const sec = resolveTimeRef(ref as never, asset, markers, ctx);
-  if (typeof sec !== "number") return sec;
-  const at = onTimeline(sec, plays);
-  if (at === null)
-    return {
-      code: "UNKNOWN_REF",
-      id: ctx.id,
-      prop: ctx.prop,
-      message: `${String(ref)} of ${ctx.src ?? "the asset"} is not on the timeline`,
-    };
-  return at;
 }
 
 /** The composition's frame rate as an exact fraction; an unusable rate is an error, and 30 stands in for it. */

@@ -1,8 +1,10 @@
 // The music against the picture, as data: the music the timeline plays and its beats, every moment of the video in
 // one sorted list, and how far each cut and each start is from its nearest beat. Read from the resolved timeline
 // alone, so anything that cannot hear can still tell whether an edit is on the music.
+
 import { isBetween, kindsWhere, nearestFrame } from "@uberscene/kit/schema";
 
+import { isCue } from "../elements";
 import { lookupAsset } from "../manifest/types";
 import type { Placement, ResolvedState } from "../resolve/resolve";
 import { type MusicRow, musicRows } from "./music";
@@ -39,7 +41,7 @@ export interface EventRow {
 }
 
 /** Elements that start and end without being a moment of their own: cues follow the words. A transition's cut has its kind. */
-const NO_EDGES = new Set(["caption", "marker"]);
+const NO_EDGES = new Set(["marker"]);
 
 /** Elements whose start shows on screen: what a viewer sees change. */
 const SEEN = new Set(kindsWhere((kind) => kind.timed && (kind.plane === "canvas" || kind.plane === "dom")));
@@ -122,7 +124,7 @@ export function timelineEvents(state: ResolvedState, options: EventOptions = {})
       });
       continue;
     }
-    if (NO_EDGES.has(e.kind) || isBetween(e.kind) || !(e.end > e.start)) continue;
+    if (NO_EDGES.has(e.kind) || isCue(e.kind) || isBetween(e.kind) || !(e.end > e.start)) continue;
     out.push({ time: e.start, frame: e.startFrame, kind: "start", of: e.id, label: e.kind, ...near(e.start) });
     out.push({ time: e.end, frame: e.endFrame, kind: "end", of: e.id, label: e.kind, ...near(e.end) });
   }

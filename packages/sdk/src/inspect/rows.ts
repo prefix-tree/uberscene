@@ -1,7 +1,9 @@
 // The resolved timeline as flat rows: one array per kind of thing, each row with its id, its seconds and its frames.
 // Flat rows are what jq, a short script or a SQL table take as they are.
+
 import { capabilitiesOf, framesUntil, isBetween, type Kind, type Rate, round3 } from "@uberscene/kit/schema";
 
+import { isCue } from "../elements";
 import type { ResolveError } from "../resolve/errors";
 import { derivedOrigin } from "../resolve/expand";
 import { followOf } from "../resolve/follow";
@@ -269,7 +271,7 @@ function elementRow(p: Placement, frame: (t: number) => number): ElementRow {
   const props = p.props;
   const follow = followOf(p);
   // The words of a kind whose content is words (a title) are on its placement; a caption's are a prop.
-  const text = p.text ?? (p.kind === "caption" ? props.text : undefined);
+  const text = p.text ?? (isCue(p.kind) ? props.text : undefined);
   return {
     id: p.id,
     kind: p.kind,

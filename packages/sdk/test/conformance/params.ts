@@ -118,8 +118,52 @@ export function sampleActions({ kind, effects }: SampleOf): Actions {
   return { ...all, ...ONLY[kind] };
 }
 
+const blurOn = (): ActionInput => ({ type: "effect/add", params: { id, effect: { type: "blur", radius: 4 } } });
+
 /** Where an action goes its own way on one kind's sample. */
+/**
+ * Offered on any element that draws or sounds, and refused on one whose schema has no place for what they write:
+ * an element's own effects, a length of its own.
+ */
+const NO_EFFECTS: Actions = {
+  "effect/add": { input: blurOn(), refused: "BREAKS_FILE" },
+  "effect/setStack": {
+    input: { type: "effect/setStack", params: { id, effects: [{ type: "blur", radius: 2 }] } },
+    refused: "BREAKS_FILE",
+  },
+};
+const NO_LENGTH: Actions = {
+  "clip/trimToPlayhead": {
+    input: { type: "clip/trimToPlayhead", params: { id, at: 1, edge: "out" } },
+    refused: "BREAKS_FILE",
+  },
+};
+
 const ONLY: Partial<Record<MigratedKind, Actions>> = {
+  captions: {
+    ...NO_EFFECTS,
+    ...NO_LENGTH,
+    "caption/setAnimation": {
+      input: { type: "caption/setAnimation", params: { captionsId: id, animation: "typewriter" } },
+    },
+    "caption/setStyle": { input: { type: "caption/setStyle", params: { captionsId: id, style: { size: 40 } } } },
+    "source/setProp": { input: { type: "source/setProp", params: { id, prop: "maxGap", value: 1 } } },
+    "source/setProps": { input: { type: "source/setProps", params: { id, props: { maxGap: 1 } } } },
+  },
+  multicam: {
+    ...NO_LENGTH,
+    // Alone on its sequence, it has nothing to move after.
+    "clip/move": {
+      input: { type: "clip/move", params: { id, place: { start: 1 } } },
+      refused: "UNSUPPORTED_ON_LAYOUT",
+    },
+    "multicam/addCut": {
+      input: { type: "multicam/addCut", params: { id, cutId: "third", at: 1, angle: "wide" } },
+    },
+    "multicam/remove": { input: { type: "multicam/remove", params: { id } } },
+    "source/setProp": { input: { type: "source/setProp", params: { id, prop: "sync", value: 0.5 } } },
+    "source/setProps": { input: { type: "source/setProps", params: { id, props: { sync: 0.5 } } } },
+  },
   gap: {
     // In a sequence an element moves by what it follows, and its stretch is where its neighbours put it.
     "clip/move": { input: { type: "clip/move", params: { id, place: { after: "after" } } } },

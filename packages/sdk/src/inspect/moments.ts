@@ -13,9 +13,9 @@ import {
   Time,
 } from "@uberscene/kit/schema";
 
+import { type AssetPlay, onTimeline } from "../elements/captions/cues";
 import { entriesOf, parseTimeRef } from "../manifest/timeref";
 import { type AssetEntry, lookupAsset } from "../manifest/types";
-import { type AssetPlay, onTimeline } from "../resolve/captions";
 import type { Placement, ResolvedState } from "../resolve/resolve";
 import { endSeconds, S, startSeconds } from "../time";
 import { playOf, playsOf } from "./plays";

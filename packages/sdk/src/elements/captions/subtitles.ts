@@ -1,5 +1,5 @@
-import { endSeconds, startSeconds } from "../time";
-import type { ResolvedState } from "./resolve";
+import type { ResolvedState } from "../../resolve/resolve";
+import { endSeconds, startSeconds } from "../../time";
 
 export interface SubtitleOptions {
   readonly format: "srt" | "vtt";

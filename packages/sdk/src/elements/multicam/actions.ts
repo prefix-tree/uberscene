@@ -1,7 +1,3 @@
-import { lookupAsset } from "../../manifest/types";
-import type { Json } from "../../patches/types";
-import type { Placement, ResolvedState } from "../../resolve/resolve";
-import { lengthSeconds, startSeconds } from "../../time";
 import {
   define,
   insertNode,
@@ -18,8 +14,20 @@ import {
   siblingAfter,
   uniqueId,
   validateTarget,
-} from "../handler-kit";
-import { type ActionInput, invalid, type NodeSpec, nodeOfSpec, nodeSpecOf, ok, type PlacementSpec } from "../types";
+} from "../../actions/handler-kit";
+import {
+  type ActionInput,
+  invalid,
+  type NodeSpec,
+  nodeOfSpec,
+  nodeSpecOf,
+  ok,
+  type PlacementSpec,
+} from "../../actions/types";
+import { lookupAsset } from "../../manifest/types";
+import type { Json } from "../../patches/types";
+import type { Placement, ResolvedState } from "../../resolve/resolve";
+import { lengthSeconds, startSeconds } from "../../time";
 
 define({
   type: "multicam/create",

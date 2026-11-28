@@ -5,10 +5,12 @@ import { type Box, isMigratedKind, type Kind, type MigratedKind } from "@ubersce
 import type { Placement } from "../resolve/resolve";
 import { adjustment } from "./adjustment";
 import { audio } from "./audio";
+import { caption, captions } from "./captions";
 import { clip } from "./clip";
 import type { SdkElement } from "./element";
 import { gap } from "./gap";
 import { layer } from "./layer";
+import { angle, cut, multicam } from "./multicam";
 import { nested } from "./nested";
 import { typed } from "./placement";
 import { shape } from "./shape";
@@ -17,6 +19,7 @@ import { svg } from "./svg";
 import { title } from "./title";
 import { transition } from "./transition";
 
+export { isCaptions, isCue } from "./captions";
 export type { SdkElement } from "./element";
 
 /** The SDK's part of each kind that has a folder of its own. */
@@ -29,9 +32,14 @@ export const SDK_ELEMENTS: { readonly [K in MigratedKind]: SdkElement<K> } = {
   shape,
   svg,
   sticker,
+  captions,
+  caption,
   layer,
   adjustment,
   nested,
+  multicam,
+  angle,
+  cut,
 };
 
 /** The SDK's part of `kind`, as one type whatever the kind, or undefined for a kind with no folder of its own yet. */
@@ -55,4 +63,9 @@ export function restSizeOf(placement: Placement): Box | undefined {
   const size = sdkElement(placement.kind)?.restSize;
   const p = typed(placement);
   return size && p.parsed ? size(p) : undefined;
+}
+
+/** Whether a kind makes elements of its own as its track is placed (a multicam's clips), which stand for it there. */
+export function makesOnTrack(kind: Kind): boolean {
+  return sdkElement(kind)?.makes?.when === "placing";
 }
