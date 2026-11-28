@@ -608,7 +608,7 @@ written to the cache, the manifest or an error.
 
 `fetch` downloads the file as the library serves it when the engine plays it as it is (MP4, WebM, WAV). A stretch
 (`--from`/`--to`), an Ogg video or a sound that is not a WAV is converted with ffmpeg, which must be on the `PATH`
-(with libvpx-vp9 for video): footage becomes VP9 WebM without its sound, a sound becomes a 48 kHz WAV. A file is
+(with libvpx-vp9 for video): footage becomes VP9 WebM, keeping its sound as Opus when it has one, a sound becomes a 48 kHz WAV. A file is
 written under another name and moved into place, so a fetch cut off half way is made again next time.
 
 ## The agent skill

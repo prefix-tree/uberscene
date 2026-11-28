@@ -4,7 +4,7 @@
 // A search is cached for a day (Pixabay asks clients to), keyed by what was asked, never by the key it was asked with.
 // A fetch downloads the file as the library serves it when the engine can play it as it is (Pixabay's MP4, Commons'
 // WebM, a WAV), and otherwise converts it with ffmpeg: a stretch of a file (`from`/`to`), an Ogg Theora video, or a
-// sound that is not a WAV (so `add` can read its samples for beats and waveforms).
+// sound that is not a WAV (so `add` can read its samples for beats and waveforms). Footage keeps its own sound.
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { createWriteStream, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
@@ -211,13 +211,15 @@ export function ffmpegArgs(
   if (candidate.kind === "audio")
     return [...input, "-vn", "-ac", "2", "-ar", "48000", "-c:a", "pcm_s16le", "-f", "wav", out];
   // Scaled down to the height asked for, when the rendition is taller: the pixels a crop needs and no more. CRF 28
-  // keeps the detail it needs; the sound of stock footage is left out, as a film lays its own.
+  // keeps the detail it needs. Its sound is kept when it has one, as Opus, as a download as served keeps it: a film
+  // turns a clip down with its `volume`.
   const height = options.height ?? 1080;
   const scale = (file.height ?? 0) > height ? ["-vf", `scale=-2:${height}:flags=lanczos`] : [];
   return [
     ...input,
     ...scale,
-    ...["-an", "-c:v", "libvpx-vp9", "-crf", "28", "-b:v", "0", "-g", "30", "-deadline", "good", "-cpu-used", "4"],
+    ...["-c:v", "libvpx-vp9", "-crf", "28", "-b:v", "0", "-g", "30", "-deadline", "good", "-cpu-used", "4"],
+    ...["-c:a", "libopus", "-b:a", "160k", "-ar", "48000"],
     ...["-row-mt", "1", "-pix_fmt", "yuv420p", "-f", "webm", out],
   ];
 }

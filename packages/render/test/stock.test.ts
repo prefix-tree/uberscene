@@ -153,6 +153,7 @@ describe("fetching", () => {
     expect(args.indexOf("-ss")).toBeLessThan(args.indexOf("-i"));
     expect(args.slice(args.indexOf("-t"), args.indexOf("-t") + 2)).toEqual(["-t", "4"]);
     expect(args).toContain("libvpx-vp9");
+    expect(args).toContain("libopus");
     const tall = ffmpegArgs(candidate, pickFile(candidate, 3000), "out.webm", { from: 2, to: 6, height: 1920 });
     expect(tall[tall.indexOf("-vf") + 1]).toBe("scale=-2:1920:flags=lanczos");
     expect(args).not.toContain("-vf");
