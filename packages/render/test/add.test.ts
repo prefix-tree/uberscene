@@ -6,7 +6,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { collectModule, loadModule, resolve, subtitles } from "@uberscene/sdk";
 
 import generateMedia, { mediaDir } from "../../player/e2e/gen-media";
-import { addAsset, snippetOf } from "../src";
+import { addAsset, snippetOf, soundWav } from "../src";
+import { waveformOf } from "../src/add";
 
 const scratch = join(import.meta.dirname, ".tmp", "add");
 let dir = "";
@@ -41,7 +42,8 @@ describe("addAsset", () => {
     const result = await addAsset(join(dir, "bars.webm"), { cwd: dir });
     expect(result.manifest).toBe(join(dir, "uberscene.json"));
     expect(snippetOf(result)).toBe('<Clip id="bars" src="asset:bars" />');
-    expect(manifestAt(result.manifest).assets.bars).toEqual({
+    const { waveform, ...entry } = manifestAt(result.manifest).assets.bars;
+    expect(entry).toEqual({
       id: "bars",
       kind: "video",
       duration: 10,
@@ -50,6 +52,35 @@ describe("addAsset", () => {
       height: 360,
       audio: { sampleRate: 48000, channels: 1, streams: 1 },
     });
+    // Its Opus sound, read with ffmpeg (Node cannot decode Opus): a steady tone, 10 ms bins for 10 s.
+    expect(waveform.binSeconds).toBe(0.01);
+    expect(waveform.peaks.length).toBeGreaterThanOrEqual(990);
+    expect(waveform.rms[500]).toBeGreaterThan(0.05);
+  });
+
+  it("measures a sound file's waveform and onset in Node, and leaves them out when told", async () => {
+    // Half a second of silence, then a tone that swells to full over 100 ms and holds.
+    const rate = 48_000;
+    const samples = new Float32Array(rate);
+    for (let i = rate / 2; i < rate; i++)
+      samples[i] = 0.5 * Math.min(1, (i - rate / 2) / (0.1 * rate)) * Math.sin((2 * Math.PI * 440 * i) / rate);
+    writeFileSync(join(dir, "swell.wav"), soundWav(samples));
+    const result = await addAsset(join(dir, "swell.wav"), { cwd: dir, beats: false });
+    const entry = result.entry;
+    // Half its loudest is reached half way up the swell: 0.5 s + 50 ms.
+    expect(entry.onset).toBeGreaterThanOrEqual(0.54);
+    expect(entry.onset).toBeLessThanOrEqual(0.56);
+    expect(entry.waveform?.peaks.slice(0, 50).every((p) => p === 0)).toBe(true);
+    expect(entry.waveform?.peaks.at(-1)).toBeCloseTo(0.5, 2);
+    const plain = await addAsset(join(dir, "swell.wav"), { cwd: dir, id: "plain", beats: false, waveform: false });
+    expect(plain.entry.waveform).toBeUndefined();
+    expect(plain.entry.onset).toBeUndefined();
+  });
+
+  it("gives a long recording wider bins, so the manifest stays small", () => {
+    const w = waveformOf(new Float32Array(48_000 * 100), 48_000, 100);
+    expect(w.binSeconds).toBe(0.025);
+    expect(w.peaks).toHaveLength(4000);
   });
 
   it("probes a silent video and an image, and keeps the other assets", async () => {

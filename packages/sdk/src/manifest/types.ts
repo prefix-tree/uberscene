@@ -33,7 +33,13 @@ export interface AssetEntry {
   readonly beats?: readonly Beat[];
   /** The music's tempo in beats per minute, with `beats`. */
   readonly tempo?: number;
+  /** The sound's level over time, measured by `uberscene add`: what a picture of the timeline draws. */
   readonly waveform?: WaveformSummary;
+  /**
+   * Seconds into a sound file where its sound first reaches half its loudest: the attack a sound effect is placed
+   * by, so a hit lands on the frame rather than its first, quiet sample.
+   */
+  readonly onset?: number;
   /** Where the subject (a face, a person) sits in the picture, sampled over time; several boxes may share a `t`. */
   readonly subjects?: readonly SubjectBox[];
   /**
@@ -102,6 +108,7 @@ export interface Beat {
   readonly end: number;
 }
 
+/** A sound's level in bins of `binSeconds`: each bin's peak and RMS, 0 to 1, of the sound mixed to one channel. */
 export interface WaveformSummary {
   readonly binSeconds: number;
   readonly peaks: readonly number[];

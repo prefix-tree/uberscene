@@ -1,13 +1,14 @@
 // `uberscene add talk.mp4`: one manifest entry per media file, probed from the file itself, with the words of the
 // transcript beside it (`talk.json`, `talk.vtt` or `talk.srt`) found by convention. The manifest stays the one place
 // words live, so the preview and the export always agree on `word:N`. A `.cube` file is a LUT, checked and listed.
+import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import { basename, dirname, extname, join, resolve } from "node:path";
 
 import { ALL_FORMATS, AudioSampleSink, FilePathSource, Input } from "mediabunny";
 
-import { type AssetEntry, type AssetManifest, parseCube, parseTranscript } from "@uberscene/sdk";
+import { type AssetEntry, type AssetManifest, parseCube, parseTranscript, type WaveformSummary } from "@uberscene/sdk";
 
 import { type BeatTrack, beatGrid, detectBeats } from "./beats";
 import { imageSize } from "./image-size";
@@ -38,6 +39,12 @@ export interface AddOptions {
   readonly bpm?: number;
   /** With `bpm`: the time of the first beat, in seconds. Default 0. */
   readonly firstBeat?: number;
+  /**
+   * Measure the sound's waveform (and a sound file's onset). Default true for anything with sound. Sound Node cannot
+   * decode itself (AAC, Opus, MP3) is read with ffmpeg when it is on the PATH, and left unmeasured with a warning
+   * when it is not.
+   */
+  readonly waveform?: boolean;
 }
 
 export interface AddResult {
@@ -88,20 +95,42 @@ export async function addAsset(media: string, options: AddOptions = {}): Promise
     if (probed.kind !== "audio" && probed.kind !== "video")
       throw new Error(`${basename(media)} has no sound to give beats`);
     beats = beatGrid(options.bpm, options.firstBeat ?? 0, probed.duration);
-  } else if (options.beats ?? (probed.kind === "audio" && !transcript && !previous?.transcript)) {
-    if (probed.audio) {
-      beats = await findBeats(media);
-      if (beats.beats.length === 0)
-        warnings.push(`found no beats in ${basename(media)}; set them with --bpm <tempo> --first-beat <seconds>`);
+  }
+  const wantBeats =
+    options.bpm === undefined &&
+    (options.beats ?? (probed.kind === "audio" && !transcript && !previous?.transcript)) &&
+    probed.audio !== undefined;
+  const wantWave = (options.waveform ?? true) && probed.audio !== undefined;
+  let sound: { samples: Float32Array; sampleRate: number } | undefined;
+  if (wantBeats || wantWave) {
+    try {
+      sound = await decodeMono(media);
+    } catch (error) {
+      const why = error instanceof Error ? error.message : String(error);
+      if (wantBeats) throw error;
+      warnings.push(`left the waveform of ${basename(media)} unmeasured: ${why}`);
     }
   }
-  // Fields this command does not own (shots, silences, subjects, waveform) stay as they were.
+  if (wantBeats && sound) {
+    beats = detectBeats(sound.samples, sound.sampleRate);
+    if (beats.beats.length === 0)
+      warnings.push(`found no beats in ${basename(media)}; set them with --bpm <tempo> --first-beat <seconds>`);
+  }
+  const measured =
+    wantWave && sound
+      ? {
+          waveform: waveformOf(sound.samples, sound.sampleRate, probed.duration),
+          ...(probed.kind === "audio" ? { onset: onsetOf(sound.samples, sound.sampleRate) } : {}),
+        }
+      : {};
+  // Fields this command does not own (shots, silences, subjects) stay as they were; the waveform is measured again.
   const entry: AssetEntry = {
     ...previous,
     ...probed,
     id,
     ...(transcript ? { transcript } : previous?.transcript ? { transcript: previous.transcript } : {}),
     ...(beats && beats.beats.length > 0 ? { beats: beats.beats, tempo: beats.tempo } : {}),
+    ...measured,
   };
   const next = { ...manifest, assets: { ...manifest.assets, [id]: entry } };
   await writeFile(manifestPath, `${JSON.stringify(next, null, 2)}\n`);
@@ -114,12 +143,22 @@ export async function addAsset(media: string, options: AddOptions = {}): Promise
   };
 }
 
-/** Decodes the file's first sound track to mono and finds its beats. */
-async function findBeats(path: string): Promise<BeatTrack> {
+/** The file's first sound track mixed to one channel: decoded in Node when it can be, else with ffmpeg. */
+async function decodeMono(path: string): Promise<{ samples: Float32Array; sampleRate: number }> {
+  try {
+    return await decodeMonoInNode(path);
+  } catch (error) {
+    // Node has no AudioDecoder: only PCM is decoded there. ffmpeg reads the rest, when it is installed.
+    if (!/AudioDecoder/.test(String(error))) throw error;
+    return decodeMonoWithFfmpeg(path);
+  }
+}
+
+async function decodeMonoInNode(path: string): Promise<{ samples: Float32Array; sampleRate: number }> {
   const input = new Input({ source: new FilePathSource(path), formats: ALL_FORMATS });
   try {
     const track = await input.getPrimaryAudioTrack();
-    if (!track) return { tempo: 0, beats: [] };
+    if (!track) return { samples: new Float32Array(0), sampleRate: 48_000 };
     const sampleRate = await track.getSampleRate();
     const chunks: Float32Array[] = [];
     let length = 0;
@@ -143,10 +182,73 @@ async function findBeats(path: string): Promise<BeatTrack> {
       all.set(c, at);
       at += c.length;
     }
-    return detectBeats(all, sampleRate);
+    return { samples: all, sampleRate };
   } finally {
     input.dispose?.();
   }
+}
+
+const FFMPEG_RATE = 22_050;
+
+function decodeMonoWithFfmpeg(path: string): { samples: Float32Array; sampleRate: number } {
+  let out: Buffer;
+  try {
+    out = execFileSync(
+      "ffmpeg",
+      ["-v", "error", "-i", path, "-vn", "-ac", "1", "-ar", String(FFMPEG_RATE), "-f", "f32le", "-"],
+      { maxBuffer: 1 << 30, stdio: ["ignore", "pipe", "pipe"] },
+    );
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT")
+      throw new Error(
+        "its sound is compressed (AAC, Opus, MP3), which Node cannot decode; install ffmpeg to measure it",
+      );
+    throw error;
+  }
+  const samples = new Float32Array(out.buffer, out.byteOffset, Math.floor(out.byteLength / 4));
+  return { samples: Float32Array.from(samples), sampleRate: FFMPEG_RATE };
+}
+
+/** At most this many bins: a long recording gets wider bins, so the manifest stays small. */
+const MAX_BINS = 4000;
+const round3 = (v: number) => Math.round(v * 1000) / 1000;
+
+/** The level in bins: 10 ms each, or wider for a sound long enough to need more than `MAX_BINS`. */
+export function waveformOf(samples: Float32Array, sampleRate: number, duration: number): WaveformSummary {
+  const binSeconds = Math.max(0.01, Math.ceil((duration / MAX_BINS) * 1000) / 1000);
+  const per = Math.max(1, Math.round(binSeconds * sampleRate));
+  const bins = Math.max(1, Math.ceil(samples.length / per));
+  const peaks: number[] = [];
+  const rms: number[] = [];
+  for (let b = 0; b < bins; b++) {
+    let peak = 0;
+    let sum = 0;
+    const end = Math.min(samples.length, (b + 1) * per);
+    for (let i = b * per; i < end; i++) {
+      const v = samples[i] as number;
+      peak = Math.max(peak, Math.abs(v));
+      sum += v * v;
+    }
+    peaks.push(round3(Math.min(1, peak)));
+    rms.push(round3(Math.min(1, Math.sqrt(sum / Math.max(1, end - b * per)))));
+  }
+  return { binSeconds, peaks, rms };
+}
+
+/** Where the sound first reaches half its loudest, in 5 ms steps of RMS: its attack, in seconds. */
+function onsetOf(samples: Float32Array, sampleRate: number): number {
+  const step = Math.max(1, Math.round(0.005 * sampleRate));
+  const levels: number[] = [];
+  for (let i = 0; i < samples.length; i += step) {
+    let sum = 0;
+    const end = Math.min(samples.length, i + step);
+    for (let j = i; j < end; j++) sum += (samples[j] as number) ** 2;
+    levels.push(Math.sqrt(sum / (end - i)));
+  }
+  const loudest = levels.reduce((m, l) => Math.max(m, l), 0);
+  if (loudest === 0) return 0;
+  const first = levels.findIndex((l) => l >= loudest / 2);
+  return round3((first * step) / sampleRate);
 }
 
 /** The manifest `add` writes when none is named. */

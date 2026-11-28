@@ -541,12 +541,18 @@ is added as a LUT (kind `lut`) after it is checked, for the [`lut` effect](/guid
 | `--no-beats` | Find no beats. |
 | `--bpm <n>` | Set the beats as an even grid at this tempo instead of finding them: for a song whose beats are found at half speed, or a click track you know. |
 | `--first-beat <s>` | With `--bpm`, the second of the first beat. Default 0. |
+| `--no-waveform` | Leave the sound unmeasured. |
 
 A sound file with no transcript is taken to be music, and `add` finds its beats and its tempo
 (for example `song: audio, 92.4 s, 184 beats at 119.98 BPM`). A clip or an overlay then cuts on them as it cuts on words:
 `anchor="song" at="beat:16"` ([Cut on the beat](/guide/time#cut-on-the-beat)). Check them in numbers with `--check-sync` ([Sync](/guide/sync)), and by looking: `look --at
 song@beat:16,song@beat:32 --listen all` draws those moments over the sound. A fast song may come out at half its
 tempo, every other beat; set it with `--bpm`.
+
+Anything with sound is measured too: its `waveform`, the peak and RMS of each 10 ms (wider bins for a recording long
+enough to need more than 4000), which a picture of the timeline draws, and for a sound file its `onset`, the second
+where it first reaches half its loudest, which `<Audio align="onset">` places on the frame. WAV is decoded in Node;
+AAC, Opus and MP3 need ffmpeg on the `PATH`, and without it the sound is left unmeasured with a warning.
 
 ## Making a matte
 

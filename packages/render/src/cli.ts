@@ -50,7 +50,7 @@ const USAGE = `Usage: uberscene <file.tsx> --out <video.mp4|.webm|.mp3|.wav> [--
        uberscene blocks add <name> [--into <video.tsx> --track <id> --at <moment> [--id <id>] [--duration <s>]]
                     [--dir <folder>] [--force]
        uberscene blocks update [<name>...] [--dir <folder>] [--force]
-       uberscene add <media file>... [--manifest <file>] [--id <id>] [--transcript <file>] [--beats | --no-beats] [--bpm <n> [--first-beat <s>]]
+       uberscene add <media file>... [--manifest <file>] [--id <id>] [--transcript <file>] [--beats | --no-beats] [--bpm <n> [--first-beat <s>]] [--no-waveform]
        uberscene browser install
        uberscene codecs install
        uberscene matte <footage> [--model <name>] [--accept-licence] [--id <id>] [--manifest <file>] [--force] [--json]
@@ -141,6 +141,9 @@ const USAGE = `Usage: uberscene <file.tsx> --out <video.mp4|.webm|.mp3|.wav> [--
   --no-beats            (add) find no beats
   --bpm <n>             (add) set the beats as a grid at this tempo instead of finding them
   --first-beat <s>      (add) with --bpm, the second of the first beat (default 0)
+  --no-waveform         (add) leave the sound unmeasured. By default its waveform is kept (what a picture of the
+                        timeline draws) and a sound file's onset (where it first reaches half its loudest, which
+                        <Audio align="onset"> places on the frame). AAC, Opus and MP3 need ffmpeg on the PATH
   lint                  check each file's text against the conventions that keep it editable: literal ids, timing
                         the timeline can show, free code on the video's clock, assets in the manifest, and props
                         spelled the way an earlier version took them. One line per finding, as a compiler prints
@@ -279,6 +282,7 @@ async function main(): Promise<number> {
       "no-beats": { type: "boolean" },
       bpm: { type: "string" },
       "first-beat": { type: "string" },
+      "no-waveform": { type: "boolean" },
       srt: { type: "string" },
       vtt: { type: "string" },
       at: { type: "string" },
@@ -691,6 +695,7 @@ async function add(
     "no-beats"?: boolean | undefined;
     bpm?: string | undefined;
     "first-beat"?: string | undefined;
+    "no-waveform"?: boolean | undefined;
   },
 ): Promise<number> {
   if (files.length === 0) {
@@ -709,6 +714,7 @@ async function add(
       ...(values.beats ? { beats: true } : values["no-beats"] ? { beats: false } : {}),
       ...(values.bpm !== undefined ? { bpm: numberFlag("bpm", values.bpm) } : {}),
       ...(values["first-beat"] !== undefined ? { firstBeat: numberFlag("first-beat", values["first-beat"]) } : {}),
+      ...(values["no-waveform"] ? { waveform: false } : {}),
     });
     for (const w of result.warnings) process.stderr.write(`warning: ${w}\n`);
     process.stderr.write(`${describeAdded(result)} → ${result.manifest}\n`);
