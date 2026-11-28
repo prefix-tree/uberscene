@@ -1,0 +1,58 @@
+{
+  "total": 1,
+  "totalHits": 1,
+  "hits": [
+    {
+      "id": 228847,
+      "pageURL": "https://pixabay.com/videos/id-228847/",
+      "type": "film",
+      "tags": "waterfall, mountain stream, flow, stone, moss, forest, nature, japan",
+      "duration": 20,
+      "videos": {
+        "large": {
+          "url": "https://cdn.pixabay.com/video/2024/08/30/228847_large.mp4",
+          "width": 2160,
+          "height": 3840,
+          "size": 211672535,
+          "thumbnail": "https://cdn.pixabay.com/video/2024/08/30/228847_large.jpg"
+        },
+        "medium": {
+          "url": "https://cdn.pixabay.com/video/2024/08/30/228847_medium.mp4",
+          "width": 1440,
+          "height": 2560,
+          "size": 138078676,
+          "thumbnail": "https://cdn.pixabay.com/video/2024/08/30/228847_medium.jpg"
+        },
+        "small": {
+          "url": "https://cdn.pixabay.com/video/2024/08/30/228847_small.mp4",
+          "width": 1080,
+          "height": 1920,
+          "size": 75579502,
+          "thumbnail": "https://cdn.pixabay.com/video/2024/08/30/228847_small.jpg"
+        },
+        "tiny": {
+          "url": "https://cdn.pixabay.com/video/2024/08/30/228847_tiny.mp4",
+          "width": 720,
+          "height": 1280,
+          "size": 22177602,
+          "thumbnail": "https://cdn.pixabay.com/video/2024/08/30/228847_tiny.jpg"
+        }
+      },
+      "views": 930442,
+      "downloads": 690172,
+      "likes": 5871,
+      "comments": 903,
+      "user_id": 4749850,
+      "user": "Kanenori",
+      "userImageURL": "https://cdn.pixabay.com/user/2023/03/30/07-49-26-304_250x250.jpg",
+      "noAiTraining": false,
+      "isAiGenerated": false,
+      "isGRated": true,
+      "isLowQuality": false,
+      "userURL": "https://pixabay.com/users/4749850/",
+      "name": "waterfall, mountain stream, flow",
+      "heading": "",
+      "description": ""
+    }
+  ]
+}

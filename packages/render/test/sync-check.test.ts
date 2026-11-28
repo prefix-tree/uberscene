@@ -48,7 +48,7 @@ describe("checkSync", () => {
     const { state } = await loadVideo(file);
     expect(
       formatSync("video.tsx", checkSync(state)),
-    ).toBe(`music: song  120 BPM  a beat every 0.50 s  beat:0 to beat:15  0.00–8.00 s  (beats detected)
+    ).toBe(`music: song  120 BPM  a beat every 0.50 s  beat:0 to beat:15  0.00–8.00 s  (beats on a grid)
      1.00  start  first                     on    song@beat:2  (tied to the beat)
      3.10  start  late                      near  song@beat:6  100 ms after it
 video.tsx: near-beat: "late" at 3.10 s is 100 ms after beat 6 of "song" (3.00 s): close enough to read as a miss
@@ -99,7 +99,7 @@ describe("inspect --events", () => {
     expect(output).toContain("track music (free, music)");
     expect(output).toContain("audio       song  asset:song 0.30–8.30  120 BPM  beat:0–15");
     expect(output).toContain(
-      "music: song  120 BPM  a beat every 0.50 s  beat:0 at 0.00 s to beat:15  (beats detected)",
+      "music: song  120 BPM  a beat every 0.50 s  beat:0 at 0.00 s to beat:15  (beats on a grid)",
     );
   });
 });

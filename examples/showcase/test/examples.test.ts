@@ -86,7 +86,7 @@ describe.each(DEMOS)("%s", (file) => {
 });
 
 it("has a demo for every built-in effect, transition and component", () => {
-  expect(DEMOS.length).toBe(51);
+  expect(DEMOS.length).toBe(52);
 });
 
 it("keeps the coffee film's block as the bundled block", () => {

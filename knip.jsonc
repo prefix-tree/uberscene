@@ -81,6 +81,22 @@
       // Cut files, loaded by path with loadVideo from render.ts.
       "entry": ["*.tsx", "*.ts"]
     },
+    "examples/orbit": {
+      // A cut file, loaded by path; the scripts make its media and lightning.ts.
+      "entry": ["video.tsx", "scripts/*.ts"]
+    },
+    "examples/nature": {
+      // A cut file, loaded by path; the script fetches its media and renders its score.
+      "entry": ["video.tsx", "scripts/*.ts"]
+    },
+    "examples/machine": {
+      // A cut file, loaded by path; the script makes its song and notes.ts.
+      "entry": ["video.tsx", "scripts/*.ts"]
+    },
+    "examples/liftoff": {
+      // A cut file, loaded by path; the scripts make its media and ignitions.ts.
+      "entry": ["video.tsx", "scripts/*.ts"]
+    },
     "examples/founding": {
       // A cut file, loaded by path; media/bed.ts writes its music.
       "entry": ["*.tsx", "media/*.ts", "test/**/*.ts"]

@@ -23,7 +23,9 @@ import { installCodec } from "./native/codecs";
 import { formatQueue, readQueue, runQueue } from "./queue";
 import { draftPath, type RenderOptions, renderVideo } from "./renderer";
 import { installSkills } from "./skills";
+import { soundCommand } from "./sounds/cli";
 import { renderStill } from "./still";
+import { stockCommand } from "./stock/cli";
 import { checkSync, formatSync } from "./sync-check";
 import { CHROME_MILESTONE, cachedChrome, installChrome } from "./web/chrome";
 import { formatWhere, whereThings } from "./where";
@@ -49,13 +51,18 @@ const USAGE = `Usage: uberscene <file.tsx> --out <video.mp4|.webm|.mp3|.wav> [--
        uberscene blocks add <name> [--into <video.tsx> --track <id> --at <moment> [--id <id>] [--duration <s>]]
                     [--dir <folder>] [--force]
        uberscene blocks update [<name>...] [--dir <folder>] [--force]
-       uberscene add <media file>... [--manifest <file>] [--id <id>] [--transcript <file>] [--beats | --no-beats] [--bpm <n> [--first-beat <s>]]
+       uberscene add <media file>... [--manifest <file>] [--id <id>] [--transcript <file>] [--beats | --no-beats] [--bpm <n> [--first-beat <s>]] [--no-waveform]
        uberscene browser install
        uberscene codecs install
        uberscene matte <footage> [--model <name>] [--accept-licence] [--id <id>] [--manifest <file>] [--force] [--json]
        uberscene matte models [--json]
        uberscene matte install [<model>] [--accept-licence]
        uberscene skills install [--dir <folder>] [--force]
+       uberscene find <pixabay|commons|freesound> <words>... [--sound] [--attribution] [--orientation portrait|landscape]
+                    [--min-duration <s>] [--limit <n>] [--sheet <image>] [--json] [--fresh]
+       uberscene fetch <library:id> [--id <id>] [--from <s> --to <s>] [--height <px>] [--dir <folder>] [--manifest <file>]
+       uberscene credits [--manifest <file>] [--out CREDITS.md]
+       uberscene sound [<name> [--duration <s>] [--seed <n>] [--id <id>] [--out <file.wav>] [--manifest <file>]] [--json]
        uberscene queue <jobs.json> [--continue-on-error] [--json] [--media <dir>] [--tabs <n>] [--quiet]
 
   Every export draws its frames in Chrome. The first one downloads Chrome for Testing ${CHROME_MILESTONE} into
@@ -136,6 +143,9 @@ const USAGE = `Usage: uberscene <file.tsx> --out <video.mp4|.webm|.mp3|.wav> [--
   --no-beats            (add) find no beats
   --bpm <n>             (add) set the beats as a grid at this tempo instead of finding them
   --first-beat <s>      (add) with --bpm, the second of the first beat (default 0)
+  --no-waveform         (add) leave the sound unmeasured. By default its waveform is kept (what a picture of the
+                        timeline draws) and a sound file's onset (where it first reaches half its loudest, which
+                        <Audio align="onset"> places on the frame). AAC, Opus and MP3 need ffmpeg on the PATH
   lint                  check each file's text against the conventions that keep it editable: literal ids, timing
                         the timeline can show, free code on the video's clock, assets in the manifest, and props
                         spelled the way an earlier version took them. One line per finding, as a compiler prints
@@ -198,6 +208,32 @@ const USAGE = `Usage: uberscene <file.tsx> --out <video.mp4|.webm|.mp3|.wav> [--
   --import <spec>       a module the file may import beyond react, zod and the kit: three, or name=specifier
                         (a package, or a path relative to the file); the editor must offer the same modules
   --continue            draw the grey placeholder for an asset that cannot be read, instead of failing
+  find                  search a stock library for footage (or, with --sound, recordings): pixabay (videos, under the
+                        Pixabay Content License; set PIXABAY_API_KEY, a free key from pixabay.com/api/docs) or commons
+                        (Wikimedia Commons: videos and sounds, each under its own free licence; no key) or freesound
+                        (recorded sounds, CC0 unless --attribution; set FREESOUND_API_KEY). Prints each
+                        candidate's ref, length, size, licence and author, best first. A search is kept for a day in
+                        ~/.cache/uberscene/stock (or UBERSCENE_STOCK_CACHE); --fresh asks again
+  --sound               (find) recordings instead of videos (commons; freesound has only sounds)
+  --attribution         (find) also sounds whose licence asks for credit (CC BY); never non-commercial ones
+  --orientation <way>   (find) only portrait or only landscape footage
+  --min-duration <s>    (find) only candidates at least this long
+  --limit <n>           (find) at most this many (default 20)
+  --sheet <image>       (find) also draw the candidates as one contact sheet, numbered as listed
+  --fresh               (find) skip the day's cached answer
+  fetch                 bring a candidate into the project by its ref (pixabay:287510, commons:Some file.webm): into
+                        media/ beside the manifest (or --dir), added to the manifest with where it came from, its
+                        author and its licence. Downloaded as served when it plays as it is (MP4, WebM, WAV); with
+                        --from/--to, or an Ogg video, or a sound that is not a WAV, converted with ffmpeg
+  --from <s> --to <s>   (fetch) keep only this stretch of the original: only those seconds are read
+  --height <px>         (fetch) the picture height the film needs: the smallest rendition at least this tall
+                        (default 1080), so a vertical crop of landscape footage keeps real pixels
+  sound                 list the sound kit: cues (a tick, a hit, a whoosh, a riser) and beds (wind, rain, fire,
+                        water), made in code, the same bytes on every machine. With a name: write it as a WAV into
+                        media/ beside the manifest (or --out) and add it, as <name> (or --id)
+  --duration <s>        (sound) its length; default the sound's own
+  --seed <n>            (sound) another take of the same sound; the asset is <name>-<n> unless --id says
+  credits               print a Markdown table of every fetched asset in the manifest (or --out <file>)
   matte makes the matte of a footage file for <Clip cutout>: <name>.matte.webm beside it, one greyscale frame for
   each of the footage's, white where the person is, added to the manifest with "matte" on the footage. The model runs
   in Chrome with ONNX Runtime for the web (\`npm i -D onnxruntime-web\`). UberScene lists models, it does not ship
@@ -257,6 +293,7 @@ async function main(): Promise<number> {
       "no-beats": { type: "boolean" },
       bpm: { type: "string" },
       "first-beat": { type: "string" },
+      "no-waveform": { type: "boolean" },
       srt: { type: "string" },
       vtt: { type: "string" },
       at: { type: "string" },
@@ -277,6 +314,14 @@ async function main(): Promise<number> {
       duration: { type: "string" },
       model: { type: "string" },
       "accept-licence": { type: "boolean" },
+      sound: { type: "boolean" },
+      orientation: { type: "string" },
+      "min-duration": { type: "string" },
+      limit: { type: "string" },
+      height: { type: "string" },
+      fresh: { type: "boolean" },
+      seed: { type: "string" },
+      attribution: { type: "boolean" },
       "continue-on-error": { type: "boolean" },
     },
   });
@@ -408,6 +453,9 @@ async function main(): Promise<number> {
     return 0;
   }
   if (positionals[0] === "matte") return matteCommand(positionals.slice(1), values, USAGE);
+  if (positionals[0] === "sound") return soundCommand(positionals.slice(1), values, USAGE);
+  if (positionals[0] === "find" || positionals[0] === "fetch" || positionals[0] === "credits")
+    return stockCommand(positionals[0], positionals.slice(1), values, USAGE);
   if (positionals[0] === "codecs") {
     if (positionals[1] !== "install") {
       process.stderr.write(USAGE);
@@ -716,6 +764,8 @@ const NUMBER_FLAGS: Record<string, { readonly wants: string; readonly ok: (n: nu
   columns: { wants: "a whole number of columns", ok: (n) => Number.isInteger(n) && n >= 1 },
   bitrate: { wants: "bits per second above 0", ok: (n) => n > 0 },
   keyframe: { wants: "seconds above 0", ok: (n) => n > 0 },
+  bpm: { wants: "beats per minute above 0", ok: (n) => n > 0 },
+  "first-beat": { wants: "seconds", ok: (n) => n >= 0 },
 };
 
 /**
@@ -765,6 +815,7 @@ async function add(
     "no-beats"?: boolean | undefined;
     bpm?: string | undefined;
     "first-beat"?: string | undefined;
+    "no-waveform"?: boolean | undefined;
   },
 ): Promise<number> {
   if (files.length === 0) {
@@ -783,6 +834,7 @@ async function add(
       ...(values.beats ? { beats: true } : values["no-beats"] ? { beats: false } : {}),
       ...(values.bpm !== undefined ? { bpm: numberFlag("bpm", values.bpm) } : {}),
       ...(values["first-beat"] !== undefined ? { firstBeat: numberFlag("first-beat", values["first-beat"]) } : {}),
+      ...(values["no-waveform"] ? { waveform: false } : {}),
     });
     for (const w of result.warnings) process.stderr.write(`warning: ${w}\n`);
     process.stderr.write(`${describeAdded(result)} → ${result.manifest}\n`);

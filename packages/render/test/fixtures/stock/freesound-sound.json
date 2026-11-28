@@ -1,0 +1,25 @@
+{
+  "id": 510762,
+  "url": "https://freesound.org/people/Keleti/sounds/510762/",
+  "name": "fire_crackling_2.wav",
+  "tags": ["background", "crackling", "fire", "mobile", "noise", "stove"],
+  "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+  "duration": 18.0848,
+  "username": "Keleti",
+  "previews": {
+    "preview-hq-mp3": "https://cdn.freesound.org/previews/510/510762_9295713-hq.mp3",
+    "preview-hq-ogg": "https://cdn.freesound.org/previews/510/510762_9295713-hq.ogg",
+    "preview-lq-mp3": "https://cdn.freesound.org/previews/510/510762_9295713-lq.mp3",
+    "preview-lq-ogg": "https://cdn.freesound.org/previews/510/510762_9295713-lq.ogg"
+  },
+  "images": {
+    "waveform_m": "https://cdn.freesound.org/displays/510/510762_9295713_wave_bw_M.png",
+    "waveform_l": "https://cdn.freesound.org/displays/510/510762_9295713_wave_bw_L.png",
+    "spectral_m": "https://cdn.freesound.org/displays/510/510762_9295713_spec_bw_M.jpg",
+    "spectral_l": "https://cdn.freesound.org/displays/510/510762_9295713_spec_bw_L.jpg",
+    "waveform_bw_m": "https://cdn.freesound.org/displays/510/510762_9295713_wave_bw_M.png",
+    "waveform_bw_l": "https://cdn.freesound.org/displays/510/510762_9295713_wave_bw_L.png",
+    "spectral_bw_m": "https://cdn.freesound.org/displays/510/510762_9295713_spec_bw_M.jpg",
+    "spectral_bw_l": "https://cdn.freesound.org/displays/510/510762_9295713_spec_bw_L.jpg"
+  }
+}

@@ -143,6 +143,10 @@
     {
       "text": "TypeCard",
       "link": "/reference/components/type-card"
+    },
+    {
+      "text": "TimelineView",
+      "link": "/reference/components/timeline-view"
     }
   ],
   "effects": [

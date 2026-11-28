@@ -24,8 +24,11 @@ export interface MusicRow {
   /** When the clip plays, in the finished video. */
   readonly from: number;
   readonly to: number;
-  /** Where the beats come from: found in the sound by `uberscene add`, or set as a grid there. */
-  readonly grid: "detected";
+  /**
+   * What the beats are: `grid` when every one is the same length to the millisecond (set with `uberscene add --bpm`,
+   * or music made on a clock), `detected` when they were found in the sound and so may drift from the true pulse.
+   */
+  readonly grid: "grid" | "detected";
 }
 
 /** A beat at the time it plays. */
@@ -56,7 +59,11 @@ export function musicRows(state: ResolvedState, beats: readonly TimelineEntry[] 
     const first = played[0],
       last = played[played.length - 1];
     if (!p || !first || !last) continue;
-    const tempo = lookupAsset(state.manifest, first.asset)?.tempo;
+    const asset = lookupAsset(state.manifest, first.asset);
+    const tempo = asset?.tempo;
+    // Judged on the asset's own beats, where a grid is exact; the timeline rounds the times it plays them at.
+    const lengths = (asset?.beats ?? []).map((b) => b.end - b.start);
+    const even = lengths.length > 1 && lengths.every((l) => Math.abs(l - (lengths[0] as number)) < 0.001);
     const gaps = played.slice(1).map((b, i) => b.time - (played[i] as TimelineEntry).time);
     const role = p.track ? roles.get(p.track) : undefined;
     out.push({
@@ -71,7 +78,7 @@ export function musicRows(state: ResolvedState, beats: readonly TimelineEntry[] 
       last: last.i,
       from: round3(startSeconds(p)),
       to: round3(endSeconds(p)),
-      grid: "detected",
+      grid: even ? "grid" : "detected",
     });
   }
   return out.sort((a, b) => a.from - b.from);

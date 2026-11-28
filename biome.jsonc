@@ -14,6 +14,8 @@
       "!docs/public",
       "!docs/bench.json",
       "!**/fixtures/*.placement.json",
+      // Written by its example's music script, a note an entry.
+      "!examples/machine/notes.ts",
       // Biome reads only a Vue file's script, so every import its template uses looks unused.
       "!**/*.vue",
       // pnpm rewrites this file in its own style whenever it adds a catalog entry.

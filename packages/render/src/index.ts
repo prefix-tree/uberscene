@@ -79,7 +79,37 @@ export {
   type SkillInstallOptions,
   type SkillInstallResult,
 } from "./skills";
+export { makeSound, SOUND_KIT, type SoundSpec } from "./sounds/kit";
+export { wav as soundWav } from "./sounds/synth";
 export { renderStill, type StillOptions, type StillResult } from "./still";
+export {
+  type FetchStockOptions,
+  type FetchStockResult,
+  fetchStock,
+  findStock,
+  parseStockRef,
+  type StockCandidate,
+  type StockFile,
+  type StockSearch,
+  stockCredits,
+} from "./stock/index";
+export {
+  STRUDEL_LICENCE,
+  STRUDEL_PACKAGES,
+  type StrudelEngineOptions,
+  StrudelLicenceNotAccepted,
+  strudelAccepted,
+  strudelCacheDir,
+  strudelNotice,
+} from "./strudel/engine";
+export {
+  masterGain,
+  renderStrudel,
+  type StrudelEvent,
+  type StrudelRender,
+  type StrudelScore,
+  writeStrudelWav,
+} from "./strudel/render";
 export { checkSync, formatSync, type SyncIssue, type SyncPoint, type SyncReport } from "./sync-check";
 export { browserCacheDir, CHROME_MILESTONE, findChrome, installChrome } from "./web/chrome";
 export {

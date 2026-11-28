@@ -1200,7 +1200,7 @@ export default function Video() {
         <Audio id="bed" src="asset:bed" start={0} volume={1} />
       </Track>
 
-      {/* A cue on each beat, each hung off its scene, from the shorts' sound synth (examples/shorts/media/sounds.ts). */}
+      {/* A cue on each beat, each hung off its scene, from the sound kit (`uberscene sound`). */}
       <Track id="sounds" role="effects" layout="free">
         <Audio id="film-bar" src="asset:pop" anchor="evening" offset={1} volume={0.5} />
         <Audio id="edit-bar" src="asset:riser" anchor="evening" offset={3.3} volume={0.25} />

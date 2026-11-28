@@ -1357,8 +1357,12 @@ function compute(
       if (placed.ends) duration = later(duration, placed.ends);
       continue;
     }
-    const start = p.start ?? Time.ZERO;
-    const length = p.duration ?? Time.ZERO;
+    // A sound placed by its attack: worked out here, not written into `p`, which may be frozen as settled.
+    // Only `<Audio>` takes `align`, so its schema has already kept it off every other kind.
+    const aligned = p.props.align === "onset" && p.source ? alignedOnset(p, manifest) : null;
+    const start = aligned?.start ?? p.start ?? Time.ZERO;
+    const length = aligned?.length ?? p.duration ?? Time.ZERO;
+    const ownErrors = aligned?.error ? [...p.errors, aligned.error] : p.errors;
     if (p.source && isScene(p.props.src)) {
       const played = placeScene(
         { id: p.node.id, start: start.toSeconds(), props: p.props, source: p.source },
@@ -1371,11 +1375,12 @@ function compute(
         scenes.set(played.asset, played.use);
       }
     }
-    const placement = place(p.node, p.track, p.parent, start, length, p.props, p.errors, p.source, p.between);
+    const source = aligned?.source ?? p.source;
+    const placement = place(p.node, p.track, p.parent, start, length, p.props, ownErrors, source, p.between);
     const said = errors.length;
     const size = items.size;
     items.set(p.node.id, placement);
-    if (p.errors.length > 0) errors.push(...p.errors);
+    if (ownErrors.length > 0) errors.push(...ownErrors);
     if (!isBetween(p.node.kind) && !placement.range.isEmpty()) duration = later(duration, placement.range.end);
     const inside: Placement[] = p.node.children.length > 0 ? [] : (NOTHING as unknown as Placement[]);
     duration = placeChildren(p.node, placement, items, errors, place, duration, theme, inside);
@@ -3074,4 +3079,37 @@ function rateOf(fps: unknown, id: string, errors: ResolveError[]): Rate {
     errors.push({ code: "SCHEMA", id, prop: "fps", message: (error as Error).message });
     return { num: 30, den: 1 };
   }
+}
+
+/**
+ * `align="onset"`: a sound moved earlier by the time from its `in` to its onset, so its attack lands where it was
+ * placed. One that would then start before the video is trimmed at the front instead. Returns what changes; nothing
+ * when the onset is at or before `in`, and an error when the onset is not measured.
+ */
+function alignedOnset(
+  p: Pending,
+  manifest: AssetManifest,
+): { start?: Time; length?: Time; source?: PendingSource; error?: ResolveError } | null {
+  const source = p.source as PendingSource;
+  const onset = manifest.assets[source.asset]?.onset;
+  if (onset === undefined)
+    return {
+      error: {
+        code: "NO_ONSET",
+        id: p.node.id,
+        prop: "align",
+        message: `align="onset" needs the onset of "${source.asset}": run \`uberscene add\` on it to measure it`,
+      },
+    };
+  const lead = (onset - source.in) / source.speed;
+  if (!(lead > 0)) return null;
+  const start = (p.start ?? Time.ZERO).minus(T(lead));
+  if (!start.isNegative()) return { start };
+  // Starting before the video: the part before 0 is cut, so the onset still lands where it was placed.
+  const cut = start.negate();
+  return {
+    start: Time.ZERO,
+    source: { ...source, in: source.in + cut.toSeconds() * source.speed },
+    ...(p.duration !== undefined ? { length: Time.max(Time.ZERO, p.duration.minus(cut)) } : {}),
+  };
 }

@@ -28,7 +28,7 @@ All times are seconds of the finished video (the song's trim, start and speed ap
 ## `--check-sync`
 
 ```
-music: song  119.98 BPM  a beat every 0.50 s  beat:0 to beat:31  0.00–16.00 s  (beats detected)
+music: song  119.98 BPM  a beat every 0.50 s  beat:0 to beat:31  0.00–16.00 s  (beats found in the sound)
      3.00  start  l6                        on    song@beat:6  (tied to the beat)
      3.10  start  badge                     near  song@beat:6  101 ms after it
      4.00  start  green                     on    song@beat:8  (tied to the beat)
@@ -61,6 +61,8 @@ How to read it:
 - **`music`**: each clip or audio whose asset has beats. `clip` is the id to write in `anchor`. `beatSeconds` is the
   length of a beat as played; `first` and `last` are the beat numbers that play. Empty means no music with beats:
   add the song first.
+  `grid` is `"grid"` when the beats are exact (set with `--bpm`, or music made on a clock) and `"detected"` when they
+  were found in the sound: check a few of those against the strip.
 - **`points`**: every cut between two clips of a sequence (`kind: "cut"`, with `from`) and every clip, title, shape,
   SVG, sticker or layer starting on screen (`kind: "start"`), while music plays. `id` is the element that starts.
 - **`beat.offsetMs`**: the point minus its nearest beat. Positive: the point is late. Negative: early.
@@ -131,6 +133,19 @@ npx uberscene inspect video.tsx --events --kinds beat,word --in 4..8
 are in the video; `sourceTime` is in the song. `tracks[].role` says which track is music, dialogue or effects.
 
 `song@beat:16` is a moment anywhere moments are taken: `inspect --at song@beat:16`, `look --at song@beat:16`.
+
+## A film made this way
+
+`examples/orbit` (Earth at night) is the reference:
+
+- 32 s, vertical, 16 bars at 120 BPM;
+- a table of shots, each with an `id` and the `beat` it starts on, mapped to `<Clip anchor="song" at={`beat:${beat}`}>`;
+- the music made on a clock and added with `--bpm 120 --first-beat 0` (`grid: "grid"`);
+- lightning shots that start on the snare at the frame a flash begins: a script finds the flashes, the film imports
+  their times.
+
+`--check-sync` reports 38 of 38 on the beat and tied to it. Copy its shape when a film is cut to music: name the shots,
+write the beats, and check.
 
 ## What the numbers don't say
 

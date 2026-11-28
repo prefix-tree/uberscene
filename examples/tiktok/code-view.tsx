@@ -12,6 +12,11 @@ export interface LitLine {
   readonly line: number;
   readonly from: number;
   readonly to: number;
+  /**
+   * A range of characters on the line, from the first to the one after the last: lit as a word (a chord name, a
+   * note) in a filled box, without lighting the line or moving the window.
+   */
+  readonly cols?: readonly [number, number] | undefined;
 }
 
 const C = {
@@ -29,6 +34,7 @@ const C = {
   punct: "#89ddff",
   lit: "rgba(255, 196, 0, 0.16)",
   litMark: "#ffc400",
+  litStrong: "rgba(255, 196, 0, 0.3)",
 };
 
 const KEYWORDS = new Set([
@@ -118,6 +124,7 @@ export function CodeView({
   size = 20,
   hold = 0.3,
   fade = 0,
+  strong = false,
 }: {
   code: string;
   lit: readonly LitLine[];
@@ -133,14 +140,21 @@ export function CodeView({
   hold?: number;
   /** Pixels at the bottom of the window that fade into the page (the part a phone's UI covers). */
   fade?: number;
+  /** For a phone: the lit line stands out more, and the lines around it step back. */
+  strong?: boolean;
 }) {
   const lines = code.replace(/\s+$/, "").split("\n");
   const lead = Math.round(size * 1.45);
   const bar = 46;
   const body = h - bar;
-  const focus = focusAt(t, lit, lines.length, length);
+  const lines_ = lit.filter((l) => !l.cols);
+  const focus = focusAt(t, lines_, lines.length, length);
   const scroll = Math.max(0, Math.min(lines.length * lead - body + lead, focus * lead - body * hold));
-  const on = new Set(lit.filter((l) => l.from <= t && t < l.to).map((l) => l.line));
+  const on = new Set(lines_.filter((l) => l.from <= t && t < l.to).map((l) => l.line));
+  const words = lit.filter((l) => l.cols && l.from <= t && t < l.to);
+  /** Where the code starts on a line, after the mark and the line number, and how wide a character is. */
+  const gutter = (strong ? 8 : 4) + 52 + 16;
+  const advance = size * 0.6;
   const first = Math.max(0, Math.floor(scroll / lead) - 1);
   const last = Math.min(lines.length, first + Math.ceil(body / lead) + 3);
   const box: CSSProperties = {
@@ -204,13 +218,19 @@ export function CodeView({
                 height: lead,
                 display: "flex",
                 alignItems: "center",
-                background: lit ? C.lit : "transparent",
+                background: lit ? (strong ? C.litStrong : C.lit) : "transparent",
+                opacity: strong && on.size > 0 && !lit ? 0.45 : 1,
                 font: `500 ${size}px ${MONO}`,
                 whiteSpace: "pre",
               }}
             >
               <span
-                style={{ width: 4, flexShrink: 0, alignSelf: "stretch", background: lit ? C.litMark : "transparent" }}
+                style={{
+                  width: strong ? 8 : 4,
+                  flexShrink: 0,
+                  alignSelf: "stretch",
+                  background: lit ? C.litMark : "transparent",
+                }}
               />
               <span
                 style={{
@@ -230,6 +250,31 @@ export function CodeView({
                   </span>
                 ))}
               </span>
+              {words
+                .filter((w) => w.line === n)
+                .map((w) => {
+                  const [a, b] = w.cols as readonly [number, number];
+                  return (
+                    <span
+                      key={`${a}-${b}`}
+                      style={{
+                        position: "absolute",
+                        left: gutter + a * advance - 5,
+                        top: 3,
+                        bottom: 3,
+                        padding: "0 5px",
+                        display: "flex",
+                        alignItems: "center",
+                        borderRadius: 6,
+                        background: C.litMark,
+                        color: C.panel,
+                        font: `700 ${size}px ${MONO}`,
+                      }}
+                    >
+                      {text.slice(a, b)}
+                    </span>
+                  );
+                })}
             </div>
           );
         })}

@@ -14,6 +14,7 @@ import {
   resolve,
 } from "@uberscene/sdk";
 
+import { codeFingerprint } from "./frame-cache";
 import { findManifest, MANIFEST_FILE } from "./manifest-file";
 import type { ExportSource } from "./renderer";
 
@@ -71,6 +72,11 @@ export async function loadVideo(file: string, options: LoadOptions = {}): Promis
       manifest,
       ...(Object.keys(files).length ? { files } : {}),
       ...(options.props ? { props: options.props } : {}),
+      code: codeFingerprint({
+        folder: dirname(path),
+        texts: [text, ...Object.values(files)],
+        ...(options.imports ? { offered: options.imports } : {}),
+      }),
     },
   };
 }

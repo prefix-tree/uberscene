@@ -68,7 +68,7 @@ describe("beats on the timeline", () => {
         last: 15,
         from: 0,
         to: 8,
-        grid: "detected",
+        grid: "grid",
       },
     ]);
     expect(rows.tracks.find((t) => t.id === "music")?.role).toBe("music");

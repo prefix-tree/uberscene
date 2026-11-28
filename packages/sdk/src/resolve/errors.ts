@@ -23,6 +23,8 @@ export type ResolveErrorCode =
   | "INVALID_TIME_RANGE"
   | "UNKNOWN_TOKEN"
   | "UNKNOWN_STYLE"
+  /** `align="onset"` on a sound whose onset is not measured: `uberscene add` measures it. */
+  | "NO_ONSET"
   | "SCHEMA";
 
 export interface ResolveError {

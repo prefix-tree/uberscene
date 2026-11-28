@@ -5,6 +5,19 @@ Each film becomes two vertical posts, 1080x1920:
 - **`<name>-code.mp4`**: "This video is code." The film plays on top, and its own source scrolls below in an editor
   window, with the line of whatever is on screen lit as it appears. It ends on a card with the project's name and
   address. (`frame.tsx`, with the window in `code-view.tsx`.)
+- **`<name>-reveal.mp4`**: the film full screen, then for a stretch it slides up into the top of the frame and its own
+  source rises into the bottom, lighting each line as what it writes comes on screen; then the code drops away and the
+  film fills the frame again. For a film cut to music the stretch runs from one section to the next (orbit: the code
+  comes up for the build and goes on the drop), so both moves land on beats. (`reveal.tsx`.)
+  A film can open on hook lines (`hook`: a question, its answer, then the turn), and show its music's Strudel score
+  before its pictures' file (`music`). Liftoff's asks "How do you edit 60 years of launches?", answers "Footage. Music.
+  An editor.", then turns: "BUT no After Effects. No Premiere. Just code." and "Building it to 10/10. Follow along." At 12 s `score.ts` comes up with
+  the playing section lit, its light moving from 1969 to the 80s as the sound does, and at 20 s it switches to
+  `video.tsx`. The machine is one file (score, picture and timeline in `video.tsx`), so its
+  post is split from the first frame to the last (`reveal: [0, 40]`) and the editor moves through that file on bar
+  lines (`music: { turns }`): its music, its timeline, its music again for the drop. Its hook: "Today we're building
+  music and graphics on one timeline.", "Same framework. One file: music, animation, export.", "BUT no editor. Just
+  code."
 - **`<name>-post.mp4`**: just the film. A tall film fills the frame; a wide one sits across it over a blurred copy of
   itself, so there are no bars. (`post.tsx`.)
 
@@ -24,6 +37,9 @@ The posts land in `out/`, which is not committed.
 | `hero` | `showcase/hero.tsx`, the woodblock logo | in the repository |
 | `snake-heart` | `shorts/snake-heart.tsx`, a snake that ends in a heart | in the repository |
 | `game-lighting` | `shorts/game-lighting.tsx`, how game lighting fakes it | in the repository |
+| `orbit` | `orbit/video.tsx`, Earth at night from the space station, cut to its music | `pnpm --filter @uberscene/example-orbit prepare-media` |
+| `liftoff` | `liftoff/video.tsx`, sixty years of launches, Apollo to Starship | `pnpm --filter @uberscene/example-liftoff prepare-media` |
+| `machine` | `machine/video.tsx`, a music machine: every falling block is a note of its score | `pnpm --filter @uberscene/example-machine prepare-media` |
 
 A film whose media is not made yet is skipped, and the script says which command makes it.
 

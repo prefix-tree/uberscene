@@ -1,0 +1,27 @@
+{
+  "name": "@uberscene/example-liftoff",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Liftoff: rocket launches from Apollo to SpaceX, cut to their music, every ignition on a downbeat, in 9:16 and 16:9 from one edit.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "footage": "tsx scripts/fetch.ts",
+    "music": "tsx scripts/music.ts",
+    "ignition": "tsx scripts/ignition.ts",
+    "prepare-media": "tsx scripts/fetch.ts && tsx scripts/music.ts && tsx scripts/ignition.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@uberscene/kit": "workspace:*",
+    "@uberscene/render": "workspace:*",
+    "react": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
+  }
+}

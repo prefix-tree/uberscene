@@ -33,7 +33,13 @@ export interface AssetEntry {
   readonly beats?: readonly Beat[];
   /** The music's tempo in beats per minute, with `beats`. */
   readonly tempo?: number;
+  /** The sound's level over time, measured by `uberscene add`: what a picture of the timeline draws. */
   readonly waveform?: WaveformSummary;
+  /**
+   * Seconds into a sound file where its sound first reaches half its loudest: the attack a sound effect is placed
+   * by, so a hit lands on the frame rather than its first, quiet sample.
+   */
+  readonly onset?: number;
   /** Where the subject (a face, a person) sits in the picture, sampled over time; several boxes may share a `t`. */
   readonly subjects?: readonly SubjectBox[];
   /**
@@ -43,6 +49,24 @@ export interface AssetEntry {
   readonly matte?: string;
   /** What made `matte`, when `uberscene matte` did: the model's name and the SHA-256 of its file. */
   readonly matteModel?: { readonly name: string; readonly sha256: string };
+  /** Where the file came from, when `uberscene fetch` brought it: what the credits are written from. */
+  readonly source?: AssetSource;
+}
+
+/** A fetched asset's origin: the library, its id there, its page, who made it and under what licence. */
+export interface AssetSource {
+  /** The library: `pixabay` or `commons`. */
+  readonly provider: string;
+  /** Its id in that library: Pixabay's number, or the file's name on Commons. */
+  readonly id: string;
+  readonly title: string;
+  /** The page that shows it and its licence. */
+  readonly page: string;
+  readonly author: string;
+  readonly licence: string;
+  /** The seconds of the original kept, when only a stretch was fetched. */
+  readonly from?: number;
+  readonly to?: number;
 }
 
 /** A subject's box at source second `t`, as fractions of the source picture (0..1 from its top left). */
@@ -84,6 +108,7 @@ export interface Beat {
   readonly end: number;
 }
 
+/** A sound's level in bins of `binSeconds`: each bin's peak and RMS, 0 to 1, of the sound mixed to one channel. */
 export interface WaveformSummary {
   readonly binSeconds: number;
   readonly peaks: readonly number[];

@@ -35,7 +35,8 @@
     "packages/kit/src/jsx/effect-params.ts: kind === \"transition\"",
     "packages/kit/src/jsx/shader-definition.ts: kind === \"transition\"",
     "packages/kit/src/jsx/shaders.ts: p.kind === \"transition\"",
-    "packages/sdk/src/inspect/sync.ts: e.kind === \"marker\""
+    "packages/sdk/src/inspect/sync.ts: e.kind === \"marker\"",
+    "packages/render/src/stock/freesound.ts: kinds: [\"audio\"]"
   ],
   "allow": [
     {

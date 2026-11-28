@@ -44,7 +44,7 @@ references.
 | Words on screen | `<Title>` with a theme `style` and `animation={{ type }}`: `typewriter`, `fade`, `slideUp`, `slideDown`, `slideLeft`, `slideRight`, `scale`, `wordByWord` |
 | Captions | `<Captions>` from the transcript, or `<Caption>` cues; `animation`: `wordHighlight`, `wordByWord`, `karaoke`, `typewriter`; `style.highlightBox` boxes the word being said; `box` places them (the lower safe area when left out; each field written replaces that one) |
 | Shapes and images | `<Shape>` (rectangle, circle, ellipse, triangle, arrow and more), `<Svg>` (inline markup or an SVG asset), `<Sticker>` (a PNG, SVG, WebP or GIF asset) |
-| Ready-made graphics | `LowerThird`, `Callout`, `Badge`, `Counter`, `TypeCard` |
+| Ready-made graphics | `LowerThird`, `Callout`, `Badge`, `Counter`, `TypeCard`, `TimelineView` |
 | Ready-made scenes | Blocks: `uberscene blocks --for "<job>"` lists them with when to use each (`--sheet blocks.png` to look); `uberscene blocks add <name> --into video.tsx --track <id> --at hook@word:N` copies one to `blocks/<name>.tsx` and places its component in a `<Layer>`, its props set there; `blocks update` after an upgrade |
 | Sound | `<Audio>` for music and voice; `volume` and `pan` (a value, or keys over time), `fade={{ in, out }}`, `duck={{ under, to }}` under a track or a role (`dialogue`) |
 | Anything else | `<Layer>` (any React), `<Three>` (three.js), `<Motion>` (Motion), all on the video's clock; see "Free code" under Look and graphics |
@@ -325,8 +325,9 @@ Give the video one look and say it once.
   `box.width` and `box.height`. A preset is look only. `<Shape style="card">`, `<Captions style="boxed">`, and
   `style={{ preset: "boxed", align: "left" }}` on captions.
 - **Leave entrances to the motion style.** Write `enter` or `exit` only where one element should differ.
-- **Components** for the common graphics: `LowerThird`, `Callout`, `Badge`, `Counter` and
-  `TypeCard`, imported from `@uberscene/kit`. They take the timing props any element takes.
+- **Components** for the common graphics: `LowerThird`, `Callout`, `Badge`, `Counter`, `TypeCard`, and
+  `TimelineView` (a film's own timeline drawn as an editor shows it, from `timelineLanes(state)`), imported from
+  `@uberscene/kit`. They take the timing props any element takes.
   `box`, with `x` and `y`, is the component's centre in pixels from the frame's top left; an axis left out is
   centred on the frame, except the defaults of `LowerThird` and `Callout`, set for 1920x1080. See
   [references/components.md](references/components.md).
