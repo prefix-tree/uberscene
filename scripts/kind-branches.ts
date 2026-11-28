@@ -80,8 +80,11 @@ type Counts = Record<string, Record<What, number>>;
 interface Budget {
   readonly counts: Counts;
   readonly ignore: readonly string[];
-  /** Files outside those folders that may name a sealed kind, each with why. */
-  readonly allow?: readonly { readonly file: string; readonly why: string }[];
+  /**
+   * Files outside those folders that may name a sealed kind, each with why: any sealed kind, or only those in
+   * `kinds`.
+   */
+  readonly allow?: readonly { readonly file: string; readonly kinds?: readonly string[]; readonly why: string }[];
 }
 
 const budget = JSON.parse(readFileSync(budgetFile, "utf8")) as Budget;
@@ -89,7 +92,8 @@ const ignored = new Set(budget.ignore);
 const usedIgnores = new Set<string>();
 /** Kinds that may be named only in their own folders: every kind that has them. */
 const sealed = new Set<string>(Object.keys(KIT_ELEMENTS));
-const allowed = new Set((budget.allow ?? []).map((a) => a.file));
+/** The sealed kinds each allowed file may name: every one, where its entry lists none. */
+const allowed = new Map((budget.allow ?? []).map((a) => [a.file, a.kinds ? new Set(a.kinds) : null] as const));
 const usedAllows = new Set<string>();
 /** Where a sealed kind is named outside its folders: `file:line  what was written`. */
 const breaches: string[] = [];
@@ -128,8 +132,10 @@ function hitsIn(source: ts.SourceFile, checker: ts.TypeChecker): Hit[] {
 
   /** A sealed kind named here: at home in its folders and in an allowed file, a breach anywhere else. */
   const names = (node: ts.Node, kinds: readonly string[]): void => {
-    if (home || !kinds.some((k) => sealed.has(k))) return;
-    if (allowed.has(file)) usedAllows.add(file);
+    const named = kinds.filter((k) => sealed.has(k));
+    if (home || named.length === 0) return;
+    const may = allowed.get(file);
+    if (may !== undefined && named.every((k) => may === null || may.has(k))) usedAllows.add(file);
     else breaches.push(`${file}:${lineOf(node)}  ${words(node).slice(0, 100)}`);
   };
   const add = (node: ts.Node, what: What, kinds: readonly string[]): void => {
