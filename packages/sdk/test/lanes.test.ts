@@ -3,13 +3,14 @@ import { describe, expect, it } from "vitest";
 
 import { collectModule, loadModule, resolve, timelineLanes } from "@uberscene/sdk";
 
-const FILE = `import { Audio, Clip, Composition, Title, Track } from "@uberscene/kit";
+const FILE = `import { Audio, Clip, Composition, Marker, Title, Track } from "@uberscene/kit";
 
 export default function Video() {
   return (
     <Composition fps={30} width={640} height={360}>
+      <Marker id="drop" start={2} label="the drop" />
       <Track id="sfx" layout="free" role="effects">
-        <Audio id="hit" src="asset:hit" start={1} volume={0.5} />
+        <Audio id="hit" src="asset:hit" start={1} volume={0.5} fade={{ in: 0.2 }} />
         <Audio id="hit-2" src="asset:hit" start={1.5} />
         <Audio id="hit-3" src="asset:hit" start={2.5} />
       </Track>
@@ -32,6 +33,14 @@ const manifest = {
       kind: "audio" as const,
       duration: 1,
       audio: { sampleRate: 48000, channels: 1, streams: 1 },
+      source: {
+        provider: "freesound",
+        id: "1",
+        title: "Big Hit",
+        page: "https://freesound.org/",
+        author: "a",
+        licence: "CC0",
+      },
       // Silent for half a second, then loud.
       waveform: {
         binSeconds: 0.1,
@@ -64,6 +73,13 @@ describe("timelineLanes", () => {
     expect(lanes.lanes[2]?.clips.map((c) => c.id)).toEqual(["hit", "hit-3"]);
     expect(lanes.lanes[3]).toMatchObject({ id: "sfx-2", track: "sfx" });
     expect(lanes.lanes[3]?.clips.map((c) => c.id)).toEqual(["hit-2"]);
+  });
+
+  it("names what each clip plays, keeps its fades, and lists the markers", () => {
+    const hit = lanes.lanes[2]?.clips[0];
+    expect(hit).toMatchObject({ title: "Big Hit", fade: { in: 0.2, out: 0 } });
+    expect(lanes.lanes[0]?.clips[0]?.title).toBe("shot");
+    expect(lanes.markers).toEqual([{ time: 2, label: "the drop" }]);
   });
 
   it("gives a sound its level at even steps, scaled by its volume", () => {

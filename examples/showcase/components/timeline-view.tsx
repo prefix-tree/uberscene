@@ -8,9 +8,9 @@ const LANES = [
     role: "general",
     kind: "picture" as const,
     clips: [
-      { id: "fire", kind: "clip", from: 0, to: 1.5, label: "fire" },
-      { id: "falls", kind: "clip", from: 1.5, to: 3, label: "falls" },
-      { id: "storm", kind: "clip", from: 3, to: 4, label: "storm" },
+      { id: "fire", kind: "clip", from: 0, to: 1.5, label: "fire", title: "fire.webm" },
+      { id: "falls", kind: "clip", from: 1.5, to: 3, label: "falls", title: "falls.webm" },
+      { id: "storm", kind: "clip", from: 3, to: 4, label: "storm", title: "storm.webm" },
     ],
   },
   {
@@ -40,6 +40,8 @@ const LANES = [
         from: 0,
         to: 1.6,
         label: "crackle",
+        title: "Wood fire crackling",
+        fade: { in: 0, out: 0.4 },
         level: [0.4, 0.6, 0.3, 0.7, 0.5, 0.4, 0.6, 0.3],
       },
       {
@@ -48,6 +50,8 @@ const LANES = [
         from: 1.4,
         to: 3.1,
         label: "water",
+        title: "At the Top of a Large Waterfall",
+        fade: { in: 0.4, out: 0.3 },
         level: [0.5, 0.6, 0.55, 0.62, 0.58, 0.6, 0.57, 0.5],
       },
     ],
@@ -59,6 +63,10 @@ export default function Video() {
     <Composition fps={30} width={1920} height={1080} background={{ type: "color", color: "#0b0d12" }}>
       <Track id="over" layout="free">
         <TimelineView
+          markers={[
+            { time: 1.5, label: "falls" },
+            { time: 3, label: "storm" },
+          ]}
           id="timeline"
           start={0}
           duration={4}

@@ -14,6 +14,10 @@ export interface LaneClip {
   readonly to: number;
   /** What to write on it: the element's id. */
   readonly label: string;
+  /** What it plays, as a person would name the file: a fetched asset's title, else the asset's id. */
+  readonly title?: string;
+  /** Seconds it fades in and out over, from its `fade`. */
+  readonly fade?: { readonly in: number; readonly out: number };
   /** A sound's level, 0 to 1, at even steps across `from`–`to`; absent when its sound is not measured. */
   readonly level?: readonly number[];
 }
@@ -30,9 +34,17 @@ export interface Lane {
   readonly clips: readonly LaneClip[];
 }
 
+/** A marker on the ruler: the file's `<Marker>`s. */
+export interface LaneMarker {
+  readonly time: number;
+  readonly label: string;
+  readonly color?: string;
+}
+
 export interface TimelineLanes {
   /** The film's length in seconds. */
   readonly length: number;
+  readonly markers: readonly LaneMarker[];
   /** Top to bottom as an editor stacks them: picture above sound, each in the file's order. */
   readonly lanes: readonly Lane[];
 }
@@ -55,10 +67,11 @@ const SHOWN = new Set([
 const round3 = (v: number) => Math.round(v * 1000) / 1000;
 
 /**
- * The timeline as lanes. `steps` is how many level values a second of sound gets (default 25); a clip's level is
+ * The timeline as lanes. `steps` is how many level values a second of sound gets (default 100: one
+ * for each 10 ms bin); a clip's level is
  * the peak of its asset's waveform over each step, scaled by its volume when that is a number.
  */
-export function timelineLanes(state: ResolvedState, { steps = 25 }: { steps?: number } = {}): TimelineLanes {
+export function timelineLanes(state: ResolvedState, { steps = 100 }: { steps?: number } = {}): TimelineLanes {
   const lanes: Lane[] = [];
   for (const track of [...state.tracks].sort((a, b) => a.order - b.order)) {
     const clips: LaneClip[] = [];
@@ -68,12 +81,17 @@ export function timelineLanes(state: ResolvedState, { steps = 25 }: { steps?: nu
       // What a helper or a loop made inside an element stands with its parent.
       if (p.parent !== null && p.parent !== track.id) continue;
       const level = p.kind === "audio" ? levelOf(state, p, steps) : undefined;
+      const asset = p.source ? lookupAsset(state.manifest, p.source.asset) : null;
+      const title = asset?.source?.title ?? p.source?.asset;
+      const fade = p.props.fade as { in?: number; out?: number } | undefined;
       clips.push({
         id: p.id,
         kind: p.kind,
         from: round3(startSeconds(p)),
         to: round3(endSeconds(p)),
         label: p.id,
+        ...(title ? { title } : {}),
+        ...(fade && (fade.in || fade.out) ? { fade: { in: fade.in ?? 0, out: fade.out ?? 0 } } : {}),
         ...(level ? { level } : {}),
       });
     }
@@ -98,7 +116,15 @@ export function timelineLanes(state: ResolvedState, { steps = 25 }: { steps?: nu
   }
   // An editor stacks picture above sound; within each, the file's order.
   lanes.sort((a, b) => (a.kind === b.kind ? 0 : a.kind === "picture" ? -1 : 1));
-  return { length: round3(state.composition.duration), lanes };
+  const markers: LaneMarker[] = [...state.items.values()]
+    .filter((p) => p.kind === "marker")
+    .map((p) => ({
+      time: round3(startSeconds(p)),
+      label: typeof p.props.label === "string" && p.props.label ? p.props.label : p.id,
+      ...(typeof p.props.color === "string" ? { color: p.props.color } : {}),
+    }))
+    .sort((a, b) => a.time - b.time);
+  return { length: round3(state.composition.duration), markers, lanes };
 }
 
 function levelOf(state: ResolvedState, p: Placement, steps: number): number[] | undefined {

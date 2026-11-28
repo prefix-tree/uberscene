@@ -868,7 +868,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/sdk`
 
-249 exports.
+250 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -983,6 +983,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `KeyJson` | interface | One key as a file writes it. |
 | `Lane` | interface |  |
 | `LaneClip` | interface |  |
+| `LaneMarker` | interface | A marker on the ruler. |
 | `LayerActions` | interface |  |
 | `LayerInterior` | interface |  |
 | `LayerPlacement` | interface |  |
