@@ -43,6 +43,24 @@ export interface AssetEntry {
   readonly matte?: string;
   /** What made `matte`, when `uberscene matte` did: the model's name and the SHA-256 of its file. */
   readonly matteModel?: { readonly name: string; readonly sha256: string };
+  /** Where the file came from, when `uberscene fetch` brought it: what the credits are written from. */
+  readonly source?: AssetSource;
+}
+
+/** A fetched asset's origin: the library, its id there, its page, who made it and under what licence. */
+export interface AssetSource {
+  /** The library: `pixabay` or `commons`. */
+  readonly provider: string;
+  /** Its id in that library: Pixabay's number, or the file's name on Commons. */
+  readonly id: string;
+  readonly title: string;
+  /** The page that shows it and its licence. */
+  readonly page: string;
+  readonly author: string;
+  readonly licence: string;
+  /** The seconds of the original kept, when only a stretch was fetched. */
+  readonly from?: number;
+  readonly to?: number;
 }
 
 /** A subject's box at source second `t`, as fractions of the source picture (0..1 from its top left). */

@@ -572,6 +572,45 @@ downloads one ahead of time. `UBERSCENE_MODEL_REGISTRY` names a JSON file of mod
 package's `models.json`: each with its source, SHA-256, size, licence, input and output names, and for a model that
 carries state from frame to frame, the inputs and outputs of that state.
 
+## Stock footage and sounds
+
+`uberscene find` searches a stock library and `uberscene fetch` brings one result into the project, with where it
+came from, its author and its licence kept on its manifest entry. `uberscene credits` writes the credits from there.
+
+```sh
+uberscene find pixabay waterfall forest --orientation landscape --min-duration 8 --sheet waterfalls.jpg
+uberscene fetch pixabay:358693 --id falls --from 4 --to 10 --height 1920
+uberscene find commons wind --sound
+uberscene credits --out CREDITS.md
+```
+
+| Library | What | Licence | Key |
+|---|---|---|---|
+| `pixabay` | videos | the Pixabay Content License: free to use in a video, no credit asked | `PIXABAY_API_KEY`, free from [pixabay.com/api/docs](https://pixabay.com/api/docs/); an environment variable, since Pixabay reads it from the address |
+| `commons` | videos and sounds (`--sound`) | each file's own free licence (CC0, CC BY, CC BY-SA, public domain), read from its page | none |
+
+`find` prints each candidate's ref, length, size, licence and author, best first; `--json` prints them as data and
+`--sheet <image>` draws them as one contact sheet, numbered as listed. A search is kept for a day in
+`~/.cache/uberscene/stock` (`UBERSCENE_STOCK_CACHE` moves it), as Pixabay asks; `--fresh` asks again. The key is never
+written to the cache, the manifest or an error.
+
+| Option | |
+|---|---|
+| `--sound` | (find) Recordings instead of videos. Commons only. |
+| `--orientation portrait\|landscape` | (find) Only footage this way up. |
+| `--min-duration <s>` | (find) Only candidates at least this long. |
+| `--limit <n>` | (find) At most this many. Default 20. |
+| `--id <id>` | (fetch) The asset id. Default: made from the title. |
+| `--from <s> --to <s>` | (fetch) Keep only this stretch of the original; only those seconds are read. |
+| `--height <px>` | (fetch) The picture height the film needs: the smallest rendition at least this tall is fetched, so a vertical crop of landscape footage keeps real pixels. Default 1080. |
+| `--dir <folder>` | (fetch) Where the file goes. Default `media` beside the manifest. |
+| `--out <file>` | (credits) Write the table to a file instead of printing it. |
+
+`fetch` downloads the file as the library serves it when the engine plays it as it is (MP4, WebM, WAV). A stretch
+(`--from`/`--to`), an Ogg video or a sound that is not a WAV is converted with ffmpeg, which must be on the `PATH`
+(with libvpx-vp9 for video): footage becomes VP9 WebM without its sound, a sound becomes a 48 kHz WAV. A file is
+written under another name and moved into place, so a fetch cut off half way is made again next time.
+
 ## The agent skill
 
 `uberscene skills install` writes the agent skill that ships with this version of the CLI into

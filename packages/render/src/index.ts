@@ -81,6 +81,17 @@ export {
 } from "./skills";
 export { renderStill, type StillOptions, type StillResult } from "./still";
 export {
+  type FetchStockOptions,
+  type FetchStockResult,
+  fetchStock,
+  findStock,
+  parseStockRef,
+  type StockCandidate,
+  type StockFile,
+  type StockSearch,
+  stockCredits,
+} from "./stock/index";
+export {
   STRUDEL_LICENCE,
   STRUDEL_PACKAGES,
   type StrudelEngineOptions,

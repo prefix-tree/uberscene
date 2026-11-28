@@ -23,6 +23,7 @@ import { installCodec } from "./native/codecs";
 import { draftPath, renderVideo } from "./renderer";
 import { installSkills } from "./skills";
 import { renderStill } from "./still";
+import { stockCommand } from "./stock/cli";
 import { checkSync, formatSync } from "./sync-check";
 import { CHROME_MILESTONE, cachedChrome, installChrome } from "./web/chrome";
 import { formatWhere, whereThings } from "./where";
@@ -55,6 +56,10 @@ const USAGE = `Usage: uberscene <file.tsx> --out <video.mp4|.webm|.mp3|.wav> [--
        uberscene matte models [--json]
        uberscene matte install [<model>] [--accept-licence]
        uberscene skills install [--dir <folder>] [--force]
+       uberscene find <pixabay|commons> <words>... [--sound] [--orientation portrait|landscape] [--min-duration <s>]
+                    [--limit <n>] [--sheet <image>] [--json] [--fresh]
+       uberscene fetch <library:id> [--id <id>] [--from <s> --to <s>] [--height <px>] [--dir <folder>] [--manifest <file>]
+       uberscene credits [--manifest <file>] [--out CREDITS.md]
 
   Every export draws its frames in Chrome. The first one downloads Chrome for Testing ${CHROME_MILESTONE} into
   ~/.cache/uberscene/browsers (or UBERSCENE_BROWSER_CACHE); UBERSCENE_CHROMIUM names a Chrome ${CHROME_MILESTONE} to use
@@ -189,6 +194,25 @@ const USAGE = `Usage: uberscene <file.tsx> --out <video.mp4|.webm|.mp3|.wav> [--
   --import <spec>       a module the file may import beyond react, zod and the kit: three, or name=specifier
                         (a package, or a path relative to the file); the editor must offer the same modules
   --continue            draw the grey placeholder for an asset that cannot be read, instead of failing
+  find                  search a stock library for footage (or, with --sound, recordings): pixabay (videos, under the
+                        Pixabay Content License; set PIXABAY_API_KEY, a free key from pixabay.com/api/docs) or commons
+                        (Wikimedia Commons: videos and sounds, each under its own free licence; no key). Prints each
+                        candidate's ref, length, size, licence and author, best first. A search is kept for a day in
+                        ~/.cache/uberscene/stock (or UBERSCENE_STOCK_CACHE); --fresh asks again
+  --sound               (find) recordings instead of videos (commons only)
+  --orientation <way>   (find) only portrait or only landscape footage
+  --min-duration <s>    (find) only candidates at least this long
+  --limit <n>           (find) at most this many (default 20)
+  --sheet <image>       (find) also draw the candidates as one contact sheet, numbered as listed
+  --fresh               (find) skip the day's cached answer
+  fetch                 bring a candidate into the project by its ref (pixabay:287510, commons:Some file.webm): into
+                        media/ beside the manifest (or --dir), added to the manifest with where it came from, its
+                        author and its licence. Downloaded as served when it plays as it is (MP4, WebM, WAV); with
+                        --from/--to, or an Ogg video, or a sound that is not a WAV, converted with ffmpeg
+  --from <s> --to <s>   (fetch) keep only this stretch of the original: only those seconds are read
+  --height <px>         (fetch) the picture height the film needs: the smallest rendition at least this tall
+                        (default 1080), so a vertical crop of landscape footage keeps real pixels
+  credits               print a Markdown table of every fetched asset in the manifest (or --out <file>)
   matte makes the matte of a footage file for <Clip cutout>: <name>.matte.webm beside it, one greyscale frame for
   each of the footage's, white where the person is, added to the manifest with "matte" on the footage. The model runs
   in Chrome with ONNX Runtime for the web (\`npm i -D onnxruntime-web\`). UberScene lists models, it does not ship
@@ -268,6 +292,12 @@ async function main(): Promise<number> {
       duration: { type: "string" },
       model: { type: "string" },
       "accept-licence": { type: "boolean" },
+      sound: { type: "boolean" },
+      orientation: { type: "string" },
+      "min-duration": { type: "string" },
+      limit: { type: "string" },
+      height: { type: "string" },
+      fresh: { type: "boolean" },
     },
   });
   if (positionals[0] === "add") return add(positionals.slice(1), values);
@@ -391,6 +421,8 @@ async function main(): Promise<number> {
     return 0;
   }
   if (positionals[0] === "matte") return matteCommand(positionals.slice(1), values, USAGE);
+  if (positionals[0] === "find" || positionals[0] === "fetch" || positionals[0] === "credits")
+    return stockCommand(positionals[0], positionals.slice(1), values, USAGE);
   if (positionals[0] === "codecs") {
     if (positionals[1] !== "install") {
       process.stderr.write(USAGE);

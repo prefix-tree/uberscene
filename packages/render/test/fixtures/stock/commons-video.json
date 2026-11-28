@@ -1,0 +1,140 @@
+{
+  "batchcomplete": true,
+  "continue": {
+    "gsroffset": 3,
+    "continue": "gsroffset||"
+  },
+  "query": {
+    "pages": [
+      {
+        "pageid": 155159888,
+        "ns": 6,
+        "title": "File:Waterfall in Huascar\u00e1n National Park - Peru.webm",
+        "index": 1,
+        "imagerepository": "local",
+        "imageinfo": [
+          {
+            "size": 113992136,
+            "width": 1080,
+            "height": 1920,
+            "duration": 31.8,
+            "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f7/Waterfall_in_Huascar%C3%A1n_National_Park_-_Peru.webm/330px-Waterfall_in_Huascar%C3%A1n_National_Park_-_Peru.webm.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo",
+            "thumbwidth": 320,
+            "thumbheight": 569,
+            "thumbattribs": [],
+            "url": "https://upload.wikimedia.org/wikipedia/commons/f/f7/Waterfall_in_Huascar%C3%A1n_National_Park_-_Peru.webm?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+            "descriptionurl": "https://commons.wikimedia.org/wiki/File:Waterfall_in_Huascar%C3%A1n_National_Park_-_Peru.webm",
+            "descriptionshorturl": "https://commons.wikimedia.org/wiki/Special:Redirect/page/155159888",
+            "extmetadata": {
+              "ObjectName": {
+                "value": "Waterfall in Huascar\u00e1n National Park - Peru",
+                "source": "mediawiki-metadata"
+              },
+              "Artist": {
+                "value": "<a href=\"//commons.wikimedia.org/wiki/User:CorraleH\" title=\"User:CorraleH\">CorraleH</a>",
+                "source": "commons-desc-page"
+              },
+              "LicenseShortName": {
+                "value": "CC0",
+                "source": "commons-desc-page",
+                "hidden": ""
+              },
+              "LicenseUrl": {
+                "value": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+                "source": "commons-desc-page"
+              }
+            },
+            "mime": "video/webm",
+            "mediatype": "VIDEO"
+          }
+        ]
+      },
+      {
+        "pageid": 180043911,
+        "ns": 6,
+        "title": "File:Shila Waterfall in Zanaskar.webm",
+        "index": 3,
+        "imagerepository": "local",
+        "imageinfo": [
+          {
+            "size": 17850886,
+            "width": 720,
+            "height": 1280,
+            "duration": 11.181000000000001,
+            "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/eb/Shila_Waterfall_in_Zanaskar.webm/330px-Shila_Waterfall_in_Zanaskar.webm.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo",
+            "thumbwidth": 320,
+            "thumbheight": 569,
+            "thumbattribs": [],
+            "url": "https://upload.wikimedia.org/wikipedia/commons/e/eb/Shila_Waterfall_in_Zanaskar.webm?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+            "descriptionurl": "https://commons.wikimedia.org/wiki/File:Shila_Waterfall_in_Zanaskar.webm",
+            "descriptionshorturl": "https://commons.wikimedia.org/wiki/Special:Redirect/page/180043911",
+            "extmetadata": {
+              "ObjectName": {
+                "value": "Shila Waterfall in Zanaskar",
+                "source": "mediawiki-metadata"
+              },
+              "Artist": {
+                "value": "<a href=\"//commons.wikimedia.org/wiki/User:FAYAZ_SHUJA\" title=\"User:FAYAZ SHUJA\">FAYAZ SHUJA</a>",
+                "source": "commons-desc-page"
+              },
+              "LicenseShortName": {
+                "value": "CC BY-SA 4.0",
+                "source": "commons-desc-page",
+                "hidden": ""
+              },
+              "LicenseUrl": {
+                "value": "https://creativecommons.org/licenses/by-sa/4.0",
+                "source": "commons-desc-page"
+              }
+            },
+            "mime": "video/webm",
+            "mediatype": "VIDEO"
+          }
+        ]
+      },
+      {
+        "pageid": 188211156,
+        "ns": 6,
+        "title": "File:Side view video of Kawaida Waterfall cascading, Cianda, Kiambu County.webm",
+        "index": 2,
+        "imagerepository": "local",
+        "imageinfo": [
+          {
+            "size": 2424824,
+            "width": 480,
+            "height": 848,
+            "duration": 8.227,
+            "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/27/Side_view_video_of_Kawaida_Waterfall_cascading%2C_Cianda%2C_Kiambu_County.webm/330px-Side_view_video_of_Kawaida_Waterfall_cascading%2C_Cianda%2C_Kiambu_County.webm.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo",
+            "thumbwidth": 320,
+            "thumbheight": 565,
+            "thumbattribs": [],
+            "url": "https://upload.wikimedia.org/wikipedia/commons/2/27/Side_view_video_of_Kawaida_Waterfall_cascading%2C_Cianda%2C_Kiambu_County.webm?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+            "descriptionurl": "https://commons.wikimedia.org/wiki/File:Side_view_video_of_Kawaida_Waterfall_cascading,_Cianda,_Kiambu_County.webm",
+            "descriptionshorturl": "https://commons.wikimedia.org/wiki/Special:Redirect/page/188211156",
+            "extmetadata": {
+              "ObjectName": {
+                "value": "Side view video of Kawaida Waterfall cascading, Cianda, Kiambu County",
+                "source": "mediawiki-metadata"
+              },
+              "Artist": {
+                "value": "<a href=\"//commons.wikimedia.org/wiki/User:Lebu_Ayiga\" title=\"User:Lebu Ayiga\">Lebu Ayiga</a>",
+                "source": "commons-desc-page"
+              },
+              "LicenseShortName": {
+                "value": "CC BY 4.0",
+                "source": "commons-desc-page",
+                "hidden": ""
+              },
+              "LicenseUrl": {
+                "value": "https://creativecommons.org/licenses/by/4.0",
+                "source": "commons-desc-page"
+              }
+            },
+            "mime": "video/webm",
+            "mediatype": "VIDEO"
+          }
+        ]
+      }
+    ]
+  }
+}
