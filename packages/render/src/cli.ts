@@ -649,6 +649,8 @@ const NUMBER_FLAGS: Record<string, { readonly wants: string; readonly ok: (n: nu
   columns: { wants: "a whole number of columns", ok: (n) => Number.isInteger(n) && n >= 1 },
   bitrate: { wants: "bits per second above 0", ok: (n) => n > 0 },
   keyframe: { wants: "seconds above 0", ok: (n) => n > 0 },
+  bpm: { wants: "beats per minute above 0", ok: (n) => n > 0 },
+  "first-beat": { wants: "seconds", ok: (n) => n >= 0 },
 };
 
 /**

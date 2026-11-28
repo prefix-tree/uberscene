@@ -55,6 +55,31 @@ describe("a number flag", () => {
     expect(res.stderr).toContain(`${flag} wants ${wants}, got "${value}"`);
   });
 
+  it("names --bpm and --first-beat on add, and takes good values", () => {
+    const wav = join(dir, "beat.wav");
+    // A tenth of a second of silence: enough to add.
+    const data = Buffer.alloc(4800 * 2);
+    const head = Buffer.alloc(44);
+    head.write("RIFF", 0, "ascii");
+    head.writeUInt32LE(36 + data.length, 4);
+    head.write("WAVEfmt ", 8, "ascii");
+    head.writeUInt32LE(16, 16);
+    head.writeUInt16LE(1, 20);
+    head.writeUInt16LE(1, 22);
+    head.writeUInt32LE(48_000, 24);
+    head.writeUInt32LE(96_000, 28);
+    head.writeUInt16LE(2, 32);
+    head.writeUInt16LE(16, 34);
+    head.write("data", 36, "ascii");
+    head.writeUInt32LE(data.length, 40);
+    writeFileSync(wav, Buffer.concat([head, data]));
+    const bad = run("add", wav, "--bpm", "fast");
+    expect(bad.stderr).toContain('--bpm wants beats per minute above 0, got "fast"');
+    const good = run("add", wav, "--bpm", "120", "--first-beat", "0");
+    expect(good.status).toBe(0);
+    expect(good.stderr).toMatch(/beat/);
+  });
+
   it("still writes subtitles for a range given in numbers", () => {
     const res = run(video, "--srt", join(dir, "a.srt"), "--from", "0", "--to", "1");
     expect(res.stderr).not.toMatch(/wants/);
