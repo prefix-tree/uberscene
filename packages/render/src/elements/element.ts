@@ -17,4 +17,6 @@ export interface RenderElement<K extends MigratedKind> {
    * effects over what is beneath it (an adjustment). Left out, the element itself is hidden, where it is DOM alone.
    */
   readonly without?: "effects";
+  /** It draws nothing on any frame (a sound): the frame cache leaves it out of every frame's key. */
+  readonly drawsNothing?: true;
 }

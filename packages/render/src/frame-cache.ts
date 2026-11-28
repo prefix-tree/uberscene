@@ -18,6 +18,7 @@ import {
   startSeconds,
 } from "@uberscene/sdk";
 
+import { drawsNothing } from "./elements";
 import type { FontFile } from "./fonts";
 import type { ExportSource } from "./renderer";
 import { CHROME_MILESTONE } from "./web/chrome";
@@ -32,9 +33,6 @@ const VERSION = (() => {
     return "unknown";
   }
 })();
-
-/** Elements that draw nothing. */
-const SILENT = new Set(["audio", "marker"]);
 
 /**
  * A value as text, the same for the same value whatever its key order. What JSON cannot hold is written by what it
@@ -95,7 +93,8 @@ function drawnAt(state: ResolvedState, t: number): Placement[] {
   };
   for (const p of state.items.values()) {
     if (p.kind === "composition" || p.kind === "track") out.set(p.id, p);
-    else if (!SILENT.has(p.kind) && lengthTicks(p) > 0 && covers(p)) {
+    // A sound draws nothing, and a marker is a moment with no length: neither is in a frame's key.
+    else if (!drawsNothing(p.kind) && lengthTicks(p) > 0 && covers(p)) {
       const parent = state.items.get(p.parent ?? "");
       // A child is added with its parent; a multicam's generated clips name it as their parent and are added here.
       if (!parent || parent.kind === "track" || parent.kind === "composition" || parent.kind === "multicam") add(p);

@@ -2,10 +2,11 @@
 import { isMigratedKind, type MigratedKind } from "@uberscene/kit/schema";
 
 import { adjustment } from "./adjustment";
+import { audio } from "./audio";
 import type { RenderElement } from "./element";
 import { title } from "./title";
 
-const RENDER_ELEMENTS: { readonly [K in MigratedKind]?: RenderElement<K> } = { title, adjustment };
+const RENDER_ELEMENTS: { readonly [K in MigratedKind]?: RenderElement<K> } = { audio, title, adjustment };
 
 /**
  * How the layout check treats `kind`'s words, or undefined for a kind whose content is not words. `kind` is text
@@ -13,6 +14,11 @@ const RENDER_ELEMENTS: { readonly [K in MigratedKind]?: RenderElement<K> } = { t
  */
 export function wordsOf(kind: string): RenderElement<MigratedKind>["words"] {
   return isMigratedKind(kind) ? RENDER_ELEMENTS[kind]?.words : undefined;
+}
+
+/** Whether `kind` draws nothing on any frame, so a frame's key leaves it out. */
+export function drawsNothing(kind: string): boolean {
+  return isMigratedKind(kind) && RENDER_ELEMENTS[kind]?.drawsNothing === true;
 }
 
 /** Whether a sheet that leaves `kind` out leaves out its effects, and not the element. */
