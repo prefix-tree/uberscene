@@ -47,12 +47,13 @@ same file, one export per set of props, a draft beside the final.
 npx uberscene queue jobs.json
 ```
 
-- A job needs `file` and `out`. `props`, `from`, `to`, `codec`, `quality`, `bitrate`, `manifest`, `draft` and
+- A job needs `file` and `out`. `props`, `from`, `to`, `format`, `codec`, `quality`, `bitrate`, `manifest`, `draft` and
   `silent` mean what the options of the same name mean. Paths are relative to the queue file, and the folder an
   `out` names is made when it is missing. The file can also be the list of jobs alone.
 - Every job is checked before the first one renders: a missing file, an unknown codec, `quality` beside `bitrate`,
   two jobs writing one file. Each message names its job, so a typo in the last job is found in a second.
-- `--media`, `--tabs`, `--font`, `--import`, `--keyframe` and `--continue` apply to every job.
+- `--media`, `--tabs`, `--font`, `--import`, `--keyframe`, `--continue`, `--decode` and `--encode` apply to every job.
+  `--format` supplies a default for jobs without a `format` field.
 - The first job that fails stops the queue, and the rest are listed as skipped. With `--continue-on-error` every job
   runs. A failed job writes nothing and leaves an older file at its `out` as it was.
 - The command exits 0 when every job rendered and 1 otherwise. `--json` prints the summary as JSON.
@@ -63,11 +64,12 @@ npx uberscene queue jobs.json
 |---|---|
 | `video.mp4` | H.264 video and AAC sound. |
 | `video.webm` | VP9 video and Opus sound. |
+| `master.mov` | ProRes video and PCM sound, using the native encoder. |
 | `sound.mp3`, `sound.wav` | The soundtrack alone. |
 | `poster.png`, `poster.jpg` with `--still 2` | One frame, at 2 seconds. |
 
-`--codec av1` writes AV1 video in either container. With the [native codecs](#native-codecs-experimental) on,
-`--codec prores` writes ProRes to a `.mov`.
+`--format` selects the container for a video or audio export. Pass `--out video --format mp4` for an extensionless
+MP4. If the path has an extension, it must match `--format`. `--codec av1` writes AV1 video in MP4 or WebM.
 
 ## The browser it runs in
 
@@ -211,16 +213,18 @@ instead of falling back.
 
 ## Native codecs (experimental)
 
-By default Chrome decodes the footage and encodes the export. `UBERSCENE_CODECS` hands either job to UberScene's
-native codec process instead. It is a small Rust program on [craft-video](https://github.com/storytold/craft-libs),
+By default Chrome decodes the footage and encodes the export. Pass `--decode native` or `--encode native` to use
+UberScene's native codec process for that step. Each flag accepts `browser` or `native` and overrides the corresponding
+`UBERSCENE_CODECS` setting. MOV selects the native encoder automatically and rejects `--encode browser`.
+The native codec process is a Rust program on [craft-video](https://github.com/storytold/craft-libs),
 FilmCraft's pure-Rust codecs, with no FFmpeg.
 
 ```sh
-UBERSCENE_CODECS=native-decode npx uberscene video.tsx --out video.mp4
-UBERSCENE_CODECS=native npx uberscene video.tsx --out master.mov --codec prores --quality high
+npx uberscene video.tsx --out video.mp4 --decode native
+npx uberscene video.tsx --out master.mov --codec prores --quality high
 ```
 
-| `UBERSCENE_CODECS` | Footage decoded by | Pictures and sound encoded by |
+| `UBERSCENE_CODECS` defaults | Footage decoded by | Pictures and sound encoded by |
 |---|---|---|
 | unset or `browser` | Chrome | Chrome |
 | `native-decode` | the native codecs | Chrome |

@@ -4,7 +4,7 @@ import { dirname, resolve } from "node:path";
 
 import { z } from "zod";
 
-import { QUALITIES, type QualityName, type VideoCodec } from "./encoding";
+import { CONTAINERS, type Container, QUALITIES, type QualityName, type VideoCodec } from "./encoding";
 import { draftPath } from "./renderer";
 
 const CODECS = ["avc", "vp9", "av1", "prores"] as const;
@@ -14,13 +14,14 @@ const jobSchema = z
   .object({
     /** The video file, relative to the queue file. */
     file: z.string().min(1),
-    /** Where to write, relative to the queue file; the extension picks the container. */
+    /** Where to write, relative to the queue file; the extension picks the container unless format is set. */
     out: z.string().min(1),
     /** Props for the file's component. */
     props: z.record(z.string(), z.unknown()).optional(),
     /** Render only this part, in seconds. */
     from: z.number().min(0).optional(),
     to: z.number().positive().optional(),
+    format: z.enum(CONTAINERS).optional(),
     codec: z.enum(CODECS).optional(),
     quality: z.enum(Object.keys(QUALITIES) as [QualityName, ...QualityName[]]).optional(),
     bitrate: z.number().positive().optional(),
@@ -44,6 +45,7 @@ export interface QueueJob {
   readonly props?: Readonly<Record<string, unknown>>;
   readonly from?: number;
   readonly to?: number;
+  readonly format?: Container;
   readonly codec?: VideoCodec;
   readonly quality?: QualityName;
   readonly bitrate?: number;
@@ -105,6 +107,7 @@ export function readQueue(path: string): QueueJob[] {
       ...(job.props ? { props: job.props } : {}),
       ...(job.from !== undefined ? { from: job.from } : {}),
       ...(job.to !== undefined ? { to: job.to } : {}),
+      ...(job.format ? { format: job.format } : {}),
       ...(job.codec ? { codec: job.codec } : {}),
       ...(job.quality ? { quality: job.quality } : {}),
       ...(job.bitrate !== undefined ? { bitrate: job.bitrate } : {}),

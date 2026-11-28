@@ -14,7 +14,8 @@ import {
 } from "mediabunny";
 
 /** MP4, WebM and MOV hold video and sound; MP3 and WAV the soundtrack alone. */
-export type Container = "mp4" | "webm" | "mov" | "mp3" | "wav";
+export const CONTAINERS = ["mp4", "webm", "mov", "mp3", "wav"] as const;
+export type Container = (typeof CONTAINERS)[number];
 export type VideoContainer = "mp4" | "webm" | "mov";
 /** H.264 (MP4), VP9 (WebM) and AV1 (either): what Chrome encodes on every platform. ProRes (MOV) is native only. */
 export type VideoCodec = "avc" | "vp9" | "av1" | "prores";

@@ -38,6 +38,8 @@ export interface RenderOptions {
   /** The file to write; its extension picks the container (.mp4, .webm, .mp3, .wav) unless `container` is given. */
   readonly out: string;
   readonly container?: Container;
+  /** Who decodes and encodes. If omitted, use UBERSCENE_CODECS or the browser default. */
+  readonly codecs?: CodecModes;
   /** H.264 in MP4 and VP9 in WebM by default; AV1 in either. */
   readonly videoCodec?: VideoCodec;
   /** Bits per second; default about 0.1 bits per pixel per frame. */
@@ -168,11 +170,13 @@ export async function renderVideo(options: RenderOptions): Promise<RenderResult>
   const even = (n: number): number => Math.max(2, Math.round((n * DRAFT_SCALE) / 2) * 2);
   const outWidth = draft ? even(state.composition.width) : state.composition.width;
   const outHeight = draft ? even(state.composition.height) : state.composition.height;
-  const codecs = codecModes();
+  const codecs = options.codecs ?? codecModes();
   const nativeEncode = codecs.encode === "native";
   const container = options.container ?? containerOf(options.out, { nativeEncode });
   if (container === "mov" && !nativeEncode)
-    throw new Error("a .mov (ProRes) is written only by the native encoder: set UBERSCENE_CODECS=native-encode");
+    throw new Error(
+      "a .mov (ProRes) needs the native encoder: use --encode native or set UBERSCENE_CODECS=native-encode",
+    );
   const audioOnly = container === "mp3" || container === "wav";
   if (audioOnly && draft) throw new Error(`a draft is of the picture: a .${container} file holds only the soundtrack`);
   if (audioOnly && options.silent) throw new Error(`nothing to render: a .${container} file holds only the soundtrack`);
@@ -183,9 +187,7 @@ export async function renderVideo(options: RenderOptions): Promise<RenderResult>
       `a .${videoContainer} file cannot hold ${codec} video; use ${VIDEO_CODECS[videoContainer].join(" or ")}`,
     );
   if (nativeEncode && !audioOnly && !NATIVE_VIDEO_CODECS.includes(codec))
-    throw new Error(
-      `the native encoder writes H.264 (.mp4) and ProRes (.mov), not ${codec}; unset UBERSCENE_CODECS for ${codec}`,
-    );
+    throw new Error(`the native encoder writes H.264 (.mp4) and ProRes (.mov); use --encode browser for ${codec}`);
   if (nativeEncode && options.smartCopy)
     throw new Error("the copy option copies VP9 and the native encoder writes H.264 and ProRes: leave one out");
   const from = Math.max(0, options.from ?? 0);

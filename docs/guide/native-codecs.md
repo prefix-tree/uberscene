@@ -6,11 +6,11 @@ of Chrome. They run in `uberscene-codec`, a small Rust process built on FilmCraf
 FFmpeg. The player still draws every frame in the page. Only the decoding and the encoding move, the sound's included.
 
 This page covers how pictures and sound get to the process and back, and which formats it reads and writes. To turn it on,
-[Exporting](./exporting#native-codecs-experimental) has `UBERSCENE_CODECS` and the commands.
+[Exporting](./exporting#native-codecs-experimental) has the `--decode` and `--encode` flags and their defaults.
 
 ::: warning Experimental
-The native codecs run only when `UBERSCENE_CODECS` asks for them, and Chrome stays the default. The first
-native export downloads them, and on a CPU they are not faster than Chrome yet.
+Chrome stays the default for decoding and for formats other than MOV. The first native export downloads the codecs,
+and on a CPU they are not faster than Chrome yet.
 :::
 
 ## How data flows
@@ -33,7 +33,7 @@ repository lists every byte.
 
 ## Getting the binary
 
-The first export with `UBERSCENE_CODECS` downloads `uberscene-codec` for your machine from this version's
+The first export using a native codec downloads `uberscene-codec` for your machine from this version's
 [GitHub release](https://github.com/prefix-tree/uberscene/releases) into `~/.cache/uberscene/codecs/<version>/`
 (`UBERSCENE_CODEC_CACHE` moves it), the way Chrome is downloaded. To download it ahead, in a Dockerfile or a CI step:
 
@@ -126,6 +126,6 @@ rotated file is turned upright. What the native codecs leave to Chrome is listed
 
 ## Next
 
-- [Exporting](./exporting#native-codecs-experimental): `UBERSCENE_CODECS`, ProRes and the export options.
+- [Exporting](./exporting#native-codecs-experimental): codec backend flags, ProRes and the export options.
 - [How the export works](./export-architecture): the page, the pieces and the sound.
 - [How the player draws](./how-the-player-draws): the frame-source seam the decoder plugs into.

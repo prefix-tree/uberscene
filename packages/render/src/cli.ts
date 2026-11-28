@@ -1,5 +1,5 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join, relative, resolve, sep } from "node:path";
+import { dirname, extname, join, relative, resolve, sep } from "node:path";
 import { parseArgs } from "node:util";
 
 import { MOMENT_FORMS, subtitles } from "@uberscene/sdk";
@@ -7,7 +7,7 @@ import { MOMENT_FORMS, subtitles } from "@uberscene/sdk";
 import { addAsset, describeAdded, snippetOf } from "./add";
 import { blockSheet, formatBlocks, listBlocks } from "./blocks";
 import { addBlock, placeBlock, updateBlocks } from "./blocks-add";
-import { QUALITIES, type QualityName, type VideoCodec } from "./encoding";
+import { CONTAINERS, type Container, containerOf, QUALITIES, type QualityName, type VideoCodec } from "./encoding";
 import type { FontFile, FontWeight } from "./fonts";
 import { fontSheet, formatFonts, listFonts } from "./fonts-list";
 import { inspect } from "./inspect";
@@ -19,7 +19,7 @@ import { mediaFolders } from "./manifest-file";
 import { matteCommand } from "./matte/cli";
 import { directoryResolver } from "./media";
 import { checkMotion, formatMotion } from "./motion-check";
-import { installCodec } from "./native/codecs";
+import { type CodecModes, codecModes, installCodec } from "./native/codecs";
 import { formatQueue, readQueue, runQueue } from "./queue";
 import { draftPath, type RenderOptions, renderVideo } from "./renderer";
 import { installSkills } from "./skills";
@@ -31,7 +31,7 @@ import { formatWhere, whereThings } from "./where";
 /** --check-layout or --check-motion found issues: apart from 1 (an error) and 2 (usage), so a script can tell them apart. */
 const EXIT_LAYOUT_ISSUES = 3;
 
-const USAGE = `Usage: uberscene <file.tsx> --out <video.mp4|.webm|.mp3|.wav> [--draft] [options]
+const USAGE = `Usage: uberscene <file.tsx> --out <file> [--format <name>] [--draft] [options]
        uberscene <file.tsx> --still <seconds> --out <image.png|.jpg> [options]
        uberscene <file.tsx> --check-layout [--safe-zone <zone>] [--subject <x,y,w,h>] [--json] [options]
        uberscene <file.tsx> --check-motion [--min <s>] [--step <s>] [--from <s> --to <s>] [--json] [options]
@@ -61,11 +61,8 @@ const USAGE = `Usage: uberscene <file.tsx> --out <video.mp4|.webm|.mp3|.wav> [--
   Every export draws its frames in Chrome. The first one downloads Chrome for Testing ${CHROME_MILESTONE} into
   ~/.cache/uberscene/browsers (or UBERSCENE_BROWSER_CACHE); UBERSCENE_CHROMIUM names a Chrome ${CHROME_MILESTONE} to use
   instead. The export runs on Chrome ${CHROME_MILESTONE} only; UBERSCENE_ANY_CHROME=1 lets it draw on another, with a
-  warning, where that one cannot be had. UBERSCENE_CODECS=native (experimental) decodes and
-  encodes with UberScene's own codecs instead; the first such export downloads them into ~/.cache/uberscene/codecs
-  (or UBERSCENE_CODEC_CACHE).
-  UBERSCENE_CODECS=native (or native-decode, native-encode) decodes footage and encodes the export with UberScene's
-  native codecs instead of the browser's (experimental; build them with \`pnpm native:build\` in the workspace).
+  warning, where that one cannot be had. The first export using the experimental native codecs downloads them into
+  ~/.cache/uberscene/codecs (or UBERSCENE_CODEC_CACHE). UBERSCENE_CODECS sets defaults for --decode and --encode.
 
   inspect               print the timeline as text, without a browser: each track and element with its seconds,
                         the words each clip plays, effects, keyframes and cuts; --json prints flat rows instead
@@ -143,10 +140,11 @@ const USAGE = `Usage: uberscene <file.tsx> --out <video.mp4|.webm|.mp3|.wav> [--
   --fix                 (lint) write each file with the fixes its findings carry, then report what is left
   queue <jobs.json>     export several videos in order, then print one line per job and the totals; exits 1 unless
                         every job rendered. The file is { "jobs": [...] } or the list alone; a job is { file, out }
-                        with any of props, from, to, codec, quality, bitrate, manifest, draft and silent, meaning
+                        with any of props, from, to, format, codec, quality, bitrate, manifest, draft and silent, meaning
                         what the flags of the same name mean. Paths are relative to the queue file. Every job is
                         checked before the first renders. --media, --tabs, --font, --import, --keyframe and
-                        --continue apply to every job; --json prints the summary as JSON
+                        --continue apply to every job. --decode and --encode apply to every job, and --format
+                        supplies a default for jobs without a format. --json prints the summary as JSON
   --continue-on-error   (queue) run every job even when one fails; without it the first failure stops the queue
   browser install       download Chrome for Testing now, rather than on the first export
   codecs install        download the native codecs for this machine now, rather than on the first native export
@@ -154,7 +152,8 @@ const USAGE = `Usage: uberscene <file.tsx> --out <video.mp4|.webm|.mp3|.wav> [--
   --vtt <file>          the same as WebVTT
 
   --out <file>          where to write; the extension picks the container: .mp4 (H.264 and AAC), .webm (VP9 and
-                        Opus), .mov (ProRes, native encoder only), or .mp3/.wav for the soundtrack alone
+                        Opus), .mov (ProRes), or .mp3/.wav for the soundtrack alone
+  --format <name>       mp4, webm, mov, mp3 or wav. Use this for an extensionless output or match the file extension
   --still <s>           write the frame at this time as a PNG or JPEG instead of a video
   --check-layout        print every overlay that leaves the frame or the safe zone, or covers captions or the
                         subject: where it is in the file, when, and how to fix it, as a compiler does; writes no
@@ -182,8 +181,10 @@ const USAGE = `Usage: uberscene <file.tsx> --out <video.mp4|.webm|.mp3|.wav> [--
                         then media/ beside the manifest)
   --props <json>        props for the file's component
   --from <s> --to <s>   render only this part of the composition
-  --codec <name>        avc (default for .mp4), vp9 (default for .webm), or av1 in either; prores (.mov) with
-                        UBERSCENE_CODECS=native-encode
+  --codec <name>        avc (default for MP4), vp9 (default for WebM), av1 in either, or prores (MOV)
+  --decode <backend>    browser or native (experimental). Default: browser, or the UBERSCENE_CODECS setting
+  --encode <backend>    browser or native (experimental). MOV requires native. For other formats, default: browser,
+                        or the UBERSCENE_CODECS setting
   --bitrate <bps>       video bits per second (default: about 0.1 per pixel per frame)
   --quality <preset>    very-low, low, medium, high or very-high, in place of --bitrate
   --draft               a render for watching, not keeping: every second frame, each shown twice as long, at half
@@ -234,7 +235,10 @@ async function main(): Promise<number> {
       in: { type: "string" },
       kinds: { type: "string" },
       to: { type: "string" },
+      format: { type: "string" },
       codec: { type: "string" },
+      decode: { type: "string" },
+      encode: { type: "string" },
       bitrate: { type: "string" },
       quality: { type: "string" },
       still: { type: "string" },
@@ -489,6 +493,11 @@ async function main(): Promise<number> {
     process.stderr.write(USAGE);
     return values.help ? 0 : 2;
   }
+  if (checking || subtitlesOnly || values.still !== undefined) {
+    for (const flag of ["format", "decode", "encode"] as const) {
+      if (values[flag] !== undefined) throw new Error(`--${flag} applies to video and audio exports`);
+    }
+  }
   const loaded = await loadVideo(file, loadOptions);
   for (const e of loaded.state.errors) process.stderr.write(`warning: ${e.id ?? "?"}: ${e.message}\n`);
   const media = directoryResolver(mediaIn(values.media, file, loaded.manifestPath), loaded.manifest);
@@ -598,7 +607,10 @@ interface VideoExport {
   readonly draft?: boolean;
   readonly from?: number;
   readonly to?: number;
+  readonly format?: Container;
   readonly codec?: VideoCodec;
+  readonly decode?: CodecModes["decode"];
+  readonly encode?: CodecModes["encode"];
   readonly bitrate?: number;
   readonly quality?: QualityName;
   readonly silent?: boolean;
@@ -612,28 +624,52 @@ interface VideoExport {
 /** The flags every video export of one command takes, single or queued. */
 function exportFlags(values: {
   tabs?: string | undefined;
+  format?: string | undefined;
+  decode?: string | undefined;
+  encode?: string | undefined;
   keyframe?: string | undefined;
   continue?: boolean | undefined;
   quiet?: boolean | undefined;
 }): VideoExport {
   const tabs = values.tabs === undefined ? 1 : Math.floor(Number(values.tabs));
   if (!(tabs >= 1)) throw new Error(`--tabs wants a number of pages, got "${values.tabs}"`);
+  const format = CONTAINERS.find((format) => format === values.format);
+  if (values.format !== undefined && !format)
+    throw new Error(`--format wants ${CONTAINERS.join(", ")}, got "${values.format}"`);
+  const decode = backendFlag("decode", values.decode);
+  const encode = backendFlag("encode", values.encode);
   return {
     tabs,
+    ...(format ? { format } : {}),
+    ...(decode ? { decode } : {}),
+    ...(encode ? { encode } : {}),
     ...(values.keyframe !== undefined ? { keyframe: numberFlag("keyframe", values.keyframe) } : {}),
     ...(values.continue ? { continue: true } : {}),
     ...(values.quiet ? { quiet: true } : {}),
   };
 }
 
+function backendFlag(flag: keyof CodecModes, value: string | undefined): CodecModes[typeof flag] | undefined {
+  if (value === undefined || value === "browser" || value === "native") return value;
+  throw new Error(`--${flag} wants browser or native, got "${value}"`);
+}
+
 /** One video export with its progress, warnings and result line, as the single command and a queue job print them. */
 async function exportVideo(common: Omit<RenderOptions, "out">, out: string, how: VideoExport): Promise<void> {
+  const extension = extname(out).toLowerCase();
+  if (how.format && extension && extension !== `.${how.format}`)
+    throw new Error(`--format ${how.format} conflicts with ${out}; use .${how.format} or an extensionless output`);
+  const container = how.format ?? containerOf(out, { nativeEncode: true });
+  const encode = how.encode ?? (container === "mov" ? "native" : undefined);
+  const codecs = how.decode && encode ? { decode: how.decode, encode } : codecModes();
   const tty = process.stderr.isTTY && !how.quiet;
   // A draft goes beside the file --out names, under its own name: it never replaces the video.
   const written = how.draft ? draftPath(out) : out;
   const result = await renderVideo({
     ...common,
     out: resolve(written),
+    container,
+    codecs: { decode: how.decode ?? codecs.decode, encode: encode ?? codecs.encode },
     ...(how.draft ? { draft: true } : {}),
     tabs: how.tabs,
     ...(how.from !== undefined ? { from: how.from } : {}),
@@ -692,6 +728,7 @@ async function queue(
       mkdirSync(dirname(job.out), { recursive: true });
       await exportVideo(common, job.out, {
         ...flags,
+        ...(job.format ? { format: job.format } : {}),
         ...(job.draft ? { draft: true } : {}),
         ...(job.from !== undefined ? { from: job.from } : {}),
         ...(job.to !== undefined ? { to: job.to } : {}),
