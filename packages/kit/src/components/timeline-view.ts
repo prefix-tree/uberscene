@@ -64,6 +64,11 @@ export const timelineViewSchema = timingSchema.extend({
   labels: z.boolean().default(true),
   /** Number the seconds in the strip on top. */
   ruler: z.boolean().default(true),
+  /**
+   * Draw it as a ground, as a background is: the layout check does not hold it to the safe zone. For a post whose
+   * timeline runs under the app's own buttons and caption, as an editor's screen in a phone video does.
+   */
+  ground: z.boolean().default(false),
   /** The colours of the ground, lanes, picture and sound clips, waveforms, names, playhead, the clip in play, markers. */
   colors: z
     .object({
@@ -357,5 +362,11 @@ export function TimelineView(props: z.input<typeof timelineViewSchema>) {
   const p = parse("TimelineView", timelineViewSchema, props);
   const t = timingOf(p);
   const { start: _s, anchor: _a, at: _at, offset: _o, duration: _d, id, ...view } = p;
-  return [h(Layer, { id: `${id}-picture`, ...timing(t) }, h(TimelineViewPicture, { ...view, id }))];
+  return [
+    h(
+      Layer,
+      { id: `${id}-picture`, ...timing(t), ...(view.ground ? { ground: true } : {}) },
+      h(TimelineViewPicture, { ...view, id }),
+    ),
+  ];
 }

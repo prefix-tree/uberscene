@@ -15,7 +15,7 @@ import { pipeline } from "node:stream/promises";
 
 import type { AssetEntry, AssetManifest, AssetSource } from "@uberscene/sdk";
 
-import { addAsset } from "../add";
+import { addAsset, probe } from "../add";
 import { findManifest, MANIFEST_FILE } from "../manifest-file";
 import { commons } from "./commons";
 import { freesound } from "./freesound";
@@ -153,7 +153,17 @@ export async function fetchStock(ref: string, options: FetchStockOptions = {}): 
   if (why) {
     log(`${id}: converting ${ref} with ffmpeg (${why})`);
     const run = options.ffmpeg ?? runFfmpeg;
-    run(ffmpegArgs(candidate, chosen, part, options));
+    // A library's server can cut a read short: ffmpeg then stops on the error (-xerror), and the stretch is read again.
+    for (let attempt = 1; ; attempt++) {
+      try {
+        run(ffmpegArgs(candidate, chosen, part, options));
+        break;
+      } catch (e) {
+        rmSync(part, { force: true });
+        if (attempt >= 3) throw e;
+        log(`${id}: the read failed, trying again (${attempt + 1} of 3)`);
+      }
+    }
   } else {
     log(`${id}: downloading ${ref}${chosen.bytes ? `, ${Math.round(chosen.bytes / 1e6)} MB` : ""}`);
     const r = await fetcher(chosen.url, {
@@ -161,6 +171,12 @@ export async function fetchStock(ref: string, options: FetchStockOptions = {}): 
     });
     if (!r.ok || !r.body) throw new Error(`${new URL(chosen.url).host} answered ${r.status} for ${ref}`);
     await pipeline(Readable.fromWeb(r.body as never), createWriteStream(part));
+  }
+  // A file that holds no stretch at all is not added: it would only show as a black or silent hole in the film.
+  const probed = await probe(part).catch(() => null);
+  if (!probed || !(probed.duration > 0)) {
+    rmSync(part, { force: true });
+    throw new Error(`${ref} came back with nothing playable in it; fetch it again`);
   }
   renameSync(part, file);
 
@@ -208,7 +224,10 @@ export function ffmpegArgs(
     options.from !== undefined && options.to !== undefined
       ? { before: ["-ss", String(options.from)], after: ["-t", String(options.to - options.from)] }
       : { before: [], after: [] };
-  const input = ["-v", "error", "-y", "-user_agent", "uberscene", ...stretch.before, "-i", file.url, ...stretch.after];
+  const input = [
+    ...["-v", "error", "-xerror", "-y", "-user_agent", "uberscene"],
+    ...[...stretch.before, "-i", file.url, ...stretch.after],
+  ];
   if (candidate.kind === "audio")
     return [...input, "-vn", "-ac", "2", "-ar", "48000", "-c:a", "pcm_s16le", "-f", "wav", out];
   // Scaled down to the height asked for, when the rendition is taller: the pixels a crop needs and no more. CRF 28
@@ -227,7 +246,13 @@ export function ffmpegArgs(
 
 function runFfmpeg(args: readonly string[]): void {
   try {
-    execFileSync("ffmpeg", args, { stdio: ["ignore", "inherit", "inherit"] });
+    // ffmpeg reads the library's server itself; behind a proxy it takes it from http_proxy, for https too.
+    const proxy =
+      process.env.http_proxy ?? process.env.HTTP_PROXY ?? process.env.https_proxy ?? process.env.HTTPS_PROXY;
+    execFileSync("ffmpeg", args, {
+      stdio: ["ignore", "inherit", "inherit"],
+      env: proxy ? { ...process.env, http_proxy: proxy } : process.env,
+    });
   } catch (e) {
     if ((e as NodeJS.ErrnoException).code === "ENOENT")
       throw new Error("this file has to be converted, and that needs ffmpeg (with libvpx-vp9) on the PATH");

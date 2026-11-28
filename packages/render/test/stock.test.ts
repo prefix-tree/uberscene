@@ -1,5 +1,14 @@
 // The stock libraries, on answers recorded from Pixabay and Commons (test/fixtures/stock): no network, no key.
-import { copyFileSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -256,6 +265,31 @@ describe("fetching", () => {
     expect(ran).toHaveLength(1);
     expect(r.file.endsWith("falls.webm")).toBe(true);
     expect(r.entry.source).toMatchObject({ provider: "pixabay", from: 0, to: 1 });
+  });
+
+  it("never adds a conversion that holds nothing, and reads a failed stretch again", async () => {
+    const dir = mkdtempSync(join(scratch, "h-"));
+    const f = recorded([[(u) => u.startsWith("https://pixabay.com/api/"), json(fixture("pixabay-id.json"))]]);
+    let runs = 0;
+    const options = {
+      fetcher: f,
+      cwd: dir,
+      env,
+      id: "empty",
+      from: 0,
+      to: 1,
+      ffmpeg: (args: readonly string[]) => {
+        runs++;
+        // The first read fails; the second writes a file with nothing in it.
+        if (runs === 1) throw new Error("read cut short");
+        writeFileSync(args[args.length - 1] as string, "");
+      },
+    };
+    await expect(fetchStock("pixabay:228847", options)).rejects.toThrow(/nothing playable/);
+    expect(runs).toBe(2);
+    expect(
+      existsSync(join(dir, "uberscene.json")) ? readFileSync(join(dir, "uberscene.json"), "utf8") : "",
+    ).not.toContain('"empty"');
   });
 
   it("refuses a stretch without both ends, or one past the end", async () => {

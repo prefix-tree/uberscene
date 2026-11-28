@@ -29,6 +29,7 @@ Besides the timing props (`start`, `anchor`, `at`, `offset`, `duration`):
 | `window` | number (> 0) |  | Seconds across the view. Left out: the whole film, the playhead sweeping once. With it, the view scrolls. |
 | `labels` | boolean | `true` | Write each clip's name on it: its element id, and what it plays. |
 | `ruler` | boolean | `true` | Number the seconds in the strip on top. |
+| `ground` | boolean | `false` | Draw it as a ground, as a background is: the layout check does not hold it to the safe zone. For a post whose timeline runs under the app's own buttons and caption, as an editor's screen in a phone video does. |
 | `colors` | { ground, lane, picture, sound, wave, waveLit, text, playhead, active, marker } | `{"ground":"#1b1e25","lane":"#22262e","picture":"#1f7a7f","sound":"#2d8a52","wave":"#a9f2c0","waveLit":"#e9fff0","text":"#e8f5ec","playhead":"#ff3b30","active":"#ff8a3d","marker":"#b06bd0"}` | The colours of the ground, lanes, picture and sound clips, waveforms, names, playhead, the clip in play, markers. |
 
 [All components](/reference/components/)

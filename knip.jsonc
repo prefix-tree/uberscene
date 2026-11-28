@@ -85,6 +85,10 @@
       // A cut file, loaded by path; the scripts make its media and lightning.ts.
       "entry": ["video.tsx", "scripts/*.ts"]
     },
+    "examples/nature": {
+      // A cut file, loaded by path; the script fetches its media and renders its score.
+      "entry": ["video.tsx", "scripts/*.ts"]
+    },
     "examples/machine": {
       // A cut file, loaded by path; the script makes its song and notes.ts.
       "entry": ["video.tsx", "scripts/*.ts"]

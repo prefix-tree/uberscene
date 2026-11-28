@@ -7,12 +7,13 @@
 //
 // Each film is rendered first, as it is, from its own folder, then played inside the frame as an asset. A film whose
 // media is not made yet is skipped, with the command that makes it.
+import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 
 import { addAsset, checkLayout, directoryResolver, formatLayout, loadVideo, renderVideo } from "@uberscene/render";
-import { timelineBeats } from "@uberscene/sdk";
+import { timelineBeats, timelineLanes } from "@uberscene/sdk";
 
 const here = import.meta.dirname;
 const examples = join(here, "..");
@@ -44,9 +45,20 @@ interface Film {
      * `turns` (seconds) moves to its timeline, then back to its music, and so on.
      */
     | { readonly turns: readonly number[] };
+  /**
+   * Also render `<name>-breakdown.mp4`: the film above its own timeline, every sound clip with its waveform and the
+   * playhead on the film's clock (breakdown.tsx), under a title.
+   */
+  readonly breakdown?: { readonly title: string; readonly subtitle: string };
 }
 
 const FILMS: Record<string, Film> = {
+  // Nature in 25 seconds with every sound laid by hand, shown above its own timeline, as a sound designer's breakdown.
+  nature: {
+    file: "nature/video.tsx",
+    needs: "pnpm --filter @uberscene/example-nature prepare-media",
+    breakdown: { title: "SOUND BREAKDOWN", subtitle: "every sound is a line of code" },
+  },
   reel: { file: "interview/reel.tsx", needs: "bash examples/interview/scripts/prepare.sh" },
   cards: { file: "interview/cards.tsx", needs: "bash examples/interview/scripts/prepare.sh" },
   pipeline: { file: "showcase/pipeline.tsx", needs: "pnpm --filter @uberscene/example-showcase gen" },
@@ -182,10 +194,15 @@ for (const [name, film] of Object.entries(FILMS)) {
             { ...picture, from: music.until },
           ];
         })();
+  const breakdown =
+    film.breakdown && (!kinds || kinds.includes("breakdown"))
+      ? { film: id, width, height, length, ...breakdownLanes(video.state, join(folder, "media")), ...film.breakdown }
+      : undefined;
   for (const [kind, page, extra] of [
     ["code", "frame.tsx", props],
     ["reveal", "reveal.tsx", { film: id, width, height, length, pages, split, back, hook: film.hook }],
     ["post", "post.tsx", { film: id, width, height, length }],
+    ...(breakdown ? ([["breakdown", "breakdown.tsx", breakdown]] as const) : []),
   ] as const) {
     if (kinds && !kinds.includes(kind)) continue;
     const post = await loadVideo(join(here, page), { manifest, props: extra });
@@ -271,4 +288,43 @@ function hasMedia(dir: string, id: string): boolean {
   return ["webm", "mp4", "mov", "wav", "mp3", "m4a", "png", "jpg", "jpeg", "svg", "webp", "gif", "cube"].some((ext) =>
     existsSync(join(dir, `${id}.${ext}`)),
   );
+}
+
+/**
+ * The film's timeline as lanes for the breakdown post, each picture clip with a small frame of what it shows (from the
+ * footage at the second the clip starts playing it), as an editor's thumbnails.
+ */
+function breakdownLanes(state: Parameters<typeof timelineLanes>[0], media: string) {
+  const { lanes, markers } = timelineLanes(state);
+  const files = existsSync(media) ? readdirSync(media) : [];
+  const frames = new Map<string, string>();
+  const frameOf = (asset: string, at: number): string | undefined => {
+    const key = `${asset}@${at.toFixed(1)}`;
+    if (frames.has(key)) return frames.get(key);
+    const file = files.find((f) => f.startsWith(`${asset}.`) && !f.endsWith(".part"));
+    if (!file) return undefined;
+    const jpeg = execFileSync(
+      "ffmpeg",
+      [
+        ...["-v", "error", "-ss", at.toFixed(2), "-i", join(media, file), "-frames:v", "1"],
+        ...["-vf", "scale=-2:96", "-q:v", "6", "-f", "image2", "-c:v", "mjpeg", "-"],
+      ],
+      { maxBuffer: 1 << 24 },
+    );
+    const url = `data:image/jpeg;base64,${jpeg.toString("base64")}`;
+    frames.set(key, url);
+    return url;
+  };
+  return {
+    markers: [...markers],
+    lanes: lanes.map((lane) => ({
+      ...lane,
+      clips: lane.clips.map((c) => {
+        const source = state.items.get(c.id)?.source;
+        if (lane.kind !== "picture" || !source) return { ...c };
+        const thumb = frameOf(source.asset, source.in + 0.2);
+        return thumb ? { ...c, thumbs: [thumb] } : { ...c };
+      }),
+    })),
+  };
 }

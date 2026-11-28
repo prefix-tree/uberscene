@@ -12,3 +12,6 @@ It draws as an editor's timeline does: a picture clip's frames (`thumbs`), fine 
 ramps, markers in a strip on top, a thin playhead with a head, and the clip in play outlined. `timelineLanes` gives
 each clip what it plays (`title`), its `fade`, a level per 10 ms, and the file's markers.
 
+
+`ground` draws it as a background, so the layout check does not hold it to the safe zone: for a timeline that runs
+under a phone app's buttons, as in a sound-breakdown post.
