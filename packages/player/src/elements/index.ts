@@ -6,20 +6,27 @@ import { type Placement, placed, type ResolvedState } from "@uberscene/sdk/resol
 import type { IntrinsicSize } from "../overlays/size";
 import { adjustment } from "./adjustment";
 import { audio } from "./audio";
+import { camera } from "./camera";
 import { caption, captions } from "./captions";
 import { clip } from "./clip";
+import { composition } from "./composition";
 import type { Decoded, PlayerElement, SoundInput } from "./element";
 import { gap } from "./gap";
 import { layer } from "./layer";
+import { marker } from "./marker";
 import { angle, cut, multicam } from "./multicam";
 import { nested } from "./nested";
 import { shape } from "./shape";
 import { sticker } from "./sticker";
 import { svg } from "./svg";
 import { title } from "./title";
+import { track } from "./track";
 import { transition } from "./transition";
 
 export const PLAYER_ELEMENTS: { readonly [K in MigratedKind]: PlayerElement<K> } = {
+  composition,
+  camera,
+  track,
   clip,
   audio,
   gap,
@@ -30,6 +37,7 @@ export const PLAYER_ELEMENTS: { readonly [K in MigratedKind]: PlayerElement<K> }
   sticker,
   captions,
   caption,
+  marker,
   layer,
   adjustment,
   nested,

@@ -16,7 +16,16 @@ import { buildAudioPlan, buildFramePlan, visiblePlacements } from "./internal";
 const planeOf = (kind: MigratedKind): DrawPlane => KIT_ELEMENTS[kind].traits.plane;
 
 // A kind that stands only inside another (a cue, a camera angle, a cut) is drawn by its parent, whose sample shows it.
-describe.each(SAMPLE_KINDS.filter((kind) => KIT_ELEMENTS[kind].traits.placementScope !== "child"))("a %s", (kind) => {
+describe.each(
+  SAMPLE_KINDS.filter((kind) => {
+    const { placementScope, plane } = KIT_ELEMENTS[kind].traits;
+    return !(
+      placementScope === "child" ||
+      placementScope === "none" ||
+      (placementScope === "composition" && plane === "none")
+    );
+  }),
+)("a %s", (kind) => {
   const file = sampleFile(kind);
   const module = loadModule(file.text) as { default: () => ReactNode };
   const load = () => resolve(collectModule(module as never, {}, { index: buildSourceIndex(file.text) }), file.manifest);
