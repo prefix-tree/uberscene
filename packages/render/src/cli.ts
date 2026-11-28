@@ -22,6 +22,7 @@ import { checkMotion, formatMotion } from "./motion-check";
 import { installCodec } from "./native/codecs";
 import { draftPath, renderVideo } from "./renderer";
 import { installSkills } from "./skills";
+import { soundCommand } from "./sounds/cli";
 import { renderStill } from "./still";
 import { stockCommand } from "./stock/cli";
 import { checkSync, formatSync } from "./sync-check";
@@ -60,6 +61,7 @@ const USAGE = `Usage: uberscene <file.tsx> --out <video.mp4|.webm|.mp3|.wav> [--
                     [--limit <n>] [--sheet <image>] [--json] [--fresh]
        uberscene fetch <library:id> [--id <id>] [--from <s> --to <s>] [--height <px>] [--dir <folder>] [--manifest <file>]
        uberscene credits [--manifest <file>] [--out CREDITS.md]
+       uberscene sound [<name> [--duration <s>] [--seed <n>] [--id <id>] [--out <file.wav>] [--manifest <file>]] [--json]
 
   Every export draws its frames in Chrome. The first one downloads Chrome for Testing ${CHROME_MILESTONE} into
   ~/.cache/uberscene/browsers (or UBERSCENE_BROWSER_CACHE); UBERSCENE_CHROMIUM names a Chrome ${CHROME_MILESTONE} to use
@@ -212,6 +214,11 @@ const USAGE = `Usage: uberscene <file.tsx> --out <video.mp4|.webm|.mp3|.wav> [--
   --from <s> --to <s>   (fetch) keep only this stretch of the original: only those seconds are read
   --height <px>         (fetch) the picture height the film needs: the smallest rendition at least this tall
                         (default 1080), so a vertical crop of landscape footage keeps real pixels
+  sound                 list the sound kit: cues (a tick, a hit, a whoosh, a riser) and beds (wind, rain, fire,
+                        water), made in code, the same bytes on every machine. With a name: write it as a WAV into
+                        media/ beside the manifest (or --out) and add it, as <name> (or --id)
+  --duration <s>        (sound) its length; default the sound's own
+  --seed <n>            (sound) another take of the same sound; the asset is <name>-<n> unless --id says
   credits               print a Markdown table of every fetched asset in the manifest (or --out <file>)
   matte makes the matte of a footage file for <Clip cutout>: <name>.matte.webm beside it, one greyscale frame for
   each of the footage's, white where the person is, added to the manifest with "matte" on the footage. The model runs
@@ -298,6 +305,7 @@ async function main(): Promise<number> {
       limit: { type: "string" },
       height: { type: "string" },
       fresh: { type: "boolean" },
+      seed: { type: "string" },
     },
   });
   if (positionals[0] === "add") return add(positionals.slice(1), values);
@@ -421,6 +429,7 @@ async function main(): Promise<number> {
     return 0;
   }
   if (positionals[0] === "matte") return matteCommand(positionals.slice(1), values, USAGE);
+  if (positionals[0] === "sound") return soundCommand(positionals.slice(1), values, USAGE);
   if (positionals[0] === "find" || positionals[0] === "fetch" || positionals[0] === "credits")
     return stockCommand(positionals[0], positionals.slice(1), values, USAGE);
   if (positionals[0] === "codecs") {

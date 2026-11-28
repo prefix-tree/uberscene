@@ -79,6 +79,8 @@ export {
   type SkillInstallOptions,
   type SkillInstallResult,
 } from "./skills";
+export { makeSound, SOUND_KIT, type SoundSpec } from "./sounds/kit";
+export { wav as soundWav } from "./sounds/synth";
 export { renderStill, type StillOptions, type StillResult } from "./still";
 export {
   type FetchStockOptions,

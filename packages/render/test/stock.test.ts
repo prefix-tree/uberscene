@@ -156,7 +156,10 @@ describe("fetching", () => {
     expect(args).toContain("libopus");
     const tall = ffmpegArgs(candidate, pickFile(candidate, 3000), "out.webm", { from: 2, to: 6, height: 1920 });
     expect(tall[tall.indexOf("-vf") + 1]).toBe("scale=-2:1920:flags=lanczos");
-    expect(args).not.toContain("-vf");
+    // A rendition no taller than asked for is kept at its size.
+    expect(ffmpegArgs(candidate, pickFile(candidate, 1080), "o.webm", { from: 2, to: 6, height: 1280 })).not.toContain(
+      "-vf",
+    );
     const sound = ffmpegArgs({ ...candidate, kind: "audio" }, { url: "u", mime: "audio/ogg" }, "o.wav", {});
     expect(sound).toEqual(expect.arrayContaining(["pcm_s16le", "48000"]));
   });

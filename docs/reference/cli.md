@@ -611,6 +611,27 @@ written to the cache, the manifest or an error.
 (with libvpx-vp9 for video): footage becomes VP9 WebM, keeping its sound as Opus when it has one, a sound becomes a 48 kHz WAV. A file is
 written under another name and moved into place, so a fetch cut off half way is made again next time.
 
+## The sound kit
+
+`uberscene sound` lists cues and beds made in code, the same bytes on every machine, so they are the project's own to
+share. `uberscene sound <name>` writes one as a WAV into `media/` beside the manifest and adds it.
+
+```sh
+uberscene sound                       # the kit
+uberscene sound whoosh --seed 7       # another take of the whoosh, added as whoosh-7
+uberscene sound wind --duration 12    # a 12-second wind bed
+```
+
+| Kind | Sounds |
+|---|---|
+| Cues | `tick`, `click`, `pop`, `snap`, `whoosh`, `swish`, `suck`, `riser`, `downer`, `thud`, `hit`, `boom`, `chime`, `shimmer` |
+| Beds | `wind`, `rain`, `crackle` (a fire), `water`, `rumble`, `air` (room tone) |
+
+Every sound peaks at -3 dBFS, so layered sounds leave headroom; a bed is meant to run low, under a scene. `--seed`
+gives another take of a sound with noise in it, so a film can lay many whooshes that are not all the same. Each sound
+has a moment (`--json` lists it as a fraction of its length): a riser's and a suck's is their end, so place them to end
+on the cut. From a script, `makeSound(name, { length, seed })` returns the samples and `soundWav(samples)` the file.
+
 ## The agent skill
 
 `uberscene skills install` writes the agent skill that ships with this version of the CLI into
