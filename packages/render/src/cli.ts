@@ -57,8 +57,8 @@ const USAGE = `Usage: uberscene <file.tsx> --out <video.mp4|.webm|.mp3|.wav> [--
        uberscene matte models [--json]
        uberscene matte install [<model>] [--accept-licence]
        uberscene skills install [--dir <folder>] [--force]
-       uberscene find <pixabay|commons> <words>... [--sound] [--orientation portrait|landscape] [--min-duration <s>]
-                    [--limit <n>] [--sheet <image>] [--json] [--fresh]
+       uberscene find <pixabay|commons|freesound> <words>... [--sound] [--attribution] [--orientation portrait|landscape]
+                    [--min-duration <s>] [--limit <n>] [--sheet <image>] [--json] [--fresh]
        uberscene fetch <library:id> [--id <id>] [--from <s> --to <s>] [--height <px>] [--dir <folder>] [--manifest <file>]
        uberscene credits [--manifest <file>] [--out CREDITS.md]
        uberscene sound [<name> [--duration <s>] [--seed <n>] [--id <id>] [--out <file.wav>] [--manifest <file>]] [--json]
@@ -201,10 +201,12 @@ const USAGE = `Usage: uberscene <file.tsx> --out <video.mp4|.webm|.mp3|.wav> [--
   --continue            draw the grey placeholder for an asset that cannot be read, instead of failing
   find                  search a stock library for footage (or, with --sound, recordings): pixabay (videos, under the
                         Pixabay Content License; set PIXABAY_API_KEY, a free key from pixabay.com/api/docs) or commons
-                        (Wikimedia Commons: videos and sounds, each under its own free licence; no key). Prints each
+                        (Wikimedia Commons: videos and sounds, each under its own free licence; no key) or freesound
+                        (recorded sounds, CC0 unless --attribution; set FREESOUND_API_KEY). Prints each
                         candidate's ref, length, size, licence and author, best first. A search is kept for a day in
                         ~/.cache/uberscene/stock (or UBERSCENE_STOCK_CACHE); --fresh asks again
-  --sound               (find) recordings instead of videos (commons only)
+  --sound               (find) recordings instead of videos (commons; freesound has only sounds)
+  --attribution         (find) also sounds whose licence asks for credit (CC BY); never non-commercial ones
   --orientation <way>   (find) only portrait or only landscape footage
   --min-duration <s>    (find) only candidates at least this long
   --limit <n>           (find) at most this many (default 20)
@@ -310,6 +312,7 @@ async function main(): Promise<number> {
       height: { type: "string" },
       fresh: { type: "boolean" },
       seed: { type: "string" },
+      attribution: { type: "boolean" },
     },
   });
   if (positionals[0] === "add") return add(positionals.slice(1), values);

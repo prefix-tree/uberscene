@@ -42,6 +42,8 @@ export interface StockSearch {
   readonly orientation?: "portrait" | "landscape";
   /** Only candidates at least this many seconds long. */
   readonly minDuration?: number;
+  /** Also let in licences that ask for credit (CC BY), where the library has both. Default: free of conditions only. */
+  readonly attribution?: boolean;
 }
 
 /** What talks to the network: `fetch`, replaced in tests by recorded answers. */

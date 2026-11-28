@@ -11,6 +11,7 @@ import type { StockSearch } from "./types";
 
 export interface StockFlags {
   readonly sound?: boolean | undefined;
+  readonly attribution?: boolean | undefined;
   readonly limit?: string | undefined;
   readonly orientation?: string | undefined;
   readonly "min-duration"?: string | undefined;
@@ -54,10 +55,11 @@ export async function stockCommand(
     const minDuration = num("min-duration", flags["min-duration"]);
     const search: StockSearch = {
       query: words.join(" "),
-      kind: flags.sound ? "audio" : "video",
+      kind: flags.sound || library === "freesound" ? "audio" : "video",
       ...(limit !== undefined ? { limit } : {}),
       ...(flags.orientation ? { orientation: flags.orientation as "portrait" | "landscape" } : {}),
       ...(minDuration !== undefined ? { minDuration } : {}),
+      ...(flags.attribution ? { attribution: true } : {}),
     };
     const found = await findStock(library, search, { ...(flags.fresh ? { fresh: true } : {}) });
     if (flags.json) process.stdout.write(`${JSON.stringify(found, null, 2)}\n`);

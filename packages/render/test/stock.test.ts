@@ -6,6 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import generateMedia, { mediaDir } from "../../player/e2e/gen-media";
 import { commons, commonsCandidate } from "../src/stock/commons";
+import { freesound, freesoundCandidate, licenceFilter, licenceName } from "../src/stock/freesound";
 import {
   conversion,
   fetchStock,
@@ -111,6 +112,54 @@ describe("Commons", () => {
     const found = await commons().search({ query: "waterfall", kind: "video", limit: 2 }, f);
     expect(found).toHaveLength(2);
     expect(new URL(f.asked[0] as string).searchParams.get("gsrsearch")).toBe("waterfall filetype:video");
+  });
+});
+
+describe("Freesound", () => {
+  const sound = JSON.parse(fixture("freesound-sound.json"));
+
+  it("reads a sound as a candidate: its preview, its author, its licence by name", () => {
+    const c = freesoundCandidate(sound);
+    expect(c).toMatchObject({ ref: "freesound:510762", kind: "audio" });
+    expect(c.source).toMatchObject({
+      provider: "freesound",
+      author: "Keleti",
+      licence: "CC0",
+      title: "fire_crackling_2",
+    });
+    expect(c.files[0]).toMatchObject({ mime: "audio/mpeg" });
+    expect(c.files[0]?.url).toMatch(/-hq\.mp3$/);
+    expect(c.thumbnail).toMatch(/^https:/);
+  });
+
+  it("names licences, and lets in CC BY only when asked", () => {
+    expect(licenceName("http://creativecommons.org/publicdomain/zero/1.0/")).toBe("CC0");
+    expect(licenceName("https://creativecommons.org/licenses/by/4.0/")).toBe("CC BY 4.0");
+    expect(licenceName("http://creativecommons.org/licenses/by-nc/3.0/")).toBe("CC BY-NC 3.0");
+    expect(licenceFilter(false)).toBe('license:"Creative Commons 0"');
+    expect(licenceFilter(true)).toContain("Attribution");
+  });
+
+  it("searches CC0 sounds with the key as a token, and never offers a non-commercial one", async () => {
+    const f = recorded([[(u) => u.includes("/search/text/"), json(fixture("freesound-search.json"))]]);
+    const asked: Record<string, string>[] = [];
+    const spy = (async (url: string, init?: { headers?: Record<string, string> }) => {
+      asked.push(init?.headers ?? {});
+      return f(url, init);
+    }) as Fetcher;
+    const found = await freesound({ FREESOUND_API_KEY: "k" }).search({ query: "waterfall", kind: "audio" }, spy);
+    expect(found.length).toBeGreaterThan(0);
+    expect(found.every((c) => c.source.licence === "CC0")).toBe(true);
+    expect(new URL(f.asked[0] as string).searchParams.get("filter")).toBe('license:"Creative Commons 0"');
+    expect(asked[0]?.Authorization).toBe("Token k");
+    const nc = { ...sound, license: "http://creativecommons.org/licenses/by-nc/4.0/" };
+    const g = recorded([[() => true, json(JSON.stringify(nc))]]);
+    await expect(freesound({}).get("510762", g)).rejects.toThrow(/non-commercial/);
+  });
+
+  it("says how to get a key when Freesound refuses", async () => {
+    const refusing = recorded([[() => true, () => new Response('{"detail":"no"}', { status: 401 })]]);
+    await expect(freesound({}).search({ query: "x", kind: "audio" }, refusing)).rejects.toThrow(/FREESOUND_API_KEY/);
   });
 });
 

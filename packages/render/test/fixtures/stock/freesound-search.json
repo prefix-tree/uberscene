@@ -1,0 +1,110 @@
+{
+  "count": 771,
+  "previous": null,
+  "next": "https://freesound.org/apiv2/search/?&query=waterfall&filter=license:%22Creative%20Commons%200%22&weights=&page=2&page_size=3&fields=id,name,username,license,duration,previews,url,tags,images",
+  "results": [
+    {
+      "id": 650698,
+      "url": "https://freesound.org/people/datapopstar2/sounds/650698/",
+      "name": "Waterfall_Meraner_Höhenweg_02_160922.wav",
+      "tags": ["melt-water", "mountain", "waterfall"],
+      "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+      "duration": 93.6525,
+      "username": "datapopstar2",
+      "previews": {
+        "preview-hq-mp3": "https://cdn.freesound.org/previews/650/650698_11663878-hq.mp3",
+        "preview-hq-ogg": "https://cdn.freesound.org/previews/650/650698_11663878-hq.ogg",
+        "preview-lq-mp3": "https://cdn.freesound.org/previews/650/650698_11663878-lq.mp3",
+        "preview-lq-ogg": "https://cdn.freesound.org/previews/650/650698_11663878-lq.ogg"
+      },
+      "images": {
+        "waveform_m": "https://cdn.freesound.org/displays/650/650698_11663878_wave_bw_M.png",
+        "waveform_l": "https://cdn.freesound.org/displays/650/650698_11663878_wave_bw_L.png",
+        "spectral_m": "https://cdn.freesound.org/displays/650/650698_11663878_spec_bw_M.jpg",
+        "spectral_l": "https://cdn.freesound.org/displays/650/650698_11663878_spec_bw_L.jpg",
+        "waveform_bw_m": "https://cdn.freesound.org/displays/650/650698_11663878_wave_bw_M.png",
+        "waveform_bw_l": "https://cdn.freesound.org/displays/650/650698_11663878_wave_bw_L.png",
+        "spectral_bw_m": "https://cdn.freesound.org/displays/650/650698_11663878_spec_bw_M.jpg",
+        "spectral_bw_l": "https://cdn.freesound.org/displays/650/650698_11663878_spec_bw_L.jpg"
+      }
+    },
+    {
+      "id": 195715,
+      "url": "https://freesound.org/people/blaukreuz/sounds/195715/",
+      "name": "130717_Krka_Waterfall2_F_4824.wav",
+      "tags": [
+        "atmo",
+        "field-recording",
+        "loud",
+        "nature",
+        "noise",
+        "people",
+        "river",
+        "summer",
+        "surround",
+        "water",
+        "waterfall",
+        "wide",
+        "wide-angle"
+      ],
+      "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+      "duration": 44.3537,
+      "username": "blaukreuz",
+      "previews": {
+        "preview-hq-mp3": "https://cdn.freesound.org/previews/195/195715_623488-hq.mp3",
+        "preview-hq-ogg": "https://cdn.freesound.org/previews/195/195715_623488-hq.ogg",
+        "preview-lq-mp3": "https://cdn.freesound.org/previews/195/195715_623488-lq.mp3",
+        "preview-lq-ogg": "https://cdn.freesound.org/previews/195/195715_623488-lq.ogg"
+      },
+      "images": {
+        "waveform_m": "https://cdn.freesound.org/displays/195/195715_623488_wave_bw_M.png",
+        "waveform_l": "https://cdn.freesound.org/displays/195/195715_623488_wave_bw_L.png",
+        "spectral_m": "https://cdn.freesound.org/displays/195/195715_623488_spec_bw_M.jpg",
+        "spectral_l": "https://cdn.freesound.org/displays/195/195715_623488_spec_bw_L.jpg",
+        "waveform_bw_m": "https://cdn.freesound.org/displays/195/195715_623488_wave_bw_M.png",
+        "waveform_bw_l": "https://cdn.freesound.org/displays/195/195715_623488_wave_bw_L.png",
+        "spectral_bw_m": "https://cdn.freesound.org/displays/195/195715_623488_spec_bw_M.jpg",
+        "spectral_bw_l": "https://cdn.freesound.org/displays/195/195715_623488_spec_bw_L.jpg"
+      }
+    },
+    {
+      "id": 195714,
+      "url": "https://freesound.org/people/blaukreuz/sounds/195714/",
+      "name": "130717_Krka_Waterfall2_R_4824.wav",
+      "tags": [
+        "atmo",
+        "field-recording",
+        "loud",
+        "nature",
+        "noise",
+        "people",
+        "river",
+        "summer",
+        "surround",
+        "water",
+        "waterfall",
+        "wide",
+        "wide-angle"
+      ],
+      "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+      "duration": 44.3537,
+      "username": "blaukreuz",
+      "previews": {
+        "preview-hq-mp3": "https://cdn.freesound.org/previews/195/195714_623488-hq.mp3",
+        "preview-hq-ogg": "https://cdn.freesound.org/previews/195/195714_623488-hq.ogg",
+        "preview-lq-mp3": "https://cdn.freesound.org/previews/195/195714_623488-lq.mp3",
+        "preview-lq-ogg": "https://cdn.freesound.org/previews/195/195714_623488-lq.ogg"
+      },
+      "images": {
+        "waveform_m": "https://cdn.freesound.org/displays/195/195714_623488_wave_bw_M.png",
+        "waveform_l": "https://cdn.freesound.org/displays/195/195714_623488_wave_bw_L.png",
+        "spectral_m": "https://cdn.freesound.org/displays/195/195714_623488_spec_bw_M.jpg",
+        "spectral_l": "https://cdn.freesound.org/displays/195/195714_623488_spec_bw_L.jpg",
+        "waveform_bw_m": "https://cdn.freesound.org/displays/195/195714_623488_wave_bw_M.png",
+        "waveform_bw_l": "https://cdn.freesound.org/displays/195/195714_623488_wave_bw_L.png",
+        "spectral_bw_m": "https://cdn.freesound.org/displays/195/195714_623488_spec_bw_M.jpg",
+        "spectral_bw_l": "https://cdn.freesound.org/displays/195/195714_623488_spec_bw_L.jpg"
+      }
+    }
+  ]
+}

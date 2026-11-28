@@ -18,6 +18,7 @@ import type { AssetEntry, AssetManifest, AssetSource } from "@uberscene/sdk";
 import { addAsset } from "../add";
 import { findManifest, MANIFEST_FILE } from "../manifest-file";
 import { commons } from "./commons";
+import { freesound } from "./freesound";
 import { pixabay } from "./pixabay";
 import {
   type Fetcher,
@@ -32,7 +33,7 @@ export type { StockCandidate, StockFile, StockSearch } from "./types";
 
 /** The libraries, by name. */
 function stockProviders(env: NodeJS.ProcessEnv = process.env): Record<string, StockProvider> {
-  return { pixabay: pixabay(env), commons: commons() };
+  return { pixabay: pixabay(env), commons: commons(), freesound: freesound(env) };
 }
 
 function provider(name: string, env: NodeJS.ProcessEnv): StockProvider {

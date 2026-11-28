@@ -586,6 +586,7 @@ came from, its author and its licence kept on its manifest entry. `uberscene cre
 ```sh
 uberscene find pixabay waterfall forest --orientation landscape --min-duration 8 --sheet waterfalls.jpg
 uberscene fetch pixabay:358693 --id falls --from 4 --to 10 --height 1920
+uberscene find freesound wind gust --min-duration 3
 uberscene find commons wind --sound
 uberscene credits --out CREDITS.md
 ```
@@ -594,6 +595,7 @@ uberscene credits --out CREDITS.md
 |---|---|---|---|
 | `pixabay` | videos | the Pixabay Content License: free to use in a video, no credit asked | `PIXABAY_API_KEY`, free from [pixabay.com/api/docs](https://pixabay.com/api/docs/); an environment variable, since Pixabay reads it from the address |
 | `commons` | videos and sounds (`--sound`) | each file's own free licence (CC0, CC BY, CC BY-SA, public domain), read from its page | none |
+| `freesound` | recorded sounds, as its high-quality MP3 previews | CC0 only, unless `--attribution` lets in CC BY; never non-commercial | `FREESOUND_API_KEY` from [freesound.org/apiv2/apply](https://freesound.org/apiv2/apply), or a network secret for freesound.org (`Authorization: Token <key>`) |
 
 `find` prints each candidate's ref, length, size, licence and author, best first; `--json` prints them as data and
 `--sheet <image>` draws them as one contact sheet, numbered as listed. A search is kept for a day in
@@ -602,7 +604,8 @@ written to the cache, the manifest or an error.
 
 | Option | |
 |---|---|
-| `--sound` | (find) Recordings instead of videos. Commons only. |
+| `--sound` | (find) Recordings instead of videos (Commons; Freesound has only sounds). |
+| `--attribution` | (find) Also sounds whose licence asks for credit (CC BY). Never non-commercial ones. |
 | `--orientation portrait\|landscape` | (find) Only footage this way up. |
 | `--min-duration <s>` | (find) Only candidates at least this long. |
 | `--limit <n>` | (find) At most this many. Default 20. |
