@@ -1,7 +1,9 @@
 import { z } from "zod";
 
+import { refPattern } from "../ref";
+import { ref } from "../ref-sites";
 import { isScene, type Scene } from "../scene3d";
-import { assetRefSchema, audioProps, keyed, timedProps, timeRefSchema, visualProps } from "./common";
+import { assetRefSchema, audioProps, ramped, timedProps, timeRefSchema, visualProps } from "./common";
 
 /** A hold: the source frame at `source` seconds stays on screen from `start` seconds into the element for `duration`. */
 const freezeSpecSchema = z.strictObject({
@@ -21,7 +23,7 @@ const sourceProps = {
   /** Where in the source it ends, as `in`; `word:40.end` ends after the word is said. */
   out: timeRefSchema.optional(),
   /** Playback rate: 2 plays twice as fast and half as long; keys ramp it. */
-  speed: keyed(z.number().min(0.1).max(20)).default(1),
+  speed: ramped(z.number().min(0.1).max(20)).default(1),
   /** Frames held on screen while the clip's time stands still. */
   freezes: z.array(freezeSpecSchema).optional(),
   /** Plays the trimmed source backwards. */
@@ -31,7 +33,7 @@ const sourceProps = {
 /** A moment of the edit handed into a scene: seconds of the video, or `"marker:ID"`. */
 const editTimeSchema = z.union([
   z.number().nonnegative(),
-  z.string().regex(/^marker:[A-Za-z_][A-Za-z0-9_-]*$/, 'times look like 4.2 or "marker:reveal"'),
+  z.string().regex(refPattern(["marker"]), 'times look like 4.2 or "marker:reveal"'),
 ]);
 
 export const clipSchema = z.strictObject({
@@ -46,7 +48,7 @@ export const clipSchema = z.strictObject({
    * With a scene: moments of the edit handed into it by name, which its keys may use for `at`. `{ reveal:
    * "marker:reveal" }` puts the scene's `reveal` where the marker is, wherever the clip or the marker moves.
    */
-  times: z.record(z.string(), editTimeSchema).optional(),
+  times: z.record(z.string(), ref("sceneTime", editTimeSchema)).optional(),
   ...visualProps,
   ...audioProps,
   /** Reframe to the composition's aspect: the resolver writes `transform.crop` from the source size and this focus, unless a crop is written. */

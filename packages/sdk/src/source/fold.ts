@@ -2,7 +2,7 @@ import traverseModule from "@babel/traverse";
 import * as t from "@babel/types";
 
 import type { TextRun } from "@uberscene/kit/schema";
-import { ELEMENTS, findFont, MAIN_TRACK_ID } from "@uberscene/kit/schema";
+import { capabilitiesOf, ELEMENTS, findFont, type Kind, MAIN_TRACK_ID } from "@uberscene/kit/schema";
 
 import { type NodeSpec, nodeSpecOf } from "../actions/types";
 import type { Json, NetPatch, PatchLog } from "../patches/types";
@@ -104,7 +104,7 @@ export function fold(
     }
     return new Identifier(entry.identifier) as unknown as Json;
   };
-  const declared = (kind: string, prop: string, value: Json | undefined): Json | undefined => {
+  const declared = (kind: Kind, prop: string, value: Json | undefined): Json | undefined => {
     // A font where it is nested: a theme's roles, a title's or captions' style.
     if (kind === "composition" && prop === "theme" && isRecord(value) && isRecord(value.fonts))
       return {
@@ -112,7 +112,7 @@ export function fold(
         fonts: Object.fromEntries(Object.entries(value.fonts).map(([role, family]) => [role, fontValue(family)])),
       } as Json;
     if (
-      (kind === "captions" || kind === "title") &&
+      capabilitiesOf(kind).themeStyle === "look" &&
       prop === "style" &&
       isRecord(value) &&
       typeof value.font === "string"

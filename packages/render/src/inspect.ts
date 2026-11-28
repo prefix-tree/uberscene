@@ -131,7 +131,7 @@ export function describeAt(state: ResolvedState, moment: Moment): MomentView {
     const rel = secondsSinceStart(p, t);
     const transform = restless(animatedTransform(p.props.transform as never, children, rel) as Record<string, unknown>);
     const box = placed(animatedBox(p.props.box as never, children, rel));
-    const text = p.kind === "title" ? state.tree.byId.get(p.id)?.text : undefined;
+    const text = p.text;
     const follow = followOf(p);
     seen.push({
       id: p.id,

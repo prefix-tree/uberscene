@@ -1,7 +1,14 @@
 import traverseModule from "@babel/traverse";
 import * as t from "@babel/types";
 
-import { COMPONENT_NAMES, ELEMENTS, ENGINE_LAYERS, MAIN_TRACK_ID, MAIN_TRACK_KINDS } from "@uberscene/kit/schema";
+import {
+  COMPONENT_NAMES,
+  ELEMENTS,
+  ENGINE_LAYERS,
+  type Kind,
+  MAIN_TRACK_ID,
+  MAIN_TRACK_KINDS,
+} from "@uberscene/kit/schema";
 
 import type { Json } from "../patches/types";
 import { INTERIOR_PREFIX } from "../resolve/tree";
@@ -11,7 +18,7 @@ import { parseSource, type Range, rangeOf } from "./parse";
 const traverse = ((traverseModule as unknown as { default?: typeof traverseModule }).default ??
   traverseModule) as typeof traverseModule;
 
-const KIND_BY_NAME: ReadonlyMap<string, string> = new Map(
+const KIND_BY_NAME: ReadonlyMap<string, Kind> = new Map(
   [...Object.entries(ELEMENTS), ...Object.entries(ENGINE_LAYERS)].map(([name, c]) => [name, c.kind]),
 );
 
@@ -63,7 +70,7 @@ const MAIN_KINDS: ReadonlySet<string> = new Set(MAIN_TRACK_KINDS);
 export interface ElementSite {
   readonly generated: false;
   readonly id: string;
-  readonly kind: string;
+  readonly kind: Kind;
   readonly name: string;
   readonly range: Range;
   readonly openingTag: Range;

@@ -1,33 +1,12 @@
-import {
-  Captions,
-  Clapperboard,
-  Focus,
-  Layers as LayersIcon,
-  type LucideIcon,
-  Music,
-  Shapes,
-  Sparkles,
-  Type,
-} from "lucide-react";
+import { Focus } from "lucide-react";
 
 import { useSelection } from "@uberscene/editor";
 
+import { iconOf } from "./elements";
 import { useRows } from "./use-rows";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-
-const ICONS: Record<string, LucideIcon> = {
-  clip: Clapperboard,
-  audio: Music,
-  title: Type,
-  captions: Captions,
-  caption: Captions,
-  shape: Shapes,
-  svg: Shapes,
-  transition: Sparkles,
-  layer: LayersIcon,
-};
 
 /** Every element, grouped by track. A click selects it; the selection is the one the timeline and inspector share. */
 export function Layers({ className }: { className?: string }) {
@@ -59,7 +38,7 @@ export function Layers({ className }: { className?: string }) {
               {track.camera !== undefined && <Focus className="size-3" aria-label="Moved by the camera" />}
             </h3>
             {rows.map((row) => {
-              const Icon = ICONS[row.kind] ?? Shapes;
+              const Icon = iconOf(row.kind);
               return (
                 <Button
                   key={row.id}

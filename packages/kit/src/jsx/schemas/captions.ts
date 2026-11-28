@@ -3,8 +3,8 @@ import { z } from "zod";
 import { zCaptionAnimation } from "../enums";
 import {
   assetRefSchema,
-  boxSchema,
   colorSchema,
+  fixedBoxSchema,
   fontWeightSchema,
   idSchema,
   textShadowSchema,
@@ -60,7 +60,7 @@ export const captionsSchema = z.strictObject({
    * `origin: "center"` puts the block's middle at 1150 and keeps the default width. Without a `height`, the block is as
    * tall as its lines.
    */
-  box: boxSchema.optional(),
+  box: fixedBoxSchema.optional(),
   // Generation limits: a cue breaks at a sentence end, a long pause, or when one of these would be exceeded.
   /** The most characters on a generated cue's line. Left out: as many as fit at the caption size on this frame (at most 42). */
   maxChars: z.number().int().positive().optional(),

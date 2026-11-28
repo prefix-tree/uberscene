@@ -3,6 +3,7 @@ import { z } from "zod";
 import { TRANSITION_PARAMS } from "../../effects/registry";
 import { renamedParam } from "../effect-params";
 import { RESPELLED_VALUES, TRANSITION_TYPES, type TransitionType, zTransitionType } from "../enums";
+import { ref } from "../ref-sites";
 import { idSchema } from "./common";
 
 /** Per-type parameter schemas, with defaults that validate: the registry's. */
@@ -19,7 +20,7 @@ export const transitionSchema = z
     /** The type's own settings; each type's page lists them. */
     params: z.record(z.string(), z.unknown()).default({}),
     /** Edge form: a transition at one edge of a single clip. Omit for a transition between two siblings. */
-    on: idSchema.optional(),
+    on: ref("on", idSchema).optional(),
     /** With `on`: `in` at the clip's start, `out` at its end. */
     edge: z.enum(["in", "out"]).optional(),
   })

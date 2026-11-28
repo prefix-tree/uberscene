@@ -1,15 +1,17 @@
 // Children kept as an ordered collection under one element: the captions' cues.
+import type { Kind } from "@uberscene/kit/schema";
+
 import type { PatchLog } from "../../patches/types";
 import type { ResolvedState } from "../../resolve/resolve";
 import { rawNode, siblingAfter } from "../handler-kit";
 import { type NodeSpec, nodeOfSpec } from "../types";
 
-export function childrenOfKind(state: ResolvedState, parentId: string, kind: string) {
+export function childrenOfKind(state: ResolvedState, parentId: string, kind: Kind) {
   return (rawNode(state, parentId)?.children ?? []).filter((c) => c.kind === kind);
 }
 
 /** Where a replaced collection sits: where its first member was, or after the other children when there was none. */
-export function stackPosition(state: ResolvedState, parentId: string, kind: string): string | null {
+export function stackPosition(state: ResolvedState, parentId: string, kind: Kind): string | null {
   const first = childrenOfKind(state, parentId, kind)[0];
   return first ? siblingAfter(state, first.id) : lastNonStack(state, parentId, kind);
 }
@@ -18,7 +20,7 @@ export function replaceAll(
   log: PatchLog,
   state: ResolvedState,
   parentId: string,
-  kind: string,
+  kind: Kind,
   specs: readonly NodeSpec[],
   afterOverride?: string | null,
 ): void {
@@ -31,7 +33,7 @@ export function replaceAll(
   }
 }
 
-export function lastNonStack(state: ResolvedState, parentId: string, kind: string): string | null {
+export function lastNonStack(state: ResolvedState, parentId: string, kind: Kind): string | null {
   // Stacks are kept after the non-stack children so prop edits never reorder siblings of other kinds.
   const node = rawNode(state, parentId);
   const others = (node?.children ?? []).filter((c) => c.kind !== kind);

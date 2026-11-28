@@ -1,4 +1,4 @@
-import type { TextRun, TrackFlag, TrackLayout, TrackRole, TransitionType } from "@uberscene/kit/schema";
+import type { Kind, TextRun, TrackFlag, TrackLayout, TrackRole, TransitionType } from "@uberscene/kit/schema";
 
 import type { TimeRef } from "../../manifest/timeref";
 import type { Json } from "../../patches/types";
@@ -319,7 +319,7 @@ interface Overlay {
   create: {
     id: Id;
     /** title, shape, svg, sticker, adjustment, nested or layer. */
-    kind: string;
+    kind: Kind;
     trackId: Id;
     place: PlacementSpec;
     props: Props;

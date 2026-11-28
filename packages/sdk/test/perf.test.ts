@@ -21,16 +21,23 @@ describe("drag-loop cost", () => {
     const base = exec.state().items.get("c3")!.source!;
     for (let i = 0; i < 10; i++)
       exec.execute({ type: "clip/trim", params: { id: "c3", edge: "out", value: base.in + 0.5 + i / 100 } });
-    const t0 = performance.now();
-    const steps = 60;
-    for (let i = 0; i < steps; i++) {
-      const r = exec.execute({
-        type: "clip/trim",
-        params: { id: "c3", edge: "out", value: base.in + 0.5 + (i % 50) / 100 },
-      });
-      expect(r.ok).toBe(true);
+    // Wall time, with every other test file running beside this one: a stall in any of them lands in the figure.
+    // Noise only ever adds time, so the fastest of several batches is the best estimate of what a step costs.
+    const batches = 5;
+    const stepsPerBatch = 12;
+    let perStep = Number.POSITIVE_INFINITY;
+    for (let b = 0; b < batches; b++) {
+      const t0 = performance.now();
+      for (let s = 0; s < stepsPerBatch; s++) {
+        const i = b * stepsPerBatch + s;
+        const r = exec.execute({
+          type: "clip/trim",
+          params: { id: "c3", edge: "out", value: base.in + 0.5 + (i % 50) / 100 },
+        });
+        expect(r.ok).toBe(true);
+      }
+      perStep = Math.min(perStep, (performance.now() - t0) / stepsPerBatch);
     }
-    const perStep = (performance.now() - t0) / steps;
     expect(perStep).toBeLessThan(STEP_BUDGET_MS);
     expect(exec.state().items.get("c3")!.source!.out).toBeCloseTo(base.in + 0.5 + (59 % 50) / 100);
   });

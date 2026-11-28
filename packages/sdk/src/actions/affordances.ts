@@ -1,5 +1,5 @@
 import type { ElementCapabilities } from "@uberscene/kit/schema";
-import { capabilitiesOf } from "@uberscene/kit/schema";
+import { capabilitiesOf, type Kind } from "@uberscene/kit/schema";
 
 import type { ResolvedState } from "../resolve/resolve";
 import type { Editable } from "../resolve/tree";
@@ -12,7 +12,7 @@ export type PropAccess = "literal" | "bound" | "locked";
 /** What an editor or an agent may do to one element, before trying anything. */
 export interface Affordances {
   readonly id: string;
-  readonly kind: string;
+  readonly kind: Kind;
   readonly editable: Editable;
   /** The track it sits on, if any, and whether that track is locked. */
   readonly track: { readonly id: string; readonly locked: boolean } | undefined;

@@ -1,4 +1,6 @@
 // Where an asset plays on a resolved timeline: the rule the resolver places captions by, read from the state.
+import { capabilitiesOf } from "@uberscene/kit/schema";
+
 import { lookupAsset } from "../manifest/types";
 import {
   type AssetPlay,
@@ -20,7 +22,7 @@ export function playsOf(state: ResolvedState, asset: string): AssetPlay[] {
   const plays: AssetPlay[] = [];
   for (const p of state.items.values()) {
     if (!p.source || !sameAsset(p.source.asset, asset)) continue;
-    if (p.kind !== "clip" && p.kind !== "audio") continue;
+    if (!capabilitiesOf(p.kind).playsAsset) continue;
     if (p.track && hidden.has(p.track)) continue;
     plays.push(assetPlay({ id: p.id, start: startSeconds(p), source: p.source, children: children(state, p) }));
   }
@@ -30,15 +32,14 @@ export function playsOf(state: ResolvedState, asset: string): AssetPlay[] {
 /** The play of one clip or audio placement, or null for an element that plays no asset. */
 export function playOf(state: ResolvedState, id: string): AssetPlay | null {
   const p = state.items.get(id);
-  if (!p?.source || (p.kind !== "clip" && p.kind !== "audio")) return null;
+  if (!p?.source || !capabilitiesOf(p.kind).playsAsset) return null;
   return assetPlay({ id: p.id, start: startSeconds(p), source: p.source, children: children(state, p) });
 }
 
 /** Every transcript word the timeline plays, at the time it plays, in timeline order. */
 export function spokenWords(state: ResolvedState): (TimelineWord & { readonly asset: string })[] {
   const assets = new Set<string>();
-  for (const p of state.items.values())
-    if (p.source && (p.kind === "clip" || p.kind === "audio")) assets.add(p.source.asset);
+  for (const p of state.items.values()) if (p.source && capabilitiesOf(p.kind).playsAsset) assets.add(p.source.asset);
   const out: (TimelineWord & { asset: string })[] = [];
   for (const ref of assets) {
     const asset = lookupAsset(state.manifest, ref);
@@ -65,8 +66,7 @@ export interface TimelineEntry {
  */
 export function timelineEntries(state: ResolvedState, kind: "beats" | "shots" | "silences"): TimelineEntry[] {
   const assets = new Set<string>();
-  for (const p of state.items.values())
-    if (p.source && (p.kind === "clip" || p.kind === "audio")) assets.add(p.source.asset);
+  for (const p of state.items.values()) if (p.source && capabilitiesOf(p.kind).playsAsset) assets.add(p.source.asset);
   const out: TimelineEntry[] = [];
   for (const ref of assets) {
     const asset = lookupAsset(state.manifest, ref);

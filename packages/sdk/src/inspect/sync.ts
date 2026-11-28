@@ -1,7 +1,7 @@
 // The music against the picture, as data: the music the timeline plays and its beats, every moment of the video in
 // one sorted list, and how far each cut and each start is from its nearest beat. Read from the resolved timeline
 // alone, so anything that cannot hear can still tell whether an edit is on the music.
-import { nearestFrame } from "@uberscene/kit/schema";
+import { kindsWhere, nearestFrame } from "@uberscene/kit/schema";
 
 import { lookupAsset } from "../manifest/types";
 import type { Placement, ResolvedState } from "../resolve/resolve";
@@ -42,7 +42,7 @@ export interface EventRow {
 const NO_EDGES = new Set(["caption", "marker", "transition"]);
 
 /** Elements whose start shows on screen: what a viewer sees change. */
-const SEEN = new Set(["clip", "title", "shape", "svg", "sticker", "layer", "nested", "motion", "three"]);
+const SEEN = new Set(kindsWhere((kind) => kind.timed && (kind.plane === "canvas" || kind.plane === "dom")));
 
 /**
  * The beat nearest a time, among music that is playing then (or within a beat of it); undefined when none is. `beats`

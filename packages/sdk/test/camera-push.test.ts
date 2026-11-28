@@ -56,6 +56,16 @@ const keysOf = (state: ResolvedState) =>
 const pushed = (push: string, cards: string, more = "") => load(file(`${more} push={${push}}`, cards));
 
 describe("a camera that makes room", () => {
+  it("makes room for a shape with no width as wide as it is drawn: 200 pixels", () => {
+    // Its centre is at 880, so drawn 200 wide it reaches 980, past the 970 the view holds; as a point it would fit.
+    const bare = `<Shape id="a" start={1} duration={5} type="rectangle" box={{ x: 880, y: 300, origin: "center" }} />`;
+    const sized = `<Shape id="a" start={1} duration={5} type="rectangle" width={200} height={200} box={{ x: 880, y: 300, origin: "center" }} />`;
+    const state = pushed(`{ on: ["a"] }`, bare);
+    expect(state.errors).toEqual([]);
+    expect(keysOf(state)).not.toEqual([]);
+    expect(keysOf(state)).toEqual(keysOf(pushed(`{ on: ["a"] }`, sized)));
+  });
+
   it("does not move for an element that is already in view", () => {
     const state = pushed(`{ on: ["a"] }`, card("a", 1, 800));
     expect(state.errors).toEqual([]);
@@ -154,7 +164,7 @@ describe("what a push refuses", () => {
       'UNKNOWN_REF cam push: push.on names "nobody", which does not exist',
     ]);
     expect(errors(pushed(`{ on: ["a"], keep: ["mark"] }`, card("a", 1, 800)))).toEqual([
-      `UNKNOWN_REF cam push: push.keep names "mark", which is not on one of the camera's tracks: the camera does not move it`,
+      `WRONG_SCOPE cam push: push.keep names "mark", which is not on one of the camera's tracks: the camera does not move it`,
     ]);
   });
 

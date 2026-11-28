@@ -57,9 +57,10 @@ export function buildAudioPlan(
   for (const track of state.tracks) {
     if (track.hidden || track.muted || (anySolo && !track.solo)) continue;
     for (const p of [...state.items.values()].filter(
-      (q) => q.track === track.id && q.parent !== null && q.kind !== "transition",
+      (q) => q.track === track.id && q.parent !== null && capabilitiesOf(q.kind).sequenceRole !== "between",
     )) {
-      if (!capabilitiesOf(p.kind).audio) continue;
+      // A sound whose props did not parse is not played, as an element is not drawn: its level is not a number to read.
+      if (!capabilitiesOf(p.kind).audio || !p.parsed) continue;
       if (endTicks(p) <= secondsToTicks(from) || startTicks(p) >= secondsToTicks(to)) continue;
       if (p.kind === "nested") {
         out.push(...nestedOccurrences(state, p, track, from, to, resolveNested));

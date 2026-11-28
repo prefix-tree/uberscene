@@ -6,7 +6,7 @@
 // way one element reads another, at four frame rates.
 import { describe, expect, it } from "vitest";
 
-import { Audio, Captions, Clip, Composition, Gap, Marker, Title, Track, Transition } from "@uberscene/kit";
+import { Audio, Captions, Clip, Composition, Gap, Marker, Shape, Svg, Title, Track, Transition } from "@uberscene/kit";
 import {
   type ActionInput,
   type AssetManifest,
@@ -37,21 +37,40 @@ function answer(state: ResolvedState): unknown {
     errors: state.errors,
     fonts: state.fonts,
     scenes: state.scenes ? [...state.scenes.keys()] : null,
+    // Every reference, and the order each kind of thing is worked out in.
+    refs: {
+      edges: state.refs.edges,
+      time: state.refs.order.time,
+      space: state.refs.order.space,
+      value: state.refs.order.value,
+    },
   };
 }
 
-/** The cached resolve and the one from nothing agree; throwing is an answer too. */
-function expectSame(tree: CollectedTree, manifest: AssetManifest, log: PatchLog | undefined, step: string): void {
-  const attempt = (work: () => ResolvedState): unknown => {
+/**
+ * The cached resolve and the one from nothing agree; throwing is an answer too. Gives back the state from nothing,
+ * when there is one, for what else a step holds the cached state to.
+ */
+function expectSame(
+  tree: CollectedTree,
+  manifest: AssetManifest,
+  log: PatchLog | undefined,
+  step: string,
+): ResolvedState | undefined {
+  let state: ResolvedState | undefined;
+  const attempt = (work: () => ResolvedState, keep: boolean): unknown => {
     try {
-      return answer(work());
+      const made = work();
+      if (keep) state = made;
+      return answer(made);
     } catch (error) {
       return { threw: String(error) };
     }
   };
-  const cached = attempt(() => resolve(tree, manifest, log));
-  const fresh = attempt(() => resolveFresh(tree, manifest, log));
+  const cached = attempt(() => resolve(tree, manifest, log), false);
+  const fresh = attempt(() => resolveFresh(tree, manifest, log), true);
   expect(cached, step).toEqual(fresh);
+  return state;
 }
 
 function logFor(tree: CollectedTree): PatchLog {
@@ -170,6 +189,37 @@ function rich(fps: number | string, captions: boolean): CollectedTree {
           Two
         </Title>
         <Clip id="f3" src="asset:logo" start={2} duration={3} />
+        <Shape
+          id="s1"
+          type="rectangle"
+          width={120}
+          height={80}
+          start={0}
+          duration={5}
+          transform={{
+            rotation: [
+              { at: 0, value: 0 },
+              { at: 2, value: 90 },
+            ],
+          }}
+        />
+        <Svg id="sv" start={0} duration={5} content="<svg viewBox='0 0 10 10'><rect width='10' height='10'/></svg>" />
+        <Title id="f4" start={1} duration={2} follow="s1">
+          Follows a shape
+        </Title>
+        <Title id="f5" start={1} duration={2} follow="sv">
+          Follows a drawing
+        </Title>
+        <Shape
+          id="s2"
+          type="ellipse"
+          width={40}
+          height={40}
+          start={0}
+          duration={5}
+          follow="f4"
+          transform={{ rotation: { link: "s1.transform.rotation", scale: 2 } }}
+        />
       </Track>
       <Track id="over">
         <Title id="t1" anchor="c2" offset={0.2} duration={1}>
@@ -271,6 +321,22 @@ function randomPatch(state: ResolvedState, next: () => number, n: number): Patch
     return { op: "set", id: some(of("track")), prop, value };
   }
   if (roll < 0.64) return { op: "set", id: some(of("marker")), prop: "start", value: seconds() };
+  if (roll < 0.66) {
+    // What follows what, and what a followed drawing is read from: the checks of a reference read both.
+    const id = some(of("title", "shape", "svg"));
+    const kind = pick(next, ["follow", "follow", "content", "rotation"] as const);
+    if (kind === "follow")
+      return { op: "set", id, prop: "follow", value: pick(next, [pick(next, ids), "s1", "sv", "nowhere", undefined]) };
+    if (kind === "content")
+      return { op: "set", id: "sv", prop: "content", value: pick(next, ["<svg viewBox='0 0 4 4'/>", undefined]) };
+    const link = pick(next, [
+      { link: "s1.transform.rotation" },
+      { link: `${pick(next, ids)}.transform.rotation`, scale: 2 },
+      { link: "s1.transform.nothing" },
+      12,
+    ]);
+    return { op: "set", id, prop: "transform", value: { rotation: link } };
+  }
   if (roll < 0.68) {
     const prop = pick(next, ["width", "height", "fps"] as const);
     return { op: "set", id: state.composition.id, prop, value: pick(next, [24, 30, 1080, 1920]) };
@@ -323,48 +389,86 @@ function randomPatch(state: ResolvedState, next: () => number, n: number): Patch
   return { op: "move", id: some(of("clip", "title")), parent: track.id, after };
 }
 
+/**
+ * A row resolves from nothing after every patch, and the first one also warms the resolver up: under coverage on a
+ * slow machine that is more than a test's five seconds.
+ */
+const ROW_MS = 20_000;
+
 describe.each([
   [24, false],
   [30, true],
   ["29.97", false],
   [60, true],
 ] as const)("cached and from nothing: random patches at %s fps (captions: %s)", (fps, captions) => {
-  it.each(ROWS)("agree after every patch of row %i, and after taking patches back", (seed) => {
-    const tree = rich(fps, captions);
-    const log = logFor(tree);
-    const next = random(seed * 7919 + Number.parseFloat(String(fps)) * 31);
-    expectSame(tree, sampleManifest, undefined, "as written");
-    for (let n = 0; n < 120; n++) {
-      let state: ResolvedState;
-      try {
-        state = resolve(tree, sampleManifest, log);
-      } catch {
-        // The last patch left a tree nothing can resolve (expectSame saw both ways throw alike): take it back.
-        log.truncate(log.mark() - 1);
-        continue;
+  it.each(ROWS)(
+    "agree after every patch of row %i, and after taking patches back",
+    (seed) => {
+      const tree = rich(fps, captions);
+      const log = logFor(tree);
+      const next = random(seed * 7919 + Number.parseFloat(String(fps)) * 31);
+      expectSame(tree, sampleManifest, undefined, "as written");
+      for (let n = 0; n < 120; n++) {
+        let state: ResolvedState;
+        try {
+          state = resolve(tree, sampleManifest, log);
+        } catch {
+          // The last patch left a tree nothing can resolve (expectSame saw both ways throw alike): take it back.
+          log.truncate(log.mark() - 1);
+          continue;
+        }
+        if (next() < 0.12 && log.mark() > 0) {
+          log.truncate(Math.floor(next() * log.mark()));
+          expectSame(tree, sampleManifest, log, `row ${seed}, step ${n}: take back to ${log.mark()}`);
+          continue;
+        }
+        const patch = randomPatch(state, next, n);
+        try {
+          log.append(patch);
+        } catch {
+          continue;
+        }
+        const fresh = expectSame(
+          tree,
+          sampleManifest,
+          log,
+          `row ${seed}, step ${n}: ${JSON.stringify(patch).slice(0, 200)}`,
+        );
+        if (!fresh) continue;
+        try {
+          const now = resolve(tree, sampleManifest, log);
+          for (const id of ["c2", "c3", "e2", "t1", "t5", "talk", "d1", "v1"])
+            expectDependents(now, id, `dependents of ${id}`, fresh);
+        } catch (error) {
+          if (!(error instanceof Error) || error.name === "AssertionError") throw error;
+        }
       }
-      if (next() < 0.12 && log.mark() > 0) {
-        log.truncate(Math.floor(next() * log.mark()));
-        expectSame(tree, sampleManifest, log, `row ${seed}, step ${n}: take back to ${log.mark()}`);
-        continue;
-      }
-      const patch = randomPatch(state, next, n);
-      try {
-        log.append(patch);
-      } catch {
-        continue;
-      }
-      expectSame(tree, sampleManifest, log, `row ${seed}, step ${n}: ${JSON.stringify(patch).slice(0, 200)}`);
-      try {
-        const now = resolve(tree, sampleManifest, log);
-        for (const id of ["c2", "c3", "e2", "t1", "t5", "talk", "d1", "v1"])
-          expect(dependentsOf(now, id), `dependents of ${id}`).toEqual(dependentsByReadingAll(now, id));
-      } catch (error) {
-        if (!(error instanceof Error) || error.name === "AssertionError") throw error;
-      }
-    }
-  });
+    },
+    ROW_MS,
+  );
 });
+
+/** The ways to depend that reading every node's props finds. */
+const READ_FROM_PROPS = new Set(["anchor", "follow", "on", "match", "until", "beside"]);
+
+/**
+ * What depends on an element is read from the graph of references, which a cached resolve builds from the nodes
+ * that write one. It is what the graph of a resolve from nothing gives, and, for the ways written in an element's
+ * own props and an element that is in the file, what reading every node gives.
+ */
+function expectDependents(state: ResolvedState, id: string, step: string, fresh: ResolvedState): void {
+  const found = dependentsOf(state, id);
+  expect(found, step).toEqual(dependentsOf(fresh, id));
+  // The graph holds a reference to something that exists: nothing depends on an element that is gone.
+  if (!state.tree.byId.has(id)) {
+    expect(found, step).toEqual([]);
+    return;
+  }
+  expect(
+    found.filter((d) => READ_FROM_PROPS.has(d.kind)),
+    step,
+  ).toEqual(dependentsByReadingAll(state, id));
+}
 
 /** `dependentsOf` as it was written first: every node of the tree read. */
 function dependentsByReadingAll(state: ResolvedState, id: string): Dependent[] {
@@ -455,12 +559,13 @@ describe("cached and from nothing: edits through the executor on the large proje
         const result = exec.execute(input);
         what = `${input.type} on ${JSON.stringify(input.params).slice(0, 120)}${result.ok ? "" : " (refused)"}`;
       }
-      expectSame(tree, manifest, exec.log(), `row ${seed}, step ${n}: ${what}`);
+      const fresh = expectSame(tree, manifest, exec.log(), `row ${seed}, step ${n}: ${what}`);
+      if (!fresh) continue;
       // What depends on an element is found from who names it in the file and the nodes the log made again; reading
       // every node gives the same list.
       const now = exec.state();
       for (const id of [clip.id, title.id, pick(next, clips).id])
-        expect(dependentsOf(now, id), `dependents of ${id} after ${what}`).toEqual(dependentsByReadingAll(now, id));
+        expectDependents(now, id, `dependents of ${id} after ${what}`, fresh);
     }
   });
 });
@@ -507,6 +612,52 @@ describe("cached and from nothing: a file that uses one id twice", () => {
   });
 });
 
+describe("cached and from nothing: the graph of references kept between resolves", () => {
+  // A resolve of a file with only props patched hands back the graph it built last, while what it was built from
+  // stands. Each patch here changes one of those things, or none of them.
+  const steps: readonly { readonly what: string; readonly patch: Patch; readonly kept: boolean }[] = [
+    { what: "a prop no reference reads", patch: { op: "set", id: "c1", prop: "fit", value: "contain" }, kept: true },
+    { what: "the same again", patch: { op: "set", id: "c1", prop: "fit", value: "cover" }, kept: true },
+    { what: "a holder moved", patch: { op: "set", id: "t1", prop: "offset", value: 0.4 }, kept: true },
+    { what: "a holder names another", patch: { op: "set", id: "t1", prop: "anchor", value: "c3" }, kept: false },
+    { what: "an element starts to follow", patch: { op: "set", id: "f1", prop: "follow", value: "s1" }, kept: false },
+    {
+      what: "a followed drawing loses its markup",
+      patch: { op: "set", id: "sv", prop: "content", value: undefined },
+      kept: false,
+    },
+    {
+      what: "a sound ducks under a role no track has",
+      patch: { op: "set", id: "bed", prop: "duck", value: { under: "dialogue", to: 0.1 } },
+      kept: false,
+    },
+    { what: "a track takes that role", patch: { op: "set", id: "v2", prop: "role", value: "dialogue" }, kept: false },
+    { what: "a track is hidden", patch: { op: "set", id: "v2", prop: "hidden", value: true }, kept: true },
+    {
+      what: "a link names another value",
+      patch: { op: "set", id: "s2", prop: "transform", value: { rotation: { link: "s1.transform.opacity" } } },
+      kept: false,
+    },
+    { what: "a follow goes round", patch: { op: "set", id: "s1", prop: "follow", value: "s2" }, kept: false },
+  ];
+
+  it("is the same graph while nothing it reads changed, and a new one, the right one, when something did", () => {
+    const tree = rich(30, false);
+    const log = logFor(tree);
+    let before = resolve(tree, sampleManifest, log).refs;
+    for (const step of steps) {
+      log.append(step.patch);
+      expectSame(tree, sampleManifest, log, step.what);
+      const now = resolve(tree, sampleManifest, log).refs;
+      expect(now === before, step.what).toBe(step.kept);
+      before = now;
+    }
+    // Taking a patch back is a change like any other.
+    log.truncate(log.mark() - 1);
+    expectSame(tree, sampleManifest, log, "the last patch taken back");
+  });
+});
+
 describe("cached and from nothing: the rows above", () => {
   it("went through every short cut of the resolver, so each was held to the answer from nothing", () => {
     expect(shortCuts.tracksTaken).toBeGreaterThan(100);
@@ -515,6 +666,7 @@ describe("cached and from nothing: the rows above", () => {
     expect(shortCuts.refreshed).toBeGreaterThan(20);
     expect(shortCuts.givenBack).toBeGreaterThan(5);
     expect(shortCuts.walked).toBeGreaterThan(100);
+    expect(shortCuts.graphKept).toBeGreaterThan(100);
     expect(shortCuts.plain).toBeGreaterThan(0);
   });
 });

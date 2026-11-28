@@ -1,9 +1,18 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { resolveTheme, Time, TimeRange } from "@uberscene/kit/schema";
+import {
+  capabilitiesOf,
+  isMigratedKind,
+  type Kind,
+  resolveTheme,
+  SCHEMAS_BY_KIND,
+  Time,
+  TimeRange,
+} from "@uberscene/kit/schema";
 import {
   type AssetManifest,
+  buildRefGraph,
   type CollectedNode,
   collectModule,
   endSeconds,
@@ -41,7 +50,7 @@ export function fixtureElement() {
 
 export interface ItemSpec {
   id: string;
-  kind: string;
+  kind: Kind;
   start?: number;
   duration?: number;
   source?: { in: number; out: number; speed?: number; asset: string };
@@ -119,7 +128,7 @@ export function makeState(spec: StateSpec): ResolvedState {
 
   const node = (
     id: string,
-    kind: string,
+    kind: Kind,
     parent: string | null,
     props: Record<string, unknown>,
     children: CollectedNode[],
@@ -152,7 +161,15 @@ export function makeState(spec: StateSpec): ResolvedState {
         }
       : undefined;
     const duration = it.duration ?? (source ? (source.out - source.in) / speed : it.kind === "transition" ? 0.5 : 5);
-    const props = { id: it.id, ...(it.props ?? {}) };
+    // The words of a kind whose content is words (a title): `text`, or the `text` some tests write among its props.
+    const { text: written, ...given } = (it.props ?? {}) as Record<string, unknown>;
+    const hasText = capabilitiesOf(it.kind).hasText;
+    const text = hasText ? (it.text ?? (typeof written === "string" ? written : "")) : it.text;
+    const raw: Record<string, unknown> = { id: it.id, ...(hasText ? given : (it.props ?? {})) };
+    // A kind with a folder of its own is drawn from its props as their types, so they are parsed as the resolver does.
+    const props = isMigratedKind(it.kind)
+      ? (SCHEMAS_BY_KIND[it.kind].parse({ start, duration, ...raw }) as Record<string, unknown>)
+      : raw;
     const childNodes: CollectedNode[] = [];
     const childPlacements: Placement[] = [];
     for (const c of it.children ?? []) {
@@ -178,6 +195,7 @@ export function makeState(spec: StateSpec): ResolvedState {
           ...timeOf(at, 0),
           props: { id: g.id, ...(g.props ?? {}) },
           editable: "literal",
+          parsed: true,
           lockedProps: [],
           boundProps: {},
           errors: [],
@@ -194,6 +212,7 @@ export function makeState(spec: StateSpec): ResolvedState {
         ...timeOf(cs, cd),
         props: { id: c.id, ...(c.props ?? {}) },
         editable: "literal",
+        parsed: true,
         lockedProps: [],
         boundProps: {},
         errors: [],
@@ -210,7 +229,7 @@ export function makeState(spec: StateSpec): ResolvedState {
         ),
       );
     }
-    node(it.id, it.kind, parent, props, childNodes, it.text);
+    node(it.id, it.kind, parent, props, childNodes, text);
     const p: Placement = {
       id: it.id,
       kind: it.kind,
@@ -221,10 +240,12 @@ export function makeState(spec: StateSpec): ResolvedState {
       ...(source ? { source } : {}),
       props,
       editable: "literal",
+      parsed: true,
       lockedProps: [],
       boundProps: {},
       errors: [],
       ...(it.between ? { between: it.between } : {}),
+      ...(hasText ? { text: text ?? "", runs: [] } : {}),
     };
     items.set(it.id, p);
     return p;
@@ -289,13 +310,14 @@ export function makeState(spec: StateSpec): ResolvedState {
       ...timeOf(0, duration),
       props: { id: t.id, layout: t.layout },
       editable: "literal",
+      parsed: true,
       lockedProps: [],
       boundProps: {},
       errors: [],
     });
   }
   if (spec.camera) {
-    const base = { editable: "literal" as const, lockedProps: [], boundProps: {}, errors: [] };
+    const base = { editable: "literal" as const, parsed: true, lockedProps: [], boundProps: {}, errors: [] };
     const keys = (spec.camera.keys ?? []).map(([field, at, value, easing], i) => {
       const id = `cam.${field}.${i}`;
       items.set(id, {
@@ -339,6 +361,7 @@ export function makeState(spec: StateSpec): ResolvedState {
     ...timeOf(0, duration),
     props: compProps,
     editable: "literal",
+    parsed: true,
     lockedProps: [],
     boundProps: {},
     errors: [],
@@ -362,6 +385,16 @@ export function makeState(spec: StateSpec): ResolvedState {
     theme: resolveTheme(undefined),
     fonts: [],
     shaders: [],
+    refs: buildRefGraph(
+      { root, byId, errors: [] },
+      {
+        kindOf: (id) => byId.get(id)?.kind,
+        trackOf: (id) => items.get(id)?.track ?? null,
+        cameraOfTrack: (track) => tracks.find((t) => t.id === track)?.camera,
+        propsOf: (id) => items.get(id)?.props ?? {},
+        tracks,
+      },
+    ).graph,
   };
 }
 

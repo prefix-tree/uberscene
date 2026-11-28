@@ -58,6 +58,8 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm knip
+      # Element kinds named in the packages, against the committed budget (scripts/kind-branches.json).
+      - run: pnpm kinds
       - run: pnpm test:coverage
       - name: Coverage summary
         if: matrix.node == 22

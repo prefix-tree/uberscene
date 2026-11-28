@@ -1,4 +1,4 @@
-import { FONT_KEYS, findFont, nearestFont, themeSchema } from "@uberscene/kit/schema";
+import { capabilitiesOf, FONT_KEYS, findFont, nearestFont, themeSchema } from "@uberscene/kit/schema";
 
 import type { Json } from "../../patches/types";
 import {
@@ -166,7 +166,7 @@ define({
         : invalid({ code: "INVALID_PARAMS", path: "role", message: `"${p.role}" is not a font role` });
     const item = requireElement(state, p.id);
     if (isError(item)) return invalid(item);
-    if (item.kind !== "title" && item.kind !== "captions")
+    if (capabilitiesOf(item.kind).themeStyle !== "look")
       return invalid({ code: "INVALID_PARAMS", path: "id", message: `a ${item.kind} takes no font` });
     return validateTarget(state, p.id, ["style.font", ...(p.weight === undefined ? [] : ["style.weight"])]);
   },

@@ -7,6 +7,13 @@ import {
   effectParamProblem,
   GENERATOR_TYPES,
   isGenerator,
+  isLink,
+  KINDS,
+  type Kind,
+  keyPathOf,
+  keyPathsOf,
+  kindsWhere,
+  kindTakes,
   shaderFor,
   VIDEO_EFFECT_TYPES,
 } from "@uberscene/kit/schema";
@@ -14,103 +21,66 @@ import {
 import type { Json } from "../../patches/types";
 import { isKeyList } from "../../resolve/expand";
 import type { ResolvedState } from "../../resolve/resolve";
-import { SHAPE_KEY_PATHS, shapeKeyProblem } from "../../resolve/shape-keys";
 import { T } from "../../time";
-import { define, makePropHandler, onElement, rawNode, rawProp } from "../handler-kit";
+import { define, makePropHandler, onElement, rawNode, rawProp, readPath, writePath } from "../handler-kit";
 import { invalid, type KeyJson, ok, type ValidationResult } from "../types";
 
-/** The paths a key list may sit at, besides an effect's params (`effects.<n>.<param>`). */
-const KEY_PATHS: ReadonlySet<string> = new Set([
-  "transform.scale",
-  "transform.scale.x",
-  "transform.scale.y",
-  "transform.rotation",
-  "transform.opacity",
-  "transform.anchor.x",
-  "transform.anchor.y",
-  "transform.borderRadius",
-  "transform.crop.x",
-  "transform.crop.y",
-  "transform.crop.width",
-  "transform.crop.height",
-  "box.x",
-  "box.y",
-  "volume",
-  "pan",
-  "speed",
-]);
+/**
+ * The one kind whose own values `path` is among (a shape's size, colours, outline and points), or undefined for a path
+ * no kind or several kinds have, and for a camera's, whose keys run on the video's clock.
+ */
+function onlyOn(path: string): Kind | undefined {
+  const kinds = kindsWhere((kind) => kind.keyPaths.some((k) => k.path === path && k.clock === "element"));
+  return kinds.length === 1 ? kinds[0] : undefined;
+}
+
+/**
+ * The paths a key list may sit at on a `kind`, besides an effect's params (`effects.<n>.<param>`): the kind's entries
+ * in the key-path table, with the one path a list for both axes is written at, and `speed` where there is one.
+ */
+function keyPathsFor(kind: Kind): readonly string[] {
+  const own = keyPathsOf(kind).flatMap((k) => (k.both ? [k.both, k.path] : [k.path]));
+  return [...new Set([...own, ...(kindTakes(kind, "speed") ? ["speed"] : [])])];
+}
 
 const EFFECT_PARAM = /^effects\.(\d+)\.([A-Za-z_]\w*)$/;
 
+/**
+ * Why `path` of element `id` cannot be given keys or a generator when a link is written there (or, for one axis, at
+ * both): the value is another element's, so its keys are changed there, or the link is replaced first.
+ */
+function linkProblem(state: ResolvedState, id: string, path: string): string | null {
+  const props = rawNode(state, id)?.props;
+  const both = /\.[xy]$/.test(path) ? readPath(props, path.slice(0, -2)) : undefined;
+  const written = isLink(both) ? both : readPath(props, path);
+  if (!isLink(written)) return null;
+  return `"${path}" of "${id}" is a link to ${written.link}, so it has no keys of its own: change that value's keys, or write a number or keys here in place of the link`;
+}
+
 /** Why `path` cannot hold keys on element `id`, or null. */
 function pathProblem(state: ResolvedState, id: string, path: string): string | null {
+  const linked = linkProblem(state, id, path);
+  if (linked) return linked;
   const fx = EFFECT_PARAM.exec(path);
   if (fx) {
     const effects = effectsOf(state, id);
     return Number(fx[1]) < effects.length ? null : `element "${id}" has no effect ${fx[1]}`;
   }
-  // A camera's keys are its four values, on the video's clock.
   const target = state.items.get(id);
-  if (target?.kind === "camera" && target.props.push && path !== "rotation" && path in CAMERA_FIELDS)
+  if (!target) return `element "${id}" does not exist`;
+  const kind = target.kind;
+  // A pushed camera's place and zoom are the push's to set.
+  if (kind === "camera" && target.props.push && path !== "rotation" && path in CAMERA_FIELDS)
     return `the camera's push sets its ${path}: turn the push into keys with camera/bakePush, then change them`;
-  if (target?.kind === "camera")
-    return path in CAMERA_FIELDS
-      ? null
-      : `"${path}" cannot hold keys on a camera; use one of ${Object.keys(CAMERA_FIELDS).join(", ")}`;
-  // A shape's own values (its size, colours, outline and points) take keys on a shape only.
-  if (path in SHAPE_KEY_PATHS)
-    return target?.kind === "shape" ? null : `"${path}" holds keys only on a shape; "${id}" is a ${target?.kind}`;
-  const shapePaths = target?.kind === "shape" ? Object.keys(SHAPE_KEY_PATHS) : [];
-  return KEY_PATHS.has(path)
-    ? null
-    : `"${path}" cannot hold keys; use one of ${[...KEY_PATHS, ...shapePaths].join(", ")}, or effects.<n>.<param>`;
-}
-
-/** The value at a dotted path inside an element's raw props; a number segment indexes a list. */
-export function readPath(props: Readonly<Record<string, unknown>> | undefined, path: string): unknown {
-  let at: unknown = props;
-  for (const seg of path.split(".")) {
-    if (at === null || typeof at !== "object") return undefined;
-    // One list for both axes (`scale: [...]`) is each axis's list.
-    if (isKeyList(at) && (seg === "x" || seg === "y")) continue;
-    at = Array.isArray(at) ? at[Number(seg)] : (at as Record<string, unknown>)[seg];
-  }
-  return at;
-}
-
-/**
- * The element's top-level prop with `value` written at `path` inside it: objects and lists along the way are copied,
- * an `undefined` value removes the field, and an object left empty is removed. A number `scale` that gains keys on one
- * axis becomes `{ x, y }`.
- */
-export function writePath(
-  props: Readonly<Record<string, unknown>> | undefined,
-  path: string,
-  value: unknown,
-): { readonly prop: string; readonly value: Json | undefined } {
-  const [top, ...rest] = path.split(".") as [string, ...string[]];
-  const put = (container: unknown, segs: readonly string[]): unknown => {
-    if (segs.length === 0) return value;
-    const [seg, ...more] = segs as [string, ...string[]];
-    // A number or one list for both axes, written on one axis: both axes, the other keeping what it had.
-    if ((typeof container === "number" || isKeyList(container)) && (seg === "x" || seg === "y")) {
-      const base: Record<string, unknown> = { x: container, y: container };
-      base[seg] = put(container, more);
-      return base;
-    }
-    if (Array.isArray(container)) {
-      const copy = [...container];
-      copy[Number(seg)] = put(copy[Number(seg)], more);
-      return copy;
-    }
-    const base: Record<string, unknown> =
-      container && typeof container === "object" ? { ...(container as Record<string, unknown>) } : {};
-    const next = put(base[seg], more);
-    if (next === undefined) delete base[seg];
-    else base[seg] = next;
-    return Object.keys(base).length === 0 ? undefined : base;
-  };
-  return { prop: top, value: put(props?.[top], rest) as Json | undefined };
+  const paths = keyPathsFor(kind);
+  if (paths.includes(path)) return null;
+  // A kind's own values (a shape's size, colours, outline and points) take keys on that kind only.
+  const only = onlyOn(path);
+  if (only !== undefined) return `"${path}" holds keys only on a ${only}; "${id}" is a ${kind}`;
+  const effects = kindTakes(kind, "effects") ? ["effects.<n>.<param>"] : [];
+  if (paths.length + effects.length === 0) return `"${path}" cannot hold keys: a ${kind} has nothing that does`;
+  const use = [paths.join(", "), ...effects].filter((part) => part !== "").join(", or ");
+  return `"${path}" cannot hold keys on a ${kind}; use one of ${use}`;
 }
 
 /** The keys at `path`: the list written there, or none when it holds a constant or nothing. */
@@ -162,9 +132,10 @@ function checkPath(state: ResolvedState, id: string, path: string): ValidationRe
 
 /** A value an effect's param or a shape's keyed value takes, when `path` is one. */
 function checkValue(state: ResolvedState, id: string, path: string, value: Json | undefined): ValidationResult {
-  const property = SHAPE_KEY_PATHS[path];
-  if (property && value !== undefined && state.items.get(id)?.kind === "shape") {
-    const problem = shapeKeyProblem(property, value);
+  const kind = state.items.get(id)?.kind;
+  const check = kind === undefined ? undefined : keyPathOf(kind, path)?.check;
+  if (check && value !== undefined) {
+    const problem = check(value);
     return problem ? invalid({ code: "INVALID_PARAMS", message: problem, path: "value" }) : ok;
   }
   const fx = EFFECT_PARAM.exec(path);
@@ -391,7 +362,7 @@ define(makePropHandler({
 
 define(makePropHandler({
   type: "freeze/setAll",
-  kinds: ["clip", "audio"],
+  props: ["freezes"],
   write: (p) => ({
     freezes:
       p.freezes.length > 0
@@ -410,8 +381,16 @@ define(makePropHandler({
 
 // ── generators ──────────────────────────────────────────────────────────────
 
-/** Paths a generator cannot be written at: values the mixer or the clock reads from keys alone. */
-const NOT_GENERATED = new Set(["speed", "volume", "pan"]);
+/**
+ * Paths a generator cannot be written at: `speed`, which the clock reads from keys alone, and each number a kind's
+ * schema marks as taking keys or a link and no generator (a sound's level and its pan, which the mixer reads so).
+ */
+const NOT_GENERATED = new Set([
+  "speed",
+  ...KINDS.flatMap((kind) => keyPathsOf(kind))
+    .filter((k) => k.numeric && !k.generated)
+    .map((k) => k.path),
+]);
 
 define(makePropHandler({
   type: "generator/set",
@@ -442,6 +421,8 @@ define(makePropHandler({
         message: `${a.params.path} cannot be generated: it takes a number or keys`,
         path: "path",
       });
+    const linked = linkProblem(state, a.params.id, a.params.path);
+    if (linked) return invalid({ code: "INVALID_PARAMS", message: linked, path: "path" });
     // A camera's push sets keys on these paths; a generator goes on top of them, so the push does not refuse it.
     const camera = state.items.get(a.params.id);
     if (camera?.kind === "camera" && a.params.path in CAMERA_FIELDS) return ok;

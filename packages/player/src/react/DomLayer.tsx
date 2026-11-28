@@ -9,16 +9,10 @@ import { effectPipeline } from "../model/shaders";
 import { frameIndex, frameTime } from "../model/time";
 import type { Matrix2D } from "../model/transform";
 import { type VisibleItem, visiblePlacements } from "../model/visible";
-import { type ElementProps, OVERLAY_KINDS } from "../overlays/layout";
-import { rootSpace, type Space, spacesAt } from "../overlays/space";
+import type { ElementProps } from "../overlays/layout";
+import { refsAt, rootSpace, type Space } from "../overlays/space";
 import { devWarn } from "../warn";
-import { Adjustment } from "./elements/Adjustment";
-import { Captions } from "./elements/Captions";
-import { Layer } from "./elements/Layer";
-import { Shape } from "./elements/Shape";
-import { Sticker } from "./elements/Sticker";
-import { Svg } from "./elements/Svg";
-import { Title } from "./elements/Title";
+import { DOM_DRAWING } from "./elements";
 import { useCompositionTime, usePlayer } from "./hooks";
 import { htmlInCanvas } from "./html-in-canvas";
 import { ShaderBox } from "./ShaderBox";
@@ -42,9 +36,9 @@ export function DomLayer({ state, interiors, layer = "front", slot }: DomLayerPr
   // Where the overlays that follow another are placed from, worked out once a frame (at the frame's own time unless
   // the player draws every moment), and handed to each element.
   const at = exact ? time : frameTime(frameIndex(time, state.composition.rate), state.composition.rate);
-  const spaces = useMemo(() => spacesAt(state, at), [state, at]);
+  const { spaces } = useMemo(() => refsAt(state, at), [state, at]);
   const root = useMemo(() => rootSpace(state), [state]);
-  const items = visiblePlacements(state, time).filter((v) => OVERLAY_KINDS.has(v.placement.kind));
+  const items = visiblePlacements(state, time).filter((v) => DOM_DRAWING[v.placement.kind]?.where === "track");
   const byTrack = new Map<string, VisibleItem[]>();
   for (const item of items) {
     const list = byTrack.get(item.track.id) ?? [];
@@ -57,7 +51,8 @@ export function DomLayer({ state, interiors, layer = "front", slot }: DomLayerPr
     slot !== undefined ? slotOf(t.id) === slot : slotOf(t.id) < 0 === (layer === "backdrop"),
   );
   const top = slot !== undefined ? slot === bands.count - 1 : layer === "front";
-  const captions = top ? [...state.items.values()].filter((p) => p.kind === "captions") : [];
+  // What stands over every track for the whole video (the captions) goes with the top canvas.
+  const over = top ? [...state.items.values()].filter((p) => p.parsed && DOM_DRAWING[p.kind]?.where === "top") : [];
   return (
     <>
       {tracks.map((track) => {
@@ -83,12 +78,12 @@ export function DomLayer({ state, interiors, layer = "front", slot }: DomLayerPr
           </div>
         );
       })}
-      {captions.map((c) => (
+      {over.map((c) => (
         <div
           key={c.id}
           style={{ position: "absolute", inset: 0, zIndex: state.tracks.length + 1, pointerEvents: "none" }}
         >
-          <Captions placement={c} state={state} time={time} />
+          {DOM_DRAWING[c.kind]?.render({ placement: c, children: [], state, time }, {})}
         </div>
       ))}
     </>
@@ -117,20 +112,22 @@ const Element = memo(
       transition: item.transition,
       space,
     };
-    const content = elementContent(item, props, state, interior);
-    if (item.placement.kind !== "adjustment") warnPostOnOverlay(item.placement.id, item.children);
+    const drawing = DOM_DRAWING[item.placement.kind];
+    const content = drawing?.render(props, { interior }) ?? null;
+    // An element with no effects of its own (an adjustment, whose effects the canvas draws) is its content alone.
+    const piped = drawing?.effects === "pipeline";
+    if (piped) warnPostOnOverlay(item.placement.id, item.children);
     // An overlay's effects run in file order over its picture, drawn through HTML-in-Canvas. Without HTML-in-Canvas
     // they draw as CSS (overlays/layout.ts), and only the ones with no CSS form are left here, to be reported.
-    const passes =
-      item.placement.kind === "adjustment"
-        ? undefined
-        : effectPipeline(state, item.children, item.placement.id, secondsSinceStart(item.placement, time), {
-            shaders: htmlInCanvas(),
-          }).shaders;
+    const passes = !piped
+      ? undefined
+      : effectPipeline(state, item.children, item.placement.id, secondsSinceStart(item.placement, time), {
+          shaders: htmlInCanvas(),
+        }).shaders;
     // The box stays for as long as the element has an effect a shader draws, also at a moment when that effect
     // changes nothing and has no pass: taking the box away and putting it back would make the overlay's content
     // anew each time, and a three.js scene would be set up again in the middle of the video.
-    if (!content || item.placement.kind === "adjustment") return content;
+    if (!content || !piped) return content;
     const list = passes ?? [];
     if (list.length === 0 && !hasShaderEffect(item.children)) return content;
     const { width, height } = state.composition;
@@ -166,31 +163,6 @@ function warnPostOnOverlay(id: string, children: readonly Placement[]): void {
   }
 }
 
-function elementContent(item: VisibleItem, props: ElementProps, state: ResolvedState, interior: ReactNode): ReactNode {
-  switch (item.placement.kind) {
-    case "title":
-      return (
-        <Title
-          {...props}
-          text={state.tree.byId.get(item.placement.id)?.text ?? ""}
-          runs={state.tree.byId.get(item.placement.id)?.runs}
-        />
-      );
-    case "shape":
-      return <Shape {...props} />;
-    case "svg":
-      return <Svg {...props} />;
-    case "sticker":
-      return <Sticker {...props} />;
-    case "layer":
-      return <Layer {...props} interior={interior} />;
-    case "adjustment":
-      return <Adjustment {...props} />;
-    default:
-      return null;
-  }
-}
-
 /**
  * Whether two renders of an overlay would produce the same DOM. Placements
  * are new objects on every resolve, so compare what matters: timing, the
@@ -209,7 +181,10 @@ export function sameElement(a: ElementCellProps, b: ElementCellProps): boolean {
       startTicks(p) !== startTicks(q) ||
       endTicks(p) !== endTicks(q) ||
       p.props !== q.props ||
-      p.interior !== q.interior)
+      p.interior !== q.interior ||
+      // The words of a kind whose content is words (a title) are on its placement.
+      p.text !== q.text ||
+      p.runs !== q.runs)
   )
     return false;
   if (a.interior !== b.interior) return false;
@@ -226,11 +201,6 @@ export function sameElement(a: ElementCellProps, b: ElementCellProps): boolean {
     cb = b.state.composition;
   if (ca.width !== cb.width || ca.height !== cb.height || ca.rate.num !== cb.rate.num || ca.rate.den !== cb.rate.den)
     return false;
-  if (p.kind === "title") {
-    const was = a.state.tree.byId.get(p.id);
-    const now = b.state.tree.byId.get(p.id);
-    if (was?.text !== now?.text || was?.runs !== now?.runs) return false;
-  }
   if (
     a.exact || b.exact
       ? secondsSinceStart(p, a.time) !== secondsSinceStart(q, b.time)

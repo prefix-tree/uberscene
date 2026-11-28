@@ -22,9 +22,6 @@ import type { TransitionRole } from "../model/visible";
 import { htmlInCanvas } from "../react/html-in-canvas";
 import { type Space, spaceOf } from "./space";
 
-/** Placement kinds drawn above the canvas plane, besides captions. */
-export { OVERLAY_KINDS } from "../model/backdrop";
-
 export interface ElementProps {
   readonly placement: Placement;
   readonly children: readonly Placement[];

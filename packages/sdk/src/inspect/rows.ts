@@ -1,11 +1,10 @@
 // The resolved timeline as flat rows: one array per kind of thing, each row with its id, its seconds and its frames.
 // Flat rows are what jq, a short script or a SQL table take as they are.
-import { framesUntil, type Rate, round3 } from "@uberscene/kit/schema";
+import { capabilitiesOf, framesUntil, type Kind, type Rate, round3 } from "@uberscene/kit/schema";
 
 import type { ResolveError } from "../resolve/errors";
 import { derivedOrigin } from "../resolve/expand";
 import { followOf } from "../resolve/follow";
-import { nodeIn } from "../resolve/overlay";
 import type { Placement, ResolvedState } from "../resolve/resolve";
 import { endSeconds, lengthSeconds, startSeconds, T } from "../time";
 import { type BeatRow, beatRows, type MusicRow, musicRows } from "./music";
@@ -13,7 +12,7 @@ import { spokenWords, timelineBeats } from "./plays";
 
 export interface ElementRow {
   readonly id: string;
-  readonly kind: string;
+  readonly kind: Kind;
   readonly track: string | null;
   readonly parent: string | null;
   readonly start: number;
@@ -198,7 +197,7 @@ export function timelineRows(state: ResolvedState): TimelineRows {
         ...(typeof p.props.easing === "string" ? { easing: p.props.easing } : {}),
       });
     } else if (!NOT_ELEMENTS.has(p.kind)) {
-      elements.push(elementRow(state, p, frame));
+      elements.push(elementRow(p, frame));
     }
   }
   elements.sort((a, b) => a.start - b.start);
@@ -208,9 +207,7 @@ export function timelineRows(state: ResolvedState): TimelineRows {
     if (track.layout !== "sequence") continue;
     const clips = track.items
       .map((id) => state.items.get(id))
-      .filter(
-        (p): p is Placement => p !== undefined && (p.kind === "clip" || p.kind === "audio" || p.kind === "nested"),
-      );
+      .filter((p): p is Placement => p !== undefined && capabilitiesOf(p.kind).trimSource);
     const transitions = [...state.items.values()].filter((p) => p.kind === "transition" && p.track === track.id);
     for (let i = 0; i + 1 < clips.length; i++) {
       const a = clips[i] as Placement,
@@ -268,11 +265,11 @@ export function timelineRows(state: ResolvedState): TimelineRows {
   };
 }
 
-function elementRow(state: ResolvedState, p: Placement, frame: (t: number) => number): ElementRow {
+function elementRow(p: Placement, frame: (t: number) => number): ElementRow {
   const props = p.props;
   const follow = followOf(p);
-  // A title's words are the element's children, kept on its node; a caption's are a prop.
-  const text = p.kind === "title" ? nodeIn(state.tree, p.id)?.text : p.kind === "caption" ? props.text : undefined;
+  // The words of a kind whose content is words (a title) are on its placement; a caption's are a prop.
+  const text = p.text ?? (p.kind === "caption" ? props.text : undefined);
   return {
     id: p.id,
     kind: p.kind,

@@ -1,4 +1,5 @@
 import type { Json } from "../../patches/types";
+import { carry, carryMarkerRemoval } from "../carry";
 import { define, insertNode, makePropHandler, rawNode, siblingAfter } from "../handler-kit";
 import { invalid, nodeOfSpec, nodeSpecOf, ok } from "../types";
 
@@ -32,19 +33,23 @@ define(makePropHandler({
   }),
 }));
 
-define({
-  type: "marker/remove",
-  validate: (a, state) =>
-    rawNode(state, a.params.markerId)?.kind === "marker"
-      ? ok
-      : invalid({ code: "ELEMENT_NOT_FOUND", message: `marker "${a.params.markerId}" does not exist` }),
-  apply: (a, log) => log.append({ op: "remove", id: a.params.markerId }),
-  invert: (a, before) => ({
-    type: "marker/restore",
-    params: { node: nodeSpecOf(rawNode(before, a.params.markerId)!), after: siblingAfter(before, a.params.markerId) },
-  }),
-  fold: () => [],
-});
+define(carry(
+  {
+    type: "marker/remove",
+    validate: (a, state) =>
+      rawNode(state, a.params.markerId)?.kind === "marker"
+        ? ok
+        : invalid({ code: "ELEMENT_NOT_FOUND", message: `marker "${a.params.markerId}" does not exist` }),
+    apply: (a, log) => log.append({ op: "remove", id: a.params.markerId }),
+    invert: (a, before) => ({
+      type: "marker/restore",
+      params: { node: nodeSpecOf(rawNode(before, a.params.markerId)!), after: siblingAfter(before, a.params.markerId) },
+    }),
+    fold: () => [],
+  },
+  // A time written as the marker keeps the seconds it stood at.
+  (a, before) => carryMarkerRemoval(a.params.markerId, before),
+));
 
 define({
   type: "marker/restore",

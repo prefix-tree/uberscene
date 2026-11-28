@@ -4,10 +4,10 @@ import {
   capabilitiesOf,
   defaultTransitionParams,
   ELEMENTS,
-  ENGINE_SCHEMAS,
   isKeyframeProperty,
   isVocabulary,
   SCHEMAS_BY_KIND,
+  schemaFor,
   TRANSITION_PARAMS,
   TRANSITION_TYPES,
 } from "@uberscene/kit/schema";
@@ -29,8 +29,7 @@ describe("element schemas", () => {
   it("accepts every element in the sample file", () => {
     for (const node of fixtureTree().byId.values()) {
       // An engine layer (<Three>, <Motion>) is a layer with its engine's props, as the resolver reads it.
-      const engine = typeof node.props.engine === "string" ? node.props.engine : undefined;
-      const schema = engine ? ENGINE_SCHEMAS[engine] : SCHEMAS_BY_KIND[node.kind];
+      const schema = schemaFor(node.kind, node.props);
       if (!schema) continue;
       const result = schema.safeParse(node.props);
       expect(result.success, `${node.kind} ${node.id}: ${result.success ? "" : result.error.message}`).toBe(true);
@@ -94,6 +93,27 @@ describe("element schemas", () => {
     expect(isKeyframeProperty("transform.opacity")).toBe(true);
     expect(isKeyframeProperty("effect.fx1.radius")).toBe(false);
     expect(isKeyframeProperty("opacity")).toBe(false);
+  });
+
+  it("a sound's level and pan take a link, as the resolver always read one, and still no generator", () => {
+    const clip = (more: object) => ELEMENTS.Clip.schema.safeParse({ id: "c", src: "asset:a", ...more }).success;
+    expect(clip({ volume: { link: "talk.volume", scale: -0.5, offset: 1 } })).toBe(true);
+    expect(clip({ pan: { link: "talk.volume" } })).toBe(true);
+    expect(clip({ volume: [{ at: 0, value: 0 }] })).toBe(true);
+    expect(clip({ volume: { type: "wiggle", amount: 0.1 } })).toBe(false);
+    expect(ELEMENTS.Audio.schema.safeParse({ id: "a", src: "asset:a", volume: { link: "talk.volume" } }).success).toBe(
+      true,
+    );
+    expect(ELEMENTS.Nested.schema.safeParse({ id: "n", of: "file:x", volume: { link: "c.volume" } }).success).toBe(
+      true,
+    );
+  });
+
+  it("a captions box stays where it is written: numbers, and no keys, which nothing drew", () => {
+    const captions = (box: object) => ELEMENTS.Captions.schema.safeParse({ id: "caps", box }).success;
+    expect(captions({ x: 540, y: 1150, width: 900, origin: "center" })).toBe(true);
+    expect(captions({ x: [{ at: 0, value: 0 }] })).toBe(false);
+    expect(captions({ y: { type: "drift", speed: 4 } })).toBe(false);
   });
 
   it("Svg takes src or content, not both", () => {

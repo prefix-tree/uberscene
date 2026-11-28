@@ -228,13 +228,6 @@ export interface CurveKey {
  */
 export type CurveBlend = "number" | "color" | "points";
 
-/** How a key list on `property` moves: shape colours as colours, a shape's points point by point, else as numbers. */
-export function blendFor(property: string | undefined): CurveBlend {
-  if (property === "shape.fill" || property === "shape.stroke.color") return "color";
-  if (property === "shape.points") return "points";
-  return "number";
-}
-
 /**
  * The value of a curve at `t`, keys sorted by `at`. It holds before the first key and after the last; between two keys
  * it moves by the easing of the key it leaves, as `blend` says (`CurveBlend`); what it cannot move steps.

@@ -1,8 +1,9 @@
-import { Time } from "@uberscene/kit/schema";
+import { type Kind, Time } from "@uberscene/kit/schema";
 
 import type { PatchLog } from "../../patches/types";
 import type { Placement, ResolvedState } from "../../resolve/resolve";
 import { S, startSeconds, T } from "../../time";
+import { carry, carryTrackRemoval } from "../carry";
 import {
   define,
   insertNode,
@@ -22,7 +23,7 @@ import { restoreTiming } from "./clip-timing";
 const EPS = T(1e-6);
 
 type Tree = Parameters<typeof rawNode>[0];
-type Row = { readonly id: string; readonly kind: string; readonly parent: string };
+type Row = { readonly id: string; readonly kind: Kind; readonly parent: string };
 
 /**
  * What the composition holds, in file order, with a camera's tracks in the camera's place: positions count these
@@ -92,24 +93,28 @@ define({
   fold: () => [],
 });
 
-define({
-  type: "track/remove",
-  validate: (a, state) =>
-    rawNode(state, a.params.trackId)?.kind === "track"
-      ? ok
-      : invalid({ code: "ELEMENT_NOT_FOUND", message: `track "${a.params.trackId}" does not exist` }),
-  apply: (a, log) => log.append({ op: "remove", id: a.params.trackId }),
-  invert: (a, before) => ({
-    type: "track/restore",
-    params: {
-      trackId: a.params.trackId,
-      node: nodeSpecOf(rawNode(before, a.params.trackId)!),
-      position: trackIndex(before, a.params.trackId),
-      ...(inCamera(before, a.params.trackId) ? { camera: true } : {}),
-    },
-  }),
-  fold: () => [],
-});
+define(carry(
+  {
+    type: "track/remove",
+    validate: (a, state) =>
+      rawNode(state, a.params.trackId)?.kind === "track"
+        ? ok
+        : invalid({ code: "ELEMENT_NOT_FOUND", message: `track "${a.params.trackId}" does not exist` }),
+    apply: (a, log) => log.append({ op: "remove", id: a.params.trackId }),
+    invert: (a, before) => ({
+      type: "track/restore",
+      params: {
+        trackId: a.params.trackId,
+        node: nodeSpecOf(rawNode(before, a.params.trackId)!),
+        position: trackIndex(before, a.params.trackId),
+        ...(inCamera(before, a.params.trackId) ? { camera: true } : {}),
+      },
+    }),
+    fold: () => [],
+  },
+  // A duck under the track and a camera's push for what is on it go with it.
+  (a, before) => carryTrackRemoval(a.params.trackId, before),
+));
 
 define({
   type: "track/restore",

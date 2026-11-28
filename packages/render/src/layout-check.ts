@@ -12,8 +12,9 @@ import {
 } from "@uberscene/player/engine";
 import { buildSourceIndex, lookupAsset, type ResolvedState, type SourceIndex, type SubjectBox } from "@uberscene/sdk";
 
+import { wordsOf } from "./elements";
+import { checkReadTime } from "./elements/title/read-check";
 import type { FontFile } from "./fonts";
-import { checkReadTime } from "./read-check";
 import { type ExportSource, openEngine } from "./renderer";
 import type { InkBounds as OverlayBounds, TextFit } from "./web/page/protocol";
 
@@ -242,7 +243,7 @@ export async function checkLayout(options: LayoutCheckOptions): Promise<LayoutCh
         }
       }
       // Titles over titles: each pair once, reported on the one drawn later (over the other).
-      const titles = shown.filter((b) => b.kind === "title");
+      const titles = shown.filter((b) => wordsOf(b.kind));
       for (let j = 1; j < titles.length; j++)
         for (let i = 0; i < j; i++) {
           const hit = collision(titles[j]!.parts, titles[i]!.parts);
@@ -423,15 +424,15 @@ function moveText(kind: string, dx: number, dy: number, at?: Placed): string {
   if (kind === "captions")
     return `move the captions ${words} (${at ? `${boxMove(at, dx, dy)}, ` : ""}a narrower box.width, or a smaller style.size)`;
   if (kind === "part" || !at) return `move it ${words}, in the layer's code where it is drawn`;
-  if (kind === "title")
-    return `move it ${words} (${boxMove(at, dx, dy)}, a narrower box.width, or a smaller style.size)`;
-  return `move it ${words} (${boxMove(at, dx, dy)})`;
+  // A kind of words (a title) fits by a narrower box or smaller letters too.
+  const narrower = wordsOf(kind)?.narrower;
+  return `move it ${words} (${boxMove(at, dx, dy)}${narrower ? `, ${narrower}` : ""})`;
 }
 
 /** Where element `id` is placed now, or undefined for one the file does not place (a part a layer draws). */
 function placedOf(state: ResolvedState, id: string, t: number): Placed | undefined {
   const item = state.items.get(id);
-  if (!item || item.kind === "part") return undefined;
+  if (!item) return undefined;
   const keyed = (axis: "x" | "y"): boolean =>
     [...state.items.values()].some(
       (c) => c.parent === id && c.kind === "keyframe" && c.props.property === `box.${axis}`,
@@ -484,7 +485,7 @@ function describe(issue: Sampled, at?: Placed): LayoutIssue {
       return {
         ...issue,
         message,
-        fix: `it is ${box.w}×${box.h} px but the ${issue.rule === "frame-edge" ? "frame" : "zone"} is ${Math.round(area.w)}×${Math.round(area.h)}: ${issue.kind === "part" ? `draw it at ${scale} of its size or less` : issue.kind === "title" ? `make its style.size ${scale} of what it is or less, or scale it to that (transform.scale),` : `scale it to ${scale} or less (transform.scale)`} and keep it within ${rect(area)}`,
+        fix: `it is ${box.w}×${box.h} px but the ${issue.rule === "frame-edge" ? "frame" : "zone"} is ${Math.round(area.w)}×${Math.round(area.h)}: ${issue.kind === "part" ? `draw it at ${scale} of its size or less` : (wordsOf(issue.kind)?.smaller(scale) ?? `scale it to ${scale} or less (transform.scale)`)} and keep it within ${rect(area)}`,
       };
     }
     const dx =

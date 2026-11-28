@@ -1,4 +1,4 @@
-import { spaceOf, spacesAt } from "../src/overlays/space";
+import { refsAt, spaceOf, spacesAt } from "../src/overlays/space";
 import { mountPlayer } from "./helpers/react";
 import { type ItemSpec, makeState } from "./helpers/state";
 import { type ElementCellProps, type Matrix2D, sameElement, visiblePlacements } from "./internal";
@@ -138,6 +138,8 @@ describe("an overlay that follows another", () => {
     for (const id of ["hand", "nail"]) expect(all.get(id)).toEqual(spaceOf(state, placementOf(state, id), 1));
     expect(spaceOf(state, placementOf(state, "arm"), 1).isRoot).toBe(true);
     expect(all.get("hand")?.isRoot).toBe(false);
+    // The one pass over a frame's references gives the same spaces.
+    expect(refsAt(state, 1).spaces).toEqual(all);
   });
 
   it("ends the chain at a cycle instead of looping", () => {

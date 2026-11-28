@@ -1,3 +1,5 @@
+import { type Kind, kitElement } from "../elements";
+import { capabilitiesOf } from "../jsx/capabilities";
 import { DEFAULT_THEME, MOTIONS, type MotionStyle, type Presets, THEMES } from "./builtins";
 import { lookOnlyPresets } from "./look-presets";
 import { type ThemeProps, TOKEN_PATTERN, themeSchema } from "./schema";
@@ -33,8 +35,6 @@ export interface Themed {
   readonly issues: readonly ThemeIssue[];
 }
 
-/** Kinds whose entrance and exit a motion style fills. */
-const MOTION_KINDS = new Set(["title", "shape", "svg", "sticker"]);
 /** Props whose strings are content, never tokens. */
 const CONTENT_PROPS = new Set(["text", "content", "src", "label", "name", "category", "theme"]);
 
@@ -60,9 +60,6 @@ export function themeToken(theme: ResolvedTheme, name: string): string | number 
   return Object.hasOwn(theme.tokens, name) ? theme.tokens[name] : undefined;
 }
 
-/** Kinds whose `style` is a look: a preset name, or an object of fields with `preset` naming the one it starts from. */
-const LOOK_KINDS = new Set(["title", "captions"]);
-
 /**
  * An element's raw props with its theme applied, before the schema parses them:
  * the preset its `style` names (or the kind's `default` preset) fills the props
@@ -72,8 +69,8 @@ const LOOK_KINDS = new Set(["title", "captions"]);
  * of its `style` object; a preset name alone is `{ preset }`. Returns the input
  * object when nothing was themed.
  */
-export function applyTheme(kind: string, raw: Readonly<Record<string, unknown>>, theme: ResolvedTheme): Themed {
-  const look = LOOK_KINDS.has(kind);
+export function applyTheme(kind: Kind, raw: Readonly<Record<string, unknown>>, theme: ResolvedTheme): Themed {
+  const look = capabilitiesOf(kind).themeStyle === "look";
   const own: Record<string, unknown> | null =
     typeof raw.style === "string"
       ? look
@@ -131,7 +128,7 @@ export function applyTheme(kind: string, raw: Readonly<Record<string, unknown>>,
   if (look && typeof out.style === "string") out.style = own;
 
   const motion = theme.declared ? theme.motion : null;
-  if (motion && MOTION_KINDS.has(kind) && !(kind === "title" && out.animation !== undefined)) {
+  if (motion && capabilitiesOf(kind).themeMotion && (kitElement(kind)?.themeMotion?.(out) ?? true)) {
     if (out.enter === undefined && motion.enter) {
       out.enter = motion.enter;
       from.enter = "motion";

@@ -9,6 +9,8 @@ export { ActionHistory, type HistoryEntry, type HistorySnapshot } from "./action
 export { type ActionHandler, listHandlers } from "./actions/registry";
 export { trimValue } from "./actions/trim-value";
 export * from "./actions/types";
+export { restSizeOf, SDK_ELEMENTS, type SdkElement, sdkElement } from "./elements";
+export * from "./elements/placement";
 export * from "./inspect/index";
 export * from "./manifest/cube";
 export * from "./manifest/timeref";
@@ -22,6 +24,7 @@ export * from "./resolve/dependents";
 export * from "./resolve/errors";
 export { withoutEffects } from "./resolve/expand";
 export * from "./resolve/follow";
+export * from "./resolve/refs";
 export * from "./resolve/resolve";
 export * from "./resolve/scene";
 export { isSceneAsset, type SceneUse } from "./resolve/scene3d";

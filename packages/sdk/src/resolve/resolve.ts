@@ -7,11 +7,12 @@ import {
   DERIVED_KINDS,
   type DeclaredFont,
   defaultTransitionParams,
-  ENGINE_SCHEMAS,
   effectEntry,
   effectParamProblem,
   type FrameRate,
   isBuiltInTransition,
+  type Kind,
+  keyPathOfProperty,
   MAIN_TRACK_KINDS,
   MAX_SECONDS,
   parseRate,
@@ -25,7 +26,9 @@ import {
   SCHEMAS_BY_KIND,
   type ShaderDefinition,
   sampleRateProblem,
+  schemaFor,
   shaderFor,
+  type TextRun,
   type ThemeOrigin,
   Time,
   TimeRange,
@@ -37,6 +40,7 @@ import {
   VIDEO_EFFECT_TYPES,
 } from "@uberscene/kit/schema";
 
+import { sdkElement } from "../elements";
 import { parseTimeRef, resolveTimeRef } from "../manifest/timeref";
 import { type AssetEntry, type AssetManifest, assetIdOf, lookupAsset } from "../manifest/types";
 import type { PatchLog } from "../patches/types";
@@ -55,24 +59,31 @@ import {
 } from "./captions";
 import type { ResolveError } from "./errors";
 import { derivedOrigin, expandedRoot, expandKeys, expansionOf } from "./expand";
-import { FOLLOW_KINDS, followOf } from "./follow";
-import { layersIn, overlay, sameIdsAsSource } from "./overlay";
+import { lowerLinks } from "./link";
+import { layersIn, nodeIn, overlay, sameIdsAsSource } from "./overlay";
 import { type PushSpec, pushKeys } from "./push";
+import { graphOf, graphOfFile, type InFileOrder, REF_KINDS, type RefContext, type RefGraph } from "./refs";
 import { placeScene, type SceneUse, sceneAssetId, withSceneAssets } from "./scene3d";
-import { shapeKeyProblem } from "./shape-keys";
 import { freezeHoldsOf, heldWithin, holdTotal, rampAdvance, rampInverse, reachedHolds, speedKeysOf } from "./speed";
 import type { CollectedNode, CollectedTree, Editable, LayerInterior } from "./tree";
 
 export interface Placement {
   readonly id: string;
-  readonly kind: string;
+  readonly kind: Kind;
   readonly track: string | null;
   readonly parent: string | null;
   readonly children: readonly string[];
   /** Where it plays on the timeline, as exact `Time`s (decisions 0044, 0045). For seconds, `range.start.toSeconds()`. */
   readonly range: TimeRange;
   readonly source?: PlacementSource;
-  /** Schema-parsed props with defaults applied, after patches. Raw props when the schema rejected them. */
+  /**
+   * Whether `props` are what the kind's schema parsed: every prop of its type, every default filled. A prop the
+   * schema refuses is reported and left out, a refused key inside an object first (`style.size`) and the whole prop
+   * if that is not enough, so this is false only when what is left still does not parse: a prop the element cannot
+   * do without is missing or wrong. Such an element keeps its row and its errors and is not drawn.
+   */
+  readonly parsed: boolean;
+  /** Schema-parsed props with defaults applied, after patches. The props as written when `parsed` is false. */
   readonly props: Readonly<Record<string, unknown>>;
   readonly editable: Editable;
   readonly lockedProps: readonly string[];
@@ -85,6 +96,10 @@ export interface Placement {
   readonly interior?: LayerInterior;
   /** Props the theme supplied, by dot path: `$primary`, `style:h1`, `motion` or `theme`. Absent when none did. */
   readonly themed?: Readonly<Record<string, ThemeOrigin>>;
+  /** The words written inside it, for a kind whose content is words (a title); absent on every other. */
+  readonly text?: string;
+  /** The stretches of `text` its `<Mark>`s draw their own way, where there is `text`. */
+  readonly runs?: readonly TextRun[];
 }
 
 /** The part of an asset a clip or audio plays. `in` and `out` are seconds of the source, `range` the same in ticks. */
@@ -158,6 +173,8 @@ export interface ResolvedState {
   readonly shaders: readonly ShaderDefinition[];
   /** The 3D scenes clips play, by the asset id of their frames (a placement's `source.asset`). Absent when none. */
   readonly scenes?: ReadonlyMap<string, SceneUse>;
+  /** Every reference between elements: what names what, and the order to work them out in. */
+  readonly refs: RefGraph;
 }
 
 const DEFAULT_OVERLAY_DURATION = 5;
@@ -243,7 +260,6 @@ interface Found {
   readonly texture: readonly ResolveError[];
   readonly keys: readonly ResolveError[];
   readonly generators: readonly ResolveError[];
-  readonly followers: readonly Placement[];
 }
 
 const NOTHING: readonly never[] = [];
@@ -261,20 +277,17 @@ function findIn(
   let effects: Placement[] | undefined;
   let keyframes: Placement[] | undefined;
   let generators: Placement[] | undefined;
-  let followers: Placement[] | undefined;
   for (let i = -1; i < rest.length; i++) {
     const item = i < 0 ? first : (rest[i] as Placement);
     if (item.kind === "effect") (effects ??= []).push(item);
     else if (item.kind === "keyframe") (keyframes ??= []).push(item);
     else if (item.kind === "generator") (generators ??= []).push(item);
-    if (FOLLOW_KINDS.has(item.kind) && followOf(item) !== undefined) (followers ??= []).push(item);
   }
-  if (!effects && !keyframes && !generators && !followers) return null;
+  if (!effects && !keyframes && !generators) return null;
   return {
     texture: effects ? textureErrors(effects, manifest) : NOTHING,
     keys: keyframes ? keyframeErrors(keyframes, items) : NOTHING,
     generators: generators ? generatorErrors(generators, items) : NOTHING,
-    followers: followers ?? NOTHING,
   };
 }
 
@@ -404,7 +417,7 @@ let made = 0;
 /** Where an element that shows or sounds ends, or null for one that has no length or is a transition. */
 function endOf(p: Pending): Time | null {
   // Something with no length shows and sounds nothing, so it does not make the video longer.
-  return p.start !== undefined && p.duration?.isAfter(Time.ZERO) && p.node.kind !== "transition"
+  return p.start !== undefined && p.duration?.isAfter(Time.ZERO) && !isBetween(p.node.kind)
     ? p.start.plusClamped(p.duration)
     : null;
 }
@@ -416,7 +429,7 @@ const sceneInside = new Cache<CollectedNode, boolean>();
 function playsScene(node: CollectedNode, source?: ReadonlyMap<string, CollectedNode>): boolean {
   const known = sceneInside.get(node);
   if (known !== undefined) return known;
-  let found = node.kind === "clip" && isScene(node.props.src);
+  let found = capabilitiesOf(node.kind).playsAsset && isScene(node.props.src);
   // A node made again from one with no scene inside has none in the children it kept: only the others are asked.
   const was = source?.get(node.id);
   const before = was ? expansionOf(was) : undefined;
@@ -441,7 +454,11 @@ function playsScene(node: CollectedNode, source?: ReadonlyMap<string, CollectedN
  * - no track's id has a dot in it: an item made from a prop is named `<element>.<path>`, so none can take such an id;
  * - no clip plays a scene.
  */
-function walkable(original: CollectedTree, written: CollectedTree): CollectedNode | null {
+function walkable(
+  original: CollectedTree,
+  written: CollectedTree,
+  again: Map<string, CollectedNode>,
+): CollectedNode | null {
   if (written !== original && !sameIdsAsSource(written)) return null;
   let unique = sourceIdsUnique.get(original);
   if (unique === undefined) {
@@ -450,14 +467,44 @@ function walkable(original: CollectedTree, written: CollectedTree): CollectedNod
   }
   if (!unique) return null;
   const source = layersIn(written)?.base;
-  const root = expandedRoot(written.root, source);
-  const dotted = (track: CollectedNode): boolean => track.id.includes(".");
-  for (const child of root.children) {
-    if (child.kind === "track" && dotted(child)) return null;
-    if (child.kind === "camera")
-      for (const inner of child.children) if (inner.kind === "track" && dotted(inner)) return null;
-  }
+  const root = expandedRoot(written.root, source, again);
+  let dotted = false;
+  eachTrack(root, (track) => {
+    if (track.id.includes(".")) dotted = true;
+  });
+  if (dotted) return null;
   return playsScene(root, source) ? null : root;
+}
+
+/**
+ * The ways to refer whose errors the resolver says where it does their work: a duck's on the sound, a push's and a
+ * link's where their keys are made. Every other way's errors are said together, after the checks of the items.
+ */
+const SAID_WITH_THEIR_WORK: ReadonlySet<string> = new Set(["duck", "push", "link"]);
+
+/** Each track of the composition, those in its camera among them, in the file's order. */
+function eachTrack(root: CollectedNode, visit: (track: CollectedNode) => void): void {
+  for (const child of root.children) {
+    if (child.kind === "track") visit(child);
+    else if (child.kind === "camera") for (const inner of child.children) if (inner.kind === "track") visit(inner);
+  }
+}
+
+/** Whether a kind stands between two clips of a sequence (a transition), with no place of its own in the video. */
+const isBetween = (kind: Kind): boolean => capabilitiesOf(kind).sequenceRole === "between";
+
+/** Whether a kind's elements are made by the resolver, or are those: a multicam and its clips, captions and a cue. */
+const makesElements = (kind: Kind): boolean => kind === "multicam" || kind === "captions" || kind === "caption";
+
+/** The item with this id among those made from the props of `node`, or of an item under it. */
+function derivedUnder(node: CollectedNode, id: string): CollectedNode | undefined {
+  for (const child of node.children) {
+    if (!DERIVED_KINDS.has(child.kind)) continue;
+    if (child.id === id) return child;
+    const inner = derivedUnder(child, id);
+    if (inner) return inner;
+  }
+  return undefined;
 }
 
 /** Whether every track of the composition, those in its camera among them, has an id of its own. */
@@ -468,10 +515,7 @@ function uniqueTracks(root: CollectedNode): boolean {
     count++;
     ids.add(track.id);
   };
-  for (const child of root.children) {
-    if (child.kind === "track") add(child);
-    else if (child.kind === "camera") for (const inner of child.children) if (inner.kind === "track") add(inner);
-  }
+  eachTrack(root, add);
   return ids.size === count;
 }
 
@@ -487,9 +531,7 @@ function isFinal(p: Pending): boolean {
     !p.durationDep &&
     p.props.duck === undefined &&
     !isScene(p.props.src) &&
-    p.node.kind !== "multicam" &&
-    p.node.kind !== "captions" &&
-    p.node.kind !== "caption"
+    !makesElements(p.node.kind)
   );
 }
 
@@ -503,9 +545,7 @@ function isSettled(p: Pending): boolean {
     // A duck names a track by id or role, which another track's props decide; a scene is placed with the markers.
     p.props.duck === undefined &&
     !isScene(p.props.src) &&
-    p.node.kind !== "multicam" &&
-    p.node.kind !== "captions" &&
-    p.node.kind !== "caption"
+    !makesElements(p.node.kind)
   );
 }
 
@@ -556,7 +596,9 @@ function compute(
   const written = overlay(original, log);
   // The tree's `byId` is not needed to place it when each track is found from the root and no clip plays a scene:
   // see `walkable`. Then the keys are expanded from the root alone, and nothing copies the map.
-  const walked = plain || cachesOff() ? null : walkable(original, written);
+  /** The expanded nodes of those the log made again, when the tree is walked: the rest are kept by their node. */
+  const again = new Map<string, CollectedNode>();
+  const walked = plain || cachesOff() ? null : walkable(original, written, again);
   const tree = walked ? null : expandKeys(written);
   if (walked) shortCuts.walked++;
   fileShaders = original.shaders ?? [];
@@ -593,12 +635,16 @@ function compute(
   ): Placement => {
     const range = rangeOf(start, length);
     const prev = previous?.get(node.id);
+    // What the kind's placement holds from the file besides its props: a title's words.
+    const facts = sdkElement(node.kind)?.facts?.(node);
     // What an element that only moved keeps of its last placement: the source it plays and its children's ids.
     const sourceKept = prev !== undefined && sameSource(prev.source, pendingSource);
     const childrenKept = prev !== undefined && sameChildIds(prev.children, node.children);
     if (
       prev &&
       prev.kind === node.kind &&
+      prev.text === facts?.text &&
+      prev.runs === facts?.runs &&
       prev.track === track &&
       prev.parent === parent &&
       prev.range.equals(range) &&
@@ -628,11 +674,13 @@ function compute(
       lockedProps: node.lockedProps,
       boundProps: node.boundProps,
       errors,
+      parsed: !unparsedData.has(props),
     };
     if (source) placement.source = source;
     if (between) placement.between = between;
     if (node.interior) placement.interior = node.interior;
     if (themed) placement.themed = themed;
+    if (facts) Object.assign(placement, facts);
     return placement;
   };
 
@@ -752,7 +800,7 @@ function compute(
       for (let i = from; i < n; i++) {
         const kid = kids[i] as CollectedNode;
         // These make elements of their own, or wait on the video's length: the track is not a settled one.
-        if (kid.kind === "multicam" || kid.kind === "captions" || kid.kind === "caption") break;
+        if (makesElements(kid.kind)) break;
         intrinsic(kid, node.id, scratch, manifest, markers, markersKey, theme, errors, kid === last.children[i]);
         const p = scratch.get(kid.id);
         if (!p || p.node !== kid || p.props.duck !== undefined) break;
@@ -1013,16 +1061,53 @@ function compute(
   };
   listMoving();
 
-  for (const p of moving) {
-    const duck = p.props.duck as { under: string } | undefined;
-    if (duck && !tracks.some((t) => t.id === duck.under || t.role === duck.under)) {
-      p.errors.push({
-        code: "UNKNOWN_REF",
-        id: p.node.id,
-        prop: "duck.under",
-        message: `duck.under "${duck.under}" is neither a track id nor a track role`,
-      });
+  // Every reference between elements, read once the tracks are known: who is on which, and under the camera.
+  // A walked tree has no id map: its nodes are the file's, a few made again, and those that write a reference are
+  // known for the file (`graphOfFile`).
+  const base = tree ? undefined : (layersIn(written)?.base ?? written.byId);
+  const expansion = (node: CollectedNode): CollectedNode => again.get(node.id) ?? expandedRoot(node);
+  /** The node `expandKeys(written).byId` has under an id: an item made from a prop before a node the file writes. */
+  const nodeOf = (id: string): CollectedNode | undefined => {
+    if (tree) return tree.byId.get(id);
+    if (id.includes(".")) {
+      for (let dot = id.lastIndexOf("."); dot > 0; dot = id.lastIndexOf(".", dot - 1)) {
+        const owner = nodeIn(written, id.slice(0, dot));
+        const item = owner ? derivedUnder(expansion(owner), id) : undefined;
+        if (item) return item;
+      }
     }
+    const node = nodeIn(written, id);
+    return node ? expansion(node) : undefined;
+  };
+  const fileOrder =
+    (place?: ReadonlyMap<string, number>): InFileOrder =>
+    (needed, ids) => {
+      const all = (): string[] => [...(tree ?? expandKeys(written)).byId.keys()].filter(needed);
+      if (!place) return all();
+      const at: number[] = [];
+      for (const id of ids) {
+        const found = place.get(id);
+        // An item made from a prop comes after the file's nodes: the whole map says where.
+        if (found === undefined || id.includes(".")) return all();
+        at.push(found);
+      }
+      const nodes = [...(base as ReadonlyMap<string, CollectedNode>).keys()];
+      return at.sort((a, b) => a - b).map((found) => nodes[found] as string);
+    };
+  const refContext: RefContext = {
+    kindOf: (id) => nodeOf(id)?.kind,
+    trackOf: (id) => pending.get(id)?.track ?? null,
+    cameraOfTrack: (track) => (track === null ? undefined : tracks.find((t) => t.id === track)?.camera),
+    propsOf: (id) => pending.get(id)?.props ?? nodeOf(id)?.props ?? {},
+    tracks,
+  };
+  const refs = base
+    ? graphOfFile(base, layersIn(written)?.over, again, fileOrder, refContext)
+    : graphOf((tree as CollectedTree).byId.values(), fileOrder(), refContext);
+
+  // A sound that ducks is never a settled track's, so the element these land on is one made in this resolve.
+  for (const error of refs.errors.get("duck") ?? []) pending.get(error.id)?.errors.push(error);
+  for (const p of moving) {
     if (p.props.frame && p.source) p.props = framed(p.props, manifest.assets[p.source.asset], compParsed);
   }
 
@@ -1170,7 +1255,7 @@ function compute(
       lockedProps: child.lockedProps,
       boundProps: child.boundProps,
       errors: own,
-      ...themedField(props),
+      ...propsFields(props),
     });
   };
   for (const child of root.children) {
@@ -1191,7 +1276,7 @@ function compute(
         lockedProps: child.lockedProps,
         boundProps: child.boundProps,
         errors: own,
-        ...themedField(props),
+        ...propsFields(props),
       });
       for (const inner of child.children) {
         if (inner.kind === "track") structuralTrack(inner, child.id);
@@ -1235,7 +1320,7 @@ function compute(
         lockedProps: child.lockedProps,
         boundProps: child.boundProps,
         errors: own,
-        ...themedField(props),
+        ...propsFields(props),
       });
     }
   }
@@ -1246,13 +1331,11 @@ function compute(
   const texture: ResolveError[] = [];
   const keys: ResolveError[] = [];
   const generators: ResolveError[] = [];
-  const followers: Placement[] = [];
   const gather = (found: Found | null): void => {
     if (!found) return;
     if (found.texture.length > 0) texture.push(...found.texture);
     if (found.keys.length > 0) keys.push(...found.keys);
     if (found.generators.length > 0) generators.push(...found.generators);
-    if (found.followers.length > 0) followers.push(...found.followers);
   };
   /** How many placements were put in `items`, each expected to be a new id. */
   let fresh = 0;
@@ -1293,7 +1376,7 @@ function compute(
     const size = items.size;
     items.set(p.node.id, placement);
     if (p.errors.length > 0) errors.push(...p.errors);
-    if (p.node.kind !== "transition" && !placement.range.isEmpty()) duration = later(duration, placement.range.end);
+    if (!isBetween(p.node.kind) && !placement.range.isEmpty()) duration = later(duration, placement.range.end);
     const inside: Placement[] = p.node.children.length > 0 ? [] : (NOTHING as unknown as Placement[]);
     duration = placeChildren(p.node, placement, items, errors, place, duration, theme, inside);
     fresh += 1 + inside.length;
@@ -1303,7 +1386,7 @@ function compute(
     if (p.settled && items.size === size + 1 + inside.length) {
       let far = placement.range.end.ticks;
       for (const inner of inside) far = Math.max(far, inner.range.end.ticks);
-      const ends = p.node.kind !== "transition" && !placement.range.isEmpty() ? placement.range.end : null;
+      const ends = !isBetween(p.node.kind) && !placement.range.isEmpty() ? placement.range.end : null;
       p.settled.placed = { placement, inside, errors: errors.slice(said), far, ends, found };
     }
   }
@@ -1344,15 +1427,15 @@ function compute(
         tracks,
         { width: Number(compParsed.width ?? 1920), height: Number(compParsed.height ?? 1080) },
         manifest,
+        refs.graph,
       );
-      for (const problem of made.problems)
-        errors.push({ code: "UNKNOWN_REF", id: problem.id, prop: "push", message: problem.message });
+      errors.push(...(refs.errors.get("push") ?? []));
       const count = { x: 0, y: 0, zoom: 0 };
       const ids: string[] = [];
-      for (const key of made.keys) {
+      for (const key of made) {
         const id = `${camera.id}.push.${key.field}.${count[key.field]++}`;
+        // A key's props, as a key written in the file resolves to: what it sets, when and how. Its id is the item's.
         const props = {
-          id,
           property: `camera.${key.field}`,
           at: key.at,
           value: key.value,
@@ -1381,6 +1464,39 @@ function compute(
       }
     }
   }
+  // A value linked to another's becomes that value's keys, once the push has made the camera's: so a link reads a
+  // pushed camera too, and everything after this reads a link as keys.
+  const linkErrors = refs.errors.get("link") ?? [];
+  /** Whether links were lowered into keys: the items are then not as each element's own run left them. */
+  const lowered = linkErrors.length > 0 || refs.graph.edges.some((e) => e.type === "link");
+  if (lowered) {
+    errors.push(...linkErrors);
+    errors.push(
+      ...lowerLinks(refs.graph, {
+        items,
+        add: (owner, parent, id, kind, props, at) => {
+          const node: CollectedNode = {
+            id,
+            kind,
+            props,
+            children: [],
+            parent,
+            editable: owner.editable,
+            lockedProps: [],
+            boundProps: {},
+          };
+          // A key before its element starts (the linked value moved earlier) still stands at the video's start or after.
+          const start = at === null ? owner.range.start : Time.max(Time.ZERO, owner.range.start.plusClamped(T(at)));
+          const length = at === null ? owner.range.duration : Time.ZERO;
+          items.set(id, place(node, owner.track, parent, start, length, props, [], undefined, undefined));
+        },
+        setChildren: (id, children) => {
+          const held = items.get(id);
+          if (held) items.set(id, reuse({ ...held, children }));
+        },
+      }),
+    );
+  }
   const composition = reuse({
     id: root.id,
     kind: "composition",
@@ -1393,30 +1509,32 @@ function compute(
     lockedProps: root.lockedProps,
     boundProps: root.boundProps,
     errors: [],
-    ...themedField(compParsed),
+    ...propsFields(compParsed),
   });
   items.set(root.id, composition);
   after.push(composition);
-  if (items.size === fresh + after.length && !cachesOff()) {
+  if (!lowered && items.size === fresh + after.length && !cachesOff()) {
     // Every placement was a new id, so the items are in the order they were placed, as each was when it was read.
     gather(findIn(after[0] as Placement, after.slice(1), items, manifest));
-    errors.push(...texture, ...keys, ...generators, ...followErrors(followers, items, tracks));
+    errors.push(...texture, ...keys, ...generators);
   } else {
     // One walk of the items sorts out the few each check reads; each check then says its errors in the items' order.
     const effects: Placement[] = [];
     const keyframes: Placement[] = [];
     const made: Placement[] = [];
-    const following: Placement[] = [];
     for (const item of items.values()) {
       if (item.kind === "effect") effects.push(item);
       else if (item.kind === "keyframe") keyframes.push(item);
       else if (item.kind === "generator") made.push(item);
-      if (FOLLOW_KINDS.has(item.kind) && followOf(item) !== undefined) following.push(item);
     }
     errors.push(...textureErrors(effects, manifest));
     errors.push(...keyframeErrors(keyframes, items));
     errors.push(...generatorErrors(made, items));
-    errors.push(...followErrors(following, items, tracks));
+  }
+  // What the graph found wrong with each other way to refer (a follow that names nothing), in the order of the ways.
+  for (const name of Object.keys(REF_KINDS)) {
+    const found = SAID_WITH_THEIR_WORK.has(name) ? undefined : refs.errors.get(name);
+    if (found) errors.push(...found);
   }
   const rate = rateOf(compParsed.fps, root.id, errors);
   // A time the file says past the limit is held at it (`T`, `plusClamped`), so a video that reaches it is too long.
@@ -1448,6 +1566,7 @@ function compute(
     fonts: withPickedFonts(original.fonts ?? [], root.props.$fonts),
     shaders: original.shaders ?? [],
     ...(scenes.size > 0 ? { scenes } : {}),
+    refs: refs.graph,
   };
 }
 
@@ -1495,6 +1614,8 @@ interface ParsedProps {
 const parsedByProps = new Cache<object, ParsedProps>();
 /** Which parsed props the theme supplied, keyed by the parsed `data`. */
 const themedByData = new WeakMap<object, Readonly<Record<string, ThemeOrigin>>>();
+/** The `data` the schema did not parse, even with what it refused left out: the props as written. */
+const unparsedData = new WeakSet<object>();
 
 /** The shaders of the file being resolved (`effect`, `transition`); set for the length of one `compute`. */
 let fileShaders: readonly ShaderDefinition[] = [];
@@ -1551,6 +1672,56 @@ function declaredShader(
   return null;
 }
 
+const isObject = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
+
+/**
+ * Raw props without what the schema refused. `deepest` leaves out the key each issue is at, as deep as objects go: a
+ * key inside an object prop, the prop itself where the path goes into a list. `prop` leaves out the whole prop.
+ */
+function without(
+  props: Readonly<Record<string, unknown>>,
+  issues: readonly z.core.$ZodIssue[],
+  how: "deepest" | "prop",
+): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...props };
+  /** The object at `path` in `out`, each level copied on the way so the given props are not changed; null past a list. */
+  const reach = (path: readonly PropertyKey[]): Record<string, unknown> | null => {
+    let at = out;
+    for (const key of path) {
+      const next = at[String(key)];
+      if (!isObject(next)) return null;
+      const copy = { ...next };
+      at[String(key)] = copy;
+      at = copy;
+    }
+    return at;
+  };
+  for (const issue of issues) {
+    const path = issue.path;
+    // A key the element, or an object inside it, does not take at all.
+    if (issue.code === "unrecognized_keys") {
+      const holder = how === "deepest" || path.length === 0 ? reach(path) : null;
+      if (holder) for (const k of issue.keys) delete holder[k];
+      else if (path.length > 0) delete out[String(path[0])];
+      continue;
+    }
+    if (path.length === 0) continue;
+    if (how === "prop") {
+      delete out[String(path[0])];
+      continue;
+    }
+    // As deep as the path stays in objects: the key that holds a list goes whole.
+    let depth = path.length - 1;
+    let holder = reach(path.slice(0, depth));
+    while (!holder && depth > 0) {
+      depth -= 1;
+      holder = reach(path.slice(0, depth));
+    }
+    if (holder) delete holder[String(path[depth])];
+  }
+  return out;
+}
+
 function parseProps(node: CollectedNode, errors: ResolveError[], theme: ResolvedTheme): Record<string, unknown> {
   const cached = parsedByProps.get(node.props);
   if (cached && cached.theme === theme) {
@@ -1570,12 +1741,12 @@ function parseProps(node: CollectedNode, errors: ResolveError[], theme: Resolved
     prop: issue.prop,
     message: issue.message,
   }));
-  const engine = node.kind === "layer" && typeof node.props.engine === "string" ? node.props.engine : null;
-  const schema = (engine ? ENGINE_SCHEMAS[engine] : SCHEMAS_BY_KIND[node.kind]) as z.ZodType | undefined;
+  const schema = schemaFor(node.kind, node.props);
   let data: Record<string, unknown>;
   if (!schema) data = { ...themed.props };
   else {
-    const result = schema.safeParse(node.kind === "composition" ? withoutPending(themed.props) : themed.props);
+    const given = node.kind === "composition" ? withoutPending(themed.props) : themed.props;
+    const result = schema.safeParse(given);
     if (result.success) {
       data = result.data as Record<string, unknown>;
       const declared = declaredShader(node, data, own);
@@ -1590,18 +1761,18 @@ function parseProps(node: CollectedNode, errors: ResolveError[], theme: Resolved
           },
         };
     } else {
-      // A value the schema refuses is reported and then left out, so the element is placed as if the prop was not
-      // written: a speed of 0 or a negative duration must not reach the arithmetic and place something for ever, or
-      // backwards. Without the refused props the rest usually parses, and takes its defaults.
-      const kept: Record<string, unknown> = { ...themed.props };
-      for (const issue of result.error.issues) {
-        if (issue.path.length === 1) delete kept[String(issue.path[0])];
-        // A prop the element does not take at all.
-        else if (issue.path.length === 0 && issue.code === "unrecognized_keys")
-          for (const k of issue.keys) delete kept[k];
+      // A value the schema refuses is reported and then left out, so the element is placed as if it was not written:
+      // a speed of 0 or a negative duration must not reach the arithmetic and place something for ever, or backwards.
+      // First only what is refused goes, a key inside an object where that is where the fault is (`style.size`), so
+      // the rest of the prop stays; then the whole prop. Without them the rest usually parses, and takes its defaults.
+      const narrowly = schema.safeParse(without(given, result.error.issues, "deepest"));
+      const kept = narrowly.success ? given : without(given, result.error.issues, "prop");
+      const again = narrowly.success ? narrowly : schema.safeParse(kept);
+      if (again.success) data = again.data as Record<string, unknown>;
+      else {
+        data = kept;
+        unparsedData.add(data);
       }
-      const again = schema.safeParse(kept);
-      data = again.success ? (again.data as Record<string, unknown>) : kept;
       own.push(
         ...result.error.issues.map(
           (issue) =>
@@ -1622,29 +1793,12 @@ function parseProps(node: CollectedNode, errors: ResolveError[], theme: Resolved
   return data;
 }
 
-/** A title's look, flat props before 0.6 and fields of its `style` since. */
-const TITLE_LOOK_KEYS = [
-  "font",
-  "size",
-  "weight",
-  "italic",
-  "color",
-  "background",
-  "stroke",
-  "shadow",
-  "align",
-  "valign",
-  "lineHeight",
-  "letterSpacing",
-  "decoration",
-];
-
-/** Keys renamed in 0.6, by element kind and the object they are in (`""` for the element's own props): old to new. */
+/**
+ * Keys renamed in 0.6, by element kind and the object they are in (`""` for the element's own props): old to new. A
+ * kind with a folder of its own says its renames there (`SdkElement.renamed`).
+ */
 const RENAMED_KEYS: Readonly<Record<string, Readonly<Record<string, Readonly<Record<string, string>>>>>> = {
-  shape: { "": { shape: "type" }, stroke: { width: "thickness" } },
-  title: { animation: { preset: "type" }, "style.stroke": { width: "thickness" } },
   captions: { "style.stroke": { width: "thickness" } },
-  svg: { color: { mode: "type" } },
   composition: { background: { mode: "type" } },
   marker: { "": { at: "start" } },
 };
@@ -1663,7 +1817,7 @@ function valueAt(props: Readonly<Record<string, unknown>>, path: readonly Proper
  * Where a key a file may still write has moved to, said in place of the schema's "Unrecognized key", and the new
  * spelling of a value spelled the old way (`"ease-in-out"`), in place of "Invalid option".
  */
-function movedKey(kind: string, issue: z.core.$ZodIssue, props: Readonly<Record<string, unknown>>): string | undefined {
+function movedKey(kind: Kind, issue: z.core.$ZodIssue, props: Readonly<Record<string, unknown>>): string | undefined {
   const fix = "uberscene lint --fix moves the file";
   if (issue.code === "invalid_union") {
     // A prop that is one of several shapes (a title's `style`, a preset name or an object): what a branch says.
@@ -1684,7 +1838,8 @@ function movedKey(kind: string, issue: z.core.$ZodIssue, props: Readonly<Record<
   const at = issue.path.map(String).join(".");
   if (at === "" && issue.keys.includes("automation"))
     return `automation moved into volume and pan, as keys: volume={[{ at, value }]} pan={[{ at, value }]}; ${fix}`;
-  const renamed = RENAMED_KEYS[kind]?.[at];
+  const element = sdkElement(kind);
+  const renamed = (element?.renamed ?? RENAMED_KEYS[kind])?.[at];
   const respelled = renamed ? issue.keys.filter((k) => Object.hasOwn(renamed, k)) : [];
   if (renamed && respelled.length > 0) {
     const path = (k: string) => (at ? `${at}.${k}` : k);
@@ -1692,18 +1847,13 @@ function movedKey(kind: string, issue: z.core.$ZodIssue, props: Readonly<Record<
   }
   if (at === "transform" && issue.keys.includes("position"))
     return `transform.position moved to box, in pixels from the frame's top left: box={{ x, y, origin: "center" }} draws what it did with x and y each plus half the frame; ${fix}`;
-  const keys = (names: readonly string[]) => issue.keys.filter((k) => names.includes(k));
-  const listed = (moved: readonly string[], into: string) =>
-    moved.map((k) => `\`${k}\` is now \`${into}.${k}\``).join(", ");
-  if (kind === "title") {
-    const look = keys(TITLE_LOOK_KEYS);
-    const size = keys(["width", "height"]);
-    const said = [
-      ...(at === "" && look.length > 0 ? [listed(look, "style")] : []),
-      ...((at === "" || at === "style") && size.length > 0 ? [listed(size, "box")] : []),
-    ];
+  // What the kind itself says of keys it moved (a title's look into `style`).
+  if (element?.moved) {
+    const said = element.moved(at, issue.keys);
     return said.length > 0 ? `${said.join(", ")}; ${fix}` : undefined;
   }
+  const listed = (moved: readonly string[], into: string) =>
+    moved.map((k) => `\`${k}\` is now \`${into}.${k}\``).join(", ");
   if (kind !== "captions") return undefined;
   if (at === "" && issue.keys.includes("align")) return `${listed(["align"], "style")}; ${fix}`;
   if (at === "style" && issue.keys.includes("position"))
@@ -1714,9 +1864,10 @@ function movedKey(kind: string, issue: z.core.$ZodIssue, props: Readonly<Record<
   return undefined;
 }
 
-function themedField(props: Record<string, unknown>): { themed?: Readonly<Record<string, ThemeOrigin>> } {
+/** What a placement says about its props besides holding them: whether they parsed, and what the theme supplied. */
+function propsFields(props: Record<string, unknown>): Pick<Placement, "parsed" | "themed"> {
   const themed = themedByData.get(props);
-  return themed ? { themed } : {};
+  return { parsed: !unparsedData.has(props), ...(themed ? { themed } : {}) };
 }
 
 /** What `intrinsic` derives for a node; cached per node object and copied into a fresh Pending each resolve. */
@@ -1929,6 +2080,7 @@ function framed(
     ...props,
     transform: { ...transform, crop: { x: fx * (1 - width), y: fy * (1 - height), width, height } },
   };
+  if (unparsedData.has(props)) unparsedData.add(out);
   framedByProps.set(props, { key, props: out });
   return out;
 }
@@ -1958,83 +2110,15 @@ function generatorErrors(generators: readonly Placement[], items: ReadonlyMap<st
   return out;
 }
 
-/**
- * A `follow` names another overlay in the file, on the same side of the camera, whose size is known before it is
- * drawn, and no chain comes back to where it started.
- */
-function followErrors(
-  followers: readonly Placement[],
-  items: ReadonlyMap<string, Placement>,
-  tracks: readonly ResolvedTrack[],
-): ResolveError[] {
-  const out: ResolveError[] = [];
-  const cameraOf = (p: Placement): string | undefined => tracks.find((t) => t.id === p.track)?.camera;
-  const problem = (id: string, code: ResolveError["code"], message: string): void => {
-    out.push({ code, id, prop: "follow", message });
-  };
-  const inCycle = new Set<string>();
-  for (const child of followers) {
-    const ref = followOf(child);
-    if (ref === undefined || !FOLLOW_KINDS.has(child.kind)) continue;
-    const leader = items.get(ref);
-    if (!leader) {
-      problem(child.id, "UNKNOWN_REF", `follow names "${ref}", which does not exist`);
-      continue;
-    }
-    if (!FOLLOW_KINDS.has(leader.kind)) {
-      problem(
-        child.id,
-        "SCHEMA",
-        `follow names "${ref}", a ${leader.kind}: an element follows a title, shape, svg, sticker or layer`,
-      );
-      continue;
-    }
-    if (leader.kind === "svg" && typeof leader.props.content !== "string") {
-      problem(
-        child.id,
-        "SCHEMA",
-        `follow names "${ref}", an SVG read from a file: its size is only known once it is drawn, so it can't be followed yet; write its markup in \`content\`, or follow a shape`,
-      );
-      continue;
-    }
-    if (cameraOf(child) !== cameraOf(leader)) {
-      const inside = cameraOf(child) !== undefined ? child.id : leader.id;
-      problem(
-        child.id,
-        "SCHEMA",
-        `"${inside}" is under the camera and the other is not: put "${child.id}" and "${ref}", which it follows, on tracks on the same side of the camera`,
-      );
-      continue;
-    }
-    if (inCycle.has(child.id)) continue;
-    const chain = [child.id];
-    for (let at = items.get(ref); at && !inCycle.has(at.id); at = items.get(followOf(at) ?? "")) {
-      const i = chain.indexOf(at.id);
-      if (i >= 0) {
-        const loop = chain.slice(i);
-        for (const id of loop) inCycle.add(id);
-        problem(
-          loop[0]!,
-          "CYCLE",
-          `follows go round in a circle: ${[...loop, loop[0]].map((id) => `"${id}"`).join(" → ")}; remove one of these follows`,
-        );
-        break;
-      }
-      chain.push(at.id);
-      if (followOf(at) === undefined) break;
-    }
-  }
-  return out;
-}
-
 function keyframeErrors(keyframes: readonly Placement[], items: ReadonlyMap<string, Placement>): ResolveError[] {
   const out: ResolveError[] = [];
   for (const k of keyframes) {
     if (k.kind !== "keyframe") continue;
     const parent = k.parent ? items.get(k.parent) : undefined;
     const property = k.props.property;
-    if (typeof property === "string" && property.startsWith("shape.")) {
-      const problem = shapeKeyProblem(property, k.props.value);
+    const check = typeof property === "string" ? keyPathOfProperty(property)?.check : undefined;
+    if (check) {
+      const problem = check(k.props.value);
       if (problem) out.push({ code: "SCHEMA", id: k.id, prop: "value", message: problem });
       continue;
     }
@@ -2060,10 +2144,11 @@ function keyframeErrors(keyframes: readonly Placement[], items: ReadonlyMap<stri
 function onElement(error: ResolveError): ResolveError {
   const origin = error.id ? derivedOrigin(error.id) : null;
   if (!origin) return error;
-  if (origin.path.endsWith(".generator")) {
-    // A generator's fields are written inside the value it stands for: `transform.rotation.amount`.
+  const computed = [".generator", ".link"].find((suffix) => origin.path.endsWith(suffix));
+  if (computed) {
+    // A generator's fields, and a link's, are written inside the value it stands for: `transform.rotation.amount`.
     const { prop, ...rest } = error;
-    const at = origin.path.slice(0, -".generator".length);
+    const at = origin.path.slice(0, -computed.length);
     return { ...rest, id: origin.id, prop: prop ? `${at}.${prop}` : at };
   }
   const field = error.prop
@@ -2232,7 +2317,7 @@ class TrackPlacer {
       placeMulticam(child, p, this.track, this.pending, this.theme, this.errors);
       return;
     }
-    if (child.kind === "transition") {
+    if (isBetween(child.kind)) {
       if (typeof p.props.on === "string") {
         p.anchorDep = { id: p.props.on, offset: Time.ZERO };
         // Edge transitions attach to a clip edge; resolved in iterateDependencies with edge logic.
@@ -2410,6 +2495,32 @@ function placeTrack(
   placer.finish();
 }
 
+/** For a placement the resolver makes with the schema's defaults filled in: its props without them. */
+const writtenByProps = new WeakMap<object, Readonly<Record<string, unknown>>>();
+
+/**
+ * A placement's props as a file would write them. They are its props, except for an element the resolver makes and
+ * fills the schema's defaults into (a multicam's clips): those are without the defaults, so a bake writes
+ * `<Clip src in />` and not every default beside it.
+ */
+export function propsAsWritten(placement: Placement): Readonly<Record<string, unknown>> {
+  return writtenByProps.get(placement.props) ?? placement.props;
+}
+
+let madeClipDefaults: Readonly<Record<string, unknown>> | undefined;
+/** What the clip schema fills in for a clip that writes only its source: the props a clip the resolver makes takes. */
+function clipDefaults(): Readonly<Record<string, unknown>> {
+  if (!madeClipDefaults) {
+    const {
+      id: _id,
+      src: _src,
+      ...rest
+    } = SCHEMAS_BY_KIND.clip.parse({ id: "made", src: "asset:made" }) as Record<string, unknown>;
+    madeClipDefaults = rest;
+  }
+  return madeClipDefaults;
+}
+
 function placeMulticam(
   node: CollectedNode,
   p: Pending,
@@ -2443,6 +2554,11 @@ function placeMulticam(
     }
     const id = `${node.id}.${cut.node.id}`;
     const inSec = Math.max(0, cut.at - sync + Number(angle.offset ?? 0));
+    // What a file would write for this clip, and what the clip schema parses that to: the placement holds the
+    // second, defaults and all, so it reads as any other clip; a bake writes the first.
+    const written = { id, src: angle.src, in: inSec };
+    const parsed = { ...written, ...clipDefaults() };
+    writtenByProps.set(parsed, written);
     const generated: CollectedNode = {
       id,
       kind: "clip",
@@ -2451,10 +2567,10 @@ function placeMulticam(
       editable: "generated",
       lockedProps: [],
       boundProps: {},
-      props: { id, src: angle.src, in: inSec },
+      props: written,
       origin: { helper: "multicam", callerId: node.id, callIndex: 0 },
     };
-    const gp = pendingOf(generated, track.id, node.id, generated.props as Record<string, unknown>, []);
+    const gp = pendingOf(generated, track.id, node.id, parsed, []);
     gp.start = T(cut.at);
     gp.source = { in: inSec, out: inSec, speed: 1, asset: assetIdOf(String(angle.src)) };
     if (next) {
@@ -2495,7 +2611,7 @@ function iterateDependencies(
           p.errors.push({
             code: "DANGLING_ANCHOR",
             id: p.node.id,
-            prop: p.node.kind === "transition" ? "on" : "anchor",
+            prop: isBetween(p.node.kind) ? "on" : "anchor",
             message: `anchor "${dep.id}" does not exist`,
           });
           p.start = Time.ZERO;
@@ -2505,9 +2621,9 @@ function iterateDependencies(
         }
         if (
           target.start !== undefined &&
-          (target.duration !== undefined || (p.node.kind !== "transition" && dep.edge !== "end"))
+          (target.duration !== undefined || (!isBetween(p.node.kind) && dep.edge !== "end"))
         ) {
-          if (p.node.kind === "transition") {
+          if (isBetween(p.node.kind)) {
             const edge = p.props.edge === "in" ? "in" : "out";
             const d = p.duration ?? Time.ZERO;
             p.start = edge === "in" ? target.start : target.start.plusClamped(target.duration ?? Time.ZERO).minus(d);
@@ -2912,7 +3028,7 @@ function assetPlays(src: string, pending: Map<string, Pending>, tracks: readonly
   for (const p of pending.values()) {
     if (!p.source || p.start === undefined || !sameAsset(p.source.asset, src)) continue;
     if (p.track && hidden.has(p.track)) continue;
-    if (p.node.kind !== "clip" && p.node.kind !== "audio") continue;
+    if (!capabilitiesOf(p.node.kind).playsAsset) continue;
     plays.push(
       assetPlay({
         id: p.node.id,

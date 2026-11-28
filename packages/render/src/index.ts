@@ -7,6 +7,7 @@ export {
   formatBlocks,
   listBlocks,
 } from "./blocks";
+export { checkReadTime, type ReadTimeIssue } from "./elements/title/read-check";
 export { type Container, containerOf, QUALITIES, type QualityName, type VideoCodec } from "./encoding";
 export {
   type FontFilter,
@@ -68,7 +69,6 @@ export {
   type StillStretch,
 } from "./motion-check";
 export { type CodecModes, codecModes } from "./native/codecs";
-export { checkReadTime, type ReadTimeIssue } from "./read-check";
 export { draftPath, type ExportSource, type RenderOptions, type RenderResult, renderVideo } from "./renderer";
 export {
   DEFAULT_SKILL_DIR,

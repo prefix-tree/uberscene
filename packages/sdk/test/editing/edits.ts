@@ -248,6 +248,36 @@ export const EDITS: readonly Edit[] = [
     }),
   },
   {
+    name: "deletes an element a camera makes room for",
+    pick: (s) => {
+      const edge = s.refs.edges.find(
+        (e) => e.type === "push" && !e.broken && s.items.get(e.to)?.editable === "literal",
+      );
+      return edge && { type: "element/remove", params: { id: edge.to } };
+    },
+  },
+  {
+    name: "removes a marker a time is written as",
+    pick: (s) => {
+      const edge = s.refs.edges.find((e) => e.type === "marker" || e.type === "sceneTime");
+      return edge && { type: "marker/remove", params: { markerId: edge.to } };
+    },
+  },
+  {
+    name: "removes the track a sound ducks under",
+    pick: (s) => {
+      // A track nothing else is placed from, so the duck is all that names it.
+      const edge = s.refs.edges.find(
+        (e) =>
+          e.type === "duck" &&
+          (s.tracks.find((t) => t.id === e.to)?.items ?? []).every((id) =>
+            (s.refs.to.get(id) ?? []).every((other) => s.items.get(other.from)?.track === e.to),
+          ),
+      );
+      return edge && { type: "track/remove", params: { trackId: edge.to } };
+    },
+  },
+  {
     name: "adds a track and a title on it",
     pick: () => ({
       type: "batch/apply",

@@ -2,7 +2,7 @@ import { Redo2, Trash2, Undo2 } from "lucide-react";
 import { useState } from "react";
 
 import { useEdit, useEditor, useSelection } from "@uberscene/editor";
-import { knobsOf, SCHEMAS_BY_KIND } from "@uberscene/kit/schema";
+import { capabilitiesOf, knobsOf, SCHEMAS_BY_KIND } from "@uberscene/kit/schema";
 import { type ActionInput, lengthSeconds, startSeconds, trimValue } from "@uberscene/sdk";
 
 import { type Access, fail, Group, NumberField, Row, TextField } from "./fields";
@@ -29,8 +29,6 @@ const SKIP = new Set([
   "children",
   "text",
 ]);
-/** Kinds `element/update` writes; any other element's props go through `source/setProp`. */
-const UPDATABLE = new Set(["title", "shape", "svg", "sticker", "adjustment", "nested", "layer"]);
 
 type Knob = ReturnType<typeof knobsOf>[number];
 type Scalar = string | number | boolean;
@@ -59,7 +57,7 @@ export function Inspector({ className }: { className?: string }) {
     run(
       (key === "box"
         ? { type: "box/update", params: { id: item.id, box: value } }
-        : UPDATABLE.has(item.kind)
+        : capabilitiesOf(item.kind).elementActions
           ? { type: "element/update", params: { id: item.id, props: { [key]: value } } }
           : { type: "source/setProp", params: { id: item.id, prop: key, value } }) as ActionInput,
     );
@@ -150,12 +148,12 @@ export function Inspector({ className }: { className?: string }) {
                 </Row>
               </Group>
             )}
-            {item.kind === "title" && (
+            {capabilitiesOf(item.kind).hasText && (
               <Group title="Text">
                 <TextField
                   multiline
                   label="Text"
-                  value={state.tree.byId.get(item.id)?.text ?? ""}
+                  value={item.text ?? ""}
                   disabled={access("text") !== "literal"}
                   onCommit={(text) => run({ type: "text/setContent", params: { id: item.id, text } })}
                 />
@@ -165,7 +163,7 @@ export function Inspector({ className }: { className?: string }) {
               .filter((k) => !SKIP.has(k.key))
               .map((k) => {
                 // How text looks has a panel of its own, every property shown whether the file sets it or not.
-                if (k.key === "style" && (item.kind === "title" || item.kind === "captions"))
+                if (k.key === "style" && capabilitiesOf(item.kind).themeStyle === "look")
                   return <Typography key={k.key} id={item.id} onError={setError} />;
                 const value = raw[k.key] ?? k.value;
                 // An object prop (style, box) is shown one level down, a field per key it holds.

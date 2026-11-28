@@ -52,7 +52,7 @@ export const notRendered: Rule = {
         warn(site, `${v.prop} "${at.value}"`, v.reason, at.range, at.prop);
       }
       for (const n of NOT_RENDERED) {
-        if (n.kind !== "*" && n.kind !== site.kind) continue;
+        if (n.kind !== site.kind) continue;
         if (!n.prop) {
           warn(site, "", n.reason);
           continue;

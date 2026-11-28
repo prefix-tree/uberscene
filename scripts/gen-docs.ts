@@ -11,8 +11,10 @@ import {
   EFFECTS,
   EFFECTS_NOT_RENDERED,
   ELEMENTS,
+  type ElementGroup,
   ENGINE_LAYERS,
   KIND_CAPABILITIES,
+  KIT_ELEMENTS,
   MASK_NOT_RENDERED,
   MASKED_KINDS,
   NOT_RENDERED,
@@ -121,7 +123,12 @@ function defaultOf(value: unknown): string {
 const written = (kinds: readonly string[]): string[] => kinds.filter((k) => !DERIVED_KINDS.has(k));
 
 /** What each element is for, by group: the index's cards and the first line of each page. */
-const ELEMENT_DOCS: Record<string, readonly (readonly [element: string, summary: string])[]> = {
+/**
+ * The elements page, heading by heading: each tag with its sentence. A kind with a folder of its own
+ * (`packages/kit/src/elements/<kind>/`) says its sentence there, so it is named here without one; a kind with a folder
+ * that is not named here at all is filed under the heading its folder says, after the ones listed.
+ */
+const LISTED_ELEMENTS: Record<ElementGroup, readonly (readonly [element: string, summary?: string])[]> = {
   Timeline: [
     [
       "Composition",
@@ -144,10 +151,7 @@ const ELEMENT_DOCS: Record<string, readonly (readonly [element: string, summary:
     ["Marker", "A named point on the timeline."],
   ],
   "Free code": [
-    [
-      "Layer",
-      "Free code in the frame: any React, CSS, canvas or WebGL, placed on the timeline like any overlay; `useT()` is its time.",
-    ],
+    ["Layer"],
     [
       "Three",
       "A three.js scene on the timeline: plain three.js in `setup`, or React Three Fiber children, on the video's clock.",
@@ -155,15 +159,15 @@ const ELEMENT_DOCS: Record<string, readonly (readonly [element: string, summary:
     ["Motion", "Children animated by a Motion `sequence` on the video's clock."],
   ],
   "Text and graphics": [
-    ["Title", "Text over the picture in the theme's type, with entrances by letter or by word."],
+    ["Title"],
     ["Captions", "Subtitles from an asset's transcript that follow the clips through every trim."],
     ["Caption", "One cue inside `<Captions>`, written by hand: its text, start and end."],
-    ["Shape", "A vector shape (rectangle, circle, star, polygon, path) with fill, stroke and shadow."],
-    ["Svg", "One-off vector art from inline SVG markup or a file."],
-    ["Sticker", "A ready-made icon or sticker by name."],
+    ["Shape"],
+    ["Svg"],
+    ["Sticker"],
   ],
   "Effects and colour": [
-    ["Adjustment", "Filters everything beneath it, through its `effects`, for its own stretch of time."],
+    ["Adjustment"],
     ["Mask", "Shows only a shape of its clip, with a feathered edge or inverted."],
   ],
   Structure: [
@@ -176,6 +180,28 @@ const ELEMENT_DOCS: Record<string, readonly (readonly [element: string, summary:
     ["Audio", "A stretch of a sound asset: volume and pan (constant or keys), fades, ducking under another track."],
   ],
 };
+const tagOf = (kind: string): string => kind[0]?.toUpperCase() + kind.slice(1);
+const ELEMENT_DOCS: Record<string, readonly (readonly [element: string, summary: string])[]> = Object.fromEntries(
+  (Object.entries(LISTED_ELEMENTS) as [ElementGroup, (typeof LISTED_ELEMENTS)[ElementGroup]][]).map(
+    ([group, items]) => {
+      const listed = new Set(Object.values(LISTED_ELEMENTS).flatMap((entries) => entries.map(([name]) => name)));
+      const folders = Object.values(KIT_ELEMENTS);
+      const sentence = (name: string): string => {
+        const own = folders.find((element) => tagOf(element.kind) === name)?.summary;
+        if (own === undefined) throw new Error(`no sentence for <${name}>: write one in LISTED_ELEMENTS`);
+        return own;
+      };
+      const unlisted = folders.filter((element) => element.group === group && !listed.has(tagOf(element.kind)));
+      return [
+        group,
+        [
+          ...items.map(([name, summary]) => [name, summary ?? sentence(name)] as const),
+          ...unlisted.map((element) => [tagOf(element.kind), element.summary] as const),
+        ],
+      ];
+    },
+  ),
+);
 /** Elements with no rendered example (the Node export does not draw them yet): code, and a note. */
 const CODE_ONLY: Record<string, string> = {
   Three: `<Three id="cube" anchor="hook" at="word:14" duration={4}
