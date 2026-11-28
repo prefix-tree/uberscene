@@ -6,6 +6,7 @@ import {
   type AdjustmentElement,
   type AudioElement,
   type ClipElement,
+  type GapElement,
   KIT_ELEMENTS,
   type Kind,
   type KindWith,
@@ -16,6 +17,7 @@ import {
   type StickerElement,
   type SvgElement,
   type TitleElement,
+  type TransitionElement,
 } from "../elements";
 import { motionSchema, threeSchema } from "../elements/layer/schema";
 import { capabilitiesOf } from "./capabilities";
@@ -31,9 +33,8 @@ import {
   speedKeySchema,
 } from "./schemas/children";
 import type { Link } from "./schemas/common";
-import { cameraSchema, compositionSchema, gapSchema, markerSchema, trackSchema } from "./schemas/composition";
+import { cameraSchema, compositionSchema, markerSchema, trackSchema } from "./schemas/composition";
 import { angleSchema, cutSchema, multicamSchema } from "./schemas/multicam";
-import { transitionSchema } from "./schemas/transition";
 import type { EffectRef, TransitionRef } from "./shaders";
 
 const el = <K extends Kind, S extends Parameters<typeof defineElement>[0]["schema"]>(kind: K, schema: S) =>
@@ -54,8 +55,9 @@ const clipTag: TagOf<ClipElement> = tag(KIT_ELEMENTS.clip);
 export const Clip = clipTag as unknown as WithEffects<TagOf<ClipElement>>;
 const audioTag: TagOf<AudioElement> = tag(KIT_ELEMENTS.audio);
 export const Audio = audioTag;
-export const Gap = el("gap", gapSchema);
-type TransitionBase = Omit<VocabularyProps<typeof transitionSchema>, "type" | "params">;
+const gapTag: TagOf<GapElement> = tag(KIT_ELEMENTS.gap);
+export const Gap = gapTag;
+type TransitionBase = Omit<VocabularyProps<TransitionElement["schema"]>, "type" | "params">;
 
 /** The params of a transition type: a built-in's, or those of one `transition()` returned. */
 export type TransitionParamsOf<T> = T extends TransitionType
@@ -68,14 +70,14 @@ export type TransitionParamsOf<T> = T extends TransitionType
  * `<Transition>`: a built-in by its type, with that type's params (crossfade when the type is left out), or one the file
  * declares by what `transition()` returned, with its own params.
  */
-export interface TransitionComponent extends VocabularyMeta<"transition", typeof transitionSchema> {
+export interface TransitionComponent extends VocabularyMeta<"transition", TransitionElement["schema"]> {
   // biome-ignore lint/suspicious/noExplicitAny: any ref, whatever its params; they are read back by TransitionParamsOf.
   <T extends TransitionType | TransitionRef<any> = "crossfade">(
     props: TransitionBase & { type?: T; params?: TransitionParamsOf<T> },
   ): ReactElement | null;
 }
 
-export const Transition = el("transition", transitionSchema) as unknown as TransitionComponent;
+export const Transition = tag(KIT_ELEMENTS.transition) as unknown as TransitionComponent;
 const titleTag: TagOf<TitleElement> = tag(KIT_ELEMENTS.title);
 export const Title = titleTag as unknown as WithEffects<TagOf<TitleElement>>;
 const shapeTag: TagOf<ShapeElement> = tag(KIT_ELEMENTS.shape);

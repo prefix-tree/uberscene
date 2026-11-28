@@ -10,9 +10,8 @@ import { NO_TRAITS, traits } from "../elements/traits";
 import type { ElementCapabilities, KindTraits } from "./define";
 import { AUDIO_KEY_PATHS, CAMERA_KEY_PATHS, type KeyPath, keyPathsIn, PLACED_KEY_PATHS } from "./key-paths";
 import { captionSchema, captionsSchema } from "./schemas/captions";
-import { cameraSchema, compositionSchema, gapSchema, markerSchema, trackSchema } from "./schemas/composition";
+import { cameraSchema, compositionSchema, markerSchema, trackSchema } from "./schemas/composition";
 import { angleSchema, cutSchema, multicamSchema } from "./schemas/multicam";
-import { transitionSchema } from "./schemas/transition";
 
 /** What an element holds as items of its own: a mask, and what the resolver makes of its props. None is placed. */
 type HeldKind = "mask" | "effect" | "keyframe" | "generator" | "speedKey" | "freeze";
@@ -43,14 +42,6 @@ const ROWS: { readonly [K in Exclude<Kind, MigratedKind>]: KindTraits } = {
       "layer",
       "multicam",
     ],
-  }),
-  gap: traits({ timed: true, placementScope: "track", sequenceRole: "empty", mainTrack: true }),
-  transition: traits({
-    timed: true,
-    visual: true,
-    placementScope: "track",
-    sequenceRole: "between",
-    mainTrack: true,
   }),
   captions: traits({
     visual: true,
@@ -87,8 +78,6 @@ const SCHEMAS: { readonly [K in Exclude<Kind, MigratedKind | HeldKind>]: z.ZodTy
   composition: compositionSchema,
   camera: cameraSchema,
   track: trackSchema,
-  gap: gapSchema,
-  transition: transitionSchema,
   captions: captionsSchema,
   caption: captionSchema,
   marker: markerSchema,
@@ -266,6 +255,16 @@ export function isDomOverlay(kind: Kind): boolean {
 export function onOverlayPlane(kind: Kind): boolean {
   const { plane, timed } = capabilitiesOf(kind);
   return timed && (plane === "dom" || plane === "both");
+}
+
+/** Stands between two items of a sequence, with no place of its own in the video: a transition. */
+export function isBetween(kind: Kind): boolean {
+  return capabilitiesOf(kind).sequenceRole === "between";
+}
+
+/** Holds empty time in a sequence, before the next item: a gap. */
+export function isEmptyTime(kind: Kind): boolean {
+  return capabilitiesOf(kind).sequenceRole === "empty";
 }
 
 /** Something placed on a track that a cut or an anchor can name: not a transition between two, nor a gap. */

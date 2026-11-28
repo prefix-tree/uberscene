@@ -124,10 +124,3 @@ export const markerSchema = z.strictObject({
   /** Its colour on the ruler. */
   color: colorSchema.optional(),
 });
-
-export const gapSchema = z.strictObject({
-  /** The gap's name. */
-  id: idSchema,
-  /** Seconds of empty time before the next element on the track. */
-  duration: z.number().positive(),
-});

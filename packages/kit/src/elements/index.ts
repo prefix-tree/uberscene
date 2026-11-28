@@ -13,9 +13,8 @@ import type {
   maskSchema,
   speedKeySchema,
 } from "../jsx/schemas/children";
-import type { cameraSchema, compositionSchema, gapSchema, markerSchema, trackSchema } from "../jsx/schemas/composition";
+import type { cameraSchema, compositionSchema, markerSchema, trackSchema } from "../jsx/schemas/composition";
 import type { angleSchema, cutSchema, multicamSchema } from "../jsx/schemas/multicam";
-import type { transitionSchema } from "../jsx/schemas/transition";
 import { adjustment } from "./adjustment";
 import type { adjustmentSchema } from "./adjustment/schema";
 import { audio } from "./audio";
@@ -23,6 +22,8 @@ import type { audioSchema } from "./audio/schema";
 import { clip } from "./clip";
 import type { clipSchema } from "./clip/schema";
 import type { KitElement } from "./element";
+import { gap } from "./gap";
+import type { gapSchema } from "./gap/schema";
 import { layer } from "./layer";
 import type { layerSchema, motionSchema, threeSchema } from "./layer/schema";
 import { nested } from "./nested";
@@ -35,11 +36,14 @@ import { svg } from "./svg";
 import type { svgSchema } from "./svg/schema";
 import { title } from "./title";
 import type { titleSchema } from "./title/schema";
+import { transition } from "./transition";
+import type { transitionSchema } from "./transition/schema";
 
 export type { AdjustmentElement } from "./adjustment";
 export type { AudioElement } from "./audio";
 export type { ClipElement } from "./clip";
 export type { ElementGroup, KitElement } from "./element";
+export type { GapElement } from "./gap";
 export type { LayerElement } from "./layer";
 export type { NestedElement } from "./nested";
 export type { ShapeElement } from "./shape";
@@ -47,6 +51,7 @@ export type * from "./shared";
 export type { StickerElement } from "./sticker";
 export type { SvgElement } from "./svg";
 export type { TitleElement } from "./title";
+export type { TransitionElement } from "./transition";
 
 /** The props of a `<Composition>`, as its schema parses them. */
 export interface CompositionProps extends z.output<typeof compositionSchema> {}
@@ -159,7 +164,19 @@ export type KindWith<P extends string> = string extends P
     }[Kind];
 
 /** The kit's part of each kind that has a folder of its own: the one list of them, which the type below is read from. */
-export const KIT_ELEMENTS = { clip, audio, title, shape, svg, sticker, adjustment, nested, layer } satisfies {
+export const KIT_ELEMENTS = {
+  clip,
+  audio,
+  gap,
+  transition,
+  title,
+  shape,
+  svg,
+  sticker,
+  adjustment,
+  nested,
+  layer,
+} satisfies {
   readonly [K in Kind]?: KitElement<K>;
 };
 
