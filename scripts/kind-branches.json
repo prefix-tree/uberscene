@@ -7,8 +7,8 @@
       "read": 3
     },
     "sdk": {
-      "compare": 52,
-      "list": 9,
+      "compare": 36,
+      "list": 3,
       "cast": 70,
       "read": 74
     },
@@ -52,8 +52,93 @@
     },
     {
       "file": "packages/kit/src/jsx/rendering.ts",
-      "kinds": ["captions"],
-      "why": "The table of props that are not drawn as written names the element each is on; the lint reads it."
+      "kinds": ["captions", "composition"],
+      "why": "The table of props that are not drawn as written names the element each is on; the lint reads it. The table of props that are not drawn as written names the element each is on; the lint reads it."
+    },
+    {
+      "file": "packages/sdk/src/resolve/resolve.ts",
+      "kinds": ["camera", "composition", "marker", "track"],
+      "why": "The shape of the file (decision 0046, section 4): the walk over the composition's tracks and its one camera, markers placed first, structural placements."
+    },
+    {
+      "file": "packages/sdk/src/resolve/collect.ts",
+      "kinds": ["composition", "track"],
+      "why": "The shape of the file (decision 0046, section 4): the root composition, and the main track made of clips written straight in it."
+    },
+    {
+      "file": "packages/sdk/src/source/index.ts",
+      "kinds": ["composition", "track"],
+      "why": "The shape of the file (decision 0046, section 4): the source index finds the composition and the main track in the file's text."
+    },
+    {
+      "file": "packages/sdk/src/source/fold.ts",
+      "kinds": ["composition", "track"],
+      "why": "The shape of the file (decision 0046, section 4): writing edits back finds the composition's props and where a track's children go."
+    },
+    {
+      "file": "packages/sdk/src/source/insert-layer.ts",
+      "kinds": ["track"],
+      "why": "The shape of the file (decision 0046, section 4): a layer is inserted into a track."
+    },
+    {
+      "file": "packages/sdk/src/source/lint/rules/index.ts",
+      "kinds": ["camera", "track"],
+      "why": "The shape of the file (decision 0046, section 4): rules on where tracks stand and what a camera holds."
+    },
+    {
+      "file": "packages/sdk/src/resolve/refs.ts",
+      "kinds": ["marker", "track"],
+      "why": "A reference names a marker or a track by its prefix (marker:, track:): what it names, not an element's kind test."
+    },
+    {
+      "file": "packages/sdk/src/manifest/timeref.ts",
+      "kinds": ["marker"],
+      "why": "A time names a marker by its prefix (marker:<id>)."
+    },
+    {
+      "file": "packages/kit/src/jsx/ref.ts",
+      "kinds": ["marker", "track"],
+      "why": "The reference grammar's targets: marker:<id> and track:<id>."
+    },
+    {
+      "file": "packages/sdk/src/inspect/moments.ts",
+      "kinds": ["marker"],
+      "why": "A moment named marker:<id> is the marker's time."
+    },
+    {
+      "file": "packages/sdk/src/inspect/sync.ts",
+      "kinds": ["marker"],
+      "why": "A marker is a moment, with no start and end of its own to report."
+    },
+    {
+      "file": "packages/sdk/src/actions/handlers/effect.ts",
+      "kinds": ["camera"],
+      "why": "A camera's push writes its keys: key edits on its view are refused, and a generator goes on top of them."
+    },
+    {
+      "file": "packages/render/src/frame-cache.ts",
+      "kinds": ["composition", "track"],
+      "why": "The shape of the file (decision 0046, section 4): a frame's key holds the composition and every track."
+    },
+    {
+      "file": "packages/render/src/inspect.ts",
+      "kinds": ["composition"],
+      "why": "The shape of the file (decision 0046, section 4): elements straight in the composition are listed under it."
+    },
+    {
+      "file": "packages/kit/src/theme/theme.ts",
+      "kinds": ["composition"],
+      "why": "A theme's background and motion are the composition's."
+    },
+    {
+      "file": "packages/editor/registry/editor/inspector.tsx",
+      "kinds": ["camera"],
+      "why": "The camera has no time of its own, is taken away with camera/remove, and shows its push; to move into the editor's map entry."
+    },
+    {
+      "file": "packages/editor/registry/editor/use-rows.ts",
+      "kinds": ["camera"],
+      "why": "The shape of the file (decision 0046, section 4): the composition's one camera."
     }
   ]
 }
