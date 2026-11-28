@@ -84,6 +84,11 @@ export interface ExportSource {
   readonly files?: Readonly<Record<string, string>>;
   readonly manifest: AssetManifest;
   readonly props?: Readonly<Record<string, unknown>>;
+  /**
+   * A hash of the code the file loads beyond its own text (`codeFingerprint`): the frame cache keys on it, so an edit
+   * to a package it imports draws again. `loadVideo` sets it; without it, only UberScene's own packages count.
+   */
+  readonly code?: string;
   /** A Chrome 157 binary (`CHROME_MILESTONE`, checked when it starts); default `UBERSCENE_CHROMIUM`, then Chrome for Testing from the cache. */
   readonly executablePath?: string;
 }

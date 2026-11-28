@@ -1,10 +1,23 @@
 // Frames on disk, keyed by what draws them. A frame's key is a hash of everything that decides its pixels: the
 // elements on screen at that time with their resolved props, the media files they read, the composition's settings,
-// the fonts, and the version of UberScene and of Chrome. A frame an edit did not touch keeps its key, so it is read
+// the fonts, the code the video loads (its packages, and UberScene's own source when it runs from a checkout), and the
+// version of UberScene and of Chrome. A frame an edit did not touch keeps its key, so it is read
 // from disk instead of drawn again; a frame it did touch gets a new key, and the old file is simply never read.
 import { createHash } from "node:crypto";
-import { mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  realpathSync,
+  renameSync,
+  rmSync,
+  statSync,
+  utimesSync,
+  writeFileSync,
+} from "node:fs";
+import { dirname, isAbsolute, join, resolve as resolvePath, sep } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { frameStartSeconds, motionBlurOf, shutterTimes } from "@uberscene/kit/schema";
 import type { MediaResolver } from "@uberscene/player/engine";
@@ -23,7 +36,7 @@ import type { ExportSource } from "./renderer";
 import { CHROME_MILESTONE } from "./web/chrome";
 
 /** Bumped when what a key covers, or what is stored under it, changes. */
-const CACHE_FORMAT = 1;
+const CACHE_FORMAT = 2;
 
 const VERSION = (() => {
   try {
@@ -143,6 +156,9 @@ export class FrameKeys {
         theme: state.theme,
         declaredFonts: state.fonts,
         fonts,
+        // The code that draws: a component of the kit is not in the file, and its version does not move while it is
+        // edited in a checkout.
+        code: source.code ?? codeFingerprint(),
       },
       flags,
     );
@@ -242,6 +258,134 @@ export class FrameKeys {
     if (flags.free) hash.update(this.whole);
     return hash.digest("hex").slice(0, 40);
   }
+}
+
+/** Folders and files of a package that are not code it runs. */
+const NOT_CODE = new Set(["node_modules", "dist", "test", "tests", "__tests__", "bench", "coverage"]);
+/** A workspace package's hash, by its folder, kept while the size and modified time of each of its files stay. */
+const packageHashes = new Map<string, { readonly stats: string; readonly hash: string }>();
+
+/** The folder of package `name` as seen from `from`, its links followed; undefined when it is not installed there. */
+function packageFolder(name: string, from: string): string | undefined {
+  for (let dir = resolvePath(from); ; dir = dirname(dir)) {
+    const candidate = join(dir, "node_modules", name);
+    if (existsSync(join(candidate, "package.json"))) return realpathSync(candidate);
+    if (dirname(dir) === dir) return undefined;
+  }
+}
+
+/** The files of a workspace package that decide what it does: its `src` (or the folder without one) and package.json. */
+function codeFiles(folder: string): string[] {
+  const out = [join(folder, "package.json")];
+  const walk = (dir: string): void => {
+    for (const entry of readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+      if (entry.name.startsWith(".") || NOT_CODE.has(entry.name) || /\.test\.[cm]?[jt]sx?$/.test(entry.name)) continue;
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) walk(path);
+      else if (entry.isFile() && entry.name !== "package.json") out.push(path);
+    }
+  };
+  const src = join(folder, "src");
+  walk(existsSync(src) ? src : folder);
+  return out;
+}
+
+/** A hash of a workspace package's code; read again only when one of its files changed size or time. */
+function workspaceHash(folder: string): string {
+  const files = codeFiles(folder);
+  const stats = files
+    .map((f) => {
+      const s = statSync(f);
+      return `${f}:${s.size}:${s.mtimeMs}`;
+    })
+    .join("\n");
+  const known = packageHashes.get(folder);
+  if (known?.stats === stats) return known.hash;
+  const hash = createHash("sha256");
+  for (const f of files) hash.update(`\n${f.slice(folder.length)}\n`).update(readFileSync(f));
+  const digest = hash.digest("hex");
+  packageHashes.set(folder, { stats, hash: digest });
+  return digest;
+}
+
+/**
+ * Adds package `folder` to `out`: an installed one (in node_modules) by its name and version, a workspace one (linked
+ * from a checkout) by the hash of its code, with the packages it depends on, since its version says nothing.
+ */
+function addPackage(folder: string, out: Map<string, string>): void {
+  if (out.has(folder)) return;
+  let json: { name?: string; version?: string; dependencies?: object; peerDependencies?: object };
+  try {
+    json = JSON.parse(readFileSync(join(folder, "package.json"), "utf8"));
+  } catch {
+    out.set(folder, "unreadable");
+    return;
+  }
+  const installed = folder.split(sep).includes("node_modules");
+  if (installed) {
+    out.set(folder, `${json.name}@${json.version}`);
+    return;
+  }
+  out.set(folder, `${json.name}#${workspaceHash(folder)}`);
+  for (const name of Object.keys({ ...json.dependencies, ...json.peerDependencies })) {
+    const dep = packageFolder(name, folder);
+    if (dep) addPackage(dep, out);
+  }
+}
+
+/** The package a bare specifier names: `@scope/name` or `name`, without a subpath. */
+function packageName(specifier: string): string {
+  const parts = specifier.split("/");
+  return (specifier.startsWith("@") ? parts.slice(0, 2) : parts.slice(0, 1)).join("/");
+}
+
+/** UberScene's own package: the folder above this file's, in src or in dist. */
+const RENDER_FOLDER = fileURLToPath(new URL("..", import.meta.url));
+
+export interface CodeOptions {
+  /** The video's folder, where its packages resolve from. */
+  readonly folder?: string;
+  /** The video's text and its own modules, read for the packages they import. */
+  readonly texts?: readonly string[];
+  /** Modules offered to the video (`imports` of `loadVideo`): a package name, or a path relative to `folder`. */
+  readonly offered?: Readonly<Record<string, string>>;
+}
+
+/**
+ * A hash of the code a video loads beyond its own text: UberScene's packages (which draw every element), the packages
+ * the video imports, and files offered to it. A package from node_modules counts by name and version; one linked from
+ * a checkout (a workspace) by the text of its source, so an edit to a kit component gives new keys.
+ */
+export function codeFingerprint(options: CodeOptions = {}): string {
+  const folder = options.folder ?? process.cwd();
+  const packages = new Map<string, string>();
+  const missing = new Set<string>();
+  const local: string[] = [];
+  addPackage(realpathSync(RENDER_FOLDER), packages);
+  const names = new Set<string>();
+  for (const text of options.texts ?? [])
+    for (const m of text.matchAll(/\bfrom\s*["']([^"'\n]+)["']|\bimport\s*\(?\s*["']([^"'\n]+)["']/g)) {
+      const specifier = (m[1] ?? m[2]) as string;
+      if (!specifier.startsWith(".") && !specifier.startsWith("node:") && !isAbsolute(specifier))
+        names.add(packageName(specifier));
+    }
+  for (const [name, specifier] of Object.entries(options.offered ?? {})) {
+    if (specifier.startsWith(".") || isAbsolute(specifier)) {
+      const path = resolvePath(folder, specifier);
+      local.push(
+        `${name}=${existsSync(path) ? createHash("sha256").update(readFileSync(path)).digest("hex") : "none"}`,
+      );
+    } else names.add(packageName(specifier));
+  }
+  for (const name of names) {
+    const found = packageFolder(name, folder) ?? packageFolder(name, RENDER_FOLDER);
+    if (found) addPackage(found, packages);
+    else missing.add(name);
+  }
+  return createHash("sha256")
+    .update([...new Set(packages.values())].sort().join("\n"))
+    .update(`\nmissing:${[...missing].sort().join(",")}\nlocal:${local.sort().join(",")}`)
+    .digest("hex");
 }
 
 /** A key for something every part of the file can decide, such as its sound over a stretch. */

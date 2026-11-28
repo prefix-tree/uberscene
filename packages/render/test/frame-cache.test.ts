@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readdirSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, rmSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -44,10 +44,14 @@ export default function Video() {
 }`;
 
 let n = 0;
-async function keysOf(source: string, frames: readonly number[]): Promise<string[]> {
+async function keysOf(
+  source: string,
+  frames: readonly number[],
+  imports?: Readonly<Record<string, string>>,
+): Promise<string[]> {
   const file = join(dir, `v${n++}.tsx`);
   writeFileSync(file, source);
-  const loaded = await loadVideo(file);
+  const loaded = await loadVideo(file, imports ? { imports } : {});
   expect(loaded.state.errors).toEqual([]);
   const keys = new FrameKeys({
     state: loaded.state,
@@ -164,6 +168,60 @@ describe("frame keys", () => {
     write("b");
     const after = await keysOf(video({ more: layer, top }), FRAMES);
     expect(FRAMES.filter((_, i) => before[i] !== after[i])).toEqual([30]);
+  });
+
+  it("a local helper module the video imports: a changed helper changes the keys, the same one keeps them", async () => {
+    const top = `import { label } from "./helper";`;
+    const write = (body: string) => writeFileSync(join(dir, "helper.ts"), `export const label = () => ${body};`);
+    const layer = `<Layer id="count" start={0.9} duration={0.3}><div>{label()}</div></Layer>`;
+    write(`"a"`);
+    const first = await keysOf(video({ more: layer, top }), FRAMES);
+    expect(await keysOf(video({ more: layer, top }), FRAMES)).toEqual(first);
+    write(`"b"`);
+    const second = await keysOf(video({ more: layer, top }), FRAMES);
+    expect(FRAMES.filter((_, i) => first[i] !== second[i])).toEqual([30]);
+  });
+
+  it("a package linked from a checkout counts by its source; one installed, by its version", async () => {
+    // A workspace package: node_modules links to a folder outside it, as pnpm links @uberscene/kit in this repo.
+    const linked = join(dir, "packages", "helper");
+    mkdirSync(join(linked, "src"), { recursive: true });
+    writeFileSync(
+      join(linked, "package.json"),
+      JSON.stringify({ name: "linked-helper", version: "1.0.0", main: "src/index.js" }),
+    );
+    mkdirSync(join(dir, "node_modules"), { recursive: true });
+    symlinkSync(linked, join(dir, "node_modules", "linked-helper"), "dir");
+    // An installed package: a real folder in node_modules.
+    const installed = join(dir, "node_modules", "installed-helper");
+    mkdirSync(installed, { recursive: true });
+    const install = (version: string, body: string) => {
+      writeFileSync(
+        join(installed, "package.json"),
+        JSON.stringify({ name: "installed-helper", version, main: "index.js" }),
+      );
+      writeFileSync(join(installed, "index.js"), `export const shade = () => ${body};`);
+    };
+    const writeLinked = (body: string) =>
+      writeFileSync(join(linked, "src", "index.js"), `export const shade = () => ${body};`);
+    writeLinked(`"red"`);
+    install("1.0.0", `"red"`);
+    const imports = { "linked-helper": "linked-helper", "installed-helper": "installed-helper" };
+    const cut = video({
+      top: `import { shade } from "linked-helper";\nimport { shade as other } from "installed-helper";`,
+      more: `<Layer id="count" start={0.9} duration={0.3}><div style={{ color: shade(), background: other() }} /></Layer>`,
+    });
+    const first = await keysOf(cut, FRAMES, imports);
+    expect(await keysOf(cut, FRAMES, imports)).toEqual(first);
+    // The linked package's text: new keys, though its version is the same.
+    writeLinked(`"blue"`);
+    const second = await keysOf(cut, FRAMES, imports);
+    expect(second).not.toEqual(first);
+    // The installed package's text alone: its version still says what it is.
+    install("1.0.0", `"blue"`);
+    expect(await keysOf(cut, FRAMES, imports)).toEqual(second);
+    install("1.0.1", `"blue"`);
+    expect(await keysOf(cut, FRAMES, imports)).not.toEqual(second);
   });
 
   it("a media file that was replaced changes the frames that read it", async () => {
