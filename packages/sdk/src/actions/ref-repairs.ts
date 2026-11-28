@@ -96,7 +96,7 @@ const REPAIRS = [
   {
     // A length that follows what goes becomes the seconds it was.
     refs: ["match", "until"],
-    when: ["element"],
+    when: ["element", "trackItems"],
     repair: (edges, removal) => {
       const dropped = leftWithNothing(removal);
       const out: ActionInput[] = [];
@@ -110,12 +110,12 @@ const REPAIRS = [
   {
     // An overlay that followed it follows what it followed, or nothing, and stays where it was drawn.
     refs: ["follow"],
-    when: ["element"],
+    when: ["element", "trackItems"],
     repair: (edges, removal) => {
       const dropped = leftWithNothing(removal);
       return edges
         .filter((edge) => !dropped.has(edge.from))
-        .map((edge) => unfollow(edge.from, removal.id, removal.before));
+        .map((edge) => unfollow(edge.from, edge.to, removal.before));
     },
   },
   {
@@ -136,6 +136,23 @@ const REPAIRS = [
         const room = Time.max(Time.ZERO, prev.range.duration.minus(p.range.duration));
         const offset = S(Time.min(room, Time.max(Time.ZERO, p.range.start.minus(prev.range.start))));
         out.push(setProps(edge.from, { anchor: prev.id, at: undefined, offset }));
+      }
+      return out;
+    },
+  },
+  {
+    // What starts from an element of a track that goes, from another track, stays where it was: its start is written
+    // in place of the anchor.
+    refs: ["anchor"],
+    when: ["trackItems"],
+    repair: (edges, removal) => {
+      const out: ActionInput[] = [];
+      for (const edge of edges) {
+        const p = removal.before.items.get(edge.from);
+        if (p)
+          out.push(
+            setProps(edge.from, { anchor: undefined, at: undefined, offset: undefined, start: S(p.range.start) }),
+          );
       }
       return out;
     },
