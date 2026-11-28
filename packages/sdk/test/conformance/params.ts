@@ -26,9 +26,10 @@ type Actions = Partial<Record<ActionType, SampleAction>>;
 /** The params for every action, on a sample of `kind`. */
 export function sampleActions({ kind, effects }: SampleOf): Actions {
   // A value that keys go on: an element's own opacity, or, for one with no transform, a param of its first effect.
-  const own = capabilitiesOf(kind).transformable;
-  const path = own ? "transform.opacity" : "effects.0.amount";
-  const wiggled = own ? "transform.rotation" : "effects.0.amount";
+  const { transformable: own, audio } = capabilitiesOf(kind);
+  // A sound with no picture keys its level.
+  const path = own ? "transform.opacity" : audio ? "volume" : "effects.0.amount";
+  const wiggled = own ? "transform.rotation" : audio ? "volume" : "effects.0.amount";
   // The effect the suite adds is the last one.
   const index = effects.length;
   const keys: ActionInput = {
@@ -47,6 +48,17 @@ export function sampleActions({ kind, effects }: SampleOf): Actions {
   const invert: ActionInput = { type: "effect/add", params: { id, effect: { type: "invert" } } };
 
   const all: Actions = {
+    "audio/setDuck": { input: { type: "audio/setDuck", params: { id, duck: { under: "samples", to: 0.3 } } } },
+    "audio/setFade": { input: { type: "audio/setFade", params: { id, in: 0.5, out: 0.5 } } },
+    "audio/setVolume": { input: { type: "audio/setVolume", params: { id, volume: 0.5 } } },
+    "clip/setFit": { input: { type: "clip/setFit", params: { id, value: "cover" } } },
+    "clip/setReverse": { input: { type: "clip/setReverse", params: { id, value: true } } },
+    "clip/setSpeed": { input: { type: "clip/setSpeed", params: { id, speed: 2 } } },
+    "clip/slip": { input: { type: "clip/slip", params: { id, delta: 0.5 } } },
+    "freeze/setAll": {
+      input: { type: "freeze/setAll", params: { id, freezes: [{ start: 0.5, duration: 0.5, source: 0.5 }] } },
+    },
+    "nested/extract": { input: { type: "nested/extract", params: { id } } },
     "box/update": { input: { type: "box/update", params: { id, box: { x: 400, y: 300 } } } },
     // Something stands before it once it starts later, so there is a gap to close.
     "clip/closeGapBefore": {
@@ -113,6 +125,17 @@ export function sampleActions({ kind, effects }: SampleOf): Actions {
 
 /** Where an action goes its own way on one kind's sample. */
 const ONLY: Partial<Record<MigratedKind, Actions>> = {
+  audio: {
+    // A sound's length is its trim: the sample writes `out`, and a `duration` beside it would say it twice.
+    "source/setProp": { input: { type: "source/setProp", params: { id, prop: "out", value: 2 } } },
+    "source/setProps": { input: { type: "source/setProps", params: { id, props: { out: 2 } } } },
+    // Its level and pan take keys or a link, and no generator, as the mixer reads them; the action is offered on
+    // anything with a value that changes over time, and refuses these paths.
+    "generator/set": {
+      input: { type: "generator/set", params: { id, path: "volume", generator: { type: "wiggle", amount: 0.1 } } },
+      refused: "INVALID_PARAMS",
+    },
+  },
   svg: {
     // The sample's drawing is written inline, and an SVG takes its markup or a file, not both.
     "clip/setSource": {

@@ -13,5 +13,8 @@ import "./marker";
 import "./mask";
 import "./multicam";
 // A kind with a folder of its own keeps its own actions there.
+import "../../elements/audio/actions";
+import "../../elements/clip/actions";
 import "../../elements/layer/actions";
+import "../../elements/nested/actions";
 import "../../elements/title/actions";

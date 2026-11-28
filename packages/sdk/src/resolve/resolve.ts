@@ -41,6 +41,7 @@ import {
 } from "@uberscene/kit/schema";
 
 import { sdkElement } from "../elements";
+import { placeScene, type SceneUse, sceneAssetId, withSceneAssets } from "../elements/clip/scene";
 import { parseTimeRef, resolveTimeRef } from "../manifest/timeref";
 import { type AssetEntry, type AssetManifest, assetIdOf, lookupAsset } from "../manifest/types";
 import type { PatchLog } from "../patches/types";
@@ -63,7 +64,6 @@ import { lowerLinks } from "./link";
 import { layersIn, nodeIn, overlay, sameIdsAsSource } from "./overlay";
 import { type PushSpec, pushKeys } from "./push";
 import { graphOf, graphOfFile, type InFileOrder, REF_KINDS, type RefContext, type RefGraph } from "./refs";
-import { placeScene, type SceneUse, sceneAssetId, withSceneAssets } from "./scene3d";
 import { freezeHoldsOf, heldWithin, holdTotal, rampAdvance, rampInverse, reachedHolds, speedKeysOf } from "./speed";
 import type { CollectedNode, CollectedTree, Editable, LayerInterior } from "./tree";
 

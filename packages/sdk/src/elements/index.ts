@@ -4,8 +4,11 @@ import { type Box, isMigratedKind, type Kind, type MigratedKind } from "@ubersce
 
 import type { Placement } from "../resolve/resolve";
 import { adjustment } from "./adjustment";
+import { audio } from "./audio";
+import { clip } from "./clip";
 import type { SdkElement } from "./element";
 import { layer } from "./layer";
+import { nested } from "./nested";
 import { typed } from "./placement";
 import { shape } from "./shape";
 import { sticker } from "./sticker";
@@ -16,12 +19,15 @@ export type { SdkElement } from "./element";
 
 /** The SDK's part of each kind that has a folder of its own. */
 export const SDK_ELEMENTS: { readonly [K in MigratedKind]: SdkElement<K> } = {
+  clip,
+  audio,
   title,
   shape,
   svg,
   sticker,
   layer,
   adjustment,
+  nested,
 };
 
 /** The SDK's part of `kind`, as one type whatever the kind, or undefined for a kind with no folder of its own yet. */

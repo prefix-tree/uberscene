@@ -3,9 +3,9 @@
 // as footage, and hands the player the scene with its named times in scene seconds.
 import { isScene, type Scene, stageTimeNames } from "@uberscene/kit";
 
-import type { AssetEntry, AssetManifest } from "../manifest/types";
-import type { ResolveError } from "./errors";
-import type { CollectedTree } from "./tree";
+import type { AssetEntry, AssetManifest } from "../../manifest/types";
+import type { ResolveError } from "../../resolve/errors";
+import type { CollectedTree } from "../../resolve/tree";
 
 /** A scene a clip plays, and the moments the clip hands in, in scene seconds. */
 export interface SceneUse {

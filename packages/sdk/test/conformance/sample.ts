@@ -15,11 +15,12 @@ export function tagOf(kind: Kind): string {
   return tag;
 }
 
-/** The files a sample may play: an image, `asset:picture`, and another to change it to. */
+/** The files a sample may play: an image, `asset:picture`, another to change it to, and a sound, `asset:sound`. */
 export const SAMPLE_MANIFEST: AssetManifest = {
   assets: {
     picture: { id: "picture", kind: "image", duration: 0, width: 320, height: 180 },
     other: { id: "other", kind: "image", duration: 0, width: 320, height: 180 },
+    sound: { id: "sound", kind: "audio", duration: 10 },
   },
 };
 
@@ -35,12 +36,13 @@ export function sampleFile(kind: MigratedKind): {
   const beneath = KIT_ELEMENTS[kind].sampleBeneath;
   // What the sample stands over goes on a track before its own, so it is painted first.
   const under = beneath ? `<Track id="under">\n        ${beneath}\n      </Track>\n      ` : "";
-  const written = `${beneath ?? ""}${KIT_ELEMENTS[kind].sample}`;
+  const code = KIT_ELEMENTS[kind].sampleCode;
+  const written = `${code ?? ""}${beneath ?? ""}${KIT_ELEMENTS[kind].sample}`;
   const used = Object.keys(ELEMENTS).filter((tag) => new RegExp(`<${tag}[\\s/>]`).test(written));
   const tags = [...new Set(["Composition", "Shape", "Track", ...used])].sort();
   const text = `import { ${tags.join(", ")} } from "@uberscene/kit";
 
-export default function Video() {
+${code ? `${code}\n\n` : ""}export default function Video() {
   return (
     <Composition fps={30} width={1920} height={1080}>
       ${under}<Track id="samples" layout="free">

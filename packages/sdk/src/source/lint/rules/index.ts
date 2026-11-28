@@ -1,4 +1,4 @@
-import { capabilitiesOf, MAIN_TRACK_ID } from "@uberscene/kit/schema";
+import { capabilitiesOf, kindsWithProp, MAIN_TRACK_ID } from "@uberscene/kit/schema";
 
 import { lookupAsset } from "../../../manifest/types";
 import type { ElementSite, SourceIndex } from "../../index";
@@ -319,6 +319,9 @@ const numericOnBeat: Rule = {
   },
 };
 
+/** The kinds that cut their subject out with a matte. */
+const CUTS_OUT: readonly string[] = kindsWithProp("cutout");
+
 /** `cutout` on a clip whose asset names no matte, or names one the manifest does not have. */
 const cutoutWithoutMatte: Rule = {
   name: "cutout-without-matte",
@@ -327,7 +330,7 @@ const cutoutWithoutMatte: Rule = {
     const out: Diagnostic[] = [];
     for (const site of index.elements.values()) {
       const cutout = site.props.get("cutout");
-      if (site.kind !== "clip" || !cutout || cutout.literal === false) continue;
+      if (!CUTS_OUT.includes(site.kind) || !cutout || cutout.literal === false) continue;
       const src = site.props.get("src")?.literal;
       if (typeof src !== "string" || !src.startsWith("asset:")) continue;
       const id = src.slice("asset:".length);
