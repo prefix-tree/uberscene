@@ -534,7 +534,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/kit/schema`
 
-418 exports.
+421 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -803,9 +803,12 @@ Every name each entry exports, read from the code. The sections above explain th
 | `rateValue` | const | The rate as frames per second, for display and for code that only needs an approximate number. |
 | `READ_TIME` | const | How long words must stay on screen to be read. |
 | `readTimeNeeded` | function | Seconds a title of `words` words needs on screen. |
+| `ref` | function | `schema`, as a value that names something else in the file. |
 | `RefForm` | type | The name of a form, for saying which ones a prop takes. |
 | `refPattern` | function | The pattern a schema checks a reference with. |
 | `RefPoint` | type | The edges of an element a reference may name. |
+| `RefSite` | interface | One place a schema's props hold a reference. |
+| `refSitesIn` | function | Every place in a schema's props that holds a reference, in the schema's order. |
 | `RefTarget` | type | What a reference names. |
 | `RENAMED_EFFECT_PARAMS` | const | Built-in effects' params that had another name before 0.6, by effect. |
 | `RENAMED_TRANSITION_PARAMS` | const | Built-in transitions' params that had another name before 0.6, by transition. |
@@ -959,7 +962,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/sdk`
 
-291 exports.
+293 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -1179,11 +1182,13 @@ Every name each entry exports, read from the code. The sections above explain th
 | `rangeOf` | function |  |
 | `reachedHolds` | function | The holds a clip reaches when, without any hold, it would last `played` seconds. |
 | `reduceInto` | function | Keep `net` reduced. |
-| `REF_KINDS` | const | The ways to refer, in the order a holder's references are listed. |
+| `REF_KINDS` | const | The ways to refer, by name. |
 | `RefContext` | interface | What the checks of a reference may ask about the file. |
+| `RefDependent` | type | Something that names another element, as a dependent of it. |
 | `RefEdge` | interface | One reference. |
 | `RefGraph` | interface | The references of a file. |
 | `RefKind` | interface | A way one element refers to another. |
+| `RefName` | type | The name of a way to refer. |
 | `removedElement` | function | What became of `<Keyframe>`, `<Effect>`, `<SpeedKey>` and `<Freeze>`, told from the props of an element whose component is undefined. |
 | `renameProp` | function | Gives a prop a new name. |
 | `renameValue` | function | Respells a string value. |
@@ -1257,7 +1262,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/sdk/resolver`
 
-135 exports.
+137 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -1358,11 +1363,13 @@ Every name each entry exports, read from the code. The sections above explain th
 | `RampKey` | interface | A speed key. |
 | `rampSpeed` | function | Speed at clip time `u` under keys sorted by `at`. |
 | `reachedHolds` | function | The holds a clip reaches when, without any hold, it would last `played` seconds. |
-| `REF_KINDS` | const | The ways to refer, in the order a holder's references are listed. |
+| `REF_KINDS` | const | The ways to refer, by name. |
 | `RefContext` | interface | What the checks of a reference may ask about the file. |
+| `RefDependent` | type | Something that names another element, as a dependent of it. |
 | `RefEdge` | interface | One reference. |
 | `RefGraph` | interface | The references of a file. |
 | `RefKind` | interface | A way one element refers to another. |
+| `RefName` | type | The name of a way to refer. |
 | `removedElement` | function | What became of `<Keyframe>`, `<Effect>`, `<SpeedKey>` and `<Freeze>`, told from the props of an element whose component is undefined. |
 | `resolve` | function | Absolute placements for every element, computed from the tree, the manifests and the patch log. |
 | `ResolvedState` | interface |  |
