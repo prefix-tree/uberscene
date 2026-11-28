@@ -4,11 +4,14 @@ import type { z } from "zod";
 import type { EffectParams, TransitionParams } from "../effects/registry";
 import {
   type AdjustmentElement,
+  type AudioElement,
+  type ClipElement,
   KIT_ELEMENTS,
   type Kind,
   type KindWith,
   kitElement,
   type LayerElement,
+  type NestedElement,
   type ShapeElement,
   type StickerElement,
   type SvgElement,
@@ -29,9 +32,7 @@ import {
 } from "./schemas/children";
 import type { Link } from "./schemas/common";
 import { cameraSchema, compositionSchema, gapSchema, markerSchema, trackSchema } from "./schemas/composition";
-import { audioSchema, clipSchema } from "./schemas/media";
 import { angleSchema, cutSchema, multicamSchema } from "./schemas/multicam";
-import { nestedSchema } from "./schemas/overlays";
 import { transitionSchema } from "./schemas/transition";
 import type { EffectRef, TransitionRef } from "./shaders";
 
@@ -43,11 +44,16 @@ const tag = <K extends Kind, S extends Parameters<typeof defineElement>[0]["sche
   readonly schema: S;
 }) => el(element.kind, element.schema);
 
+/** The tag's type by its element's name, so a declaration file names the schema and does not print it again. */
+type TagOf<E extends { readonly kind: Kind; readonly schema: z.ZodType }> = VocabularyComponent<E["kind"], E["schema"]>;
+
 export const Composition = el("composition", compositionSchema);
 export const Track = el("track", trackSchema);
 export const Camera = el("camera", cameraSchema);
-export const Clip = el("clip", clipSchema) as unknown as WithEffects<VocabularyComponent<"clip", typeof clipSchema>>;
-export const Audio = el("audio", audioSchema);
+const clipTag: TagOf<ClipElement> = tag(KIT_ELEMENTS.clip);
+export const Clip = clipTag as unknown as WithEffects<TagOf<ClipElement>>;
+const audioTag: TagOf<AudioElement> = tag(KIT_ELEMENTS.audio);
+export const Audio = audioTag;
 export const Gap = el("gap", gapSchema);
 type TransitionBase = Omit<VocabularyProps<typeof transitionSchema>, "type" | "params">;
 
@@ -70,8 +76,6 @@ export interface TransitionComponent extends VocabularyMeta<"transition", typeof
 }
 
 export const Transition = el("transition", transitionSchema) as unknown as TransitionComponent;
-/** The tag's type by its element's name, so a declaration file names the schema and does not print it again. */
-type TagOf<E extends { readonly kind: Kind; readonly schema: z.ZodType }> = VocabularyComponent<E["kind"], E["schema"]>;
 const titleTag: TagOf<TitleElement> = tag(KIT_ELEMENTS.title);
 export const Title = titleTag as unknown as WithEffects<TagOf<TitleElement>>;
 const shapeTag: TagOf<ShapeElement> = tag(KIT_ELEMENTS.shape);
@@ -86,9 +90,8 @@ export const Marker = el("marker", markerSchema);
 const adjustmentTag: TagOf<AdjustmentElement> = tag(KIT_ELEMENTS.adjustment);
 export const Adjustment = adjustmentTag as unknown as WithEffects<TagOf<AdjustmentElement>>;
 export const Mask = el("mask", maskSchema);
-export const Nested = el("nested", nestedSchema) as unknown as WithEffects<
-  VocabularyComponent<"nested", typeof nestedSchema>
->;
+const nestedTag: TagOf<NestedElement> = tag(KIT_ELEMENTS.nested);
+export const Nested = nestedTag as unknown as WithEffects<TagOf<NestedElement>>;
 export const Multicam = el("multicam", multicamSchema);
 export const Angle = el("angle", angleSchema);
 export const Cut = el("cut", cutSchema);

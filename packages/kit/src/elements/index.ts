@@ -14,15 +14,19 @@ import type {
   speedKeySchema,
 } from "../jsx/schemas/children";
 import type { cameraSchema, compositionSchema, gapSchema, markerSchema, trackSchema } from "../jsx/schemas/composition";
-import type { audioSchema, clipSchema } from "../jsx/schemas/media";
 import type { angleSchema, cutSchema, multicamSchema } from "../jsx/schemas/multicam";
-import type { nestedSchema } from "../jsx/schemas/overlays";
 import type { transitionSchema } from "../jsx/schemas/transition";
 import { adjustment } from "./adjustment";
 import type { adjustmentSchema } from "./adjustment/schema";
+import { audio } from "./audio";
+import type { audioSchema } from "./audio/schema";
+import { clip } from "./clip";
+import type { clipSchema } from "./clip/schema";
 import type { KitElement } from "./element";
 import { layer } from "./layer";
 import type { layerSchema, motionSchema, threeSchema } from "./layer/schema";
+import { nested } from "./nested";
+import type { nestedSchema } from "./nested/schema";
 import { shape } from "./shape";
 import type { shapeSchema } from "./shape/schema";
 import { sticker } from "./sticker";
@@ -33,8 +37,11 @@ import { title } from "./title";
 import type { titleSchema } from "./title/schema";
 
 export type { AdjustmentElement } from "./adjustment";
+export type { AudioElement } from "./audio";
+export type { ClipElement } from "./clip";
 export type { ElementGroup, KitElement } from "./element";
 export type { LayerElement } from "./layer";
+export type { NestedElement } from "./nested";
 export type { ShapeElement } from "./shape";
 export type * from "./shared";
 export type { StickerElement } from "./sticker";
@@ -152,7 +159,7 @@ export type KindWith<P extends string> = string extends P
     }[Kind];
 
 /** The kit's part of each kind that has a folder of its own: the one list of them, which the type below is read from. */
-export const KIT_ELEMENTS = { title, shape, svg, sticker, layer, adjustment } satisfies {
+export const KIT_ELEMENTS = { clip, audio, title, shape, svg, sticker, adjustment, nested, layer } satisfies {
   readonly [K in Kind]?: KitElement<K>;
 };
 

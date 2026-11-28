@@ -6,17 +6,13 @@ import type { z } from "zod";
 
 import type { CurveBlend } from "../easing";
 import { isMigratedKind, KIT_ELEMENTS, type Kind, type MigratedKind } from "../elements";
-import { ITEM, NO_TRAITS, traits } from "../elements/traits";
+import { NO_TRAITS, traits } from "../elements/traits";
 import type { ElementCapabilities, KindTraits } from "./define";
 import { AUDIO_KEY_PATHS, CAMERA_KEY_PATHS, type KeyPath, keyPathsIn, PLACED_KEY_PATHS } from "./key-paths";
 import { captionSchema, captionsSchema } from "./schemas/captions";
 import { cameraSchema, compositionSchema, gapSchema, markerSchema, trackSchema } from "./schemas/composition";
-import { audioSchema, clipSchema } from "./schemas/media";
 import { angleSchema, cutSchema, multicamSchema } from "./schemas/multicam";
-import { nestedSchema } from "./schemas/overlays";
 import { transitionSchema } from "./schemas/transition";
-
-const CLIP_CHILDREN = ["effect", "keyframe", "mask", "speedKey", "freeze"] as const;
 
 /** What an element holds as items of its own: a mask, and what the resolver makes of its props. None is placed. */
 type HeldKind = "mask" | "effect" | "keyframe" | "generator" | "speedKey" | "freeze";
@@ -48,17 +44,6 @@ const ROWS: { readonly [K in Exclude<Kind, MigratedKind>]: KindTraits } = {
       "multicam",
     ],
   }),
-  clip: traits({
-    ...ITEM,
-    visual: true,
-    childKinds: CLIP_CHILDREN,
-    plane: "canvas",
-    footage: true,
-    mainTrack: true,
-    masked: true,
-    playsAsset: true,
-  }),
-  audio: traits({ ...ITEM, childKinds: ["keyframe", "speedKey", "freeze"], playsAsset: true }),
   gap: traits({ timed: true, placementScope: "track", sequenceRole: "empty", mainTrack: true }),
   transition: traits({
     timed: true,
@@ -78,16 +63,6 @@ const ROWS: { readonly [K in Exclude<Kind, MigratedKind>]: KindTraits } = {
   caption: traits({ timed: true, visual: true, placementScope: "child" }),
   marker: traits({ placementScope: "composition" }),
   mask: traits({ placementScope: "child" }),
-  nested: traits({
-    ...ITEM,
-    visual: true,
-    childKinds: CLIP_CHILDREN,
-    plane: "canvas",
-    footage: true,
-    freeCode: true,
-    masked: true,
-    elementActions: true,
-  }),
   multicam: traits({
     childKinds: ["angle", "cut"],
     placementScope: "track",
@@ -112,14 +87,11 @@ const SCHEMAS: { readonly [K in Exclude<Kind, MigratedKind | HeldKind>]: z.ZodTy
   composition: compositionSchema,
   camera: cameraSchema,
   track: trackSchema,
-  clip: clipSchema,
-  audio: audioSchema,
   gap: gapSchema,
   transition: transitionSchema,
   captions: captionsSchema,
   caption: captionSchema,
   marker: markerSchema,
-  nested: nestedSchema,
   multicam: multicamSchema,
   angle: angleSchema,
   cut: cutSchema,

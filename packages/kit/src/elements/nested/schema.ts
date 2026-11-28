@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { timedProps, timeRefSchema, visualProps, volumeSchema } from "./common";
+import { timedProps, timeRefSchema, visualProps, volumeSchema } from "../../jsx/schemas/common";
 
 export const nestedSchema = z.strictObject({
   ...timedProps,
