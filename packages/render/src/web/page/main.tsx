@@ -267,7 +267,9 @@ async function start(): Promise<void> {
     const { session } = (await opened.json()) as { session: string };
     const inFlight: Promise<void>[] = [];
     const send = async (index: number, pixels: Uint8Array<ArrayBuffer>): Promise<void> => {
-      const res = await fetch(`/native/encode/${session}?n=${index}`, { method: "POST", body: pixels });
+      // Chrome includes typed-array request bodies in DevTools network events. A Blob streams the same bytes to Node
+      // without sending another copy of each frame through Playwright's DevTools pipe.
+      const res = await fetch(`/native/encode/${session}?n=${index}`, { method: "POST", body: new Blob([pixels]) });
       if (!res.ok) throw new Error(`the native encoder failed: ${await res.text()}`);
     };
     for (let n = r.first; n < r.last; n++) {
