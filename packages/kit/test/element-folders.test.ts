@@ -26,8 +26,8 @@ describe("the kinds with a folder of their own", () => {
 
   it("are told from the kinds still in the tables", () => {
     expect(isMigratedKind("title")).toBe(true);
-    expect(isMigratedKind("track")).toBe(false);
-    expect(kitElement("track")).toBeUndefined();
+    expect(isMigratedKind("effect")).toBe(false);
+    expect(kitElement("effect")).toBeUndefined();
     // A name every object has is not a kind.
     expect(isMigratedKind("toString")).toBe(false);
   });

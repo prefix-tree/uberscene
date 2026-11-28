@@ -6,9 +6,11 @@ import {
   type AdjustmentElement,
   type AngleElement,
   type AudioElement,
+  type CameraElement,
   type CaptionElement,
   type CaptionsElement,
   type ClipElement,
+  type CompositionElement,
   type CutElement,
   type GapElement,
   KIT_ELEMENTS,
@@ -16,12 +18,14 @@ import {
   type KindWith,
   kitElement,
   type LayerElement,
+  type MarkerElement,
   type MulticamElement,
   type NestedElement,
   type ShapeElement,
   type StickerElement,
   type SvgElement,
   type TitleElement,
+  type TrackElement,
   type TransitionElement,
 } from "../elements";
 import { motionSchema, threeSchema } from "../elements/layer/schema";
@@ -37,7 +41,6 @@ import {
   speedKeySchema,
 } from "./schemas/children";
 import type { Link } from "./schemas/common";
-import { cameraSchema, compositionSchema, markerSchema, trackSchema } from "./schemas/composition";
 import type { EffectRef, TransitionRef } from "./shaders";
 
 const el = <K extends Kind, S extends Parameters<typeof defineElement>[0]["schema"]>(kind: K, schema: S) =>
@@ -51,9 +54,12 @@ const tag = <K extends Kind, S extends Parameters<typeof defineElement>[0]["sche
 /** The tag's type by its element's name, so a declaration file names the schema and does not print it again. */
 type TagOf<E extends { readonly kind: Kind; readonly schema: z.ZodType }> = VocabularyComponent<E["kind"], E["schema"]>;
 
-export const Composition = el("composition", compositionSchema);
-export const Track = el("track", trackSchema);
-export const Camera = el("camera", cameraSchema);
+const compositionTag: TagOf<CompositionElement> = tag(KIT_ELEMENTS.composition);
+export const Composition = compositionTag;
+const trackTag: TagOf<TrackElement> = tag(KIT_ELEMENTS.track);
+export const Track = trackTag;
+const cameraTag: TagOf<CameraElement> = tag(KIT_ELEMENTS.camera);
+export const Camera = cameraTag;
 const clipTag: TagOf<ClipElement> = tag(KIT_ELEMENTS.clip);
 export const Clip = clipTag as unknown as WithEffects<TagOf<ClipElement>>;
 const audioTag: TagOf<AudioElement> = tag(KIT_ELEMENTS.audio);
@@ -93,7 +99,8 @@ const captionsTag: TagOf<CaptionsElement> = tag(KIT_ELEMENTS.captions);
 export const Captions = captionsTag;
 const captionTag: TagOf<CaptionElement> = tag(KIT_ELEMENTS.caption);
 export const Caption = captionTag;
-export const Marker = el("marker", markerSchema);
+const markerTag: TagOf<MarkerElement> = tag(KIT_ELEMENTS.marker);
+export const Marker = markerTag;
 const adjustmentTag: TagOf<AdjustmentElement> = tag(KIT_ELEMENTS.adjustment);
 export const Adjustment = adjustmentTag as unknown as WithEffects<TagOf<AdjustmentElement>>;
 export const Mask = el("mask", maskSchema);

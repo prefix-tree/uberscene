@@ -12,20 +12,25 @@ import type {
   maskSchema,
   speedKeySchema,
 } from "../jsx/schemas/children";
-import type { cameraSchema, compositionSchema, markerSchema, trackSchema } from "../jsx/schemas/composition";
 import { adjustment } from "./adjustment";
 import type { adjustmentSchema } from "./adjustment/schema";
 import { audio } from "./audio";
 import type { audioSchema } from "./audio/schema";
+import { camera } from "./camera";
+import type { cameraSchema } from "./camera/schema";
 import { caption, captions } from "./captions";
 import type { captionSchema, captionsSchema } from "./captions/schema";
 import { clip } from "./clip";
 import type { clipSchema } from "./clip/schema";
+import { composition } from "./composition";
+import type { compositionSchema } from "./composition/schema";
 import type { KitElement } from "./element";
 import { gap } from "./gap";
 import type { gapSchema } from "./gap/schema";
 import { layer } from "./layer";
 import type { layerSchema, motionSchema, threeSchema } from "./layer/schema";
+import { marker } from "./marker";
+import type { markerSchema } from "./marker/schema";
 import { angle, cut, multicam } from "./multicam";
 import type { angleSchema, cutSchema, multicamSchema } from "./multicam/schema";
 import { nested } from "./nested";
@@ -38,16 +43,21 @@ import { svg } from "./svg";
 import type { svgSchema } from "./svg/schema";
 import { title } from "./title";
 import type { titleSchema } from "./title/schema";
+import { track } from "./track";
+import type { trackSchema } from "./track/schema";
 import { transition } from "./transition";
 import type { transitionSchema } from "./transition/schema";
 
 export type { AdjustmentElement } from "./adjustment";
 export type { AudioElement } from "./audio";
+export type { CameraElement } from "./camera";
 export type { CaptionElement, CaptionsElement } from "./captions";
 export type { ClipElement } from "./clip";
+export type { CompositionElement } from "./composition";
 export type { ElementGroup, KitElement } from "./element";
 export type { GapElement } from "./gap";
 export type { LayerElement } from "./layer";
+export type { MarkerElement } from "./marker";
 export type { AngleElement, CutElement, MulticamElement } from "./multicam";
 export type { NestedElement } from "./nested";
 export type { ShapeElement } from "./shape";
@@ -55,6 +65,7 @@ export type * from "./shared";
 export type { StickerElement } from "./sticker";
 export type { SvgElement } from "./svg";
 export type { TitleElement } from "./title";
+export type { TrackElement } from "./track";
 export type { TransitionElement } from "./transition";
 
 /** The props of a `<Composition>`, as its schema parses them. */
@@ -169,6 +180,9 @@ export type KindWith<P extends string> = string extends P
 
 /** The kit's part of each kind that has a folder of its own: the one list of them, which the type below is read from. */
 export const KIT_ELEMENTS = {
+  composition,
+  camera,
+  track,
   clip,
   audio,
   gap,
@@ -179,6 +193,7 @@ export const KIT_ELEMENTS = {
   sticker,
   captions,
   caption,
+  marker,
   adjustment,
   nested,
   multicam,

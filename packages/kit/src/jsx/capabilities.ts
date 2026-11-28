@@ -9,39 +9,12 @@ import { isMigratedKind, KIT_ELEMENTS, type Kind, type MigratedKind } from "../e
 import { NO_TRAITS, traits } from "../elements/traits";
 import type { ElementCapabilities, KindTraits } from "./define";
 import { AUDIO_KEY_PATHS, CAMERA_KEY_PATHS, type KeyPath, keyPathsIn, PLACED_KEY_PATHS } from "./key-paths";
-import { cameraSchema, compositionSchema, markerSchema, trackSchema } from "./schemas/composition";
 
 /** What an element holds as items of its own: a mask, and what the resolver makes of its props. None is placed. */
 type HeldKind = "mask" | "effect" | "keyframe" | "generator" | "speedKey" | "freeze";
 
 /** The row of each kind that has no folder of its own yet. */
 const ROWS: { readonly [K in Exclude<Kind, MigratedKind>]: KindTraits } = {
-  composition: traits({
-    childKinds: ["track", "camera", "marker", "captions"],
-    placementScope: "none",
-    spansVideo: true,
-  }),
-  camera: traits({ childKinds: ["track"], placementScope: "composition" }),
-  track: traits({
-    placementScope: "composition",
-    spansVideo: true,
-    // What a track holds, as the vocabulary lists it; a kind with a folder that is not named here comes after.
-    childKinds: [
-      "clip",
-      "audio",
-      "gap",
-      "transition",
-      "title",
-      "shape",
-      "svg",
-      "sticker",
-      "adjustment",
-      "nested",
-      "layer",
-      "multicam",
-    ],
-  }),
-  marker: traits({ placementScope: "composition" }),
   mask: traits({ placementScope: "child" }),
   effect: traits({ childKinds: ["keyframe"], placementScope: "child" }),
   keyframe: traits({ placementScope: "child" }),
@@ -54,12 +27,7 @@ const ROWS: { readonly [K in Exclude<Kind, MigratedKind>]: KindTraits } = {
  * The schema of each kind that has no folder of its own yet. What an element holds as items (`HeldKind`) has none
  * here: none takes a transform, sounds or holds keys, and the keys' own schema asks this table what a key may name.
  */
-const SCHEMAS: { readonly [K in Exclude<Kind, MigratedKind | HeldKind>]: z.ZodType } = {
-  composition: compositionSchema,
-  camera: cameraSchema,
-  track: trackSchema,
-  marker: markerSchema,
-};
+const SCHEMAS: { readonly [K in Exclude<Kind, MigratedKind | HeldKind>]: z.ZodType } = {};
 
 /** The vocabulary's order. A kind with a folder of its own that is not named here comes after, in its registry's order. */
 const ORDER: readonly Kind[] = [
@@ -106,16 +74,7 @@ function entryOf(kind: Kind): ElementCapabilities {
   const row = rowOf(kind);
   const schema = schemaOf(kind);
   const props: object = schema ? (schema as unknown as z.ZodObject).shape : {};
-  // A track holds every kind placed on one: those the vocabulary lists, then each kind with a folder of its own.
-  const childKinds =
-    kind === "track"
-      ? [
-          ...new Set([
-            ...row.childKinds,
-            ...KINDS.filter((k) => isMigratedKind(k) && rowOf(k).placementScope === "track"),
-          ]),
-        ]
-      : row.childKinds;
+  const childKinds = row.childKinds;
   return {
     ...row,
     childKinds,
@@ -213,6 +172,13 @@ export function kindsWhere(test: (kind: ElementCapabilities) => boolean): readon
 
 /** What may be written straight in a `<Composition>` to make its main track. */
 export const MAIN_TRACK_KINDS = kindsWhere((kind) => kind.mainTrack);
+
+const MAIN_TRACK: ReadonlySet<string> = new Set(MAIN_TRACK_KINDS);
+
+/** Whether an element of `kind` written straight in a `<Composition>` goes on its main track. `kind` may be untyped text. */
+export function onMainTrack(kind: string): boolean {
+  return MAIN_TRACK.has(kind);
+}
 
 /**
  * Drawn as DOM alone, over the canvas, for a stretch of time: a title, a shape, an SVG, a sticker, a layer. What a

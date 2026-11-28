@@ -4,10 +4,10 @@
 // where the prop is.
 import type { z } from "zod";
 
+import { cameraSchema } from "../elements/camera/schema";
 import { shapeSchema } from "../elements/shape/schema";
 import { type KeyMark, type KeyPath, keyMarkOf } from "./key-path";
 import { placedSchema, soundSchema } from "./schemas/common";
-import { cameraSchema } from "./schemas/composition";
 
 export type { KeyHow, KeyPath } from "./key-path";
 
