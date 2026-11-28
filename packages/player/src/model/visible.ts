@@ -1,4 +1,4 @@
-import { capabilitiesOf, secondsToTicks } from "@uberscene/kit/schema";
+import { capabilitiesOf, isBetween, secondsToTicks } from "@uberscene/kit/schema";
 import {
   endTicks,
   lengthSeconds,
@@ -89,7 +89,7 @@ function transitionRoles(state: ResolvedState, track: ResolvedTrack, t: number):
   const roles = new Map<string, TransitionRole>();
   for (const id of track.items) {
     const x = state.items.get(id);
-    if (x?.kind !== "transition" || lengthSeconds(x) <= 0) continue;
+    if (!x || !isBetween(x.kind) || lengthSeconds(x) <= 0) continue;
     const at = secondsToTicks(t);
     if (at < startTicks(x) || at >= endTicks(x)) continue;
     const params = (x.props.params ?? {}) as Record<string, unknown>;

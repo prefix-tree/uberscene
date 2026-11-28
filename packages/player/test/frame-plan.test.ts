@@ -94,13 +94,13 @@ describe("buildFramePlan", () => {
             id: "main",
             items: [
               { id: "a", kind: "clip", source: { in: 0, out: 4, asset: "a" } },
-              { id: "x", kind: "transition", duration: 1, props: { type, params: { curve: "linear", ...params } } },
+              { id: "x", kind: "transition", duration: 1, props: { type, params: { ...params } } },
               { id: "b", kind: "clip", source: { in: 0, out: 4, asset: "a" } },
             ],
           },
         ],
       });
-    // The transition runs 3..4; at 3.25 it is a quarter through.
+    // The transition runs 3..4, on a linear curve (a type's params name no other); at 3.25 it is a quarter through.
     const at = (type: string, params?: object, t = 3.25) => buildFramePlan(between(type, params), t);
 
     it("wipes the incoming clip in behind a growing rect, the outgoing one untouched", () => {
@@ -146,7 +146,7 @@ describe("buildFramePlan", () => {
               id: "main",
               items: [
                 { id: "a", kind: "title", duration: 4, text: "A" },
-                { id: "x", kind: "transition", duration: 1, props: { type, params: { curve: "linear" } } },
+                { id: "x", kind: "transition", duration: 1, props: { type } },
                 { id: "b", kind: "title", duration: 4, text: "B" },
               ],
             },

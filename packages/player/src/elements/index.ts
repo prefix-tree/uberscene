@@ -8,16 +8,20 @@ import { adjustment } from "./adjustment";
 import { audio } from "./audio";
 import { clip } from "./clip";
 import type { Decoded, PlayerElement, SoundInput } from "./element";
+import { gap } from "./gap";
 import { layer } from "./layer";
 import { nested } from "./nested";
 import { shape } from "./shape";
 import { sticker } from "./sticker";
 import { svg } from "./svg";
 import { title } from "./title";
+import { transition } from "./transition";
 
 export const PLAYER_ELEMENTS: { readonly [K in MigratedKind]: PlayerElement<K> } = {
   clip,
   audio,
+  gap,
+  transition,
   title,
   shape,
   svg,

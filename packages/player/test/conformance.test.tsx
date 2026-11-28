@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { type DrawPlane, KIT_ELEMENTS, type MigratedKind } from "@uberscene/kit/schema";
+import { capabilitiesOf, type DrawPlane, KIT_ELEMENTS, type MigratedKind } from "@uberscene/kit/schema";
 import { buildSourceIndex, collectModule, loadModule, placed, resolve } from "@uberscene/sdk";
 
 import { SAMPLE, SAMPLE_KINDS, sampleFile } from "../../sdk/test/conformance/sample";
@@ -23,8 +23,10 @@ describe.each(SAMPLE_KINDS)("a %s", (kind) => {
   it("shows (or, not drawn, is heard) while it is on the timeline, at a size of its own", () => {
     const state = load();
     expect(state.errors).toEqual([]);
-    if (planeOf(kind) === "none") expect(buildAudioPlan(state, 0, 3).map((o) => o.id)).toContain(SAMPLE);
-    else expect(visiblePlacements(state, 1).map((v) => v.placement.id)).toContain(SAMPLE);
+    // A kind on no plane is heard, or is drawn by others (a transition by its clips) and keeps its stretch of time.
+    if (planeOf(kind) !== "none") expect(visiblePlacements(state, 1).map((v) => v.placement.id)).toContain(SAMPLE);
+    else if (capabilitiesOf(kind).audio) expect(buildAudioPlan(state, 0, 3).map((o) => o.id)).toContain(SAMPLE);
+    else expect(state.items.get(SAMPLE)?.range.isEmpty()).toBe(false);
     const placement = placed(state.items.get(SAMPLE), kind);
     expect(placement).toBeDefined();
     // A kind that is heard and not drawn has no size.

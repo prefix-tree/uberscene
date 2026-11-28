@@ -176,7 +176,12 @@ export function makeState(spec: StateSpec): ResolvedState {
       ...raw,
     };
     const props = isMigratedKind(it.kind)
-      ? (SCHEMAS_BY_KIND[it.kind].parse({ start, duration, ...filled }) as Record<string, unknown>)
+      ? (SCHEMAS_BY_KIND[it.kind].parse({
+          // Its timing, where its schema takes it: a transition and a gap take a length and no start.
+          ...("start" in shape ? { start } : {}),
+          ...("duration" in shape ? { duration } : {}),
+          ...filled,
+        }) as Record<string, unknown>)
       : raw;
     const childNodes: CollectedNode[] = [];
     const childPlacements: Placement[] = [];
