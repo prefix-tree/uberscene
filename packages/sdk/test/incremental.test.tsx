@@ -47,18 +47,30 @@ function answer(state: ResolvedState): unknown {
   };
 }
 
-/** The cached resolve and the one from nothing agree; throwing is an answer too. */
-function expectSame(tree: CollectedTree, manifest: AssetManifest, log: PatchLog | undefined, step: string): void {
-  const attempt = (work: () => ResolvedState): unknown => {
+/**
+ * The cached resolve and the one from nothing agree; throwing is an answer too. Gives back the state from nothing,
+ * when there is one, for what else a step holds the cached state to.
+ */
+function expectSame(
+  tree: CollectedTree,
+  manifest: AssetManifest,
+  log: PatchLog | undefined,
+  step: string,
+): ResolvedState | undefined {
+  let state: ResolvedState | undefined;
+  const attempt = (work: () => ResolvedState, keep: boolean): unknown => {
     try {
-      return answer(work());
+      const made = work();
+      if (keep) state = made;
+      return answer(made);
     } catch (error) {
       return { threw: String(error) };
     }
   };
-  const cached = attempt(() => resolve(tree, manifest, log));
-  const fresh = attempt(() => resolveFresh(tree, manifest, log));
+  const cached = attempt(() => resolve(tree, manifest, log), false);
+  const fresh = attempt(() => resolveFresh(tree, manifest, log), true);
   expect(cached, step).toEqual(fresh);
+  return state;
 }
 
 function logFor(tree: CollectedTree): PatchLog {
@@ -377,47 +389,63 @@ function randomPatch(state: ResolvedState, next: () => number, n: number): Patch
   return { op: "move", id: some(of("clip", "title")), parent: track.id, after };
 }
 
+/**
+ * A row resolves from nothing after every patch, and the first one also warms the resolver up: under coverage on a
+ * slow machine that is more than a test's five seconds.
+ */
+const ROW_MS = 20_000;
+
 describe.each([
   [24, false],
   [30, true],
   ["29.97", false],
   [60, true],
 ] as const)("cached and from nothing: random patches at %s fps (captions: %s)", (fps, captions) => {
-  it.each(ROWS)("agree after every patch of row %i, and after taking patches back", (seed) => {
-    const tree = rich(fps, captions);
-    const log = logFor(tree);
-    const next = random(seed * 7919 + Number.parseFloat(String(fps)) * 31);
-    expectSame(tree, sampleManifest, undefined, "as written");
-    for (let n = 0; n < 120; n++) {
-      let state: ResolvedState;
-      try {
-        state = resolve(tree, sampleManifest, log);
-      } catch {
-        // The last patch left a tree nothing can resolve (expectSame saw both ways throw alike): take it back.
-        log.truncate(log.mark() - 1);
-        continue;
+  it.each(ROWS)(
+    "agree after every patch of row %i, and after taking patches back",
+    (seed) => {
+      const tree = rich(fps, captions);
+      const log = logFor(tree);
+      const next = random(seed * 7919 + Number.parseFloat(String(fps)) * 31);
+      expectSame(tree, sampleManifest, undefined, "as written");
+      for (let n = 0; n < 120; n++) {
+        let state: ResolvedState;
+        try {
+          state = resolve(tree, sampleManifest, log);
+        } catch {
+          // The last patch left a tree nothing can resolve (expectSame saw both ways throw alike): take it back.
+          log.truncate(log.mark() - 1);
+          continue;
+        }
+        if (next() < 0.12 && log.mark() > 0) {
+          log.truncate(Math.floor(next() * log.mark()));
+          expectSame(tree, sampleManifest, log, `row ${seed}, step ${n}: take back to ${log.mark()}`);
+          continue;
+        }
+        const patch = randomPatch(state, next, n);
+        try {
+          log.append(patch);
+        } catch {
+          continue;
+        }
+        const fresh = expectSame(
+          tree,
+          sampleManifest,
+          log,
+          `row ${seed}, step ${n}: ${JSON.stringify(patch).slice(0, 200)}`,
+        );
+        if (!fresh) continue;
+        try {
+          const now = resolve(tree, sampleManifest, log);
+          for (const id of ["c2", "c3", "e2", "t1", "t5", "talk", "d1", "v1"])
+            expectDependents(now, id, `dependents of ${id}`, fresh);
+        } catch (error) {
+          if (!(error instanceof Error) || error.name === "AssertionError") throw error;
+        }
       }
-      if (next() < 0.12 && log.mark() > 0) {
-        log.truncate(Math.floor(next() * log.mark()));
-        expectSame(tree, sampleManifest, log, `row ${seed}, step ${n}: take back to ${log.mark()}`);
-        continue;
-      }
-      const patch = randomPatch(state, next, n);
-      try {
-        log.append(patch);
-      } catch {
-        continue;
-      }
-      expectSame(tree, sampleManifest, log, `row ${seed}, step ${n}: ${JSON.stringify(patch).slice(0, 200)}`);
-      try {
-        const now = resolve(tree, sampleManifest, log);
-        for (const id of ["c2", "c3", "e2", "t1", "t5", "talk", "d1", "v1"])
-          expectDependents(now, id, `dependents of ${id}`, () => resolveFresh(tree, sampleManifest, log));
-      } catch (error) {
-        if (!(error instanceof Error) || error.name === "AssertionError") throw error;
-      }
-    }
-  });
+    },
+    ROW_MS,
+  );
 });
 
 /** The ways to depend that reading every node's props finds. */
@@ -428,9 +456,9 @@ const READ_FROM_PROPS = new Set(["anchor", "follow", "on", "match", "until", "be
  * that write one. It is what the graph of a resolve from nothing gives, and, for the ways written in an element's
  * own props and an element that is in the file, what reading every node gives.
  */
-function expectDependents(state: ResolvedState, id: string, step: string, fresh: () => ResolvedState): void {
+function expectDependents(state: ResolvedState, id: string, step: string, fresh: ResolvedState): void {
   const found = dependentsOf(state, id);
-  expect(found, step).toEqual(dependentsOf(fresh(), id));
+  expect(found, step).toEqual(dependentsOf(fresh, id));
   // The graph holds a reference to something that exists: nothing depends on an element that is gone.
   if (!state.tree.byId.has(id)) {
     expect(found, step).toEqual([]);
@@ -531,12 +559,13 @@ describe("cached and from nothing: edits through the executor on the large proje
         const result = exec.execute(input);
         what = `${input.type} on ${JSON.stringify(input.params).slice(0, 120)}${result.ok ? "" : " (refused)"}`;
       }
-      expectSame(tree, manifest, exec.log(), `row ${seed}, step ${n}: ${what}`);
+      const fresh = expectSame(tree, manifest, exec.log(), `row ${seed}, step ${n}: ${what}`);
+      if (!fresh) continue;
       // What depends on an element is found from who names it in the file and the nodes the log made again; reading
       // every node gives the same list.
       const now = exec.state();
       for (const id of [clip.id, title.id, pick(next, clips).id])
-        expectDependents(now, id, `dependents of ${id} after ${what}`, () => resolveFresh(tree, manifest, exec.log()));
+        expectDependents(now, id, `dependents of ${id} after ${what}`, fresh);
     }
   });
 });
