@@ -25,6 +25,9 @@ export const FOOTAGE: readonly Source[] = [
   { id: "grass", ref: "pixabay:89182", from: 8, to: 16, what: "grass in the wind" },
   { id: "stork", ref: "pixabay:85715", from: 4, to: 12, what: "a stork flying" },
   { id: "embers", ref: "pixabay:286679", from: 4, to: 12, what: "a fire pit's logs and flames" },
+  { id: "skier", ref: "pixabay:13450", from: 2, to: 10, what: "a skier setting off down a slope" },
+  { id: "skier-2", ref: "pixabay:8558", from: 10, to: 18, what: "skiing a piste in the Alps" },
+  { id: "skier-3", ref: "pixabay:10829", from: 4, to: 12, what: "a skier carving downhill" },
 ];
 
 /** The recordings: every place's sound (the footage has none), and the cues laid on the cuts. */
@@ -41,4 +44,9 @@ export const SOUNDS: readonly Source[] = [
   { id: "crackle", ref: "freesound:657357", from: 20, to: 28, what: "a wood fire crackling near" },
   { id: "whoosh", ref: "freesound:877978", from: 0, to: 1.3, what: "a fast whoosh passing by" },
   { id: "braam", ref: "freesound:427803", from: 0, to: 4.4, what: "a cinematic hit with horns" },
+  { id: "ski-passby", ref: "freesound:592379", from: 0, to: 6.3, what: "a skier passing by" },
+  { id: "ski-run", ref: "freesound:788587", from: 4, to: 14, what: "skis running on a piste" },
+  { id: "snow-slide", ref: "freesound:612665", from: 0, to: 8, what: "a board sliding on snow" },
+  { id: "poles", ref: "freesound:411598", from: 2, to: 10, what: "ski poles planted in snow" },
+  { id: "crunch", ref: "freesound:234784", from: 0, to: 1, what: "a step crunching snow" },
 ];

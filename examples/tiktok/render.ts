@@ -53,7 +53,7 @@ interface Film {
 }
 
 const FILMS: Record<string, Film> = {
-  // Nature in 25 seconds with every sound laid by hand, shown above its own timeline, as a sound designer's breakdown.
+  // Nature in 16 seconds with every sound laid by hand, shown above its own timeline, as a sound designer's breakdown.
   nature: {
     file: "nature/video.tsx",
     needs: "pnpm --filter @uberscene/example-nature prepare-media",

@@ -1,20 +1,21 @@
 # Nature, every sound laid by hand
 
-Twenty-five seconds of nature, 1080x880, cut to 120 BPM, with every sound placed in code: the film the
+Sixteen seconds of nature, 1080x880, cut to 120 BPM, with every sound placed in code: the film the
 [sound-breakdown post](../tiktok/breakdown.tsx) shows above its own timeline (`pnpm --filter @uberscene/example-tiktok
 render nature`, with `POSTS=breakdown` for that post alone).
 
-| Time | Picture | Sound |
+| Beats (s) | Picture | Sound |
 |---|---|---|
-| 0–3 s | the fire, full frame | its crackle |
-| 3–6 s | six tall strips land one a beat over the fire | a whoosh on each (`align="onset"`), each strip's own sound 0.3 s early |
-| 9–15 s | the strips rotate, every beat, then every half beat | a rain bed; the score's clock speeds up and a line climbs |
-| 15 s | the storm, full frame | a quarter beat of silence, then the braam and thunder |
-| 15–22 s | a cut every two beats: surf, waterfall, rain, snow, grass, stork | each place's sound, the stork's wings |
-| 22–25 s | the fire pit | the last low note |
+| 0–1 (0–0.5) | a skier, full frame | the skier passing by |
+| 1–6 (0.5–3) | six tall strips slide in, one every half beat: skiers, a snow ridge, a waterfall, surf, grass | a whoosh on each (`align="onset"`), each strip's own sound a quarter second early, one more layer every half beat |
+| 6–8 (3–4) | the collage closes into a thin band, then black | a riser; a step in the snow on the black |
+| 8–12 (4–6) | "moving sounds from", then THE WILD in red, its letters settling one a tick | a low D, a tick per letter, a stab as it settles |
+| 12–20 (6–10) | footage in a band behind the title, a cut every beat, the band widening | each shot's sound; the kick and bass come back |
+| 20–32 (10–16) | the band opens to full frame on the drop, a cut every two beats, ending on the fire pit | the full score; the skier's spray, thunder, the stork's wings, the fire's crackle |
 
-The music (`score.ts`, Strudel) is punctuation, not a bed: it comes in at the film's few points of sync and leaves
-room for the places' own sounds. At most one foreground sound, one bed and the music play at a time.
+The music (`score.ts`, Strudel) is dark synth-pop techno in D minor: four on the floor, a sixteenth bass on the root
+and its octave, a minor pad and stabs, following the film's shape. It is mastered to -16 LUFS so the recorded sounds
+stay on top of it. The matte that closes and opens the band is two black `Shape`s whose heights are keyed.
 
 ## Make the media
 
@@ -31,6 +32,6 @@ writes `CREDITS.md`. Nothing fetched is committed.
 ## Check and render
 
 ```sh
-npx uberscene examples/nature/video.tsx --check-sync     # every cut on the beat, the braam and wings on their cuts
+npx uberscene examples/nature/video.tsx --check-sync     # every cut on the beat, the spray and wings on their cuts
 npx uberscene examples/nature/video.tsx --quality very-high --out examples/nature/out/nature.mp4
 ```

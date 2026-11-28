@@ -2,7 +2,7 @@
   "name": "@uberscene/example-nature",
   "version": "0.1.0",
   "private": true,
-  "description": "Nature in 25 seconds, every sound laid by hand in code: the film the sound-breakdown post shows above its own timeline.",
+  "description": "Nature in 16 seconds, every sound laid by hand in code: the film the sound-breakdown post shows above its own timeline.",
   "license": "MIT",
   "type": "module",
   "scripts": {
