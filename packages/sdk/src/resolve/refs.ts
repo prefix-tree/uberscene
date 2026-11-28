@@ -9,7 +9,11 @@ import {
   kindsWithProp,
   parseRef,
   type RefForm,
+  type RefPoint,
+  type RefSite,
   type RefTarget,
+  refSitesIn,
+  schemaFor,
 } from "@uberscene/kit/schema";
 
 import { sdkElement } from "../elements";
@@ -58,17 +62,23 @@ interface Written {
  */
 export interface RefKind {
   readonly name: string;
-  /** The kinds that may write it. */
-  readonly holders: (kind: Kind) => boolean;
   /** The kinds it may name. Left out: any. */
   readonly targets?: (kind: Kind) => boolean;
   /** The forms of the reference grammar it is written in. */
   readonly accept: readonly RefForm[];
   /**
-   * The references a node writes, each with the prop it sits at. It reads the node alone (its props and the items
-   * under it), so what it returns is kept for as long as the node is the same object.
+   * How the text at a prop the schema marks with this name (`ref("anchor", ...)`) reads as what it names: the form
+   * it is parsed as, and the edges it may end in. Left out with `read`: nothing is read from the schema's marks.
    */
-  readonly read: (node: CollectedNode) => readonly Written[];
+  readonly written?: { readonly form: RefForm; readonly edges?: readonly RefPoint[] };
+  /** The prop its references and errors are said to be at, where that is not the path of the marked value. */
+  readonly prop?: string;
+  /**
+   * For a reference no schema prop holds (a link, written inside the value it stands for): the references a node
+   * writes, each with the prop it sits at. It reads the node alone (its props and the items under it), so what it
+   * returns is kept for as long as the node is the same object.
+   */
+  readonly read?: (node: CollectedNode) => readonly Written[];
   /** What a written reference names in this file, where the text alone does not say (a duck: a track's id or a role). */
   readonly aim?: (written: Written, ctx: RefContext) => RefTarget;
   /** Why this holder may not name this target where they stand (the camera's side), or null. */
@@ -91,6 +101,14 @@ export interface RefKind {
   /** What removing the target does to the holder: names another, keeps the value it had, or loses the reference. */
   readonly onRemove: "retarget" | "freeze" | "drop";
   /**
+   * How the holder of one such reference reads as a dependent of what it names: what an edit to the element named
+   * has to carry along. `props` are the holder's, as written. `kind` is the entry's name.
+   */
+  readonly dependent: (
+    edge: RefEdge,
+    props: Readonly<Record<string, unknown>>,
+  ) => { readonly kind: string; readonly id: string };
+  /**
    * The errors the graph reports for it. Left out, the references are only recorded: what resolves them reports
    * them (an anchor's start, a marker's time).
    */
@@ -107,30 +125,8 @@ export interface RefKind {
 const str = (v: unknown): v is string => typeof v === "string";
 const props = (node: CollectedNode): Record<string, unknown> => node.props as Record<string, unknown>;
 const FOLLOWERS: ReadonlySet<Kind> = new Set(kindsWithProp("follow"));
-const DUCKERS: ReadonlySet<Kind> = new Set(kindsWithProp("duck"));
-/** The kinds whose schema has the prop a reference is written in: a transition's `on`, a camera's `push`. */
-const ON_AN_EDGE: ReadonlySet<Kind> = new Set(kindsWithProp("on"));
-const PUSHERS: ReadonlySet<Kind> = new Set(kindsWithProp("push"));
-const WITH_TIMES: ReadonlySet<Kind> = new Set(kindsWithProp("times"));
 
 const NOTHING: readonly Written[] = [];
-/** The props a time reference may sit at: a footage range's ends, and a caption cue's. */
-const MARKER_PROPS = ["in", "out", "start", "end"] as const;
-
-/** A reference written as an element's id, with the edges the prop takes. */
-function element(prop: string, text: unknown, edges: readonly ("start" | "mid" | "end")[] = []): Written[] {
-  if (!str(text)) return [];
-  const target = parseRef(text, ["element"], edges);
-  return target.type === "invalid" ? [] : [{ prop, text, target }];
-}
-
-/** A `marker:ID` written at a prop. */
-function marker(prop: string, text: unknown): Written[] {
-  if (!str(text)) return [];
-  const target = parseRef(text, ["marker"]);
-  return target.type === "marker" ? [{ prop, text, target }] : [];
-}
-
 const WITH_EFFECTS: ReadonlySet<Kind> = new Set(kindsWithProp("effects"));
 
 /**
@@ -166,33 +162,32 @@ function isItem(kind: Kind): boolean {
   return known;
 }
 
-const duration = (node: CollectedNode): { match?: unknown; until?: unknown } =>
-  typeof props(node).duration === "object" && props(node).duration !== null
-    ? (props(node).duration as { match?: unknown; until?: unknown })
-    : {};
-
 /**
  * The ways to refer, in the order a holder's references are listed. The first five are the order `dependentsOf` has
  * always listed them in.
  */
-export const REF_KINDS: Readonly<Record<string, RefKind>> = {
+const ENTRIES = {
   anchor: {
     name: "anchor",
-    holders: () => true,
     accept: ["element", "start"],
-    read: (node) => element("anchor", props(node).anchor, ["end"]),
+    written: { form: "element", edges: ["end"] },
     phase: "placement",
     facet: "time",
     cardinality: "one",
     timeMap: "source",
     onRemove: "retarget",
+    dependent: (edge, props): { kind: "anchor"; id: string; edge?: "end"; at?: string } => ({
+      kind: "anchor",
+      id: edge.from,
+      ...(edge.target.type === "element" && edge.target.edge === "end" ? { edge: "end" as const } : {}),
+      ...(typeof props.at === "string" ? { at: props.at } : {}),
+    }),
   },
   follow: {
     name: "follow",
-    holders: (kind) => FOLLOWERS.has(kind),
     targets: (kind) => FOLLOWERS.has(kind),
     accept: ["element"],
-    read: (node) => element("follow", props(node).follow),
+    written: { form: "element" },
     scope: (from, to, _written, ctx) => {
       const mine = ctx.cameraOfTrack(ctx.trackOf(from));
       if (mine === ctx.cameraOfTrack(ctx.trackOf(to))) return null;
@@ -209,6 +204,7 @@ export const REF_KINDS: Readonly<Record<string, RefKind>> = {
     cardinality: "one",
     timeMap: "held",
     onRemove: "freeze",
+    dependent: (edge): { kind: "follow"; id: string } => ({ kind: "follow", id: edge.from }),
     report: {
       unknown: (written) => `follow names "${written.text}", which does not exist`,
       wrongKind: (written, kind) =>
@@ -219,47 +215,50 @@ export const REF_KINDS: Readonly<Record<string, RefKind>> = {
   },
   on: {
     name: "on",
-    holders: (kind) => ON_AN_EDGE.has(kind),
     accept: ["element"],
-    read: (node) => element("on", props(node).on),
+    written: { form: "element" },
     phase: "placement",
     facet: "time",
     cardinality: "one",
     timeMap: "once",
     onRemove: "drop",
+    dependent: (edge, props): { kind: "on"; id: string; edge: "in" | "out" } => ({
+      kind: "on",
+      id: edge.from,
+      edge: props.edge === "in" ? "in" : "out",
+    }),
   },
   match: {
     name: "match",
-    holders: () => true,
     accept: ["element"],
-    read: (node) => element("duration", duration(node).match),
+    written: { form: "element" },
+    prop: "duration",
     phase: "placement",
     facet: "time",
     cardinality: "one",
     timeMap: "once",
     onRemove: "freeze",
+    dependent: (edge): { kind: "match"; id: string } => ({ kind: "match", id: edge.from }),
   },
   until: {
     name: "until",
-    holders: () => true,
     accept: ["element"],
-    read: (node) => element("duration", duration(node).until),
+    written: { form: "element" },
+    prop: "duration",
     phase: "placement",
     facet: "time",
     cardinality: "one",
     timeMap: "source",
     onRemove: "freeze",
+    dependent: (edge, props): { kind: "until"; id: string; at?: string } => {
+      const at = (props.duration as { at?: unknown } | undefined)?.at;
+      return { kind: "until", id: edge.from, ...(typeof at === "string" ? { at } : {}) };
+    },
   },
   push: {
     name: "push",
-    holders: (kind) => PUSHERS.has(kind),
     accept: ["element"],
-    read: (node) => {
-      const push = props(node).push as { on?: unknown; keep?: unknown } | undefined;
-      const list = (part: "on" | "keep"): Written[] =>
-        Array.isArray(push?.[part]) ? (push[part] as unknown[]).flatMap((id) => element(`push.${part}`, id)) : [];
-      return [...list("on"), ...list("keep")];
-    },
+    written: { form: "element" },
     scope: (from, to, written, ctx) =>
       ctx.cameraOfTrack(ctx.trackOf(to)) === from
         ? null
@@ -269,6 +268,11 @@ export const REF_KINDS: Readonly<Record<string, RefKind>> = {
     cardinality: "many",
     timeMap: "once",
     onRemove: "drop",
+    dependent: (edge): { kind: "push"; id: string; part: "on" | "keep" } => ({
+      kind: "push",
+      id: edge.from,
+      part: edge.prop === "push.keep" ? "keep" : "on",
+    }),
     report: {
       prop: "push",
       unknown: (written) => `${written.prop} names "${written.text}", which does not exist`,
@@ -276,12 +280,8 @@ export const REF_KINDS: Readonly<Record<string, RefKind>> = {
   },
   duck: {
     name: "duck",
-    holders: (kind) => DUCKERS.has(kind),
     accept: ["track", "role"],
-    read: (node) => {
-      const under = (props(node).duck as { under?: unknown } | undefined)?.under;
-      return str(under) ? [{ prop: "duck.under", text: under, target: { type: "role", role: under } }] : NOTHING;
-    },
+    written: { form: "role" },
     // Written bare: a track's id where one has it, else a role. Which one depends on the file's tracks, not on the
     // element, so it is settled each time the graph is built.
     aim: (written, ctx) =>
@@ -293,47 +293,43 @@ export const REF_KINDS: Readonly<Record<string, RefKind>> = {
     cardinality: "many",
     timeMap: "same",
     onRemove: "drop",
+    dependent: (edge): { kind: "duck"; id: string } => ({ kind: "duck", id: edge.from }),
     report: {
       unknown: (written) => `duck.under "${written.text}" is neither a track id nor a track role`,
     },
   },
   marker: {
     name: "marker",
-    holders: () => true,
     accept: ["marker"],
-    read: (node) => {
-      let out: Written[] | undefined;
-      for (const prop of MARKER_PROPS) {
-        const at = props(node)[prop];
-        if (str(at)) for (const written of marker(prop, at)) (out ??= []).push(written);
-      }
-      return out ?? NOTHING;
-    },
+    written: { form: "marker" },
     phase: "placement",
     facet: "time",
     cardinality: "one",
     timeMap: "once",
     onRemove: "freeze",
+    dependent: (edge): { kind: "marker"; id: string; prop: string } => ({
+      kind: "marker",
+      id: edge.from,
+      prop: edge.prop,
+    }),
   },
   sceneTime: {
     name: "sceneTime",
-    holders: (kind) => WITH_TIMES.has(kind),
     accept: ["marker"],
-    read: (node) => {
-      const times = props(node).times;
-      return typeof times === "object" && times !== null
-        ? Object.entries(times as Record<string, unknown>).flatMap(([name, at]) => marker(`times.${name}`, at))
-        : [];
-    },
+    written: { form: "marker" },
     phase: "resolved",
     facet: "time",
     cardinality: "many",
     timeMap: "once",
     onRemove: "freeze",
+    dependent: (edge): { kind: "sceneTime"; id: string; prop: string } => ({
+      kind: "sceneTime",
+      id: edge.from,
+      prop: edge.prop,
+    }),
   },
   link: {
     name: "link",
-    holders: () => true,
     accept: ["prop"],
     read: (node) => links(node),
     unfit: (_from, to, written, ctx) => {
@@ -353,12 +349,35 @@ export const REF_KINDS: Readonly<Record<string, RefKind>> = {
     cardinality: "one",
     timeMap: "same",
     onRemove: "freeze",
+    dependent: (edge): { kind: "link"; id: string; prop: string } => ({ kind: "link", id: edge.from, prop: edge.prop }),
     report: {
       unknown: (written) =>
         `${written.prop} links to "${written.text}", and there is no element "${written.text.split(".")[0]}"`,
     },
   },
-};
+} satisfies Record<string, RefKind>;
+
+/** The name of a way to refer. */
+export type RefName = keyof typeof ENTRIES;
+
+/** The ways to refer, by name. */
+export const REF_KINDS: Readonly<Record<string, RefKind>> = ENTRIES;
+
+/**
+ * Something that names another element, as a dependent of it. Each way to refer says its own shape (`dependent`
+ * in its entry), so this is every one of them:
+ *
+ * - `anchor`: starts from it (`anchor="id"`, or its end with `anchor="id.end"`), at a word of its footage when `at`
+ *   is set;
+ * - `on`: a transition placed on one of its edges;
+ * - `match` / `until`: lasts as long as it, or until it ends (or, with `at`, until it plays that moment);
+ * - `follow`: an overlay that moves with it (`follow="id"`);
+ * - `push`: a camera that makes room for it (`push.on`) or keeps it in view (`push.keep`);
+ * - `duck`: a sound that dips under it, a track (`duck.under`, by the track's id or its role);
+ * - `marker` / `sceneTime`: an element with a time written as it, a marker (`in="marker:id"`, a scene's `times`);
+ * - `link`: an element with a value read from one of its values (`{ link: "id.transform.rotation" }`), at `prop`.
+ */
+export type RefDependent = ReturnType<(typeof ENTRIES)[RefName]["dependent"]>;
 
 const KINDS = Object.values(REF_KINDS);
 
@@ -400,15 +419,71 @@ const writtenByNode = new WeakMap<CollectedNode, WrittenByKind>();
 function writtenOf(node: CollectedNode): WrittenByKind {
   const known = writtenByNode.get(node);
   if (known) return known;
+  const schema = schemaFor(node.kind, node.props);
+  const marked = schema ? markedIn(schema) : NO_SITES;
   let out: { kind: RefKind; written: readonly Written[] }[] | undefined;
   for (const kind of KINDS) {
-    if (!kind.holders(node.kind)) continue;
-    const written = kind.read(node);
+    const sites = marked.get(kind.name);
+    const written = kind.read ? kind.read(node) : sites ? readMarked(kind, sites, node) : NOTHING;
     if (written.length > 0) (out ??= []).push({ kind, written });
   }
   const result = out ?? WRITES_NOTHING;
   writtenByNode.set(node, result);
   return result;
+}
+
+const NO_SITES: ReadonlyMap<string, readonly RefSite[]> = new Map();
+const markedBySchema = new WeakMap<object, ReadonlyMap<string, readonly RefSite[]>>();
+
+/** The places a schema marks as references, by the name of the reference. Kept by the schema. */
+function markedIn(schema: object): ReadonlyMap<string, readonly RefSite[]> {
+  let found = markedBySchema.get(schema);
+  if (!found) {
+    const by = new Map<string, RefSite[]>();
+    for (const site of refSitesIn(schema as Parameters<typeof refSitesIn>[0])) {
+      const list = by.get(site.type);
+      if (list) list.push(site);
+      else by.set(site.type, [site]);
+    }
+    found = by.size > 0 ? by : NO_SITES;
+    markedBySchema.set(schema, found);
+  }
+  return found;
+}
+
+/** What a text names, as this kind of reference is written; null when the text is not one. */
+function targetOf(kind: RefKind, text: string): RefTarget | null {
+  const how = kind.written;
+  if (!how) return null;
+  // A duck is written bare, a track's id or a role: which one the file's tracks say (`aim`).
+  if (how.form === "role") return { type: "role", role: text };
+  const target = parseRef(text, [how.form], how.edges ?? []);
+  return target.type === how.form ? (target as RefTarget) : null;
+}
+
+/** The references a node writes at the places its schema marks for one kind of reference, in the schema's order. */
+function readMarked(kind: RefKind, sites: readonly RefSite[], node: CollectedNode): readonly Written[] {
+  let out: Written[] | undefined;
+  const add = (prop: string, text: unknown): void => {
+    if (!str(text)) return;
+    const target = targetOf(kind, text);
+    if (target) (out ??= []).push({ prop: kind.prop ?? prop, text, target });
+  };
+  for (const site of sites) {
+    let value: unknown = node.props;
+    for (const key of site.path) {
+      value = typeof value === "object" && value !== null ? (value as Record<string, unknown>)[key] : undefined;
+      if (value === undefined) break;
+    }
+    if (value === undefined || value === null) continue;
+    const prop = site.path.join(".");
+    if (site.each === "list") {
+      if (Array.isArray(value)) for (const text of value) add(prop, text);
+    } else if (site.each === "record") {
+      if (typeof value === "object") for (const [name, text] of Object.entries(value)) add(`${prop}.${name}`, text);
+    } else add(prop, value);
+  }
+  return out ?? NOTHING;
 }
 
 /** Every reference a node writes, as text: the kind of reference, the prop it sits at and what is written there. */
