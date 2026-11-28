@@ -8,9 +8,9 @@ const LANES = [
     role: "general",
     kind: "picture" as const,
     clips: [
-      { id: "fire", kind: "clip", from: 0, to: 1.5, label: "fire", title: "fire.webm" },
-      { id: "falls", kind: "clip", from: 1.5, to: 3, label: "falls", title: "falls.webm" },
-      { id: "storm", kind: "clip", from: 3, to: 4, label: "storm", title: "storm.webm" },
+      { id: "fire", kind: "clip", from: 0, to: 1.125, label: "fire", title: "fire.webm" },
+      { id: "falls", kind: "clip", from: 1.125, to: 2.25, label: "falls", title: "falls.webm" },
+      { id: "storm", kind: "clip", from: 2.25, to: 3, label: "storm", title: "storm.webm" },
     ],
   },
   {
@@ -18,12 +18,19 @@ const LANES = [
     role: "effects",
     kind: "sound" as const,
     clips: [
-      { id: "whoosh", kind: "audio", from: 1.2, to: 1.9, label: "whoosh", level: [0.1, 0.3, 0.7, 0.9, 0.6, 0.3, 0.1] },
+      {
+        id: "whoosh",
+        kind: "audio",
+        from: 0.9,
+        to: 1.425,
+        label: "whoosh",
+        level: [0.1, 0.3, 0.7, 0.9, 0.6, 0.3, 0.1],
+      },
       {
         id: "boom",
         kind: "audio",
-        from: 3,
-        to: 4,
+        from: 2.25,
+        to: 3,
         label: "boom",
         level: [1, 0.8, 0.6, 0.45, 0.35, 0.25, 0.2, 0.15, 0.1, 0.05],
       },
@@ -38,7 +45,7 @@ const LANES = [
         id: "crackle",
         kind: "audio",
         from: 0,
-        to: 1.6,
+        to: 1.2,
         label: "crackle",
         title: "Wood fire crackling",
         fade: { in: 0, out: 0.4 },
@@ -47,8 +54,8 @@ const LANES = [
       {
         id: "water",
         kind: "audio",
-        from: 1.4,
-        to: 3.1,
+        from: 1.05,
+        to: 2.325,
         label: "water",
         title: "At the Top of a Large Waterfall",
         fade: { in: 0.4, out: 0.3 },
@@ -64,13 +71,13 @@ export default function Video() {
       <Track id="over" layout="free">
         <TimelineView
           markers={[
-            { time: 1.5, label: "falls" },
-            { time: 3, label: "storm" },
+            { time: 1.125, label: "falls" },
+            { time: 2.25, label: "storm" },
           ]}
           id="timeline"
           start={0}
-          duration={4}
-          length={4}
+          duration={3}
+          length={3}
           lanes={LANES}
           box={{ x: 160, y: 240 }}
           width={1600}

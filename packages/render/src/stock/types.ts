@@ -91,11 +91,19 @@ const defaultSleep = (ms: number) => new Promise<void>((done) => setTimeout(done
 
 /** Text from a library's HTML (an author's link, a licence's markup), as plain words. */
 export function plain(html: string | undefined): string {
-  return (html ?? "")
-    .replace(/<[^>]+>/g, "")
-    .replace(/&amp;/g, "&")
+  // Tags are taken out until none is left (a tag split by another, `<<b>a>`, leaves one after a single pass), then any
+  // stray angle bracket: what is left is text, never markup. Entities are decoded last, `&amp;` last of all, so an
+  // escaped `&lt;` stays text too.
+  let text = html ?? "";
+  for (let before = ""; before !== text; ) {
+    before = text;
+    text = text.replace(/<[^<>]*>/g, "");
+  }
+  return text
+    .replace(/[<>]/g, "")
     .replace(/&quot;/g, '"')
     .replace(/&#0?39;/g, "'")
+    .replace(/&amp;/g, "&")
     .replace(/\s+/g, " ")
     .trim();
 }

@@ -172,6 +172,16 @@ describe("Freesound", () => {
   });
 });
 
+describe("plain text from a library's markup", () => {
+  it("takes out every tag, even one split by another, and leaves no angle bracket", async () => {
+    const { plain } = await import("../src/stock/types");
+    expect(plain('<a href="x">CorraleH</a>')).toBe("CorraleH");
+    expect(plain("<<b>script>alert(1)<</b>/script>")).toBe("alert(1)");
+    expect(plain("Tom &amp; Jerry &quot;live&quot;")).toBe('Tom & Jerry "live"');
+    expect(plain(undefined)).toBe("");
+  });
+});
+
 describe("asking patiently", () => {
   it("waits and asks again on 429, then fails with the library's words", async () => {
     let n = 0;
