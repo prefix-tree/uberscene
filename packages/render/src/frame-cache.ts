@@ -19,14 +19,14 @@ import {
 import { dirname, isAbsolute, join, resolve as resolvePath, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { frameStartSeconds, motionBlurOf, shutterTimes } from "@uberscene/kit/schema";
+import { capabilitiesOf, frameStartSeconds, motionBlurOf, shutterTimes } from "@uberscene/kit/schema";
 import type { MediaResolver } from "@uberscene/player/engine";
 import {
   endSeconds,
-  followOf,
   lengthTicks,
   lookupAsset,
   type Placement,
+  REF_KINDS,
   type ResolvedState,
   startSeconds,
 } from "@uberscene/sdk";
@@ -46,10 +46,6 @@ const VERSION = (() => {
   }
 })();
 
-/** Elements whose picture is free code or another composition: anything in the file may decide it. */
-const FREE = new Set(["layer", "motion", "three", "nested", "multicam"]);
-/** Elements that last as long as the video does: their own range says nothing about a frame. */
-const WHOLE = new Set(["composition", "track", "captions"]);
 /** Elements that draw nothing. */
 const SILENT = new Set(["audio", "marker"]);
 
@@ -89,8 +85,9 @@ function stable(value: unknown, flags: { free: boolean }, seen = new Set<object>
 }
 
 /**
- * The placements that can draw at `t`: the ones on the timeline there, with everything inside them, and the elements
- * they follow, which place them even while not on screen themselves.
+ * The placements that can draw at `t`: the ones on the timeline there, with everything inside them, and what they
+ * read at every frame by the reference graph (the element one follows), which places them even while not on screen
+ * itself.
  */
 function drawnAt(state: ResolvedState, t: number): Placement[] {
   const out = new Map<string, Placement>();
@@ -98,8 +95,11 @@ function drawnAt(state: ResolvedState, t: number): Placement[] {
   const add = (p: Placement): void => {
     if (out.has(p.id)) return;
     out.set(p.id, p);
-    const leader = state.items.get(followOf(p) ?? "");
-    if (leader) add(leader);
+    for (const edge of state.refs.from.get(p.id) ?? []) {
+      const read = REF_KINDS[edge.type]?.phase === "frame" && REF_KINDS[edge.type]?.facet === "space";
+      const target = read ? state.items.get(edge.to) : undefined;
+      if (target) add(target);
+    }
     for (const id of p.children) {
       const child = state.items.get(id);
       // Captions hold a cue for every line said; only the one on screen draws.
@@ -223,7 +223,7 @@ export class FrameKeys {
     const tree = state.tree;
     const drawn = times.map((t) =>
       drawnAt(state, t).map((p) => {
-        if (FREE.has(p.kind)) flags.free = true;
+        if (capabilitiesOf(p.kind).freeCode) flags.free = true;
         return stable(
           {
             id: p.id,
@@ -231,7 +231,7 @@ export class FrameKeys {
             track: p.track,
             parent: p.parent,
             // The composition, a track and the captions run the video's whole length, which is not theirs to say.
-            ...(WHOLE.has(p.kind) ? {} : { start: startSeconds(p), end: endSeconds(p) }),
+            ...(capabilitiesOf(p.kind).spansVideo ? {} : { start: startSeconds(p), end: endSeconds(p) }),
             source: p.source,
             between: p.between,
             interior: p.interior,

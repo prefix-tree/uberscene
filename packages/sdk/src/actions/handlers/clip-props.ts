@@ -1,38 +1,43 @@
+import { kindsWhere, kindTakes } from "@uberscene/kit/schema";
+
 import type { Json } from "../../patches/types";
-import { INTERIOR_PREFIX } from "../../resolve/tree";
-import { define, makePropHandler, rawNode, rawProp } from "../handler-kit";
+import { define, makePropHandler, rawProp } from "../handler-kit";
 import { invalid, ok } from "../types";
 
-const SOURCE_KINDS = ["clip", "audio", "nested"];
-/** Kinds that take a `transform`. */
-const TRANSFORM_KINDS = ["clip", "title", "shape", "svg", "sticker", "nested", "layer"];
-/** Kinds that take a `blend` mode: everything that draws, and an adjustment for what it filters. */
-const BLEND_KINDS = [...TRANSFORM_KINDS, "adjustment"];
-/** Kinds whose blend has a strength (`blendOpacity`): the ones drawn on the canvas. */
-const BLEND_OPACITY_KINDS = ["clip", "nested"];
-const AUDIO_KINDS = ["clip", "audio", "nested"];
+// Each action here writes a prop, and applies to the kinds whose schema has it (`props`): the schema says which
+// elements take a blend, a fade or a source range, so no list of kinds is kept here.
+
+/** Kinds painted on the canvas: what `fit` is set on by `clip/setFit` (an SVG's fit is its own prop to write). */
+const CANVAS_KINDS = kindsWhere((kind) => kind.plane === "canvas");
+/** Kinds placed on a track. */
+const TRACK_KINDS = kindsWhere((kind) => kind.placementScope === "track");
 
 /** Speed always recomputes the timeline length; `out` stays, so nothing else changes in the file. */
 define(makePropHandler({
   type: "clip/setSpeed",
-  kinds: SOURCE_KINDS,
+  props: ["in", "out", "speed"],
   write: (p) => ({ speed: p.speed }),
   validate: (a) =>
     a.params.speed >= 0.1 && a.params.speed <= 20
       ? ok
       : invalid({ code: "OUT_OF_BOUNDS", message: "speed is 0.1..20" }),
 }));
-define(makePropHandler({ type: "clip/setReverse", kinds: SOURCE_KINDS, write: (p) => ({ reverse: p.value }) }));
+define(makePropHandler({
+  type: "clip/setReverse",
+  props: ["in", "out", "reverse"],
+  write: (p) => ({ reverse: p.value }),
+}));
 define(makePropHandler({
   type: "clip/setBlend",
-  kinds: BLEND_KINDS,
+  props: ["blend"],
   write: (p) => ({
     ...(p.mode !== undefined ? { blend: p.mode } : {}),
     ...(p.opacity !== undefined ? { blendOpacity: p.opacity } : {}),
   }),
   validate: (a, state) => {
-    const kind = state.items.get(a.params.id)?.kind ?? "";
-    return a.params.opacity === undefined || BLEND_OPACITY_KINDS.includes(kind)
+    const kind = state.items.get(a.params.id)?.kind;
+    // A blend has a strength (`blendOpacity`) on what is drawn on the canvas.
+    return a.params.opacity === undefined || (kind !== undefined && kindTakes(kind, "blendOpacity"))
       ? ok
       : invalid({
           code: "INVALID_PARAMS",
@@ -41,10 +46,12 @@ define(makePropHandler({
         });
   },
 }));
-define(makePropHandler({ type: "clip/setFit", kinds: ["clip", "nested"], write: (p) => ({ fit: p.value }) }));
+define(makePropHandler({ type: "clip/setFit", kinds: CANVAS_KINDS, write: (p) => ({ fit: p.value }) }));
 define(makePropHandler({
   type: "clip/setSource",
-  kinds: ["clip", "audio", "svg", "sticker"],
+  // What shows or plays a file (`src`), on a track: not the captions' transcript nor a multicam's angle.
+  kinds: TRACK_KINDS,
+  props: ["src"],
   write: (p) => ({ src: p.src }),
 }));
 define(makePropHandler({
@@ -63,7 +70,7 @@ define(makePropHandler({
 
 define(makePropHandler({
   type: "transform/update",
-  kinds: TRANSFORM_KINDS,
+  props: ["transform"],
   write: (p, state) => ({
     transform: deepMerge((rawProp(state, p.id, "transform") ?? {}) as Record<string, Json>, p.transform),
   }),
@@ -71,7 +78,7 @@ define(makePropHandler({
 
 define(makePropHandler({
   type: "box/update",
-  kinds: [...TRANSFORM_KINDS, "captions"],
+  props: ["box"],
   write: (p, state) => {
     const box: Record<string, Json> = { ...((rawProp(state, p.id, "box") ?? {}) as Record<string, Json>) };
     for (const [k, v] of Object.entries(p.box)) {
@@ -82,43 +89,16 @@ define(makePropHandler({
   },
 }));
 
-/** The handles of a Layer: the literal or schema-bound props of the one component inside it. */
-define(makePropHandler({
-  type: "layer/setProps",
-  kinds: ["layer"],
-  targets: { when: (item, state) => rawNode(state, item.id)?.interior !== undefined },
-  write: (p) => Object.fromEntries(Object.entries(p.props).map(([k, v]) => [`${INTERIOR_PREFIX}${k}`, v])),
-  validate: (a, state) =>
-    rawNode(state, a.params.id)?.interior
-      ? ok
-      : invalid({
-          code: "INVALID_PARAMS",
-          message: `"${a.params.id}" has no handles: a Layer gets them from the one component inside it`,
-        }),
-}));
-
-define(makePropHandler({
-  type: "layer/setTiming",
-  kinds: ["layer"],
-  write: (p, state) => ({
-    ...("duration" in p ? { duration: p.duration } : {}),
-    ...("anchor" in p ? { anchor: p.anchor } : {}),
-    ...("offset" in p ? { offset: p.offset } : {}),
-    ...("start" in p ? { start: p.start } : {}),
-    ...("anchor" in p && p.anchor !== rawProp(state, p.id, "anchor") ? { at: undefined } : {}),
-  }),
-}));
-
 define(makePropHandler({
   type: "audio/setVolume",
-  kinds: AUDIO_KINDS,
+  props: ["volume"],
   write: (p) => ({ volume: p.volume }),
   validate: (a) =>
     a.params.volume >= 0 && a.params.volume <= 4 ? ok : invalid({ code: "OUT_OF_BOUNDS", message: "volume is 0..4" }),
 }));
 define(makePropHandler({
   type: "audio/setFade",
-  kinds: AUDIO_KINDS,
+  props: ["fade"],
   write: (p, state) => {
     const prior = (rawProp(state, p.id, "fade") ?? {}) as Record<string, Json>;
     return {
@@ -128,7 +108,7 @@ define(makePropHandler({
 }));
 define(makePropHandler({
   type: "audio/setDuck",
-  kinds: AUDIO_KINDS,
+  props: ["duck"],
   write: (p) => ({ duck: p.duck as Json | undefined }),
   validate: (a, state) =>
     // As in a file: the track to duck under by its id, or every track of a role.

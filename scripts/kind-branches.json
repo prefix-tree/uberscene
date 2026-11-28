@@ -1,0 +1,47 @@
+{
+  "counts": {
+    "kit": {
+      "compare": 3,
+      "list": 1,
+      "cast": 4,
+      "read": 3
+    },
+    "sdk": {
+      "compare": 121,
+      "list": 23,
+      "cast": 70,
+      "read": 74
+    },
+    "player": {
+      "compare": 10,
+      "list": 0,
+      "cast": 30,
+      "read": 24
+    },
+    "render": {
+      "compare": 18,
+      "list": 1,
+      "cast": 11,
+      "read": 1
+    },
+    "editor": {
+      "compare": 4,
+      "list": 0,
+      "cast": 0,
+      "read": 0
+    }
+  },
+  "ignore": [
+    "packages/kit/src/jsx/effect-params.ts: kind === \"transition\"",
+    "packages/kit/src/jsx/shader-definition.ts: kind === \"transition\"",
+    "packages/kit/src/jsx/shaders.ts: p.kind === \"transition\"",
+    "packages/sdk/src/inspect/sync.ts: e.kind === \"marker\"",
+    "packages/render/src/stock/freesound.ts: kinds: [\"audio\"]"
+  ],
+  "allow": [
+    {
+      "file": "packages/kit/src/theme/schema.ts",
+      "why": "STYLED_KINDS is the theme schema's own list of the kinds a theme holds presets for, written out so the theme's type has their names; a test holds it to the kinds' themeStyle."
+    }
+  ]
+}

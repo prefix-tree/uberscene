@@ -25,7 +25,7 @@ const MANIFEST = `export const manifest = { assets: {
 
 /** A two-clip cut: a title over the first clip, an effect on the second, and whatever `more` adds to the text track. */
 const video = (o: { title?: string; out?: number; stops?: number; more?: string; top?: string; fps?: number } = {}) => `
-import { Clip, Composition, Layer, Title, Track, useLayer } from "@uberscene/kit";
+import { Clip, Composition, Layer, Motion, Title, Track, useLayer } from "@uberscene/kit";
 ${MANIFEST}
 ${o.top ?? ""}
 export default function Video() {
@@ -152,6 +152,14 @@ describe("frame keys", () => {
     expect(
       await changed(video({ more: layer, top: count("a") }), video({ more: layer, top: `${count("a")}\n${helper}` })),
     ).toEqual([30]);
+  });
+
+  it("an engine layer is free code like any layer: its kind is layer, whatever its tag", async () => {
+    const motion = `<Motion id="count" start={0.9} duration={0.3} sequence={[]}><Count /></Motion>`;
+    const count = (label: string) => `function Count() { return <div>${label}</div>; }`;
+    expect(await changed(video({ more: motion, top: count("a") }), video({ more: motion, top: count("b") }))).toEqual([
+      30,
+    ]);
   });
 
   it("a frame free code draws changes with the file's own modules", async () => {

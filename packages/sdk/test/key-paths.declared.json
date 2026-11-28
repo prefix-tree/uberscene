@@ -1,0 +1,959 @@
+{
+  "camera": [
+    {
+      "path": "x",
+      "property": "camera.x",
+      "blend": "number",
+      "numeric": true,
+      "constant": "first",
+      "clock": "video",
+      "missing": 0
+    },
+    {
+      "path": "y",
+      "property": "camera.y",
+      "blend": "number",
+      "numeric": true,
+      "constant": "first",
+      "clock": "video",
+      "missing": 0
+    },
+    {
+      "path": "zoom",
+      "property": "camera.zoom",
+      "blend": "number",
+      "numeric": true,
+      "constant": "first",
+      "clock": "video",
+      "missing": 1
+    },
+    {
+      "path": "rotation",
+      "property": "camera.rotation",
+      "blend": "number",
+      "numeric": true,
+      "constant": "first",
+      "clock": "video",
+      "missing": 0
+    }
+  ],
+  "clip": [
+    {
+      "path": "transform.scale.x",
+      "property": "transform.scale.x",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 1,
+      "both": "transform.scale"
+    },
+    {
+      "path": "transform.scale.y",
+      "property": "transform.scale.y",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 1,
+      "both": "transform.scale"
+    },
+    {
+      "path": "transform.rotation",
+      "property": "transform.rotation",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element"
+    },
+    {
+      "path": "transform.opacity",
+      "property": "transform.opacity",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element"
+    },
+    {
+      "path": "transform.anchor.x",
+      "property": "transform.anchor.x",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 0.5
+    },
+    {
+      "path": "transform.anchor.y",
+      "property": "transform.anchor.y",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 0.5
+    },
+    {
+      "path": "transform.borderRadius",
+      "property": "transform.borderRadius",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element"
+    },
+    {
+      "path": "transform.crop.x",
+      "property": "transform.crop.x",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 0
+    },
+    {
+      "path": "transform.crop.y",
+      "property": "transform.crop.y",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 0
+    },
+    {
+      "path": "transform.crop.width",
+      "property": "transform.crop.width",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 1
+    },
+    {
+      "path": "transform.crop.height",
+      "property": "transform.crop.height",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 1
+    },
+    {
+      "path": "box.x",
+      "property": "box.x",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element"
+    },
+    {
+      "path": "box.y",
+      "property": "box.y",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element"
+    },
+    {
+      "path": "volume",
+      "property": "audio.volume",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element"
+    },
+    {
+      "path": "pan",
+      "property": "audio.pan",
+      "blend": "number",
+      "numeric": true,
+      "constant": "key",
+      "clock": "element"
+    }
+  ],
+  "audio": [
+    {
+      "path": "volume",
+      "property": "audio.volume",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element"
+    },
+    {
+      "path": "pan",
+      "property": "audio.pan",
+      "blend": "number",
+      "numeric": true,
+      "constant": "key",
+      "clock": "element"
+    }
+  ],
+  "title": [
+    {
+      "path": "transform.scale.x",
+      "property": "transform.scale.x",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 1,
+      "both": "transform.scale"
+    },
+    {
+      "path": "transform.scale.y",
+      "property": "transform.scale.y",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 1,
+      "both": "transform.scale"
+    },
+    {
+      "path": "transform.rotation",
+      "property": "transform.rotation",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element"
+    },
+    {
+      "path": "transform.opacity",
+      "property": "transform.opacity",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element"
+    },
+    {
+      "path": "transform.anchor.x",
+      "property": "transform.anchor.x",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 0.5
+    },
+    {
+      "path": "transform.anchor.y",
+      "property": "transform.anchor.y",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 0.5
+    },
+    {
+      "path": "transform.borderRadius",
+      "property": "transform.borderRadius",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element"
+    },
+    {
+      "path": "transform.crop.x",
+      "property": "transform.crop.x",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 0
+    },
+    {
+      "path": "transform.crop.y",
+      "property": "transform.crop.y",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 0
+    },
+    {
+      "path": "transform.crop.width",
+      "property": "transform.crop.width",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 1
+    },
+    {
+      "path": "transform.crop.height",
+      "property": "transform.crop.height",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 1
+    },
+    {
+      "path": "box.x",
+      "property": "box.x",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element"
+    },
+    {
+      "path": "box.y",
+      "property": "box.y",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element"
+    }
+  ],
+  "shape": [
+    {
+      "path": "transform.scale.x",
+      "property": "transform.scale.x",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 1,
+      "both": "transform.scale"
+    },
+    {
+      "path": "transform.scale.y",
+      "property": "transform.scale.y",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 1,
+      "both": "transform.scale"
+    },
+    {
+      "path": "transform.rotation",
+      "property": "transform.rotation",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element"
+    },
+    {
+      "path": "transform.opacity",
+      "property": "transform.opacity",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element"
+    },
+    {
+      "path": "transform.anchor.x",
+      "property": "transform.anchor.x",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 0.5
+    },
+    {
+      "path": "transform.anchor.y",
+      "property": "transform.anchor.y",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 0.5
+    },
+    {
+      "path": "transform.borderRadius",
+      "property": "transform.borderRadius",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element"
+    },
+    {
+      "path": "transform.crop.x",
+      "property": "transform.crop.x",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 0
+    },
+    {
+      "path": "transform.crop.y",
+      "property": "transform.crop.y",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 0
+    },
+    {
+      "path": "transform.crop.width",
+      "property": "transform.crop.width",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 1
+    },
+    {
+      "path": "transform.crop.height",
+      "property": "transform.crop.height",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 1
+    },
+    {
+      "path": "box.x",
+      "property": "box.x",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element"
+    },
+    {
+      "path": "box.y",
+      "property": "box.y",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element"
+    },
+    {
+      "path": "width",
+      "property": "shape.width",
+      "blend": "number",
+      "numeric": true,
+      "constant": "first",
+      "clock": "element",
+      "checked": true
+    },
+    {
+      "path": "height",
+      "property": "shape.height",
+      "blend": "number",
+      "numeric": true,
+      "constant": "first",
+      "clock": "element",
+      "checked": true
+    },
+    {
+      "path": "fill",
+      "property": "shape.fill",
+      "blend": "color",
+      "numeric": false,
+      "constant": "first",
+      "clock": "element",
+      "checked": true
+    },
+    {
+      "path": "points",
+      "property": "shape.points",
+      "blend": "points",
+      "numeric": false,
+      "constant": "first",
+      "clock": "element",
+      "checked": true
+    },
+    {
+      "path": "stroke.color",
+      "property": "shape.stroke.color",
+      "blend": "color",
+      "numeric": false,
+      "constant": "first",
+      "clock": "element",
+      "checked": true
+    },
+    {
+      "path": "stroke.thickness",
+      "property": "shape.stroke.thickness",
+      "blend": "number",
+      "numeric": true,
+      "constant": "first",
+      "clock": "element",
+      "missing": 0,
+      "required": true,
+      "checked": true
+    },
+    {
+      "path": "stroke.dashOffset",
+      "property": "shape.stroke.dashOffset",
+      "blend": "number",
+      "numeric": true,
+      "constant": "first",
+      "clock": "element",
+      "checked": true
+    }
+  ],
+  "svg": [
+    {
+      "path": "transform.scale.x",
+      "property": "transform.scale.x",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 1,
+      "both": "transform.scale"
+    },
+    {
+      "path": "transform.scale.y",
+      "property": "transform.scale.y",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 1,
+      "both": "transform.scale"
+    },
+    {
+      "path": "transform.rotation",
+      "property": "transform.rotation",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element"
+    },
+    {
+      "path": "transform.opacity",
+      "property": "transform.opacity",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element"
+    },
+    {
+      "path": "transform.anchor.x",
+      "property": "transform.anchor.x",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 0.5
+    },
+    {
+      "path": "transform.anchor.y",
+      "property": "transform.anchor.y",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 0.5
+    },
+    {
+      "path": "transform.borderRadius",
+      "property": "transform.borderRadius",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element"
+    },
+    {
+      "path": "transform.crop.x",
+      "property": "transform.crop.x",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 0
+    },
+    {
+      "path": "transform.crop.y",
+      "property": "transform.crop.y",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 0
+    },
+    {
+      "path": "transform.crop.width",
+      "property": "transform.crop.width",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 1
+    },
+    {
+      "path": "transform.crop.height",
+      "property": "transform.crop.height",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 1
+    },
+    {
+      "path": "box.x",
+      "property": "box.x",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element"
+    },
+    {
+      "path": "box.y",
+      "property": "box.y",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element"
+    }
+  ],
+  "sticker": [
+    {
+      "path": "transform.scale.x",
+      "property": "transform.scale.x",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 1,
+      "both": "transform.scale"
+    },
+    {
+      "path": "transform.scale.y",
+      "property": "transform.scale.y",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 1,
+      "both": "transform.scale"
+    },
+    {
+      "path": "transform.rotation",
+      "property": "transform.rotation",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element"
+    },
+    {
+      "path": "transform.opacity",
+      "property": "transform.opacity",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element"
+    },
+    {
+      "path": "transform.anchor.x",
+      "property": "transform.anchor.x",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 0.5
+    },
+    {
+      "path": "transform.anchor.y",
+      "property": "transform.anchor.y",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 0.5
+    },
+    {
+      "path": "transform.borderRadius",
+      "property": "transform.borderRadius",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element"
+    },
+    {
+      "path": "transform.crop.x",
+      "property": "transform.crop.x",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 0
+    },
+    {
+      "path": "transform.crop.y",
+      "property": "transform.crop.y",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 0
+    },
+    {
+      "path": "transform.crop.width",
+      "property": "transform.crop.width",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 1
+    },
+    {
+      "path": "transform.crop.height",
+      "property": "transform.crop.height",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 1
+    },
+    {
+      "path": "box.x",
+      "property": "box.x",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element"
+    },
+    {
+      "path": "box.y",
+      "property": "box.y",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element"
+    }
+  ],
+  "nested": [
+    {
+      "path": "transform.scale.x",
+      "property": "transform.scale.x",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 1,
+      "both": "transform.scale"
+    },
+    {
+      "path": "transform.scale.y",
+      "property": "transform.scale.y",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 1,
+      "both": "transform.scale"
+    },
+    {
+      "path": "transform.rotation",
+      "property": "transform.rotation",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element"
+    },
+    {
+      "path": "transform.opacity",
+      "property": "transform.opacity",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element"
+    },
+    {
+      "path": "transform.anchor.x",
+      "property": "transform.anchor.x",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 0.5
+    },
+    {
+      "path": "transform.anchor.y",
+      "property": "transform.anchor.y",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 0.5
+    },
+    {
+      "path": "transform.borderRadius",
+      "property": "transform.borderRadius",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element"
+    },
+    {
+      "path": "transform.crop.x",
+      "property": "transform.crop.x",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 0
+    },
+    {
+      "path": "transform.crop.y",
+      "property": "transform.crop.y",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 0
+    },
+    {
+      "path": "transform.crop.width",
+      "property": "transform.crop.width",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 1
+    },
+    {
+      "path": "transform.crop.height",
+      "property": "transform.crop.height",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 1
+    },
+    {
+      "path": "box.x",
+      "property": "box.x",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element"
+    },
+    {
+      "path": "box.y",
+      "property": "box.y",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element"
+    },
+    {
+      "path": "volume",
+      "property": "audio.volume",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element"
+    }
+  ],
+  "layer": [
+    {
+      "path": "transform.scale.x",
+      "property": "transform.scale.x",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 1,
+      "both": "transform.scale"
+    },
+    {
+      "path": "transform.scale.y",
+      "property": "transform.scale.y",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 1,
+      "both": "transform.scale"
+    },
+    {
+      "path": "transform.rotation",
+      "property": "transform.rotation",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element"
+    },
+    {
+      "path": "transform.opacity",
+      "property": "transform.opacity",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element"
+    },
+    {
+      "path": "transform.anchor.x",
+      "property": "transform.anchor.x",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 0.5
+    },
+    {
+      "path": "transform.anchor.y",
+      "property": "transform.anchor.y",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 0.5
+    },
+    {
+      "path": "transform.borderRadius",
+      "property": "transform.borderRadius",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element"
+    },
+    {
+      "path": "transform.crop.x",
+      "property": "transform.crop.x",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 0
+    },
+    {
+      "path": "transform.crop.y",
+      "property": "transform.crop.y",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 0
+    },
+    {
+      "path": "transform.crop.width",
+      "property": "transform.crop.width",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 1
+    },
+    {
+      "path": "transform.crop.height",
+      "property": "transform.crop.height",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element",
+      "missing": 1
+    },
+    {
+      "path": "box.x",
+      "property": "box.x",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element"
+    },
+    {
+      "path": "box.y",
+      "property": "box.y",
+      "blend": "number",
+      "numeric": true,
+      "constant": "removed",
+      "clock": "element"
+    }
+  ]
+}

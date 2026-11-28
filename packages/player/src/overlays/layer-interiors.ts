@@ -1,6 +1,6 @@
 import { Children, Fragment, isValidElement, type ReactElement, type ReactNode } from "react";
 
-import { isVocabulary } from "@uberscene/kit/schema";
+import { isVocabulary, keepsInterior } from "@uberscene/kit/schema";
 
 /**
  * Walk the file's element tree the way the kit's `collect` does (fragments,
@@ -23,7 +23,7 @@ function walk(node: ReactNode, out: Map<string, ReactNode>): void {
       return;
     }
     if (isVocabulary(type)) {
-      if (type.kind === "layer") {
+      if (keepsInterior(type.kind)) {
         if (typeof element.props.id === "string") out.set(element.props.id, element.props.children as ReactNode);
         return;
       }

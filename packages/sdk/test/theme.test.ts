@@ -184,7 +184,7 @@ describe("theme", () => {
 
   it("reports an unknown preset name and keeps the rest of the style", () => {
     const theme = resolveTheme({ extends: "paper" });
-    for (const kind of ["title", "captions"]) {
+    for (const kind of ["title", "captions"] as const) {
       const out = applyTheme(kind, { id: "x", style: { preset: "giant", size: 40 } }, theme);
       expect(out.issues).toEqual([
         expect.objectContaining({

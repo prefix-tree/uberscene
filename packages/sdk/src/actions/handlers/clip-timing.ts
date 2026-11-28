@@ -4,6 +4,8 @@ import {
   type CurveKey,
   capabilitiesOf,
   curveAt,
+  isSequenceItem,
+  keyPathOf,
   Time,
   tidySeconds,
 } from "@uberscene/kit/schema";
@@ -13,7 +15,6 @@ import { lookupAsset } from "../../manifest/types";
 import type { Json } from "../../patches/types";
 import { isKeyList } from "../../resolve/expand";
 import type { Placement as ResolvedPlacement, ResolvedState } from "../../resolve/resolve";
-import { SHAPE_KEY_PATHS } from "../../resolve/shape-keys";
 import { endSeconds, S, secondsSinceStart, startSeconds, T } from "../../time";
 import { carry, carryRemoval, carrySplit, carryTrim } from "../carry";
 import {
@@ -24,13 +25,15 @@ import {
   placementOf,
   rawNode,
   rawProp,
+  readPath,
   requireElement,
   requireUnlocked,
   setProps,
   validateTarget,
+  writePath,
 } from "../handler-kit";
 import { type ActionError, type ActionInput, invalid, type KeyJson, type NodeSpec, nodeSpecOf, ok } from "../types";
-import { canonicalKeys, readPath, writePath } from "./effect";
+import { canonicalKeys } from "./effect";
 
 const TIMING_PROPS = ["in", "out", "duration", "start", "offset"] as const;
 
@@ -77,7 +80,9 @@ function movedOffset(state: ResolvedState, item: ResolvedPlacement, at: number):
 define(carry(
   {
     type: "clip/trim",
-    targets: onElement({ when: (item) => capabilitiesOf(item.kind).timed && item.kind !== "transition" }),
+    targets: onElement({
+      when: (item) => capabilitiesOf(item.kind).timed && capabilitiesOf(item.kind).sequenceRole !== "between",
+    }),
     validate: (a, state) => {
       const base = validateTarget(
         state,
@@ -88,7 +93,7 @@ define(carry(
       const item = state.items.get(a.params.id)!;
       const caps = capabilitiesOf(item.kind);
       const errors: ActionError[] = [];
-      if (!caps.timed || item.kind === "transition")
+      if (!caps.timed || caps.sequenceRole === "between")
         errors.push({ code: "INVALID_PARAMS", message: `<${item.kind}> cannot be trimmed` });
       const parsed = parseTimeRef(a.params.value);
       if (parsed.kind === "invalid") errors.push({ code: "INVALID_PARAMS", message: parsed.reason, path: "value" });
@@ -248,7 +253,9 @@ function neighbours(
   const node = rawNode(state, item.id);
   const parent = node?.parent ? rawNode(state, node.parent) : undefined;
   if (!node || !parent) return { prev: null, next: null };
-  const siblings = parent.children.filter((c) => c.kind !== "transition" && typeof c.props.anchor !== "string");
+  const siblings = parent.children.filter(
+    (c) => capabilitiesOf(c.kind).sequenceRole !== "between" && typeof c.props.anchor !== "string",
+  );
   const i = siblings.findIndex((c) => c.id === item.id);
   const prev = i > 0 ? (state.items.get((siblings[i - 1] as { id: string }).id) ?? null) : null;
   const next =
@@ -441,8 +448,8 @@ function splitAt(node: NodeSpec, atRel: number, taken: Set<string>): SplitPlan {
   const touched = new Set<string>();
   for (const path of keyPathsOf(props)) {
     // A shape's colours and points cut at the colour or the shape drawn there (under a generator, at its base's path).
-    const shapeProperty = node.kind === "shape" ? SHAPE_KEY_PATHS[path.replace(/\.(base|keys)$/, "")] : undefined;
-    const { left, right: r } = splitKeys(readPath(props, path) as unknown as KeyJson[], atRel, blendFor(shapeProperty));
+    const property = keyPathOf(node.kind, path.replace(/\.(base|keys)$/, ""))?.property;
+    const { left, right: r } = splitKeys(readPath(props, path) as unknown as KeyJson[], atRel, blendFor(property));
     const l = writePath(leftAll, path, canonicalKeys(left));
     leftAll = { ...leftAll, [l.prop]: l.value };
     const w = writePath(rightAll, path, canonicalKeys(r));
@@ -467,7 +474,7 @@ define(carry(
   {
     type: "clip/split",
     targets: onElement({
-      when: (item) => capabilitiesOf(item.kind).timed && item.kind !== "transition" && item.kind !== "gap",
+      when: (item) => capabilitiesOf(item.kind).timed && isSequenceItem(item.kind),
     }),
     validate: (a, state) => {
       const base = validateTarget(state, a.params.id, ["in", "out", "duration"]);
@@ -475,7 +482,7 @@ define(carry(
       const item = state.items.get(a.params.id)!;
       if (state.tree.byId.has(a.params.newId))
         return invalid({ code: "DUPLICATE_ID", message: `"${a.params.newId}" exists` });
-      if (!capabilitiesOf(item.kind).timed || item.kind === "transition" || item.kind === "gap")
+      if (!capabilitiesOf(item.kind).timed || !isSequenceItem(item.kind))
         return invalid({ code: "INVALID_PARAMS", message: `<${item.kind}> cannot be split` });
       // At least a frame on each side: a sliver shorter than a frame draws nothing and only clutters the file.
       const frame = Time.frames(1, state.composition.rate);
@@ -674,7 +681,7 @@ define({
             i &&
             i.id !== item.id &&
             i.range.end.isAtOrBefore(item.range.start.plus(T(1e-6))) &&
-            i.kind !== "transition",
+            capabilitiesOf(i.kind).sequenceRole !== "between",
         )
         .map((i) => i!.range.end),
     );

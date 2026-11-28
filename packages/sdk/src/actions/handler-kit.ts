@@ -1,7 +1,8 @@
-import { tidySeconds } from "@uberscene/kit/schema";
+import { type Kind, type KindWith, kindTakes, tidySeconds } from "@uberscene/kit/schema";
 
 import { asJson } from "../patches/log";
 import type { Json, PatchLog } from "../patches/types";
+import { isKeyList } from "../resolve/expand";
 import { hasNodeIn, nodeIn } from "../resolve/overlay";
 import type { Placement as ResolvedPlacement, ResolvedState } from "../resolve/resolve";
 import { type CollectedNode, INTERIOR_PREFIX } from "../resolve/tree";
@@ -108,12 +109,20 @@ export function validateTarget(state: ResolvedState, id: unknown, props: readonl
   return invalid(...errors);
 }
 
-/** The element-level checks an action makes, for its `targets` face. Each default matches `validateTarget`. */
-export interface TargetSpec {
+/**
+ * The element-level checks an action makes, for its `targets` face. Each default matches `validateTarget`. `P` is the
+ * props it names in `props`: `when` is then given an element whose kind is one that has them.
+ */
+export interface TargetSpec<P extends string = string> {
   /** The param that names the element. Default `id`. */
   readonly param?: string;
-  /** The kinds it applies to; any when left out. */
-  readonly kinds?: readonly string[];
+  /** The kinds it applies to; any when left out. For a trait no prop says (what is painted on the canvas). */
+  readonly kinds?: readonly Kind[];
+  /**
+   * The props its kind's schema must have: `["blend"]`, `["in", "out"]`. How an action that writes a prop says what
+   * it applies to: the schema already says which kinds take the prop, so no list of them is kept beside it.
+   */
+  readonly props?: readonly P[];
   /** It does not check the track's lock. */
   readonly onLocked?: boolean;
   /** It does not refuse model-only code. */
@@ -121,17 +130,28 @@ export interface TargetSpec {
   /** It refuses generated elements (bake first). */
   readonly literalOnly?: boolean;
   /** Any further check on the element alone. */
-  readonly when?: (item: ResolvedPlacement, state: ResolvedState) => boolean;
+  readonly when?: (item: ResolvedPlacement & { readonly kind: KindWith<P> }, state: ResolvedState) => boolean;
 }
 
-export function onElement(spec: TargetSpec = {}): ElementTarget {
+/** Whether an element is of a kind the spec names: one of its `kinds`, with every one of its `props`. */
+function ofKind<P extends string>(
+  spec: Pick<TargetSpec<P>, "kinds" | "props">,
+  item: ResolvedPlacement,
+): item is ResolvedPlacement & { readonly kind: KindWith<P> } {
+  return (
+    (spec.kinds === undefined || spec.kinds.includes(item.kind)) &&
+    (spec.props === undefined || spec.props.every((prop) => kindTakes(item.kind, prop)))
+  );
+}
+
+export function onElement<P extends string = string>(spec: TargetSpec<P> = {}): ElementTarget {
   return {
     param: spec.param ?? "id",
     accepts: (item, state) =>
       (spec.onLocked === true || requireUnlocked(state, item) === null) &&
       (spec.onOpaque === true || requireNotOpaque(item) === null) &&
       (spec.literalOnly !== true || item.editable !== "generated") &&
-      (spec.kinds === undefined || spec.kinds.includes(item.kind)) &&
+      ofKind(spec, item) &&
       (spec.when?.(item, state) ?? true),
   };
 }
@@ -227,27 +247,36 @@ export function lastChildId(state: ResolvedState, parent: string): string | null
 
 type Params<T extends ActionType> = Action<T>["params"];
 
-export interface PropHandlerSpec<T extends ActionType> {
+export interface PropHandlerSpec<T extends ActionType, P extends string = string> {
   readonly type: T;
   /** Which props the action writes, from its params. */
   readonly write: (params: Params<T>, state: ResolvedState) => Readonly<Record<string, Json | undefined>>;
   /** Which param carries the target id. */
   readonly target?: (params: Params<T>) => string;
   readonly validate?: (action: Action<T>, state: ResolvedState) => ValidationResult;
-  readonly kinds?: readonly string[];
+  /** The kinds it applies to, for a trait no prop says. */
+  readonly kinds?: readonly Kind[];
+  /** The props its target's kind must have (`TargetSpec.props`): what an action that writes a prop applies to. */
+  readonly props?: readonly P[];
   /**
-   * The element it is about, for `affordances()`. Left out, an action that targets `id` gets one from `kinds`; one with
-   * its own `target` gets none unless it names the param here.
+   * The element it is about, for `affordances()`. Left out, an action that targets `id` gets one from `kinds` and
+   * `props`; one with its own `target` gets none unless it names the param here.
    */
-  readonly targets?: TargetSpec;
+  readonly targets?: TargetSpec<P>;
 }
 
 /** An action that sets literal props on one element; the inverse sets the prior values. */
-export function makePropHandler<T extends ActionType>(spec: PropHandlerSpec<T>): ActionHandler<T> {
+export function makePropHandler<T extends ActionType, P extends string = string>(
+  spec: PropHandlerSpec<T, P>,
+): ActionHandler<T> {
   const target = spec.target ?? ((params: Params<T>) => (params as { id: string }).id);
   const targets =
     spec.targets !== undefined || spec.target === undefined
-      ? onElement({ ...(spec.kinds ? { kinds: spec.kinds } : {}), ...spec.targets })
+      ? onElement({
+          ...(spec.kinds ? { kinds: spec.kinds } : {}),
+          ...(spec.props ? { props: spec.props } : {}),
+          ...spec.targets,
+        })
       : undefined;
   const handler: ActionHandler<T> = {
     type: spec.type,
@@ -259,7 +288,7 @@ export function makePropHandler<T extends ActionType>(spec: PropHandlerSpec<T>):
       const props = item ? writtenPaths(item, written, (prop) => rawProp(state, id, prop)) : Object.keys(written);
       const base = validateTarget(state, id, props);
       if (!base.valid) return base;
-      if (spec.kinds && item && !spec.kinds.includes(item.kind)) {
+      if (item && !ofKind(spec, item)) {
         return invalid({ code: "INVALID_PARAMS", message: `${spec.type} does not apply to <${item.kind}>` });
       }
       return spec.validate ? spec.validate(action, state) : ok;
@@ -282,4 +311,51 @@ export function makePropHandler<T extends ActionType>(spec: PropHandlerSpec<T>):
 export function define<T extends ActionType>(handler: ActionHandler<T>): ActionHandler<T> {
   registerHandler(handler);
   return handler;
+}
+
+/** The value at a dotted path inside an element's raw props; a number segment indexes a list. */
+export function readPath(props: Readonly<Record<string, unknown>> | undefined, path: string): unknown {
+  let at: unknown = props;
+  for (const seg of path.split(".")) {
+    if (at === null || typeof at !== "object") return undefined;
+    // One list for both axes (`scale: [...]`) is each axis's list.
+    if (isKeyList(at) && (seg === "x" || seg === "y")) continue;
+    at = Array.isArray(at) ? at[Number(seg)] : (at as Record<string, unknown>)[seg];
+  }
+  return at;
+}
+
+/**
+ * The element's top-level prop with `value` written at `path` inside it: objects and lists along the way are copied,
+ * an `undefined` value removes the field, and an object left empty is removed. A number `scale` that gains keys on one
+ * axis becomes `{ x, y }`.
+ */
+export function writePath(
+  props: Readonly<Record<string, unknown>> | undefined,
+  path: string,
+  value: unknown,
+): { readonly prop: string; readonly value: Json | undefined } {
+  const [top, ...rest] = path.split(".") as [string, ...string[]];
+  const put = (container: unknown, segs: readonly string[]): unknown => {
+    if (segs.length === 0) return value;
+    const [seg, ...more] = segs as [string, ...string[]];
+    // A number or one list for both axes, written on one axis: both axes, the other keeping what it had.
+    if ((typeof container === "number" || isKeyList(container)) && (seg === "x" || seg === "y")) {
+      const base: Record<string, unknown> = { x: container, y: container };
+      base[seg] = put(container, more);
+      return base;
+    }
+    if (Array.isArray(container)) {
+      const copy = [...container];
+      copy[Number(seg)] = put(copy[Number(seg)], more);
+      return copy;
+    }
+    const base: Record<string, unknown> =
+      container && typeof container === "object" ? { ...(container as Record<string, unknown>) } : {};
+    const next = put(base[seg], more);
+    if (next === undefined) delete base[seg];
+    else base[seg] = next;
+    return Object.keys(base).length === 0 ? undefined : base;
+  };
+  return { prop: top, value: put(props?.[top], rest) as Json | undefined };
 }

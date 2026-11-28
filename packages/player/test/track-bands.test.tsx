@@ -1,24 +1,24 @@
 import { mountPlayer } from "./helpers/react";
-import { makeState } from "./helpers/state";
+import { type ItemSpec, makeState, type TrackSpec } from "./helpers/state";
 import { bandPlan, buildFramePlan, trackBands } from "./internal";
 
-const clip = (id: string) => ({ id, kind: "clip", source: { in: 0, out: 4, asset: "a" } });
-const shape = (id: string) => ({
+const clip = (id: string): ItemSpec => ({ id, kind: "clip", source: { in: 0, out: 4, asset: "a" } });
+const shape = (id: string): ItemSpec => ({
   id,
   kind: "shape",
   start: 0,
   duration: 4,
   props: { type: "rectangle", width: 200, height: 100, fill: "#2244ff" },
 });
-const main = { id: "main", items: [clip("talk")] };
-const cards = { id: "cards", layout: "free" as const, items: [shape("card")] };
-const cutout = { id: "cutout", layout: "free" as const, items: [{ ...clip("speaker"), start: 0 }] };
-const titles = {
+const main: TrackSpec = { id: "main", items: [clip("talk")] };
+const cards: TrackSpec = { id: "cards", layout: "free" as const, items: [shape("card")] };
+const cutout: TrackSpec = { id: "cutout", layout: "free" as const, items: [{ ...clip("speaker"), start: 0 }] };
+const titles: TrackSpec = {
   id: "titles",
   layout: "free" as const,
   items: [{ id: "name", kind: "title", start: 0, duration: 4, props: { text: "Hi" } }],
 };
-const grade = {
+const grade: TrackSpec = {
   id: "grade",
   layout: "free" as const,
   items: [{ id: "adj", kind: "adjustment", start: 0, duration: 4, props: { effects: [{ type: "sepia" }] } }],

@@ -1,4 +1,4 @@
-import { ELEMENTS, type TextRun } from "@uberscene/kit/schema";
+import { ELEMENTS, type Kind, type TextRun } from "@uberscene/kit/schema";
 
 import type { NodeSpec } from "../actions/types";
 import type { Json } from "../patches/types";
@@ -71,7 +71,7 @@ export function printProp(name: string, value: Json | undefined): string {
   return `${name}={${printLiteral(value)}}`;
 }
 
-export function elementName(kind: string): string {
+export function elementName(kind: Kind): string {
   return NAME_BY_KIND.get(kind) ?? kind;
 }
 

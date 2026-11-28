@@ -1,6 +1,8 @@
 import {
+  capabilitiesOf,
   findFont,
   isBundledFont,
+  type Kind,
   nearestFont,
   type ResolvedTheme,
   resolveTheme,
@@ -84,9 +86,9 @@ function literalParts(prop: PropSite): Json | undefined {
 }
 
 /** The preset a `style` names: the name itself, or a title's or captions' `style.preset`. */
-function presetOf(kind: string, style: PropSite): string | undefined {
+function presetOf(kind: Kind, style: PropSite): string | undefined {
   if (typeof style.literal === "string") return style.literal;
-  if (kind !== "title" && kind !== "captions") return undefined;
+  if (capabilitiesOf(kind).themeStyle !== "look") return undefined;
   const object = literalParts(style);
   const named = typeof object === "object" && object !== null && !Array.isArray(object) ? object.preset : undefined;
   return typeof named === "string" ? named : undefined;
@@ -132,7 +134,7 @@ export const themeLiterals: Rule = {
         });
       }
       // A title's <Mark>s colour words in its text, where the props above do not reach.
-      if (site.kind === "title" && site.childrenRange) {
+      if (capabilitiesOf(site.kind).hasText && site.childrenRange) {
         const [from, to] = site.childrenRange;
         const children = index.text.slice(from, to);
         for (const m of children.matchAll(MARK_COLOR)) {

@@ -24,6 +24,11 @@ export interface Generator {
   readonly mode?: "repeat" | "pingpong";
   /** `loop`: the first and last key's time, the stretch it plays again. */
   readonly span?: readonly [number, number];
+  /**
+   * `wiggle` and `drift`: seconds added to the time they are read at. A value linked to another element's runs that
+   * element's wobble, which is on that element's clock: `shift` is where this element's start stands on it.
+   */
+  readonly shift?: number;
 }
 
 /** Whether a value written in a prop is a generator: an object whose `type` names one. */
@@ -69,8 +74,10 @@ export function smoothNoise(seed: number, x: number): number {
  * any time: its constant, or its keys. `wiggle` and `drift` add to it; `loop` plays its stretch of it again.
  */
 export function generatedValue(g: Generator, t: number, base: (t: number) => number): number {
-  if (g.type === "wiggle") return base(t) + (g.amount ?? 0) * smoothNoise(g.seed ?? 0, t * (g.frequency ?? 1));
-  if (g.type === "drift") return base(t) + (g.speed ?? 0) * Math.max(0, t);
+  // A continuous value: a hair of float error in `t + shift` changes nothing seen, so no ticks here.
+  const own = t + (g.shift ?? 0);
+  if (g.type === "wiggle") return base(t) + (g.amount ?? 0) * smoothNoise(g.seed ?? 0, own * (g.frequency ?? 1));
+  if (g.type === "drift") return base(t) + (g.speed ?? 0) * Math.max(0, own);
   const [from, to] = g.span ?? [0, 0];
   const length = to - from;
   if (!(length > 0) || t <= from) return base(t);

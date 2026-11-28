@@ -1,6 +1,6 @@
-import { buildSourceIndex, collectModule, loadModule, type ResolvedState, resolve } from "@uberscene/sdk";
+import { buildSourceIndex, collectModule, loadModule, placed, type ResolvedState, resolve } from "@uberscene/sdk";
 
-import { shapeDrawing } from "../src/overlays/shape";
+import { shapeDrawing } from "../src/elements/shape/drawing";
 import { childrenOf, fixtureManifest } from "./helpers/state";
 
 // A shape whose own values change: its markup at three times shows the size, the colour, the dash and the points the
@@ -23,7 +23,7 @@ const load = (text: string): ResolvedState =>
   resolve(collectModule(loadModule(text) as never, {}, { index: buildSourceIndex(text) }), fixtureManifest);
 
 function drawn(state: ResolvedState, time: number) {
-  const placement = state.items.get("s")!;
+  const placement = placed(state.items.get("s"), "shape")!;
   return shapeDrawing({ placement, children: childrenOf(state, "s"), state, time });
 }
 

@@ -7,6 +7,10 @@ export type ResolveErrorCode =
   | "CYCLE"
   | "TRIM_PAST_SOURCE"
   | "UNKNOWN_REF"
+  /** A reference names something of a kind it may not: a follow onto a clip, an SVG whose size is not known. */
+  | "WRONG_KIND"
+  /** A reference names something it may not from where it stands: across the camera's edge. */
+  | "WRONG_SCOPE"
   | "NOT_ADJACENT"
   | "INSUFFICIENT_HANDLES"
   | "NO_VISUAL_PARENT"

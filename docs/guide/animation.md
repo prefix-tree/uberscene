@@ -23,6 +23,7 @@ over half a second.
 |---|---|
 | A value that stays | The value: `opacity: 0.8`. |
 | A value that changes | A list of keys: `opacity: [{ at: 0, value: 0 }, { at: 1, value: 1 }]`. |
+| A value that is another element's | A link: `rotation: { link: "logo.transform.rotation" }`. |
 | A look on the element | `effects={[{ type: "blur", radius: 8 }]}`. |
 | A speed ramp | Keys on `speed`. |
 | A held frame | `freezes={[{ start, duration, source }]}`. |
@@ -180,6 +181,56 @@ one of them changes. Give an overlay a `follow` and it moves with that one inste
   multiplied in. A keyed value is taken where it stands when the follower starts. Undo puts it back.
 - The [layout check](./checking) and `uberscene inspect` report where a follower really is, after the chain, and a
   fix the layout check suggests is in the follower's own numbers.
+
+## A value linked to another {#links}
+
+Two things that move together need the same keys twice, kept in step by hand. In place of a number, a value can be a
+link: another element's value, read as it changes.
+
+<Example src="previews/guide/links" alt="Three hands: an orange one swinging back and forth, a teal one turning twice as far the other way, a white one making the same swing a moment late; below them a bar that grows and shrinks with the orange hand's angle">
+
+<<< @/../examples/showcase/guide/links.tsx
+
+</Example>
+
+```tsx
+<Shape id="dial" ... transform={{ rotation: [{ at: 0, value: -60 }, { at: 1.5, value: 60 }] }} />
+<Shape id="gear" ... transform={{ rotation: { link: "dial.transform.rotation", scale: -2 } }} />
+<Shape id="late" ... transform={{ rotation: { link: "dial.transform.rotation", delay: 0.4 } }} />
+<Shape id="meter" ... width={{ link: "dial.transform.rotation", scale: 3, offset: 300 }} />
+```
+
+| Field | What it does |
+|---|---|
+| `link` | The value to read: an element's id, then the path of the value as it is written on that element (`dial.transform.rotation`, `card.box.x`, `logo.width`, `cam.zoom`, `shot.effects.0.radius`). |
+| `scale` | What the value read is multiplied by. Left out, 1. |
+| `offset` | What is added after `scale`, in the linking value's own units. Left out, 0. |
+| `delay` | How many seconds late it runs: the value the other one had that long ago. Left out, 0. |
+
+- **Whatever is written there.** A link reads a number, keys, a `wiggle`, a `drift`, a `loop`, or another link. A
+  value nothing is written at reads as what it is anyway (a rotation of 0, an opacity of 1, a scale of 1).
+- **The same moment of the video.** Two elements that start at different times each count their keys from their own
+  start; a link reads the other element at the moment being drawn, not at the same time into it. Before the other
+  element's first key, and after its last, the link holds that key's value, as keys do.
+- **Where.** Every number keys can move: in `transform` and `box`, a shape's `width`, `height`, `stroke.thickness`
+  and `stroke.dashOffset`, a camera's `x`, `y`, `zoom` and `rotation`, a sound's `volume` and `pan`, and every
+  numeric param of an effect. `{ link: "logo.transform.scale" }` on a `scale` links both axes. Not a colour or a
+  shape's points, and not `speed`.
+- **A link is the whole value.** It has no `base`, and it takes no keys of its own: the key actions refuse a linked
+  value and say where its keys are. To change the motion, change the value it names, or `scale` and `offset`.
+- **Mistakes the resolver names:** an element that does not exist, a path that element does not have, a value that
+  is not a number, a place nothing is written at (`box.x` on a centred element), and a circle of links, which is
+  reported once with the links it goes through. Two elements may read different values of each other.
+- **On a pushed camera** `x`, `y` and `zoom` are the push's, so they cannot be linked; `rotation` can.
+- **Removing the element a link names** writes what the link gave as keys in its place, in the same edit, so the
+  motion stays. A key that fell before the element's own start is cut there, and a wobble is written as a wobble of
+  the element's own. Undo puts the link back.
+- **How it is read.** The resolver writes a link as the keys of the value it names, as it writes a camera's
+  [push](./camera) as camera keys. So the preview, the export, motion blur and the checks treat it as any keyed
+  value.
+
+For anything a link cannot say (one value worked out from two others, a condition), draw it in a
+[`<Layer>`](./free-code): props stay data, and code lives in the layer.
 
 ## Effects {#effects}
 

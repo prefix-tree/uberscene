@@ -29,6 +29,11 @@ export {
   type TransitionParams,
 } from "./effects/registry";
 export { type ColourFunction, fusedColourSource } from "./effects/shapes";
+export * from "./elements";
+export { SHAPE_SIZE, shapeSize } from "./elements/shape/size";
+export { isTextMark, type MarkProps, markSchema, moveRuns, type TextRun, themedRuns } from "./elements/title/mark";
+export * from "./elements/title/read-time";
+export { TITLE_LOOK_KEYS } from "./elements/title/schema";
 export { BLOCK_ASPECTS } from "./jsx/block-meta";
 export { type Box, type DrawRect, fitRect, type Placed, placeAxis, placeBox } from "./jsx/box";
 export * from "./jsx/capabilities";
@@ -39,17 +44,21 @@ export * from "./jsx/elements";
 export * from "./jsx/engines";
 export * from "./jsx/enums";
 export * from "./jsx/generators";
+export * from "./jsx/key-paths";
 export { knobsOf } from "./jsx/knobs";
-export { isTextMark, type MarkProps, markSchema, moveRuns, type TextRun, themedRuns } from "./jsx/mark";
-export * from "./jsx/read-time";
+export * from "./jsx/ref";
+export * from "./jsx/ref-sites";
 export * from "./jsx/rendering";
+export { zKeyframeProperty } from "./jsx/schemas/children";
 export {
   BOX_ORIGIN_POINT,
   BOX_ORIGINS,
   type BoxOrigin,
   type ElementBox,
   type GeneratorOf,
+  isLink,
   type KeyOf,
+  type Link,
   type Transform,
 } from "./jsx/schemas/common";
 export { defaultTransitionParams, isBuiltInTransition, TRANSITION_PARAMS } from "./jsx/schemas/transition";

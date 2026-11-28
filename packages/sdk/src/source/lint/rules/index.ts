@@ -1,4 +1,4 @@
-import { MAIN_TRACK_ID } from "@uberscene/kit/schema";
+import { capabilitiesOf, MAIN_TRACK_ID } from "@uberscene/kit/schema";
 
 import { lookupAsset } from "../../../manifest/types";
 import type { ElementSite, SourceIndex } from "../../index";
@@ -139,7 +139,7 @@ const ambiguousDuration: Rule = {
   check: (index) => {
     const out: Diagnostic[] = [];
     for (const site of index.elements.values()) {
-      if (!["clip", "audio", "nested"].includes(site.kind)) continue;
+      if (!capabilitiesOf(site.kind).trimSource) continue;
       const d = site.props.get("duration");
       if (d && site.props.has("out"))
         out.push({
@@ -256,7 +256,7 @@ const cutInsideWord: Rule = {
     if (!options.manifest) return [];
     const out: Diagnostic[] = [];
     for (const site of index.elements.values()) {
-      if (site.kind !== "clip" && site.kind !== "audio") continue;
+      if (!capabilitiesOf(site.kind).playsAsset) continue;
       const src = site.props.get("src")?.literal;
       if (typeof src !== "string") continue;
       const words = lookupAsset(options.manifest, src)?.transcript?.words;
@@ -292,7 +292,7 @@ const numericOnBeat: Rule = {
     if (!options.manifest) return [];
     const out: Diagnostic[] = [];
     for (const site of index.elements.values()) {
-      if (site.kind !== "clip" && site.kind !== "audio") continue;
+      if (!capabilitiesOf(site.kind).playsAsset) continue;
       const src = site.props.get("src")?.literal;
       if (typeof src !== "string") continue;
       const beats = lookupAsset(options.manifest, src)?.beats;

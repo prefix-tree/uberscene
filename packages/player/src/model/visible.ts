@@ -26,7 +26,11 @@ export interface VisibleItem {
   readonly transition?: TransitionRole;
 }
 
-/** Visual, timed placements that show at `t`: tracks in document order (the first track is the bottom), items in track order. */
+/**
+ * Visual, timed placements that show at `t`: tracks in document order (the first track is the bottom), items in track
+ * order. An element whose props did not parse (`parsed` false) is left out: it has errors and a row, and no picture,
+ * since what draws it reads its props as their types.
+ */
 export function visiblePlacements(state: ResolvedState, t: number): VisibleItem[] {
   const out: VisibleItem[] = [];
   const tracks = [...state.tracks].sort((a, b) => a.order - b.order);
@@ -35,7 +39,8 @@ export function visiblePlacements(state: ResolvedState, t: number): VisibleItem[
     const roles = transitionRoles(state, track, t);
     for (const placement of trackItems(state, track)) {
       const caps = capabilitiesOf(placement.kind);
-      if (!caps.visual || !caps.timed || placement.kind === "transition") continue;
+      if (!caps.visual || !caps.timed || caps.sequenceRole === "between") continue;
+      if (!placement.parsed) continue;
       if (!isVisibleAt(placement, t, state.composition.duration)) continue;
       const role = roles.get(placement.id);
       out.push({

@@ -1,31 +1,87 @@
 import type { ReactElement, ReactNode } from "react";
 import type { z } from "zod";
 
+import type { Kind } from "../elements";
+import type { KeyPath } from "./key-path";
+
 export type PlacementScope = "composition" | "track" | "child" | "none";
 
+/**
+ * What an element kind is, for the packages to ask (`capabilitiesOf`). A kind writes only part of it (`KindTraits`);
+ * the rest is read from its schema, so it cannot disagree with the props the kind takes.
+ */
 export interface ElementCapabilities {
   /** Occupies a time range on the timeline. */
   readonly timed: boolean;
   /** Draws pixels. */
   readonly visual: boolean;
-  /** Produces sound. */
+  /** Produces sound: its schema has a `volume`. */
   readonly audio: boolean;
-  /** Has a source range (`in`/`out`) that can be trimmed, slipped, split. */
+  /** Has a source range that can be trimmed, slipped, split: its schema has `in` and `out`. */
   readonly trimSource: boolean;
-  /** Accepts a `transform` prop. */
+  /** Accepts a `transform` prop: its schema has one. */
   readonly transformable: boolean;
-  /** May hold vocabulary children. */
+  /** May hold vocabulary children: it names kinds in `childKinds`. */
   readonly container: boolean;
   /** Kinds allowed as direct children. */
   readonly childKinds: readonly string[];
   /** Where the element may appear. */
   readonly placementScope: PlacementScope;
+  /**
+   * What draws it. `canvas`: painted with the footage. `dom`: the overlay plane over the canvas. `both`: an
+   * adjustment, which filters the canvas beneath it and stands on the overlay plane. `none`: it has no picture of its
+   * own (sound, structure, or something its parent draws).
+   */
+  readonly plane: DrawPlane;
+  /** Puts footage on the canvas: what a blurred background and the overlays beneath the footage are measured against. */
+  readonly footage: boolean;
+  /**
+   * Its part on a track. `item`: something placed there, which a cut or an anchor can name. `between`: a transition,
+   * which joins its two neighbours. `empty`: a gap, time with nothing in it. `none`: not written on a track.
+   */
+  readonly sequenceRole: SequenceRole;
+  /** May be written straight in a `<Composition>`, where it makes the main track. */
+  readonly mainTrack: boolean;
+  /** Its words are its content (`text`), which the read-time check and the tools read. */
+  readonly hasText: boolean;
+  /** Its picture is free code or another composition: anything in the file may decide it. */
+  readonly freeCode: boolean;
+  /** Lasts as long as the video does: its own range says nothing about one frame. */
+  readonly spansVideo: boolean;
+  /** Takes a `<Mask>` that is drawn. */
+  readonly masked: boolean;
+  /**
+   * How a theme styles it. `look`: `style` is a text look (a preset name, or fields with `preset`). `props`: `style`
+   * names a preset of the element's own props. `none`: a theme holds no presets for it.
+   */
+  readonly themeStyle: ThemeStyle;
+  /** A theme's motion style fills its `enter` and `exit`. */
+  readonly themeMotion: boolean;
+  /** Made and changed by `element/create` and `element/update`: what sits on a track and is not media or a cut. */
+  readonly elementActions: boolean;
+  /** Plays a manifest asset by `src` (a clip, an audio): what "plays", beats, words and shots are read from. */
+  readonly playsAsset: boolean;
+  /**
+   * The paths in its props a key list or a generator may sit at (`KeyPath`), read from its schema; an effect's params
+   * are the effect's.
+   */
+  readonly keyPaths: readonly KeyPath[];
 }
+
+/** What a kind's schema says of it, and so no row writes. */
+export type SchemaFact = "audio" | "trimSource" | "transformable" | "container" | "keyPaths";
+
+/** What a kind's row writes of itself: every trait its schema does not already say. */
+export type KindTraits = Omit<ElementCapabilities, SchemaFact>;
+
+export type DrawPlane = "canvas" | "dom" | "both" | "none";
+export type SequenceRole = "item" | "between" | "empty" | "none";
+export type ThemeStyle = "look" | "props" | "none";
 
 export type VocabularyProps<S extends z.ZodType> = z.input<S> & { readonly children?: ReactNode };
 
 /** What a vocabulary component carries besides being one: its kind, schema and capabilities. */
-export interface VocabularyMeta<K extends string, S extends z.ZodType> {
+export interface VocabularyMeta<K extends Kind, S extends z.ZodType> {
   readonly kind: K;
   readonly schema: S;
   readonly isVocabulary: true;
@@ -33,12 +89,12 @@ export interface VocabularyMeta<K extends string, S extends z.ZodType> {
   readonly displayName: string;
 }
 
-export type VocabularyComponent<K extends string, S extends z.ZodType> = ((
+export type VocabularyComponent<K extends Kind, S extends z.ZodType> = ((
   props: VocabularyProps<S>,
 ) => ReactElement | null) &
   VocabularyMeta<K, S>;
 
-export interface ElementDefinition<K extends string, S extends z.ZodType> {
+export interface ElementDefinition<K extends Kind, S extends z.ZodType> {
   readonly kind: K;
   readonly schema: S;
   readonly capabilities: ElementCapabilities;
@@ -51,7 +107,7 @@ export interface ElementDefinition<K extends string, S extends z.ZodType> {
  * kind, its Zod prop schema and its editing capabilities, so the resolver and
  * the editor can read the element tree without rendering it.
  */
-export function defineElement<K extends string, S extends z.ZodType>(
+export function defineElement<K extends Kind, S extends z.ZodType>(
   def: ElementDefinition<K, S>,
 ): VocabularyComponent<K, S> {
   const component = ((props: VocabularyProps<S>) => {
@@ -70,10 +126,10 @@ export function defineElement<K extends string, S extends z.ZodType>(
   return component;
 }
 
-export function isVocabulary(type: unknown): type is VocabularyComponent<string, z.ZodType> {
+export function isVocabulary(type: unknown): type is VocabularyComponent<Kind, z.ZodType> {
   return typeof type === "function" && (type as { isVocabulary?: unknown }).isVocabulary === true;
 }
 
-export function kindOf(type: unknown): string | null {
+export function kindOf(type: unknown): Kind | null {
   return isVocabulary(type) ? type.kind : null;
 }

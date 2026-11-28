@@ -1,14 +1,18 @@
 // A film's timeline as lanes, for drawing it: each track a lane, each element on it a clip with its seconds and name,
 // and each sound its level over its seconds, read from the waveform `uberscene add` measured. The picture of an editor's
 // timeline, from the timeline itself: what a breakdown of a film's sound shows under the film.
+
+import { hasProp, placed } from "../elements/placement";
 import { lookupAsset } from "../manifest/types";
-import type { Placement, ResolvedState } from "../resolve/resolve";
+import type { ResolvedState } from "../resolve/resolve";
 import { endSeconds, startSeconds } from "../time";
 
 export interface LaneClip {
   readonly id: string;
   /** The element's kind: `clip`, `audio`, `title`, `layer`… */
   readonly kind: string;
+  /** Whether it is a sound (an `<Audio>`): what makes a lane a sound lane. */
+  readonly sound: boolean;
   /** Seconds of the film. */
   readonly from: number;
   readonly to: number;
@@ -80,13 +84,15 @@ export function timelineLanes(state: ResolvedState, { steps = 100 }: { steps?: n
       if (!p || !SHOWN.has(p.kind) || !(endSeconds(p) > startSeconds(p))) continue;
       // What a helper or a loop made inside an element stands with its parent.
       if (p.parent !== null && p.parent !== track.id) continue;
-      const level = p.kind === "audio" ? levelOf(state, p, steps) : undefined;
+      const sound = placed(p, "audio");
+      const level = sound ? levelOf(state, sound, steps) : undefined;
       const asset = p.source ? lookupAsset(state.manifest, p.source.asset) : null;
       const title = asset?.source?.title ?? p.source?.asset;
-      const fade = p.props.fade as { in?: number; out?: number } | undefined;
+      const fade = hasProp(p, "fade") ? p.props.fade : undefined;
       clips.push({
         id: p.id,
         kind: p.kind,
+        sound: sound !== undefined,
         from: round3(startSeconds(p)),
         to: round3(endSeconds(p)),
         label: p.id,
@@ -96,7 +102,7 @@ export function timelineLanes(state: ResolvedState, { steps = 100 }: { steps?: n
       });
     }
     if (clips.length === 0) continue;
-    const kind = clips.every((c) => c.kind === "audio") ? "sound" : "picture";
+    const kind = clips.every((c) => c.sound) ? "sound" : "picture";
     // Clips that overlap go to the next lane down, as an editor stacks them: each to the first lane free at its start.
     const rows: LaneClip[][] = [];
     for (const c of clips.sort((a, b) => a.from - b.from || a.to - b.to)) {
@@ -117,21 +123,30 @@ export function timelineLanes(state: ResolvedState, { steps = 100 }: { steps?: n
   // An editor stacks picture above sound; within each, the file's order.
   lanes.sort((a, b) => (a.kind === b.kind ? 0 : a.kind === "picture" ? -1 : 1));
   const markers: LaneMarker[] = [...state.items.values()]
-    .filter((p) => p.kind === "marker")
-    .map((p) => ({
-      time: round3(startSeconds(p)),
-      label: typeof p.props.label === "string" && p.props.label ? p.props.label : p.id,
-      ...(typeof p.props.color === "string" ? { color: p.props.color } : {}),
+    .flatMap((p) => {
+      const m = placed(p, "marker");
+      return m ? [m] : [];
+    })
+    .map((m) => ({
+      time: round3(startSeconds(m)),
+      label: m.props.label || m.id,
+      ...(m.props.color ? { color: m.props.color } : {}),
     }))
     .sort((a, b) => a.time - b.time);
   return { length: round3(state.composition.duration), markers, lanes };
 }
 
-function levelOf(state: ResolvedState, p: Placement, steps: number): number[] | undefined {
+function levelOf(
+  state: ResolvedState,
+  p: NonNullable<ReturnType<typeof placed<"audio">>>,
+  steps: number,
+): number[] | undefined {
   const source = p.source;
   const wave = source ? lookupAsset(state.manifest, source.asset)?.waveform : undefined;
   if (!source || !wave || wave.peaks.length === 0) return undefined;
-  const volume = typeof p.props.volume === "number" ? p.props.volume : 1;
+  // A volume with keys is drawn at full: the level shows what the sound is, not how loud it is at each moment.
+  const set = p.props.volume;
+  const volume = typeof set === "number" ? set : 1;
   const length = endSeconds(p) - startSeconds(p);
   const n = Math.max(1, Math.round(length * steps));
   const span = length / n;

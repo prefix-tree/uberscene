@@ -43,13 +43,8 @@ focused pull request with a test.
 
 ## Adding a vocabulary element
 
-1. Schema in `packages/kit/src/jsx/schemas/*.ts` (Zod, `strictObject`, defaults that validate). Add only props and
-   values the player and the export draw: a file that checks clean should render as written.
-2. Capabilities row in `src/jsx/capabilities.ts`; the component in `src/jsx/elements.ts`.
-3. Placement rules in `src/resolve/resolve.ts` if it is timed; lint rules in `src/source/lint/rules` if it has conventions.
-4. Use it in `fixtures/sample.tsx`, regenerate `fixtures/sample.placement.json` with `pnpm exec tsx scripts/gen-placement.ts`, and add the resolve assertions.
-5. Render it in the player: a draw op in `src/model/frame-plan.ts` for canvas kinds, or a component in `src/react/elements` for DOM kinds.
-6. `pnpm docs:gen` to update the element reference.
+`pnpm new:element <kind>` starts one. What it writes, what to fill in and what the checks then ask are in
+[AGENTS.md](AGENTS.md#adding-an-element).
 
 ## Adding an action
 

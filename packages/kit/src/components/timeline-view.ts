@@ -121,7 +121,7 @@ function ClipBlock(props: {
   height: number;
   playing: boolean;
   pxPerSecond: number;
-  view: View;
+  view: Omit<View, keyof z.infer<typeof timingSchema>>;
 }) {
   const { clip, kind, left, width: w, height: hgt, playing, pxPerSecond, view } = props;
   const { colors } = view;
@@ -218,7 +218,7 @@ function ClipBlock(props: {
 /** The picture itself, drawn each frame inside the view's layer: markers, lanes, clips, waveforms, names, the playhead. */
 export function TimelineViewPicture(props: Omit<View, keyof z.infer<typeof timingSchema>>) {
   const { elapsed } = useLayer();
-  const view = props as View;
+  const view = props;
   const { lanes, length, box, width, height, colors } = view;
   const now = props.from + elapsed;
   const span = props.window ?? length;

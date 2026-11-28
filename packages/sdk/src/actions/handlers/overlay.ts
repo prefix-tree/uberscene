@@ -1,4 +1,4 @@
-import { capabilitiesOf, moveRuns } from "@uberscene/kit/schema";
+import { capabilitiesOf, isKind, kindsWhere } from "@uberscene/kit/schema";
 
 import type { Json } from "../../patches/types";
 import type { Placement, ResolvedState } from "../../resolve/resolve";
@@ -26,12 +26,13 @@ const EPS = T(1e-6);
 const EXTRACT_BLOCKERS = ["in", "out", "transform", "fit", "blend", "blendOpacity", "emphasis"] as const;
 
 /** The kinds `element/create` and `element/update` take: whatever sits on a track and is not media or a transition. */
-const ELEMENT_KINDS: readonly string[] = ["title", "shape", "svg", "sticker", "adjustment", "nested", "layer"];
+const ELEMENT_KINDS = kindsWhere((kind) => kind.elementActions);
 
 define({
   type: "element/create",
   validate: (a, state) => {
-    if (!ELEMENT_KINDS.includes(a.params.kind))
+    // Params come in as JSON: a kind that is none, or not one this action makes, is refused here.
+    if (!isKind(a.params.kind) || !ELEMENT_KINDS.includes(a.params.kind))
       return invalid({
         code: "INVALID_PARAMS",
         message: `element/create makes ${ELEMENT_KINDS.join(", ")}; a clip or an audio is added with clip/add or audio/add`,
@@ -97,31 +98,6 @@ define({
     const prior: Record<string, Json | undefined> = {};
     for (const prop of Object.keys(a.params.props)) prior[prop] = rawProp(before, a.params.id, prop);
     return { type: "source/setProps", params: { id: a.params.id, props: prior } };
-  },
-  fold: () => [],
-});
-
-define({
-  type: "text/setContent",
-  targets: onElement({ kinds: ["title"] }),
-  validate: (a, state) => {
-    const base = validateTarget(state, a.params.id, []);
-    if (!base.valid) return base;
-    return state.items.get(a.params.id)!.kind === "title"
-      ? ok
-      : invalid({ code: "INVALID_PARAMS", message: "only titles have text content" });
-  },
-  apply: (a, log, ctx) => {
-    const was = rawNode(ctx.before, a.params.id);
-    const runs = a.params.runs ?? moveRuns(was?.text ?? "", was?.runs ?? [], a.params.text);
-    log.append({ op: "text", id: a.params.id, text: a.params.text, runs });
-  },
-  invert: (a, before) => {
-    const was = rawNode(before, a.params.id);
-    return {
-      type: "text/setContent",
-      params: { id: a.params.id, text: was?.text ?? "", runs: (was?.runs ?? []).map((r) => ({ ...r })) },
-    };
   },
   fold: () => [],
 });

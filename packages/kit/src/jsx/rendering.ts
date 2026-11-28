@@ -3,16 +3,18 @@
  * player and the export do not draw is not offered); these are the remaining limits, which the `not-rendered` lint
  * reports, so a file that checks clean renders as written.
  */
+import type { Kind } from "../elements";
+import { isDomOverlay, KINDS, kindsWhere } from "./capabilities";
 
 /** Masks render on these kinds, one per element. */
-export const MASKED_KINDS = ["clip", "nested"] as const;
+export const MASKED_KINDS = kindsWhere((kind) => kind.masked);
 
 /** The kinds drawn on the player's DOM overlay plane, over the canvas (a Motion or Three element is a layer). */
-const OVERLAY_KINDS = ["title", "shape", "svg", "sticker", "layer"] as const;
+const OVERLAY_KINDS = KINDS.filter(isDomOverlay);
 
 /** An enum prop where only some values render: a written value outside `values` gets `reason`. */
 export interface RenderedValues {
-  readonly kind: string;
+  readonly kind: Kind;
   /** A prop, or `prop.field` inside an object prop. */
   readonly prop: string;
   readonly values: readonly string[];
@@ -30,12 +32,12 @@ export const RENDERED_VALUES: readonly RenderedValues[] = [
 ];
 
 /**
- * Accepted but not rendered. `kind` "*" is any element; no `prop` is the
+ * Accepted but not rendered, on elements of `kind`. No `prop` is the
  * element itself; no `value` reports any written value except one that asks
  * for nothing (false, 0, "none", "all").
  */
 export interface NotRendered {
-  readonly kind: string;
+  readonly kind: Kind;
   readonly prop?: string;
   readonly value?: string;
   readonly reason: string;
@@ -59,7 +61,7 @@ export const NOT_RENDERED: readonly NotRendered[] = [
 
 /** An effect type an element of `kind` takes in its `effects` but does not draw. */
 export interface EffectNotRendered {
-  readonly kind: string;
+  readonly kind: Kind;
   readonly type: string;
   readonly reason: string;
 }

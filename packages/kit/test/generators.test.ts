@@ -66,6 +66,18 @@ describe("a generated value", () => {
     expect(generatedValue(g, 5, flat(1))).toBeCloseTo(1.05, 10);
   });
 
+  it("a shift reads a wiggle and a drift at another moment of their own clock", () => {
+    // What a value linked to another element's runs: that element's wobble, where this one's start stands in it.
+    const wiggle = { type: "wiggle", amount: 3, frequency: 2, seed: 9 } as const;
+    expect(generatedValue({ ...wiggle, shift: 0.75 }, 1, flat(0))).toBe(generatedValue(wiggle, 1.75, flat(0)));
+    const drift = { type: "drift", speed: 2 } as const;
+    expect(generatedValue({ ...drift, shift: 0.5 }, 1, flat(0))).toBe(3);
+    // Before the other element's start, a drift has not begun.
+    expect(generatedValue({ ...drift, shift: -2 }, 1, flat(0))).toBe(0);
+    // The base is read at this element's time: its keys are already on its clock.
+    expect(generatedValue({ ...drift, shift: 0.5 }, 1, (t) => t * 10)).toBe(13);
+  });
+
   it("a loop plays its stretch of the base again, or back and forth", () => {
     // The base rises from 0 at 1 s to 10 at 3 s.
     const base = (t: number) => Math.max(0, Math.min(10, (t - 1) * 5));

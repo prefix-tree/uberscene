@@ -1,4 +1,4 @@
-import type { DeclaredFont, ShaderDefinition, TextRun } from "@uberscene/kit/schema";
+import type { DeclaredFont, Kind, ShaderDefinition, TextRun } from "@uberscene/kit/schema";
 
 import type { ResolveError } from "./errors";
 
@@ -14,7 +14,7 @@ export const INTERIOR_PREFIX = "interior.";
  */
 export interface CollectedNode {
   readonly id: string;
-  readonly kind: string;
+  readonly kind: Kind;
   readonly props: Readonly<Record<string, unknown>>;
   readonly children: readonly CollectedNode[];
   /** Text content for elements whose children are text (Title). */

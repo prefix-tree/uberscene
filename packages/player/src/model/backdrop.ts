@@ -1,10 +1,13 @@
+import { capabilitiesOf, isDomOverlay, KINDS, type Kind, onOverlayPlane } from "@uberscene/kit/schema";
 import type { ResolvedState } from "@uberscene/sdk/resolver";
 
 /** Kinds the overlay plane draws (as DOM, in the preview and the export) rather than the canvas. */
-export const OVERLAY_KINDS: ReadonlySet<string> = new Set(["title", "shape", "svg", "sticker", "layer", "adjustment"]);
+export const OVERLAY_KINDS: ReadonlySet<Kind> = new Set(KINDS.filter(onOverlayPlane));
 
-/** Kinds that put footage on the canvas. */
-const FOOTAGE_KINDS: ReadonlySet<string> = new Set(["clip", "nested", "multicam"]);
+/** Whether a kind puts footage on the canvas. */
+const isFootage = (kind: Kind | undefined): boolean => kind !== undefined && capabilitiesOf(kind).footage;
+/** Whether a kind is drawn as DOM alone, over the canvas. */
+const isOverlay = (kind: Kind | undefined): boolean => kind !== undefined && isDomOverlay(kind);
 
 const memo = new WeakMap<ResolvedState, ReadonlySet<string>>();
 
@@ -19,14 +22,9 @@ const memo = new WeakMap<ResolvedState, ReadonlySet<string>>();
 export function backdropTracks(state: ResolvedState): ReadonlySet<string> {
   const hit = memo.get(state);
   if (hit) return hit;
-  const footage = state.tracks.filter(
-    (t) => !t.hidden && t.items.some((id) => FOOTAGE_KINDS.has(state.items.get(id)?.kind ?? "")),
-  );
+  const footage = state.tracks.filter((t) => !t.hidden && t.items.some((id) => isFootage(state.items.get(id)?.kind)));
   const lowest = footage.length ? Math.min(...footage.map((t) => t.order)) : -1;
-  const drawn = (id: string) => {
-    const k = state.items.get(id)?.kind ?? "";
-    return k !== "adjustment" && OVERLAY_KINDS.has(k);
-  };
+  const drawn = (id: string) => isOverlay(state.items.get(id)?.kind);
   const below = state.tracks.filter((t) => t.order < lowest && !t.hidden && t.items.some(drawn));
   const set: ReadonlySet<string> = new Set(below.map((t) => t.id));
   memo.set(state, set);
@@ -57,14 +55,14 @@ export function trackBands(state: ResolvedState): TrackBands {
   if (hit) return hit;
   const bandOf = new Map<string, number>();
   const slotOf = new Map<string, number>();
-  const kindOf = (id: string) => state.items.get(id)?.kind ?? "";
+  const kindOf = (id: string) => state.items.get(id)?.kind;
   let band = 0;
   let footageSeen = false;
   let overlaySinceFootage = false;
   for (const track of [...state.tracks].sort((a, b) => a.order - b.order)) {
     if (track.hidden) continue;
-    const hasFootage = track.items.some((id) => FOOTAGE_KINDS.has(kindOf(id)));
-    const hasOverlay = track.items.some((id) => kindOf(id) !== "adjustment" && OVERLAY_KINDS.has(kindOf(id)));
+    const hasFootage = track.items.some((id) => isFootage(kindOf(id)));
+    const hasOverlay = track.items.some((id) => isOverlay(kindOf(id)));
     if (hasFootage) {
       // Footage above an overlay that is itself above footage: a new canvas, over that overlay.
       if (footageSeen && overlaySinceFootage) band++;

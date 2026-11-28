@@ -1,7 +1,7 @@
 import { createElement as h } from "react";
 import { describe, expect, it } from "vitest";
 
-import { Audio, Clip, Composition, Marker, Title, Track } from "@uberscene/kit";
+import { Audio, Clip, Composition, Marker, Motion, Title, Track } from "@uberscene/kit";
 import {
   type AssetManifest,
   collect,
@@ -179,5 +179,22 @@ describe("syncReport", () => {
     expect(syncReport(silent)).toMatchObject({ music: [], points: [], issues: [] });
     const late = syncReport(edit([h(Title, { id: "t", start: 12, duration: 2 }, "After")]));
     expect(late.summary).toMatchObject({ points: 0, outsideMusic: 1 });
+  });
+
+  it("counts an engine layer as something seen: its kind is layer, whatever its tag", () => {
+    const report = syncReport(edit([h(Motion, { id: "m", start: 2, duration: 2, sequence: [] })]));
+    expect(report.points.map((p) => p.id)).toEqual(["m"]);
+    expect(
+      resolve(
+        collect(
+          h(
+            Composition,
+            { fps: 30, width: 8, height: 8 },
+            h(Track, { id: "t", layout: "free" }, h(Motion, { id: "m", start: 0, duration: 1, sequence: [] })),
+          ),
+        ),
+        manifest,
+      ).items.get("m")?.kind,
+    ).toBe("layer");
   });
 });

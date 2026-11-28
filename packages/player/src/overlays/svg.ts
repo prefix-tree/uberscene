@@ -25,10 +25,10 @@ export interface SvgViewBox {
   readonly height: number;
 }
 
-export interface SvgColor {
+interface SvgColor {
   readonly type: "none" | "tint" | "replace";
-  readonly tint?: string;
-  readonly opacity?: number;
+  readonly tint?: string | undefined;
+  readonly opacity?: number | undefined;
 }
 
 export interface PrepareSvgOptions {

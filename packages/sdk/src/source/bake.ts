@@ -1,7 +1,7 @@
 import { capabilitiesOf } from "@uberscene/kit/schema";
 
 import { nodeSpecOf } from "../actions/types";
-import type { ResolvedState } from "../resolve/resolve";
+import { propsAsWritten, type ResolvedState } from "../resolve/resolve";
 import type { CollectedNode } from "../resolve/tree";
 import { lineRange, type SourceEdit } from "./edits";
 import { buildSourceIndex, type SourceIndex } from "./index";
@@ -60,7 +60,7 @@ function bakeGeneratedChildren(text: string, parentId: string, state: ResolvedSt
   const printed = generated
     .map((p) =>
       printElement(
-        { id: p.id, kind: p.kind, props: JSON.parse(JSON.stringify(p.props)) as Record<string, never> },
+        { id: p.id, kind: p.kind, props: JSON.parse(JSON.stringify(propsAsWritten(p))) as Record<string, never> },
         indent,
       ),
     )

@@ -1,9 +1,10 @@
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { resolveTheme, type TextRun, Time, TimeRange } from "@uberscene/kit/schema";
-import type { Placement, ResolvedState } from "@uberscene/sdk";
+import { resolveTheme, type TextRun } from "@uberscene/kit/schema";
+import type { ResolvedState } from "@uberscene/sdk";
 
-import { titleContent } from "../src/overlays/content";
+import { titleContent } from "../src/elements/title/content";
+import { titlePlacement } from "./helpers/title";
 
 // A title's <Mark>s, drawn: the words of each run in a span of its look, inside the title's own style, whatever the
 // animation shows of the text.
@@ -11,14 +12,9 @@ import { titleContent } from "../src/overlays/content";
 const RUN: TextRun = { from: 9, to: 14, color: "#0000ff" };
 
 function box(text: string, runs: readonly TextRun[], animation?: object, time = 1, theme = false): HTMLElement {
-  const placement = {
-    id: "t",
-    kind: "title",
-    range: TimeRange.of(Time.ZERO, Time.seconds(2)),
-    props: { style: { color: "#ff0000" }, ...(animation ? { animation } : {}) },
-  } as unknown as Placement;
+  const placement = titlePlacement({ style: { color: "#ff0000" }, ...(animation ? { animation } : {}) }, text, runs);
   const state = (theme ? { theme: resolveTheme(undefined) } : {}) as ResolvedState;
-  const html = renderToStaticMarkup(titleContent({ placement, children: [], state, time, text, runs }));
+  const html = renderToStaticMarkup(titleContent({ placement, children: [], state, time }));
   return new DOMParser().parseFromString(html, "text/html").body.firstElementChild as HTMLElement;
 }
 

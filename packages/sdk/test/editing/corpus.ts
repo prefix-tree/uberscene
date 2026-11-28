@@ -28,7 +28,7 @@ export interface CorpusFile {
 }
 
 /** The video files of a folder (and of the subfolders named), with the folder's manifest. */
-function folder(dir: string, subfolders: readonly string[] = []): CorpusFile[] {
+export function folder(dir: string, subfolders: readonly string[] = []): CorpusFile[] {
   const manifest = JSON.parse(readFileSync(join(root, dir, "uberscene.json"), "utf8")) as AssetManifest;
   return ["", ...subfolders].flatMap((sub) =>
     readdirSync(join(root, dir, sub))

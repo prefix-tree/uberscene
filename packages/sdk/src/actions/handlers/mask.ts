@@ -1,4 +1,4 @@
-import { capabilitiesOf } from "@uberscene/kit/schema";
+import { capabilitiesOf, type Kind } from "@uberscene/kit/schema";
 
 import type { Json } from "../../patches/types";
 import {
@@ -17,9 +17,12 @@ import {
 import { invalid, nodeOfSpec, nodeSpecOf, ok } from "../types";
 import { lastNonStack } from "./stack";
 
+/** Whether a kind takes a `<Mask>` child: one written under any other kind is dropped when the file is read. */
+const takesMask = (kind: Kind): boolean => capabilitiesOf(kind).childKinds.includes("mask");
+
 define({
   type: "mask/create",
-  targets: onElement({ param: "parentId", literalOnly: true, when: (item) => capabilitiesOf(item.kind).visual }),
+  targets: onElement({ param: "parentId", literalOnly: true, when: (item) => takesMask(item.kind) }),
   validate: (a, state) => {
     if (state.tree.byId.has(a.params.id)) return invalid({ code: "DUPLICATE_ID", message: `"${a.params.id}" exists` });
     const parent = requireElement(state, a.params.parentId, "parentId");
@@ -28,7 +31,7 @@ define({
     if (refused) return invalid(refused);
     if (parent.editable === "generated")
       return invalid({ code: "OPAQUE_TARGET", message: `"${parent.id}" is generated; bake it first` });
-    return capabilitiesOf(parent.kind).visual
+    return takesMask(parent.kind)
       ? ok
       : invalid({ code: "INVALID_PARAMS", message: `<${parent.kind}> cannot carry a mask` });
   },

@@ -1,7 +1,7 @@
 import type { ResolvedState } from "@uberscene/sdk";
 
 import { overlayLayout } from "../src/overlays/layout";
-import { fixtureState, makeState } from "./helpers/state";
+import { fixtureState, makeState, type TrackSpec } from "./helpers/state";
 import { buildFramePlan, captureWarnings, visiblePlacements } from "./internal";
 
 const state = makeState({
@@ -325,7 +325,7 @@ describe("buildFramePlan", () => {
   });
 
   it("blurs the first footage behind everything, unless an overlay sits beneath the footage", () => {
-    const main = {
+    const main: TrackSpec = {
       id: "main",
       items: [
         { id: "c", kind: "clip", source: { in: 0, out: 4, asset: "a" } },

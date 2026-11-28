@@ -1,4 +1,4 @@
-import type { TextRun } from "@uberscene/kit/schema";
+import type { Kind, TextRun } from "@uberscene/kit/schema";
 
 import type { Json } from "../../patches/types";
 import type { CollectedNode, LayerInterior } from "../../resolve/tree";
@@ -47,7 +47,7 @@ export type PlacementSpec =
 /** A serialisable element to insert: raw JSX props, optional text, optional children. */
 export interface NodeSpec {
   readonly id: string;
-  readonly kind: string;
+  readonly kind: Kind;
   readonly props: Readonly<Record<string, Json | undefined>>;
   readonly text?: string;
   /** A title's marked words (`<Mark>`), as character ranges of `text`. */

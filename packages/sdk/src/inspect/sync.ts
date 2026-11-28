@@ -1,8 +1,9 @@
 // The music against the picture, as data: the music the timeline plays and its beats, every moment of the video in
 // one sorted list, and how far each cut and each start is from its nearest beat. Read from the resolved timeline
 // alone, so anything that cannot hear can still tell whether an edit is on the music.
-import { nearestFrame } from "@uberscene/kit/schema";
+import { kindsWhere, nearestFrame } from "@uberscene/kit/schema";
 
+import { placed } from "../elements/placement";
 import { lookupAsset } from "../manifest/types";
 import type { Placement, ResolvedState } from "../resolve/resolve";
 import { endSeconds, startSeconds } from "../time";
@@ -43,7 +44,7 @@ export interface EventRow {
 const NO_EDGES = new Set(["caption", "marker", "transition"]);
 
 /** Elements whose start shows on screen: what a viewer sees change. */
-const SEEN = new Set(["clip", "title", "shape", "svg", "sticker", "layer", "nested", "motion", "three"]);
+const SEEN = new Set(kindsWhere((kind) => kind.timed && (kind.plane === "canvas" || kind.plane === "dom")));
 
 /**
  * The beat nearest a time, among music that is playing then (or within a beat of it); undefined when none is. `beats`
@@ -324,7 +325,8 @@ function soundPoints(state: ResolvedState, cuts: readonly CutRow[], frameMs: num
   const effects = new Set(state.tracks.filter((t) => t.role === "effects").map((t) => t.id));
   const out: SoundPoint[] = [];
   for (const p of state.items.values()) {
-    if (p.kind !== "audio" || p.track === null || !effects.has(p.track) || !(endSeconds(p) > startSeconds(p))) continue;
+    const sound = placed(p, "audio");
+    if (!sound || p.track === null || !effects.has(p.track) || !(endSeconds(p) > startSeconds(p))) continue;
     const onset = p.source ? lookupAsset(state.manifest, p.source.asset)?.onset : undefined;
     const lead = p.source && onset !== undefined ? Math.max(0, (onset - p.source.in) / p.source.speed) : 0;
     const time = Math.round((startSeconds(p) + lead) * 1000) / 1000;

@@ -1,6 +1,16 @@
 // Moments: the places on a timeline a person or an agent asks to look at, written the way the file is written (an
 // element's id, a word, a shot, a marker) or as plain time (seconds, a frame, a range).
-import { frameStartSeconds, framesUntil, nearestFrame, type Rate, round3, Time } from "@uberscene/kit/schema";
+import {
+  capabilitiesOf,
+  frameStartSeconds,
+  framesUntil,
+  nearestFrame,
+  onOverlayPlane,
+  parseRef,
+  type Rate,
+  round3,
+  Time,
+} from "@uberscene/kit/schema";
 
 import { entriesOf, parseTimeRef } from "../manifest/timeref";
 import { type AssetEntry, lookupAsset } from "../manifest/types";
@@ -41,12 +51,10 @@ export const MOMENT_FORMS =
 /** The most moments one range may ask for. */
 export const MAX_RANGE_MOMENTS = 500;
 
-const ID = "[A-Za-z_][A-Za-z0-9_-]*";
 const NUMBER = /^\d+(?:\.\d+)?$/;
 const FRAME = /^(\d+)f$/;
-const ELEMENT = new RegExp(`^(${ID})(?:\\.(start|mid|end))?$`);
-const REF = /^(?:word|shot|silence|beat):\d+(?:\.end)?$|^marker:[A-Za-z_][A-Za-z0-9_-]*$/;
-const CLIP_REF = new RegExp(`^(${ID})@((?:word|shot|silence|beat):\\d+(?:\\.end)?)$`);
+/** The references a moment may be written as, of the one reference grammar. */
+const REF_FORMS = ["moment", "marker", "element"] as const;
 
 function parseTime(text: string): (ParsedMoment & { kind: "time" }) | null {
   if (NUMBER.test(text)) return { kind: "time", text, seconds: Number(text) };
@@ -68,17 +76,14 @@ export function parseMoment(input: string): ParsedMoment {
     if (!from || !to || more.length > 0 || rest.length > 0 || step === null) return { kind: "invalid", text };
     return { kind: "range", text, from, to, ...(step ? { step } : {}) };
   }
-  if (REF.test(text)) return { kind: "ref", text, ref: text };
-  const clipRef = CLIP_REF.exec(text);
-  if (clipRef) return { kind: "ref", text, clip: clipRef[1] as string, ref: clipRef[2] as string };
-  const element = ELEMENT.exec(text);
-  if (element)
-    return {
-      kind: "element",
-      text,
-      id: element[1] as string,
-      ...(element[2] ? { point: element[2] as "start" | "mid" | "end" } : {}),
-    };
+  const target = parseRef(text, REF_FORMS);
+  if (target.type === "marker") return { kind: "ref", text, ref: text };
+  if (target.type === "moment")
+    return target.of === undefined
+      ? { kind: "ref", text, ref: text }
+      : { kind: "ref", text, clip: target.of, ref: text.slice(target.of.length + 1) };
+  if (target.type === "element")
+    return { kind: "element", text, id: target.id, ...(target.edge ? { point: target.edge } : {}) };
   return { kind: "invalid", text };
 }
 
@@ -211,7 +216,7 @@ function resolveRef(
   } else {
     const seen = new Set<string>();
     for (const p of state.items.values()) {
-      if (!p.source || (p.kind !== "clip" && p.kind !== "audio") || seen.has(p.source.asset)) continue;
+      if (!p.source || !capabilitiesOf(p.kind).playsAsset || seen.has(p.source.asset)) continue;
       seen.add(p.source.asset);
       const asset = lookupAsset(state.manifest, p.source.asset);
       if (asset) for (const play of playsOf(state, p.source.asset)) candidates.push({ play, asset });
@@ -235,9 +240,6 @@ function resolveRef(
   else if (known) errors.push(`${m.text}: no clip on the timeline plays it${m.clip ? ` in ${m.clip}` : ""}`);
   else errors.push(`${m.text}: no asset the timeline plays has it in the manifest`);
 }
-
-/** Overlays an editor looks at once each: what is drawn over the footage, and what grades it. */
-const OVERLAYS = new Set(["title", "shape", "svg", "sticker", "layer", "motion", "three", "adjustment"]);
 
 /**
  * Five moments around one thing. A transition: the last frame before it, its first frame, its middle, its last
@@ -310,7 +312,7 @@ export function skimMoments(state: ResolvedState): Moment[] {
   const transitions = [...state.items.values()].filter((p) => p.kind === "transition");
   for (const p of state.items.values()) {
     if (p.range.isEmpty() || p.track === null) continue;
-    if (p.kind === "clip" || p.kind === "nested") {
+    if (capabilitiesOf(p.kind).plane === "canvas") {
       // A clip that comes in through a transition is fully there once the transition is over.
       const into = transitions.find((t) => t.between?.[1] === p.id);
       if (into) {
@@ -321,7 +323,7 @@ export function skimMoments(state: ResolvedState): Moment[] {
         if (startSeconds(p) > f / 2) add(`${p.id}.before`, startSeconds(p) - f, `last frame before ${p.kind} ${p.id}`);
         add(`${p.id}.start`, startSeconds(p), `first frame of ${p.kind} ${p.id}`);
       }
-    } else if (OVERLAYS.has(p.kind)) {
+    } else if (onOverlayPlane(p.kind)) {
       overlayMids.add(`${p.id}.mid`);
       add(`${p.id}.mid`, (startSeconds(p) + endSeconds(p)) / 2, `middle of ${p.kind} ${p.id}`);
     }

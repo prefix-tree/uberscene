@@ -53,7 +53,7 @@ describe("follow", () => {
       <Track id="rig" layout="free">${SHAPE("hand", ` follow="main"`)}</Track>`),
     );
     expect(problems(state)).toEqual([
-      `SCHEMA hand follow: follow names "main", a track: an element follows a title, shape, svg, sticker or layer`,
+      `WRONG_KIND hand follow: follow names "main", a track: an element follows a title, shape, svg, sticker or layer`,
     ]);
   });
 
@@ -79,7 +79,7 @@ describe("follow", () => {
       <Track id="logo" layout="free">${SHAPE("hand", ` follow="arm"`)}</Track>`),
     );
     expect(problems(state)).toEqual([
-      `SCHEMA hand follow: "arm" is under the camera and the other is not: put "hand" and "arm", which it follows, on tracks on the same side of the camera`,
+      `WRONG_SCOPE hand follow: "arm" is under the camera and the other is not: put "hand" and "arm", which it follows, on tracks on the same side of the camera`,
     ]);
   });
 
@@ -91,7 +91,7 @@ describe("follow", () => {
       </Track>`),
     );
     expect(problems(state).filter((p) => p.includes("follow"))).toEqual([
-      'SCHEMA hand follow: follow names "logo", an SVG read from a file: its size is only known once it is drawn, so it can\'t be followed yet; write its markup in `content`, or follow a shape',
+      'WRONG_KIND hand follow: follow names "logo", an SVG read from a file: its size is only known once it is drawn, so it can\'t be followed yet; write its markup in `content`, or follow a shape',
     ]);
   });
 

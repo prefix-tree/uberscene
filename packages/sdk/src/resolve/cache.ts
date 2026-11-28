@@ -58,6 +58,8 @@ export const shortCuts = {
   plain: 0,
   /** A tree placed by walking it from its root, with no id map. */
   walked: 0,
+  /** The graph of references handed back as it was, because nothing it was built from had changed. */
+  graphKept: 0,
 };
 
 /** Where the resolver leaves the way to resolve with its caches off. */

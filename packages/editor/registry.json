@@ -51,13 +51,18 @@
       "type": "registry:component",
       "title": "Layers",
       "description": "Every element, grouped by track. A click selects it.",
-      "dependencies": ["@uberscene/editor", "@uberscene/sdk", "lucide-react"],
+      "dependencies": ["@uberscene/editor", "@uberscene/kit", "@uberscene/sdk", "lucide-react"],
       "registryDependencies": ["button", "scroll-area"],
       "files": [
         {
           "path": "registry/editor/layers.tsx",
           "type": "registry:component",
           "target": "components/editor/layers.tsx"
+        },
+        {
+          "path": "registry/editor/elements.tsx",
+          "type": "registry:component",
+          "target": "components/editor/elements.tsx"
         },
         {
           "path": "registry/editor/use-rows.ts",
@@ -110,6 +115,11 @@
           "path": "registry/editor/typography.tsx",
           "type": "registry:component",
           "target": "components/editor/typography.tsx"
+        },
+        {
+          "path": "registry/editor/elements.tsx",
+          "type": "registry:component",
+          "target": "components/editor/elements.tsx"
         },
         {
           "path": "registry/editor/fields.tsx",
