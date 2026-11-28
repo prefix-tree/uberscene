@@ -59,6 +59,20 @@ What the checks hold a kind to:
 A kind that needs something beneath it to show (an adjustment filters footage) says so in `sampleBeneath`. A sample
 that plays a file names `asset:picture`, an image the suite provides.
 
+## Adding a way for one element to name another
+
+A reference (an anchor, a follow, a camera's push) is three things, and the build asks for each:
+
+1. **The prop, marked.** Write it in the kit's schema with `ref("<name>", schema)` (from
+   `packages/kit/src/jsx/ref-sites.ts`). One prop, a list of them or an object of them by name are all found.
+2. **Its entry** in `REF_KINDS` (`packages/sdk/src/resolve/refs.ts`), under the same name: how the text reads as what
+   it names, what it may name, when it is read, how its holder reads as a dependent, and the errors it reports.
+3. **Its repair** in `packages/sdk/src/actions/ref-repairs.ts`: what removing the target does to the holder. An
+   entry with no repair does not compile.
+
+Its edges, its errors, what depends on its target and the frame cache then come from the graph (`state.refs`).
+Never read a reference from an element's props by hand, and never add a case for one to `dependentsOf`.
+
 ## Time math: never do arithmetic on raw seconds at a boundary
 
 Times are stored as float seconds, and a sequence adds lengths up: `0.1 + 0.2` is `0.30000000000000004`, while frame 9
