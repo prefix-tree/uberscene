@@ -959,7 +959,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/sdk`
 
-288 exports.
+291 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -1052,6 +1052,8 @@ Every name each entry exports, read from the code. The sections above explain th
 | `GatherOptions` | interface |  |
 | `GeneratorJson` | type | A generator as a file writes it, in place of a number or a key list. |
 | `GeneratorRow` | interface | A generator on a value. |
+| `graphOf` | function | The graph of the references `nodes` write. |
+| `graphOfFile` | function | The graph of a tree that is `base`, a file's nodes, with the nodes of `over` made again, and the place of each id in the file's order. |
 | `hasProp` | function | Whether a placement parsed and is of a kind whose props have `prop` (`transform`, `volume`, `follow`). |
 | `heldWithin` | function | Seconds of holds inside the first `length` seconds of a clip. |
 | `HelperCallSite` | interface |  |
@@ -1060,6 +1062,7 @@ Every name each entry exports, read from the code. The sections above explain th
 | `HistorySnapshot` | interface |  |
 | `holdTotal` | function | Total seconds the holds add to a clip. |
 | `indentOf` | function |  |
+| `InFileOrder` | type | The ids `needed` says yes to, in the order the file has them. |
 | `insertLayer` | function | The text with the component imported (unless the file already imports that name) and a `<Layer>` holding it at the end of the track. |
 | `InstalledBlock` | interface | A block copied into the project. |
 | `INTERIOR_PREFIX` | const | Prop keys under this prefix address a Layer's handles rather than the Layer's own props. |
@@ -1254,7 +1257,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/sdk/resolver`
 
-132 exports.
+135 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -1288,9 +1291,12 @@ Every name each entry exports, read from the code. The sections above explain th
 | `freezeHoldsOf` | function | A clip's holds (from `freezes`), sorted by `start`. |
 | `freezeShift` | function | Element-relative `rel` with the holds before it taken out, or the held source second when `rel` is inside a hold. |
 | `freezeUnshift` | function | Element-relative time of clip time `u`. |
+| `graphOf` | function | The graph of the references `nodes` write. |
+| `graphOfFile` | function | The graph of a tree that is `base`, a file's nodes, with the nodes of `over` made again, and the place of each id in the file's order. |
 | `hasProp` | function | Whether a placement parsed and is of a kind whose props have `prop` (`transform`, `volume`, `follow`). |
 | `heldWithin` | function | Seconds of holds inside the first `length` seconds of a clip. |
 | `holdTotal` | function | Total seconds the holds add to a clip. |
+| `InFileOrder` | type | The ids `needed` says yes to, in the order the file has them. |
 | `InstalledBlock` | interface | A block copied into the project. |
 | `INTERIOR_PREFIX` | const | Prop keys under this prefix address a Layer's handles rather than the Layer's own props. |
 | `isResolveError` | function |  |

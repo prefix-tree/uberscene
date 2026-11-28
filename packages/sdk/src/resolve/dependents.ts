@@ -1,3 +1,4 @@
+import { nodeIn } from "./overlay";
 import type { RefEdge } from "./refs";
 import type { ResolvedState } from "./resolve";
 
@@ -31,7 +32,7 @@ export type Dependent =
 /** How one reference of the graph reads as a dependent of what it names. */
 function dependent(state: ResolvedState, edge: RefEdge): Dependent {
   const id = edge.from;
-  const props = (state.tree.byId.get(id)?.props ?? {}) as Record<string, unknown>;
+  const props = (nodeIn(state.tree, id)?.props ?? {}) as Record<string, unknown>;
   switch (edge.type) {
     case "anchor": {
       const end = edge.target.type === "element" && edge.target.edge === "end" ? ({ edge: "end" } as const) : {};
@@ -69,7 +70,7 @@ export function dependentsOf(state: ResolvedState, id: string): Dependent[] {
   for (const edge of state.refs.to.get(id) ?? []) if (edge.from !== id) out.push(dependent(state, edge));
   const track = state.tracks.find((t) => t.items.includes(id));
   if (track?.layout === "sequence") {
-    const siblings = state.tree.byId.get(track.id)?.children ?? [];
+    const siblings = nodeIn(state.tree, track.id)?.children ?? [];
     const at = siblings.findIndex((c) => c.id === id);
     const before = siblings[at - 1];
     const after = siblings[at + 1];

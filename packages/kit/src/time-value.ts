@@ -88,8 +88,9 @@ export class Time {
 
   /** A count of ticks. Throws for a number that isn't a safe integer. */
   static ofTicks(ticks: number): Time {
-    const n = checked(ticks, `${ticks} ticks`);
-    return n === 0 ? Time.ZERO : new Time(n);
+    // The message is built only when the count is refused: a resolve makes thousands of times, and none of them throw.
+    if (!Number.isSafeInteger(ticks)) checked(ticks, `${ticks} ticks`);
+    return ticks === 0 ? Time.ZERO : new Time(ticks);
   }
 
   /**
@@ -140,16 +141,22 @@ export class Time {
 
   /** The earliest of some times. */
   static min(first: Time, ...rest: readonly Time[]): Time {
-    return rest.reduce((a, b) => (b.ticks < a.ticks ? b : a), first);
+    let least = first;
+    for (let i = 0; i < rest.length; i++) if ((rest[i] as Time).ticks < least.ticks) least = rest[i] as Time;
+    return least;
   }
 
   /** The latest of some times. */
   static max(first: Time, ...rest: readonly Time[]): Time {
-    return rest.reduce((a, b) => (b.ticks > a.ticks ? b : a), first);
+    let most = first;
+    for (let i = 0; i < rest.length; i++) if ((rest[i] as Time).ticks > most.ticks) most = rest[i] as Time;
+    return most;
   }
 
   /** `this + other`, exact. */
   plus(other: Time): Time {
+    // A time is never changed, so adding nothing is the time itself: no new one is made.
+    if (other.ticks === 0) return this;
     return Time.ofTicks(this.ticks + other.ticks);
   }
 
@@ -158,12 +165,14 @@ export class Time {
    * file that says a time too long, and reports it: a sum at the limit is how it knows.
    */
   plusClamped(other: Time): Time {
+    if (other.ticks === 0) return this;
     const sum = this.ticks + other.ticks;
     return sum >= Number.MAX_SAFE_INTEGER ? Time.MAX : sum <= -Number.MAX_SAFE_INTEGER ? Time.MIN : Time.ofTicks(sum);
   }
 
   /** `this - other`, exact. */
   minus(other: Time): Time {
+    if (other.ticks === 0) return this;
     return Time.ofTicks(this.ticks - other.ticks);
   }
 

@@ -76,6 +76,16 @@ describe("making a Time", () => {
     expect(() => Time.ofTicks(0.5)).toThrow(RangeError);
   });
 
+  it("names the count it refuses, in the words it always has", () => {
+    const why = "is past what a time can hold (about ±9.85 hours, 2^53 ticks), or not a whole count";
+    expect(() => Time.ofTicks(0.5)).toThrow(`0.5 ticks ${why}`);
+    expect(() => Time.ofTicks(2 ** 53)).toThrow(`9007199254740992 ticks ${why}`);
+    expect(() => Time.ofTicks(-(2 ** 53))).toThrow(`-9007199254740992 ticks ${why}`);
+    expect(() => Time.ofTicks(Number.NaN)).toThrow(`NaN ticks ${why}`);
+    expect(() => Time.ofTicks(Number.POSITIVE_INFINITY)).toThrow(`Infinity ticks ${why}`);
+    expect(Time.ofTicks(Number.MAX_SAFE_INTEGER)).toEqual(Time.MAX);
+  });
+
   it("refuses a time past 2^53 ticks (about 9.85 hours) instead of losing ticks", () => {
     expect(Time.seconds(MAX_SECONDS).toSeconds()).toBe(MAX_SECONDS);
     expect(() => Time.seconds(MAX_SECONDS + 1)).toThrow(RangeError);
@@ -173,6 +183,21 @@ describe("math on Time", () => {
     }
   });
 
+  it("takes the earliest and the latest of any number of times, the first of equals", () => {
+    const [a, b, c] = [Time.ofTicks(5), Time.ofTicks(-3), Time.ofTicks(9)];
+    expect(Time.min(a)).toBe(a);
+    expect(Time.max(a)).toBe(a);
+    expect(Time.min(a, b)).toBe(b);
+    expect(Time.max(a, b)).toBe(a);
+    expect(Time.min(a, b, c)).toBe(b);
+    expect(Time.max(a, b, c)).toBe(c);
+    expect(Time.max(b, a, c, a)).toBe(c);
+    const again = Time.ofTicks(5);
+    expect(Time.min(a, again)).toBe(a);
+    expect(Time.max(a, again)).toBe(a);
+    expect(Time.max(b, a, again)).toBe(a);
+  });
+
   it("orders consistently: compare, isBefore, equals, min, max and sort agree", () => {
     for (let i = 0; i < 1000; i++) {
       const a = Time.ofTicks(int(-1e6, 1e6));
@@ -192,6 +217,11 @@ describe("math on Time", () => {
   it("throws past the limit on plus, and holds at MIN or MAX on plusClamped", () => {
     const six = T("21600");
     expect(() => six.plus(six)).toThrow(RangeError);
+    // Adding or taking away nothing makes no new time.
+    expect(six.plus(Time.ZERO)).toBe(six);
+    expect(six.plusClamped(Time.ZERO)).toBe(six);
+    expect(six.minus(Time.ZERO)).toBe(six);
+    expect(Time.ZERO.plus(six).equals(six)).toBe(true);
     expect(six.plusClamped(six)).toBe(Time.MAX);
     expect(six.negate().plusClamped(six.negate())).toBe(Time.MIN);
     expect(Time.MAX.plusClamped(Time.ofTicks(1))).toBe(Time.MAX);

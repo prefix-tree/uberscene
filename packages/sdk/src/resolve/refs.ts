@@ -13,7 +13,9 @@ import {
 } from "@uberscene/kit/schema";
 
 import { sdkElement } from "../elements";
+import { shortCuts } from "./cache";
 import type { ResolveError } from "./errors";
+import { expandedRoot } from "./expand";
 import { EFFECT_PARAM_PATH } from "./link";
 import type { CollectedNode, CollectedTree } from "./tree";
 
@@ -138,7 +140,7 @@ const WITH_EFFECTS: ReadonlySet<Kind> = new Set(kindsWithProp("effects"));
 function links(node: CollectedNode): readonly Written[] {
   // An item the resolver made (a key, an effect) writes nothing itself: its links are its element's. An element with
   // nothing under it has no link either: most of a file, so this is the way out taken most.
-  if (node.children.length === 0 || capabilitiesOf(node.kind).placementScope === "child") return NOTHING;
+  if (node.children.length === 0 || isItem(node.kind)) return NOTHING;
   let out: Written[] | undefined;
   const visit = (item: CollectedNode): void => {
     const text = props(item).type === "link" ? props(item).link : undefined;
@@ -147,10 +149,21 @@ function links(node: CollectedNode): readonly Written[] {
       const prop = item.id.slice(node.id.length + 1, -".link".length);
       if (target.type === "prop") (out ??= []).push({ prop, text, target });
     }
-    for (const child of item.children) if (capabilitiesOf(child.kind).placementScope === "child") visit(child);
+    for (const child of item.children) if (isItem(child.kind)) visit(child);
   };
-  for (const child of node.children) if (capabilitiesOf(child.kind).placementScope === "child") visit(child);
+  for (const child of node.children) if (isItem(child.kind)) visit(child);
   return out ?? NOTHING;
+}
+
+const itemKinds = new Map<Kind, boolean>();
+/** Whether a kind is an item under an element (a key, an effect), not an element with a place of its own. */
+function isItem(kind: Kind): boolean {
+  let known = itemKinds.get(kind);
+  if (known === undefined) {
+    known = capabilitiesOf(kind).placementScope === "child";
+    itemKinds.set(kind, known);
+  }
+  return known;
 }
 
 const duration = (node: CollectedNode): { match?: unknown; until?: unknown } =>
@@ -425,6 +438,23 @@ export function buildRefGraph(
   tree: CollectedTree,
   ctx: RefContext,
 ): { readonly graph: RefGraph; readonly errors: ReadonlyMap<string, readonly ResolveError[]> } {
+  return graphOf(tree.byId.values(), (needed) => [...tree.byId.keys()].filter(needed), ctx);
+}
+
+/** The ids `needed` says yes to, in the order the file has them. */
+export type InFileOrder = (needed: (id: string) => boolean, ids: Iterable<string>) => string[];
+
+/**
+ * The graph of the references `nodes` write. They are the tree's nodes in file order, or only those of them that
+ * write a reference: a node that writes none adds nothing. `inOrder` is asked when an order is first read.
+ */
+export function graphOf(
+  nodes: Iterable<CollectedNode>,
+  inOrder: InFileOrder,
+  ctx: RefContext,
+  /** Told each answer of a kind's `unfit`, the one check that reads what an element's props say. */
+  asked?: (check: Unfit) => void,
+): { readonly graph: RefGraph; readonly errors: ReadonlyMap<string, readonly ResolveError[]> } {
   const edges: RefEdge[] = [];
   const errors = new Map<string, ResolveError[]>();
   const fail = (kind: RefKind, code: ResolveError["code"], id: string, prop: string, message: string): void => {
@@ -432,7 +462,7 @@ export function buildRefGraph(
     list.push({ code, id, prop: kind.report?.prop ?? prop, message });
     errors.set(kind.name, list);
   };
-  for (const node of tree.byId.values()) {
+  for (const node of nodes) {
     for (const { kind, written: all } of writtenOf(node)) {
       for (const read of all) {
         const written = kind.aim ? { ...read, target: kind.aim(read, ctx) } : read;
@@ -447,6 +477,7 @@ export function buildRefGraph(
           let broken = false;
           if (kind.report) {
             const unfit = kind.unfit?.(node.id, to, written, ctx);
+            if (asked && kind.unfit) asked({ kind, from: node.id, to, written, answer: unfit ?? null });
             const scope = kind.scope?.(node.id, to, written, ctx);
             if (kind.targets && !kind.targets(targetKind)) {
               fail(
@@ -498,13 +529,13 @@ export function buildRefGraph(
       }
     }
   }
-  return { graph: { edges, from, to, order: lazyOrder(edges, tree) }, errors };
+  return { graph: { edges, from, to, order: lazyOrder(edges, inOrder) }, errors };
 }
 
 /** The order of each facet, worked out the first time it is read: most resolves read none, a frame reads one. */
-function lazyOrder(edges: readonly RefEdge[], tree: CollectedTree): RefGraph["order"] {
+function lazyOrder(edges: readonly RefEdge[], inOrder: InFileOrder): RefGraph["order"] {
   const known: Partial<Record<Facet, readonly string[]>> = {};
-  const of = (facet: Facet) => (known[facet] ??= orderOf(facet, edges, tree));
+  const of = (facet: Facet) => (known[facet] ??= orderOf(facet, edges, inOrder));
   return {
     get time() {
       return of("time");
@@ -519,7 +550,7 @@ function lazyOrder(edges: readonly RefEdge[], tree: CollectedTree): RefGraph["or
 }
 
 /** The elements in the references of one facet, each after the ones it names; those in a circle last, in file order. */
-function orderOf(facet: Facet, edges: readonly RefEdge[], tree: CollectedTree): string[] {
+function orderOf(facet: Facet, edges: readonly RefEdge[], inOrder: InFileOrder): string[] {
   const needs = new Map<string, Set<string>>();
   for (const edge of edges) {
     if ((REF_KINDS[edge.type] as RefKind).facet !== facet) continue;
@@ -528,7 +559,7 @@ function orderOf(facet: Facet, edges: readonly RefEdge[], tree: CollectedTree): 
   }
   if (needs.size === 0) return [];
   // File order, so the same file always gives the same order.
-  const ids = [...tree.byId.keys()].filter((id) => needs.has(id));
+  const ids = inOrder((id) => needs.has(id), needs.keys());
   const done = new Set<string>();
   const out: string[] = [];
   for (let moved = true; moved; ) {
@@ -546,4 +577,179 @@ function orderOf(facet: Facet, edges: readonly RefEdge[], tree: CollectedTree): 
   }
   for (const id of ids) if (!done.has(id)) out.push(id);
   return out;
+}
+
+type Graphed = ReturnType<typeof graphOf>;
+
+/** One answer of a kind's `unfit`: why `from` may not name `to`, or null. */
+interface Unfit {
+  readonly kind: RefKind;
+  readonly from: string;
+  readonly to: string;
+  readonly written: Written;
+  readonly answer: string | null;
+}
+
+/** A graph built for a file, with what it was built from: it stands for as long as all of that is the same. */
+interface Kept {
+  /** The nodes that write a reference, and what each writes. */
+  readonly nodes: readonly CollectedNode[];
+  readonly written: readonly WrittenByKind[];
+  /** The tracks a duck may name and the camera each is under, as one text. */
+  readonly tracks: string;
+  /** What each check of an element named said, which is all the graph reads of an element's props. */
+  readonly asked: readonly Unfit[];
+  readonly result: Graphed;
+}
+
+interface Holders {
+  readonly place: ReadonlyMap<string, number>;
+  /** The places of the file's nodes that write a reference, in order, and those nodes with their items under them. */
+  readonly holding: readonly number[];
+  readonly nodes: readonly CollectedNode[];
+  kept?: Kept | undefined;
+}
+const holdersIn = new WeakMap<ReadonlyMap<string, CollectedNode>, Holders>();
+
+function sameWritten(a: WrittenByKind, b: WrittenByKind): boolean {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    const mine = a[i] as WrittenByKind[number];
+    const theirs = b[i] as WrittenByKind[number];
+    if (mine.kind !== theirs.kind || mine.written.length !== theirs.written.length) return false;
+    for (let j = 0; j < mine.written.length; j++) {
+      const one = mine.written[j] as Written;
+      const other = theirs.written[j] as Written;
+      // What a reference names is read from its text alone.
+      if (one.prop !== other.prop || one.text !== other.text) return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * The graph of a tree that is `base`, a file's nodes, with the nodes of `over` made again, and the place of each id
+ * in the file's order. It holds for a tree whose ids are the file's, each one node's (the resolver's `walkable`):
+ * then the file's order is the order of `base`.
+ *
+ * Which of the file's own nodes write a reference is worked out once for the file: an edit's tree asks only the few
+ * nodes it made again, so a drag does not read every node of a long timeline for the handful that name another. A
+ * node is read with its keys and effects as items under it, which is where a link is read from: `again` has the
+ * nodes of `over` so, and the file's own are kept by the node.
+ *
+ * The graph itself is kept too, and handed back as the same object while nothing it was built from has changed:
+ * the nodes that write a reference write the same ones, the tracks have the ids, roles and cameras they had, and
+ * every check of an element named (whether the one a `follow` names can be followed) answers as it did. The kind of an
+ * element, the track it is on and the camera over that track are the file's, which patching props does not change.
+ * A reference that names an id with a dot in it may name an item made from a prop, which a patch can make or take
+ * away: a graph with one is built each time.
+ */
+export function graphOfFile(
+  base: ReadonlyMap<string, CollectedNode>,
+  over: ReadonlyMap<string, CollectedNode> | undefined,
+  again: ReadonlyMap<string, CollectedNode>,
+  inOrder: (place: ReadonlyMap<string, number>) => InFileOrder,
+  ctx: RefContext,
+): Graphed {
+  let index = holdersIn.get(base);
+  if (!index) {
+    const place = new Map<string, number>();
+    const holding: number[] = [];
+    const nodes: CollectedNode[] = [];
+    let at = 0;
+    for (const node of base.values()) {
+      place.set(node.id, at);
+      const expanded = expandedRoot(node);
+      if (writtenOf(expanded).length > 0) {
+        holding.push(at);
+        nodes.push(expanded);
+      }
+      at++;
+    }
+    index = { place, holding, nodes };
+    holdersIn.set(base, index);
+  }
+  // A node made again may write anything now; any other writes what it did in the file.
+  let nodes = index.nodes;
+  if (over && over.size > 0) {
+    let changed: Map<number, CollectedNode | null> | undefined;
+    for (const [id, node] of over) {
+      const at = index.place.get(id);
+      if (at === undefined) continue;
+      const expanded = again.get(id) ?? expandedRoot(node);
+      const writes = writtenOf(expanded).length > 0;
+      const k = lowerBound(index.holding, at);
+      const held = index.holding[k] === at;
+      if (!held && !writes) continue;
+      (changed ??= new Map()).set(at, writes ? expanded : null);
+    }
+    if (changed) {
+      const out: CollectedNode[] = [];
+      const extra = [...changed.keys()].sort((a, b) => a - b);
+      let e = 0;
+      const take = (limit: number): void => {
+        for (; e < extra.length && (extra[e] as number) <= limit; e++) {
+          const node = changed.get(extra[e] as number);
+          if (node) out.push(node);
+        }
+      };
+      for (let k = 0; k < index.holding.length; k++) {
+        const at = index.holding[k] as number;
+        take(at - 1);
+        if (changed.has(at)) take(at);
+        else out.push(index.nodes[k] as CollectedNode);
+      }
+      take(Number.POSITIVE_INFINITY);
+      nodes = out;
+    }
+  }
+  let tracks = "";
+  for (const track of ctx.tracks) tracks += `${track.id}\n${track.role ?? ""}\n${ctx.cameraOfTrack(track.id) ?? ""}\n`;
+  const kept = index.kept;
+  if (kept && kept.tracks === tracks && kept.nodes.length === nodes.length) {
+    let same = true;
+    if (kept.nodes !== nodes)
+      for (let i = 0; same && i < nodes.length; i++) {
+        const node = nodes[i] as CollectedNode;
+        const was = kept.nodes[i] as CollectedNode;
+        same = node === was || (node.id === was.id && sameWritten(writtenOf(node), kept.written[i] as WrittenByKind));
+      }
+    for (let i = 0; same && i < kept.asked.length; i++) {
+      const check = kept.asked[i] as Unfit;
+      same = (check.kind.unfit?.(check.from, check.to, check.written, ctx) ?? null) === check.answer;
+    }
+    if (same) {
+      shortCuts.graphKept++;
+      return kept.result;
+    }
+  }
+  const asked: Unfit[] = [];
+  let dotted = false;
+  const result = graphOf(
+    nodes,
+    inOrder(index.place),
+    {
+      ...ctx,
+      kindOf: (id) => {
+        if (id.includes(".")) dotted = true;
+        return ctx.kindOf(id);
+      },
+    },
+    (check) => asked.push(check),
+  );
+  index.kept = dotted ? undefined : { nodes, written: nodes.map(writtenOf), tracks, asked, result };
+  return result;
+}
+
+/** The first place in a sorted list that holds `value` or more. */
+function lowerBound(sorted: readonly number[], value: number): number {
+  let low = 0;
+  let high = sorted.length;
+  while (low < high) {
+    const mid = (low + high) >> 1;
+    if ((sorted[mid] as number) < value) low = mid + 1;
+    else high = mid;
+  }
+  return low;
 }
