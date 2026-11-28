@@ -8,9 +8,22 @@ import { Callout, calloutSchema } from "./callout";
 import { Counter, CounterValue, counterSchema } from "./counter";
 import { LowerThird, lowerThirdSchema } from "./lower-third";
 import { withFrame } from "./shared";
+import { TimelineView, TimelineViewPicture, timelineViewSchema } from "./timeline-view";
 import { TypeCard, TypeCardBack, TypeCardLine, typeCardSchema } from "./type-card";
 
-export { Badge, Callout, Counter, CounterValue, LowerThird, TypeCard, TypeCardBack, TypeCardLine, withFrame };
+export {
+  Badge,
+  Callout,
+  Counter,
+  CounterValue,
+  LowerThird,
+  TimelineView,
+  TimelineViewPicture,
+  TypeCard,
+  TypeCardBack,
+  TypeCardLine,
+  withFrame,
+};
 
 export interface ComponentEntry {
   /** One line on what it is. */
@@ -37,6 +50,11 @@ export const COMPONENTS = {
     text: "A card of big type that builds line by line, with pills and struck-out lines.",
     props: typeCardSchema,
     component: TypeCard,
+  },
+  TimelineView: {
+    text: "A film's own timeline as an editor shows it: lanes, clips with their names, waveforms, a moving playhead.",
+    props: timelineViewSchema,
+    component: TimelineView,
   },
 } as const satisfies Record<string, ComponentEntry>;
 

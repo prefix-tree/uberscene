@@ -416,7 +416,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/kit`
 
-111 exports.
+113 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -515,6 +515,8 @@ Every name each entry exports, read from the code. The sections above explain th
 | `ThreeFrameArgs` | interface | What the update `setup` returns gets on every frame. |
 | `ThreeSetupArgs` | interface | What `<Three setup>` gets once. |
 | `ThreeSetupFunction` | type |  |
+| `TimelineView` | function | A film's timeline drawn as an editor shows it. |
+| `TimelineViewPicture` | function | The picture itself, drawn each frame inside the view's layer. |
 | `Title` | const | The `<Title>` element ([reference](/reference/elements/title)). |
 | `Track` | const | The `<Track>` element ([reference](/reference/elements/track)). |
 | `transition` | function | Declares a transition drawn by a GLSL function of the two pictures, and returns it for `<Transition type>`. |
@@ -832,7 +834,7 @@ Every name each entry exports, read from the code. The sections above explain th
 
 ### `@uberscene/sdk`
 
-237 exports.
+241 exports.
 
 | Export | Kind | |
 |---|---|---|
@@ -943,6 +945,8 @@ Every name each entry exports, read from the code. The sections above explain th
 | `KeyActions` | interface |  |
 | `KeyframeRow` | interface |  |
 | `KeyJson` | interface | One key as a file writes it. |
+| `Lane` | interface |  |
+| `LaneClip` | interface |  |
 | `LayerActions` | interface |  |
 | `LayerInterior` | interface |  |
 | `LayerPlacement` | interface |  |
@@ -1055,6 +1059,8 @@ Every name each entry exports, read from the code. The sections above explain th
 | `timelineEntries` | function | Every beat, shot or silence the timeline plays, at the time it plays, in timeline order. |
 | `TimelineEntry` | interface | A beat, shot or silence of an asset at the time the timeline plays it. |
 | `timelineEvents` | function | Every moment of the video in one list, in time order. |
+| `timelineLanes` | function | The timeline as lanes. |
+| `TimelineLanes` | interface |  |
 | `timelineRows` | function | The flat rows of a resolved timeline. |
 | `TimelineRows` | interface |  |
 | `TimelineWord` | interface | A transcript word at the composition time it plays. |

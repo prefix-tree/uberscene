@@ -37,7 +37,7 @@ const manifest: AssetManifest = {
 
 const file = (
   body: string,
-) => `import { Badge, Callout, Clip, Composition, Counter, LowerThird, Sticker, Track, TypeCard } from "@uberscene/kit";
+) => `import { Badge, Callout, Clip, Composition, Counter, LowerThird, Sticker, TimelineView, Track, TypeCard } from "@uberscene/kit";
 
 export default function Video() {
   return (
@@ -72,6 +72,10 @@ const USES: Record<keyof typeof COMPONENTS, { use: string; parts: string[] }> = 
   Counter: {
     use: '<Counter id="n" start={1} duration={3} to={1200} suffix="+" label="teams" />',
     parts: ["n-value:layer", "n-label:title"],
+  },
+  TimelineView: {
+    use: '<TimelineView id="tl" start={1} duration={3} length={6} lanes={[{ id: "sfx", role: "effects", kind: "sound", clips: [{ id: "hit", kind: "audio", from: 1, to: 2, label: "hit", level: [0.2, 0.9, 0.4] }] }]} />',
+    parts: ["tl-picture:layer"],
   },
   TypeCard: {
     use: '<TypeCard id="tc" start={1} duration={3} lines={[{ text: "STRESS", struck: true }, { text: "ENERGY", offset: 1, pill: "$accent" }]} />',

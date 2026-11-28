@@ -12,6 +12,7 @@ Ready-made pieces: lower thirds, callouts, counters, cards and the like. Import 
 <PreviewCard code hover title="Badge" link="/reference/components/badge" src="previews/components/badge" text="A short word on a pill that pops in." />
 <PreviewCard code hover title="Counter" link="/reference/components/counter" src="previews/components/counter" text="A number that counts to its value, with a label." />
 <PreviewCard code hover title="TypeCard" link="/reference/components/type-card" src="previews/components/type-card" text="A card of big type that builds line by line, with pills and struck-out lines." />
+<PreviewCard code hover title="TimelineView" link="/reference/components/timeline-view" src="previews/components/timeline-view" text="A film's own timeline as an editor shows it: lanes, clips with their names, waveforms, a moving playhead." />
 </div>
 
 ## Anatomy of a component
